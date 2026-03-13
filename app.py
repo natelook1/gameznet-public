@@ -123,16 +123,18 @@ _telemetry = {
     "received": "0 B",
     "sent": "0 B",
     "handshake": "Never",
-    "motd": ""
+    "motd": "",
+    "alert": None
 }
 
 def update_telemetry():
     """Background thread to poll ping and wg stats silently."""
     global _telemetry, _connected
     import urllib.request
-    
+
     motd_timer = 0
-    
+    alert_timer = 0
+
     while True:
         # 1. Update MOTD every ~5 minutes
         if motd_timer <= 0:
@@ -145,6 +147,18 @@ def update_telemetry():
                 pass
             motd_timer = 150
         motd_timer -= 1
+
+        # 1b. Update Alert every ~60 seconds
+        if alert_timer <= 0:
+            try:
+                req = urllib.request.Request(f"{WORKER_URL}/api/alert", headers={'User-Agent': 'GamezNET'})
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode())
+                    _telemetry["alert"] = data.get("alert", None)
+            except Exception:
+                pass
+            alert_timer = 30
+        alert_timer -= 1
 
         if _connected:
             # 2. Ping Latency (Targeting internal VPN Gateway to prove tunnel works)
@@ -203,6 +217,7 @@ def update_telemetry():
 app = Flask(__name__)
 _lock = threading.Lock()
 _connected = False
+_invisible = False
 
 @app.route("/")
 def index():
@@ -436,6 +451,42 @@ def api_online():
         log.debug("api_online proxy failed: %s", e)
         return jsonify([])
 
+@app.route("/api/invisible", methods=["GET", "POST"])
+def api_invisible():
+    global _invisible
+    if request.method == "POST":
+        data = request.json or {}
+        new_val = bool(data.get("invisible", False))
+        old_val = _invisible
+        _invisible = new_val
+        log.info("Invisible mode set to: %s", _invisible)
+        # If turning invisible while connected, send a disconnect heartbeat immediately
+        if new_val and not old_val and _connected and os.path.exists(CONFIG_FILE):
+            try:
+                import urllib.request as _urllib_request
+                with open(CONFIG_FILE, "r") as f:
+                    cfg = json.load(f)
+                payload = json.dumps({"name": cfg.get("name",""), "vpn_ip": cfg.get("vpn_ip",""), "disconnecting": True}).encode()
+                req = _urllib_request.Request(f"{WORKER_URL}/api/heartbeat", data=payload, headers={"Content-Type":"application/json"}, method="POST")
+                _urllib_request.urlopen(req, timeout=5)
+                log.debug("Invisible-mode disconnect heartbeat sent")
+            except Exception as e:
+                log.debug("Invisible heartbeat failed: %s", e)
+        return jsonify({"invisible": _invisible})
+    return jsonify({"invisible": _invisible})
+
+@app.route("/api/alert", methods=["GET"])
+def api_alert():
+    """Proxy GET to Worker /api/alert and return the JSON."""
+    import urllib.request as _urllib_request
+    try:
+        req = _urllib_request.Request(f"{WORKER_URL}/api/alert", headers={'User-Agent': 'GamezNET'})
+        with _urllib_request.urlopen(req, timeout=5) as resp:
+            return resp.read(), resp.status, {'Content-Type': 'application/json'}
+    except Exception as e:
+        log.debug("api_alert proxy failed: %s", e)
+        return jsonify({"alert": None})
+
 # ─── Heartbeat Thread ─────────────────────────────────────────────────────────
 
 def heartbeat_loop():
@@ -443,7 +494,7 @@ def heartbeat_loop():
     import urllib.request
     while True:
         time.sleep(30)
-        if _connected and os.path.exists(CONFIG_FILE):
+        if _connected and not _invisible and os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
                     cfg = json.load(f)
