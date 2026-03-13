@@ -194,18 +194,51 @@ def api_disconnect():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/api/save_config", methods=["POST"])
-def api_save_config():
-    """Saves the provisioned credentials after a successful token redemption."""
+@app.route("/api/config", methods=["GET"])
+def api_config():
+    """Returns current provisioning state to the UI on load."""
+    if not os.path.exists(CONFIG_FILE):
+        return jsonify({"provisioned": False, "name": "", "client_ip": ""})
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+        return jsonify({
+            "provisioned": True,
+            "name":      data.get("name", "Player"),
+            "client_ip": data.get("vpn_ip", "")
+        })
+    except Exception as e:
+        return jsonify({"provisioned": False, "name": "", "client_ip": ""}), 500
+
+@app.route("/api/provision", methods=["POST"])
+def api_provision():
+    """Saves provisioned credentials after a successful token redemption."""
     data = request.json
-    if not data or 'private_key' not in data or 'vpn_ip' not in data:
+    if not data or 'private_key' not in data or 'client_ip' not in data:
         return jsonify({"error": "Invalid payload"}), 400
-        
     try:
         with open(CONFIG_FILE, "w") as f:
             json.dump({
                 "private_key": data["private_key"],
-                "vpn_ip": data["vpn_ip"]
+                "vpn_ip":      data["client_ip"],
+                "name":        data.get("name", "Player")
+            }, f)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/save_config", methods=["POST"])
+def api_save_config():
+    """Legacy alias for /api/provision — kept for backwards compatibility."""
+    data = request.json
+    if not data or 'private_key' not in data or 'vpn_ip' not in data:
+        return jsonify({"error": "Invalid payload"}), 400
+    try:
+        with open(CONFIG_FILE, "w") as f:
+            json.dump({
+                "private_key": data["private_key"],
+                "vpn_ip":      data["vpn_ip"],
+                "name":        data.get("name", "Player")
             }, f)
         return jsonify({"success": True})
     except Exception as e:
