@@ -710,38 +710,37 @@ Write-Host "         Dependencies installed." -ForegroundColor Green
 # Create desktop shortcut
 Write-Host "  [5/5] Creating desktop shortcut..." -ForegroundColor Yellow
 try {
+  $batPath = $installDir + "\GamezNET.bat"
+  $lnkPath = $env:USERPROFILE + "\Desktop\GamezNET.lnk"
   $ws = New-Object -ComObject WScript.Shell
-  $shortcut = $ws.CreateShortcut("$env:USERPROFILE\\Desktop\\GamezNET.lnk")
-  $shortcut.TargetPath = "cmd.exe"
-  $shortcut.Arguments = '/c "' + $installDir + '\\GamezNET.bat"'
+  $shortcut = $ws.CreateShortcut($lnkPath)
+  $shortcut.TargetPath = $batPath
   $shortcut.WorkingDirectory = $installDir
   $shortcut.Description = "GamezNET - Private Game Server Network"
+  $shortcut.WindowStyle = 1
   $shortcut.Save()
   Write-Host "         Desktop shortcut created." -ForegroundColor Green
 } catch {
-  Write-Host "  [!] Could not create shortcut: $_" -ForegroundColor Yellow
-  Write-Host "      You can launch manually from: $installDir\\GamezNET.bat" -ForegroundColor Yellow
+  Write-Host "  [!] Shortcut error: $_" -ForegroundColor Yellow
 }
 
 Write-Host ""
 Write-Host "  +==========================================+" -ForegroundColor Cyan
 Write-Host "  |          Setup Complete!                 |" -ForegroundColor Cyan
 Write-Host "  |                                          |" -ForegroundColor Cyan
-Write-Host "  |  Double-click GamezNET on your desktop   |" -ForegroundColor Cyan
-Write-Host "  |  and enter your invite token.            |" -ForegroundColor Cyan
+Write-Host "  |  GamezNET icon is on your desktop.       |" -ForegroundColor Cyan
+Write-Host "  |  Double-click it and enter your token.   |" -ForegroundColor Cyan
 Write-Host "  +==========================================+" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  Launching GamezNET now..." -ForegroundColor Yellow
-Start-Sleep -Seconds 1
 
-# Launch the app via cmd to avoid execution policy issues
-try {
-  Start-Process "cmd.exe" -ArgumentList ('/c "' + $installDir + '\\GamezNET.bat"') -Verb RunAs
-} catch {
-  Write-Host "  [!] Could not auto-launch. Double-click GamezNET on your desktop to start." -ForegroundColor Yellow
-}
+# Open install folder as visual confirmation it worked
+Start-Process "explorer.exe" -ArgumentList $installDir
+Start-Sleep -Seconds 2
 
-Write-Host "  Done! Press any key to close this window." -ForegroundColor Green
+# Launch the app - bat self-elevates so no RunAs needed here
+Start-Process $batPath
+
+Write-Host "  Press any key to close this window..." -ForegroundColor Gray
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 `;
 
