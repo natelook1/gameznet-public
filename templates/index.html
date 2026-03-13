@@ -1291,7 +1291,7 @@
       const res = await fetch('/api/report', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({error_message: lastError})
+        body: JSON.stringify({error_message: lastError || 'Manual report (no error message)'})
       });
       if (res.ok) {
         toast('Report sent to admin', 'success');

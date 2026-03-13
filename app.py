@@ -460,7 +460,7 @@ def api_report():
     """Collect log tail and send an error report to the Worker."""
     import urllib.request
     data = request.json or {}
-    error_message = data.get("error_message", "No error message provided")
+    error_message = data.get("error_message", "") or "No error message provided"
 
     # Collect the last 150 lines of the log file
     log_tail = ""
@@ -479,7 +479,7 @@ def api_report():
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, "r") as f:
                 cfg = json.load(f)
-            player_name = cfg.get("name", "Unknown")
+            player_name = cfg.get("name", "") or "Unknown"
             vpn_ip = cfg.get("vpn_ip", "")
     except Exception:
         pass
