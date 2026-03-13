@@ -569,6 +569,20 @@
       color: var(--success);
     }
 
+    /* ── Who's Online ── */
+    .online-player {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(0,232,122,0.04);
+      border: 1px solid rgba(0,232,122,0.1);
+      border-radius: 3px; padding: 8px 12px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px; margin-bottom: 6px;
+    }
+    .op-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 6px rgba(0,232,122,0.8); flex-shrink: 0; }
+    .op-name { flex: 1; color: var(--text); letter-spacing: 1px; }
+    .op-ip { color: var(--text-dim); font-size: 11px; }
+    .online-empty { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); padding: 8px 0; }
+
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -684,6 +698,12 @@
           <span class="tel-label">Sent</span>
           <span class="tel-val" id="tel-tx">0 B</span>
         </div>
+      </div>
+
+      <!-- Who's Online -->
+      <div id="online-section" style="margin-top: 16px;">
+        <div class="section-label" style="margin-bottom: 10px;">Who's Online</div>
+        <div id="online-list-ui"></div>
       </div>
 
     </div>
@@ -900,12 +920,14 @@
         // Check current connection & telemetry state
         const sres = await fetch('/api/status');
         const s = await sres.json();
-        
+
         state.connected = s.connected;
         setStatus(s.connected ? 'connected' : 'disconnected');
-        
+
         if (s.telemetry) updateTelemetryUI(s.telemetry);
-        
+
+        refreshOnline();
+
       } else {
         showUnprovisioned();
       }
@@ -1038,6 +1060,25 @@
       }
     } catch {}
   }, 2000);
+
+  // ── Who's Online ──────────────────────────────────────────────────────────
+  async function refreshOnline() {
+    if (!state.provisioned) return;
+    try {
+      const res = await fetch('/api/online');
+      const online = res.ok ? await res.json() : [];
+      const container = document.getElementById('online-list-ui');
+      if (!online.length) {
+        container.innerHTML = '<div class="online-empty">&#9675; No other players online</div>';
+        return;
+      }
+      container.innerHTML = online.map(p =>
+        `<div class="online-player"><div class="op-dot"></div><div class="op-name">${p.name}</div><div class="op-ip">${p.vpn_ip}</div></div>`
+      ).join('');
+    } catch {}
+  }
+
+  setInterval(refreshOnline, 30000);
 
   // ── Boot ──────────────────────────────────────────────────────────────────
   init();

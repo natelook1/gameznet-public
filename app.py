@@ -327,7 +327,29 @@ def api_disconnect():
         conf_path = os.path.join(os.path.expanduser("~"), f"{TUNNEL_NAME}.conf")
         if os.path.exists(conf_path):
             os.remove(conf_path)
-            
+
+        # Send disconnecting heartbeat before clearing state
+        try:
+            import urllib.request
+            if os.path.exists(CONFIG_FILE):
+                with open(CONFIG_FILE, "r") as f:
+                    cfg = json.load(f)
+                payload = json.dumps({
+                    "name": cfg.get("name", ""),
+                    "vpn_ip": cfg.get("vpn_ip", ""),
+                    "disconnecting": True
+                }).encode()
+                req = urllib.request.Request(
+                    f"{WORKER_URL}/api/heartbeat",
+                    data=payload,
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                urllib.request.urlopen(req, timeout=5)
+                log.debug("Disconnect heartbeat sent")
+        except Exception as hb_err:
+            log.debug("Disconnect heartbeat failed: %s", hb_err)
+
         with _lock:
             _connected = False
         return jsonify({"success": True, "connected": False})
@@ -402,6 +424,43 @@ def api_logs():
         return jsonify({"log": "".join(lines[-100:])})
     except Exception as e:
         return jsonify({"log": f"Error reading log: {e}"})
+
+@app.route("/api/online", methods=["GET"])
+def api_online():
+    """Proxy to Worker /api/online so the client UI can call it locally."""
+    import urllib.request
+    try:
+        with urllib.request.urlopen(f"{WORKER_URL}/api/online", timeout=5) as resp:
+            return resp.read(), resp.status, {'Content-Type': 'application/json'}
+    except Exception as e:
+        log.debug("api_online proxy failed: %s", e)
+        return jsonify([])
+
+# ─── Heartbeat Thread ─────────────────────────────────────────────────────────
+
+def heartbeat_loop():
+    """Send presence heartbeat to the Worker every 30 seconds while connected."""
+    import urllib.request
+    while True:
+        time.sleep(30)
+        if _connected and os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, "r") as f:
+                    cfg = json.load(f)
+                payload = json.dumps({
+                    "name": cfg.get("name", ""),
+                    "vpn_ip": cfg.get("vpn_ip", "")
+                }).encode()
+                req = urllib.request.Request(
+                    f"{WORKER_URL}/api/heartbeat",
+                    data=payload,
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                urllib.request.urlopen(req, timeout=5)
+                log.debug("Heartbeat sent for %s", cfg.get("name"))
+            except Exception as e:
+                log.debug("Heartbeat failed: %s", e)
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 
@@ -546,6 +605,9 @@ if __name__ == "__main__":
 
     # Start Telemetry Thread
     threading.Thread(target=update_telemetry, daemon=True).start()
+
+    # Start Heartbeat Thread
+    threading.Thread(target=heartbeat_loop, daemon=True).start()
 
     # Start Flask in background thread
     flask_thread = threading.Thread(
