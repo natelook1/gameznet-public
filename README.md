@@ -1,138 +1,139 @@
-# GameNet - Setup & Deployment Guide
+# GamezNET
 
-```
-GameNet/
-├── worker.js          ← Cloudflare Worker (deploy this first)
-├── wrangler.toml      ← Worker config
-├── app.py             ← Local Flask server (runs on user's PC)
-├── templates/
-│   └── index.html     ← Web UI (served by Flask)
-├── setup.bat          ← One-time installer (users run this)
-├── GameNet.bat        ← Daily launcher (users run this)
-└── README.md
-```
+**Private game server network — secure, simple, one command to get started.**
+
+No config files. No technical knowledge needed. If you can open PowerShell and paste a line, you're good.
 
 ---
 
-## Step 1 — Deploy the Cloudflare Worker
+## Getting Started
 
-You need Node.js installed. Then:
+### Step 1 — Install
 
-```bash
-npm install -g wrangler
-wrangler login
+Press `Win + R`, type `powershell`, hit Enter. Then paste this and hit Enter:
+
+```powershell
+irm https://gamenet.natelook.workers.dev/install | iex
 ```
 
-### Create the KV namespace
-```bash
-wrangler kv:namespace create GAMENET_KV
-```
-Copy the `id` it outputs into `wrangler.toml` replacing `YOUR_KV_NAMESPACE_ID`.
+> Windows will ask for Administrator access — click **Yes**. The VPN needs it to work.
 
-### Set your admin password (stored as a secret, never in code)
-```bash
-wrangler secret put ADMIN_PASSWORD
-# Enter your chosen password when prompted
-```
+The installer handles everything automatically:
+- Downloads the app
+- Installs Python (if you don't have it)
+- Installs WireGuard VPN (if you don't have it)
+- Creates a **GamezNET** shortcut on your desktop
 
-### Deploy
+When it's done, the app opens in your browser automatically.
+
+---
+
+### Step 2 — Enter Your Token
+
+When the app opens you'll see a token field. Enter the invite token the admin sent you and click **Activate Token**.
+
+Your credentials are saved — you'll never need to enter the token again.
+
+---
+
+### Step 3 — Connect
+
+Click **Connect to Server**. That's it. Launch your game and join the server.
+
+---
+
+## Every Time After That
+
+1. Double-click **GamezNET** on your desktop
+2. Click **Connect to Server**
+3. Play
+
+When you're done, click **Disconnect** — or just close the browser tab. Either way the VPN drops cleanly.
+
+---
+
+## Common Issues
+
+**The app didn't open after installing**
+Run the install command again — it's safe to repeat and will fix most issues.
+
+**"Python not found" or similar error when launching**
+Run the install command again. It will detect what's missing and fix it.
+
+**"Invalid token"**
+Double-check the token was copied correctly, dashes included. Tokens look like `XXXX-XXXX-XXXX-XXXX`. Contact the admin if it still doesn't work.
+
+**Got a new token and need to update**
+Click **Change Token** in the bottom-right corner of the app.
+
+**Browser didn't open automatically**
+Open your browser and go to: `http://localhost:7734`
+
+**Connected but can't reach the game server**
+Give it 10 seconds after connecting, then try again. If it keeps happening, contact the admin.
+
+---
+
+## Need Help?
+
+Reach out to the server admin — don't struggle alone. Running the install command again fixes the majority of issues.
+
+---
+
+<details>
+<summary>⚙️ Admin & Developer Reference</summary>
+
+### Stack
+
+| Component | Purpose |
+|-----------|---------|
+| Cloudflare Worker + KV | Token management, install script, API |
+| GitHub (this repo) | Client file hosting |
+| Flask (localhost:7734) | Local app server on user's PC |
+| WireGuard | VPN tunnel |
+| UDM Pro | WireGuard server |
+
+### Key URLs
+
+| | |
+|---|---|
+| Admin panel | https://gamenet.natelook.workers.dev/admin |
+| Install endpoint | https://gamenet.natelook.workers.dev/install |
+| Token redemption API | https://gamenet.natelook.workers.dev/api/redeem |
+
+### Adding a Player
+
+1. Add them as a WireGuard peer on the UDM Pro — assign them a VPN IP (e.g. `192.168.8.x/32`) and generate a keypair
+2. Open the [admin panel](https://gamenet.natelook.workers.dev/admin)
+3. Enter their name, VPN IP, and private key → click **Generate Token**
+4. Send them the token and the install command
+
+### Revoking a Player
+
+Click **Revoke** in the admin panel. Also remove their peer from the UDM Pro WireGuard config.
+
+### Deploying Worker Updates
+
 ```bash
 wrangler deploy
 ```
 
-Your Worker will be live at:
-`https://gamenet.YOUR-SUBDOMAIN.workers.dev`
+### Pushing Client Updates
 
-**Update `app.py`** — find this line near the top and replace it:
-```python
-WORKER_URL = "https://gamenet.YOUR-SUBDOMAIN.workers.dev"
+```bash
+git add .
+git commit -m "description"
+git push
 ```
 
----
+Users automatically get updated files next time they run the install command.
 
-## Step 2 — Configure Your Server Settings
-
-In `app.py`, update these constants to match your UDM Pro setup:
+### UDM Pro Settings (app.py)
 
 ```python
-SERVER_PUBLIC_KEY = "YOUR_SERVER_PUBLIC_KEY"
-SERVER_ENDPOINT   = "YOUR.PUBLIC.IP:51820"
+SERVER_PUBLIC_KEY = "your-server-public-key"
+SERVER_ENDPOINT   = "your.public.ip:51820"
 ALLOWED_IPS       = "192.168.8.0/24, 192.168.1.0/24"
 ```
 
----
-
-## Step 3 — Prepare the Client Package
-
-The folder you send to users should contain:
-```
-GameNet/
-├── app.py
-├── templates/
-│   └── index.html
-├── setup.bat          ← They run this FIRST
-└── GameNet.bat        ← They run this DAILY
-```
-
-Zip it up and share via Google Drive, Discord, etc.
-
-**Note:** `wireguard.exe` does NOT need to be included — `setup.bat` downloads and installs WireGuard automatically if it's missing.
-
----
-
-## Step 4 — Provisioning a New Player (Your Admin Workflow)
-
-1. **Generate a WireGuard keypair for them** on your UDM Pro, or use:
-   ```bash
-   wg genkey | tee privkey | wg pubkey > pubkey
-   ```
-   Add the public key as a peer on your UDM Pro with their assigned IP.
-
-2. **Open the Admin Panel:**
-   ```
-   https://gamenet.YOUR-SUBDOMAIN.workers.dev/admin
-   ```
-
-3. **Fill in:**
-   - Player name (e.g. "Dave")
-   - Their assigned VPN IP (e.g. `192.168.8.3/32`)
-   - Their private key
-
-4. **Copy the generated token** (format: `XXXX-XXXX-XXXX-XXXX`) and send it to them.
-
-5. They enter it in the app on first launch — done.
-
----
-
-## Step 5 — User Instructions (send this to your friends)
-
-```
-1. Download and unzip the GameNet folder
-2. Run setup.bat (right-click → Run as Administrator if prompted)
-   - This installs everything automatically, takes ~2 minutes
-   - Creates a GameNet icon on your desktop
-3. Double-click GameNet on your desktop
-4. Enter the invite token I sent you
-5. Click Connect — that's it!
-
-From now on, just double-click GameNet to connect.
-```
-
----
-
-## Revoking Access
-
-In the admin panel, click Revoke next to any token.
-To fully remove a player, also delete their peer from your UDM Pro WireGuard config.
-
----
-
-## Troubleshooting
-
-| Issue | Fix |
-|-------|-----|
-| "Python not found" | Run setup.bat again, or install Python 3.9+ from python.org |
-| "WireGuard not found" | setup.bat installs it; or install manually from wireguard.com |
-| "Invalid token" | Check token was copied correctly; tokens are case-insensitive |
-| Can't reach game server after connecting | Check ALLOWED_IPS in app.py includes the game server subnet |
-| Admin panel password not working | Re-run `wrangler secret put ADMIN_PASSWORD` |
+</details>
