@@ -649,7 +649,7 @@ async function handleInstall(request, env) {
 # Run this in PowerShell as Administrator:
 #   irm https://gamenet.natelook.workers.dev/install | iex
 
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 $repo = "https://raw.githubusercontent.com/natelook1/gamenet-client/main"
 $installDir = "$env:LOCALAPPDATA\\GamezNET"
 
@@ -709,13 +709,19 @@ Write-Host "         Dependencies installed." -ForegroundColor Green
 
 # Create desktop shortcut
 Write-Host "  [5/5] Creating desktop shortcut..." -ForegroundColor Yellow
-$ws = New-Object -ComObject WScript.Shell
-$shortcut = $ws.CreateShortcut("$env:USERPROFILE\\Desktop\\GamezNET.lnk")
-$shortcut.TargetPath = "$installDir\\GamezNET.bat"
-$shortcut.WorkingDirectory = $installDir
-$shortcut.Description = "GamezNET - Private Game Server Network"
-$shortcut.Save()
-Write-Host "         Desktop shortcut created." -ForegroundColor Green
+try {
+  $ws = New-Object -ComObject WScript.Shell
+  $shortcut = $ws.CreateShortcut("$env:USERPROFILE\\Desktop\\GamezNET.lnk")
+  $shortcut.TargetPath = "cmd.exe"
+  $shortcut.Arguments = '/c "' + $installDir + '\\GamezNET.bat"'
+  $shortcut.WorkingDirectory = $installDir
+  $shortcut.Description = "GamezNET - Private Game Server Network"
+  $shortcut.Save()
+  Write-Host "         Desktop shortcut created." -ForegroundColor Green
+} catch {
+  Write-Host "  [!] Could not create shortcut: $_" -ForegroundColor Yellow
+  Write-Host "      You can launch manually from: $installDir\\GamezNET.bat" -ForegroundColor Yellow
+}
 
 Write-Host ""
 Write-Host "  +==========================================+" -ForegroundColor Cyan
@@ -725,9 +731,18 @@ Write-Host "  |  Double-click GamezNET on your desktop   |" -ForegroundColor Cya
 Write-Host "  |  and enter your invite token.            |" -ForegroundColor Cyan
 Write-Host "  +==========================================+" -ForegroundColor Cyan
 Write-Host ""
+Write-Host "  Launching GamezNET now..." -ForegroundColor Yellow
+Start-Sleep -Seconds 1
 
-# Launch the app
-Start-Process "$installDir\\GamezNET.bat"
+# Launch the app via cmd to avoid execution policy issues
+try {
+  Start-Process "cmd.exe" -ArgumentList ('/c "' + $installDir + '\\GamezNET.bat"') -Verb RunAs
+} catch {
+  Write-Host "  [!] Could not auto-launch. Double-click GamezNET on your desktop to start." -ForegroundColor Yellow
+}
+
+Write-Host "  Done! Press any key to close this window." -ForegroundColor Green
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 `;
 
   return new Response(script, {
