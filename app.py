@@ -264,11 +264,12 @@ PersistentKeepalive = 25
         log.info("installtunnelservice stdout=%r stderr=%r returncode=%s",
                  install_result.stdout, install_result.stderr, install_result.returncode)
 
-        # Verify the tunnel actually came up by checking for a handshake
-        # wg.exe show is the correct binary — wireguard.exe does NOT support /show
+        # Verify the tunnel interface actually came up (wg show returns valid output).
+        # We do NOT require a handshake here — that needs the server to respond,
+        # which is a server-side concern. The telemetry will show if traffic flows.
         wg_show = wg_cli()
         log.info("wg.exe path: %s", wg_show)
-        handshake = False
+        tunnel_up = False
         for i in range(10):
             time.sleep(1)
             if wg_show:
@@ -278,12 +279,12 @@ PersistentKeepalive = 25
                     creationflags=CREATE_NO_WINDOW
                 )
                 log.debug("wg show [%d] stdout=%r stderr=%r", i, result.stdout, result.stderr)
-                if "latest handshake" in result.stdout.lower():
-                    handshake = True
-                    log.info("Handshake confirmed on attempt %d", i + 1)
+                if f"interface: {TUNNEL_NAME}" in result.stdout.lower():
+                    tunnel_up = True
+                    log.info("Tunnel interface confirmed on attempt %d", i + 1)
                     break
             else:
-                # wg.exe not found — check service is running as a fallback
+                # wg.exe not found — check Windows service state
                 svc = subprocess.run(
                     ["sc", "query", f"WireGuardTunnel${TUNNEL_NAME}"],
                     capture_output=True, text=True,
@@ -291,17 +292,17 @@ PersistentKeepalive = 25
                 )
                 log.debug("sc query [%d]: %r", i, svc.stdout)
                 if "RUNNING" in svc.stdout:
-                    handshake = True
+                    tunnel_up = True
                     log.info("Service RUNNING confirmed on attempt %d (no wg.exe)", i + 1)
                     break
 
-        if not handshake:
-            log.warning("No handshake after 10s — tearing down tunnel")
+        if not tunnel_up:
+            log.warning("Tunnel interface did not appear after 10s — tearing down")
             subprocess.run(
                 [wg, "/uninstalltunnelservice", TUNNEL_NAME],
                 capture_output=True, creationflags=CREATE_NO_WINDOW
             )
-            return jsonify({"error": "Could not reach the game server. Check your connection and try again."}), 503
+            return jsonify({"error": "WireGuard tunnel failed to start. Try running the installer again."}), 503
 
         with _lock:
             _connected = True
