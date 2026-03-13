@@ -619,6 +619,63 @@ function adminHTML() {
     }
     .btn-hidden-toggle.is-hidden { border-color: var(--danger); color: var(--danger); }
     .btn-hidden-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Report badge */
+    .report-badge {
+      background: rgba(255,51,85,0.15);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 2px;
+      letter-spacing: 1px;
+      animation: pulse-badge 2s ease-in-out infinite;
+      cursor: pointer;
+    }
+    @keyframes pulse-badge {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* Report items */
+    .report-item {
+      background: rgba(255,51,85,0.04);
+      border: 1px solid rgba(255,51,85,0.15);
+      border-radius: 3px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+    .report-item.read { border-color: var(--border); opacity: 0.6; }
+    .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .report-player { font-weight: 700; font-size: 15px; }
+    .report-time { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--muted); }
+    .report-error { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: #ff8899; margin-bottom: 8px; }
+    .report-log {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 8px;
+      max-height: 160px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      display: none;
+    }
+    .toggle-log-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 2px 8px;
+      cursor: pointer;
+      letter-spacing: 0;
+    }
+    .toggle-log-btn:hover { border-color: var(--accent); color: var(--accent); transform: none; }
   </style>
 </head>
 <body>
@@ -626,6 +683,9 @@ function adminHTML() {
 <header>
   <div class="logo">GAMEZ<span>NET</span></div>
   <div class="header-badge">ADMIN CONSOLE</div>
+  <div class="report-badge" id="report-badge" style="display:none;">
+    <span id="report-count">0</span> REPORT<span id="report-plural"></span>
+  </div>
   <div class="header-right">
     <div class="server-ip-chip" id="header-server-ip">SERVER IP: —</div>
     <div class="live-indicator"><span class="live-dot"></span> LIVE</div>
@@ -782,6 +842,12 @@ function adminHTML() {
       <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
     </div>
 
+    <!-- Error Reports -->
+    <div class="card" id="reports-card">
+      <div class="card-title">Error Reports</div>
+      <div id="reports-container"><div class="empty-state">No reports yet.</div></div>
+    </div>
+
   </div>
 </div>
 
@@ -829,6 +895,7 @@ function adminHTML() {
       loadMotd();
       loadServerConfig();
       loadAlertStatus();
+      loadReports();
 
       // Auto-refresh every 15 seconds
       _refreshTimer = setInterval(() => refreshAll(), 15000);
@@ -857,6 +924,7 @@ function adminHTML() {
       updateStats(tokens, online);
       renderOnlineRoster(online);
       renderTokenList(tokens, new Set(online.map(p => p.name)));
+      loadReports();
     } catch {}
   }
 
@@ -1115,6 +1183,74 @@ function adminHTML() {
       el.textContent = 'No active alert';
       el.style.color = 'var(--muted)';
     }
+  }
+
+  // ── Error Reports ────────────────────────────────────────────────────────
+  async function loadReports() {
+    const res = await fetch('/admin/reports', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({password: adminPassword})
+    });
+    if (!res.ok) return;
+    const reports = await res.json();
+    renderReports(reports);
+  }
+
+  function renderReports(reports) {
+    const container = document.getElementById('reports-container');
+    const badge = document.getElementById('report-badge');
+    const countEl = document.getElementById('report-count');
+    const pluralEl = document.getElementById('report-plural');
+
+    const unread = reports.filter(r => !r.read).length;
+    if (unread > 0) {
+      badge.style.display = 'inline-block';
+      countEl.textContent = unread;
+      pluralEl.textContent = unread === 1 ? '' : 'S';
+      badge.onclick = () => document.getElementById('reports-card').scrollIntoView({behavior: 'smooth'});
+    } else {
+      badge.style.display = 'none';
+    }
+
+    if (!reports.length) {
+      container.innerHTML = '<div class="empty-state">No reports yet.</div>';
+      return;
+    }
+
+    container.innerHTML = reports.map(r => \`
+      <div class="report-item \${r.read ? 'read' : ''}" id="ri-\${r.id}">
+        <div class="report-header">
+          <span class="report-player">\${r.player} <span style="font-size:12px;color:var(--muted);font-family:'Share Tech Mono',monospace">\${r.vpn_ip}</span></span>
+          <span class="report-time">\${new Date(r.timestamp).toLocaleString()}</span>
+        </div>
+        <div class="report-error">\${r.error_message}</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="toggle-log-btn" onclick="toggleLog('\${r.id}')">Show Log</button>
+          \${!r.read ? \`<button class="toggle-log-btn" onclick="markRead('\${r.id}')">Mark Read</button>\` : '<span style="font-size:11px;color:var(--muted);font-family:\\'Share Tech Mono\\',monospace">READ</span>'}
+        </div>
+        <div class="report-log" id="log-\${r.id}">\${r.log_tail || ''}</div>
+      </div>
+    \`).join('');
+  }
+
+  function toggleLog(id) {
+    const el = document.getElementById(\`log-\${id}\`);
+    const btn = el.previousElementSibling.querySelector('.toggle-log-btn');
+    const visible = el.style.display === 'block';
+    el.style.display = visible ? 'none' : 'block';
+    btn.textContent = visible ? 'Show Log' : 'Hide Log';
+  }
+
+  async function markRead(id) {
+    await fetch('/admin/report/read', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({password: adminPassword, id})
+    });
+    const item = document.getElementById(\`ri-\${id}\`);
+    if (item) item.classList.add('read');
+    loadReports();
   }
 </script>
 </body>
@@ -1562,6 +1698,88 @@ $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
   });
 }
 
+// ─── Error Report Handlers ───────────────────────────────────────────────────
+
+async function handleReport(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const { player, vpn_ip, error_message, log_tail } = body;
+  if (!player || !error_message) return jsonResponse({ error: 'Missing fields' }, 400);
+
+  const id = `report_${Date.now()}`;
+  const record = {
+    id,
+    player: player || 'Unknown',
+    vpn_ip: vpn_ip || '',
+    error_message,
+    log_tail: (log_tail || '').slice(-8000), // cap at 8KB
+    timestamp: new Date().toISOString(),
+    read: false
+  };
+
+  await env.GAMENET_KV.put(`report:${id}`, JSON.stringify(record));
+
+  const indexRaw = await env.GAMENET_KV.get('report_index');
+  const index = indexRaw ? JSON.parse(indexRaw) : [];
+  index.unshift(id); // newest first
+  // Keep only last 50 reports
+  if (index.length > 50) index.length = 50;
+  await env.GAMENET_KV.put('report_index', JSON.stringify(index));
+
+  // Optional email via Resend API (set RESEND_API_KEY secret in Cloudflare dashboard)
+  if (env.RESEND_API_KEY) {
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: 'GamezNET <onboarding@resend.dev>',
+          to: ['admin@looknet.ca'],
+          subject: `GamezNET Error Report — ${player}`,
+          text: `Player: ${player}\nVPN IP: ${vpn_ip}\nTime: ${record.timestamp}\nError: ${error_message}\n\n--- LOG TAIL ---\n${log_tail}`
+        })
+      });
+    } catch (_) { /* email failure is non-fatal */ }
+  }
+
+  return jsonResponse({ success: true, id });
+}
+
+async function handleAdminReports(request, env) {
+  const { authed } = await requireAdmin(request, env);
+  if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
+
+  const indexRaw = await env.GAMENET_KV.get('report_index');
+  const index = indexRaw ? JSON.parse(indexRaw) : [];
+
+  const reports = await Promise.all(
+    index.map(async id => {
+      const raw = await env.GAMENET_KV.get(`report:${id}`);
+      return raw ? JSON.parse(raw) : null;
+    })
+  );
+
+  return jsonResponse(reports.filter(Boolean));
+}
+
+async function handleAdminMarkReportRead(request, env) {
+  const { authed, body } = await requireAdmin(request, env);
+  if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
+
+  const { id } = body;
+  if (!id) return jsonResponse({ error: 'id required' }, 400);
+
+  const raw = await env.GAMENET_KV.get(`report:${id}`);
+  if (!raw) return jsonResponse({ error: 'Not found' }, 404);
+
+  const record = JSON.parse(raw);
+  record.read = true;
+  await env.GAMENET_KV.put(`report:${id}`, JSON.stringify(record));
+  return jsonResponse({ success: true });
+}
+
 // ─── Main Router ─────────────────────────────────────────────────────────────
 
 export default {
@@ -1598,6 +1816,9 @@ export default {
     if (path === '/admin/alert' && method === 'POST') return handleAdminPushAlert(request, env);
     if (path === '/admin/settings/save' && method === 'POST') return handleAdminSettingsSave(request, env);
     if (path === '/install' && method === 'GET') return handleInstall(request, env);
+    if (path === '/api/report' && method === 'POST') return handleReport(request, env);
+    if (path === '/admin/reports' && method === 'POST') return handleAdminReports(request, env);
+    if (path === '/admin/report/read' && method === 'POST') return handleAdminMarkReportRead(request, env);
 
     return new Response('Not found', { status: 404 });
   }
