@@ -16,8 +16,12 @@ if %errorLevel% NEQ 0 (
     exit /b
 )
 
-:: Bring Python into PATH (handles both installed and local)
-set "PATH=%LOCALAPPDATA%\Programs\Python\Python312;%LOCALAPPDATA%\Programs\Python\Python312\Scripts;%PATH%"
+:: Bring Python into PATH (checks all common install locations)
+for %%V in (312 311 310 39) do (
+    if exist "%LOCALAPPDATA%\Programs\Python\Python%%V\python.exe" (
+        set "PATH=%LOCALAPPDATA%\Programs\Python\Python%%V;%LOCALAPPDATA%\Programs\Python\Python%%V\Scripts;%PATH%"
+    )
+)
 
 :: Verify Python
 python --version >nul 2>&1

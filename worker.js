@@ -646,101 +646,195 @@ async function handleStatus(request, env) {
 async function handleInstall(request, env) {
   const script = `
 # GamezNET Installer
-# Run this in PowerShell as Administrator:
+# Run this in PowerShell:
 #   irm https://gamenet.natelook.workers.dev/install | iex
 
 $ErrorActionPreference = 'Continue'
 $repo = "https://raw.githubusercontent.com/natelook1/gamenet-client/main"
 $installDir = "$env:LOCALAPPDATA\\GamezNET"
 
+function Write-Step {
+    param($num, $total, $text)
+    Write-Host ""
+    Write-Host "  " -NoNewline
+    Write-Host " STEP $num/$total " -BackgroundColor DarkCyan -ForegroundColor Black -NoNewline
+    Write-Host " $text" -ForegroundColor Cyan
+}
+
+function Write-OK   { param($t) Write-Host "          [" -NoNewline -ForegroundColor DarkGray; Write-Host " OK " -NoNewline -ForegroundColor Green;  Write-Host "] $t" -ForegroundColor Gray }
+function Write-WARN { param($t) Write-Host "          [" -NoNewline -ForegroundColor DarkGray; Write-Host " !! " -NoNewline -ForegroundColor Yellow; Write-Host "] $t" -ForegroundColor Gray }
+function Write-ERR  { param($t) Write-Host "          [" -NoNewline -ForegroundColor DarkGray; Write-Host "FAIL" -NoNewline -ForegroundColor Red;    Write-Host "] $t" -ForegroundColor Gray }
+function Write-INFO { param($t) Write-Host "               $t" -ForegroundColor DarkGray }
+
+Clear-Host
 Write-Host ""
-Write-Host "  +==========================================+" -ForegroundColor Cyan
-Write-Host "  |           GAMEZNET INSTALLER              |" -ForegroundColor Cyan
-Write-Host "  |     Private Game Server Network          |" -ForegroundColor Cyan
-Write-Host "  +==========================================+" -ForegroundColor Cyan
+Write-Host "  =====================================================" -ForegroundColor Cyan
+Write-Host "   ___  _   _  __  __  _____  ___   _  _  ___ _____ " -ForegroundColor Cyan
+Write-Host "  / __|| | | ||  \/  ||  ___|/   \ | \| || __|_   _|" -ForegroundColor Cyan
+Write-Host " | (_ || |_| || |\/| || |_  | o o ||    || _|   | |  " -ForegroundColor Cyan
+Write-Host "  \___| \___/ |_|  |_||___|  \___/ |_|\_||___|  |_|  " -ForegroundColor Cyan
+Write-Host "                     N E T                            " -ForegroundColor DarkCyan
+Write-Host "  =====================================================" -ForegroundColor Cyan
+Write-Host "         Private Game Server Network Installer" -ForegroundColor DarkGray
+Write-Host "  =====================================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Check for admin
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Write-Host "  [!] Relaunching as Administrator..." -ForegroundColor Yellow
+    Write-WARN "Relaunching as Administrator..."
     Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command "irm https://gamenet.natelook.workers.dev/install | iex"' -Verb RunAs
     exit
 }
 
-# Create install directory
-Write-Host "  [1/5] Creating install directory..." -ForegroundColor Yellow
+# Step 1 - Directories
+Write-Step 1 5 "Preparing install directory"
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 New-Item -ItemType Directory -Force -Path "$installDir\\templates" | Out-Null
 New-Item -ItemType Directory -Force -Path "$installDir\\static" | Out-Null
+Write-OK "Install directory: $installDir"
 
-# Download files
-Write-Host "  [2/5] Downloading GamezNET files..." -ForegroundColor Yellow
+# Step 2 - Download files
+Write-Step 2 5 "Downloading GamezNET"
 $files = @(
-    @{ url = "$repo/app.py";                  dest = "$installDir\\app.py" },
-    @{ url = "$repo/setup.bat";               dest = "$installDir\\setup.bat" },
-    @{ url = "$repo/GamezNET.bat";             dest = "$installDir\\GamezNET.bat" },
-    @{ url = "$repo/templates/index.html";    dest = "$installDir\\templates\\index.html" },
-    @{ url = "$repo/static/favicon.svg";      dest = "$installDir\\static\\favicon.svg" }
+    @{ url = "$repo/app.py";               dest = "$installDir\\app.py" },
+    @{ url = "$repo/setup.bat";            dest = "$installDir\\setup.bat" },
+    @{ url = "$repo/GamezNET.bat";         dest = "$installDir\\GamezNET.bat" },
+    @{ url = "$repo/templates/index.html"; dest = "$installDir\\templates\\index.html" },
+    @{ url = "$repo/static/favicon.svg";   dest = "$installDir\\static\\favicon.svg" }
 )
 foreach ($file in $files) {
+    $name = Split-Path $file.url -Leaf
+    Write-INFO "Downloading $name..."
     Invoke-WebRequest -Uri $file.url -OutFile $file.dest -UseBasicParsing
 }
-Write-Host "         Files downloaded." -ForegroundColor Green
+Write-OK "All files downloaded"
 
-# Check/install Python
-Write-Host "  [3/5] Checking Python..." -ForegroundColor Yellow
-$pythonOk = $false
-try { $v = & python --version 2>&1; $pythonOk = $true; Write-Host "         Found $v" -ForegroundColor Green } catch {}
+# Step 3 - Python
+Write-Step 3 5 "Checking Python"
+
+# Refresh PATH to catch newly installed Python
+$machinePath = [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
+$userPath    = [System.Environment]::GetEnvironmentVariable("PATH", "User")
+$env:PATH    = "$userPath;$machinePath"
+
+# Also explicitly add common Python install locations
+$pythonPaths = @(
+    "$env:LOCALAPPDATA\\Programs\\Python\\Python312",
+    "$env:LOCALAPPDATA\\Programs\\Python\\Python311",
+    "$env:LOCALAPPDATA\\Programs\\Python\\Python310",
+    "$env:LOCALAPPDATA\\Programs\\Python\\Python39",
+    "C:\\Python312",
+    "C:\\Python311",
+    "C:\\Python310"
+)
+foreach ($p in $pythonPaths) {
+    if (Test-Path $p) {
+        $env:PATH = "$p;$p\\Scripts;$env:PATH"
+    }
+}
+
+$pythonOk  = $false
+$pythonCmd = $null
+foreach ($cmd in @("python", "python3", "py")) {
+    try {
+        $v = & $cmd --version 2>&1
+        if ($v -match "Python") {
+            $pythonOk  = $true
+            $pythonCmd = $cmd
+            Write-OK "Found $v"
+            break
+        }
+    } catch {}
+}
 
 if (-not $pythonOk) {
-    Write-Host "         Python not found. Downloading Python 3.12..." -ForegroundColor Yellow
-    $pyInstaller = "$env:TEMP\\python-installer.exe"
+    Write-WARN "Python not found — downloading Python 3.12..."
+    $pyInstaller = Join-Path $env:TEMP "python-installer.exe"
     Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe" -OutFile $pyInstaller -UseBasicParsing
+    Write-INFO "Installing Python (this may take a minute)..."
     Start-Process $pyInstaller -ArgumentList "/quiet InstallAllUsers=0 PrependPath=1 Include_pip=1" -Wait
-    $env:PATH = "$env:LOCALAPPDATA\\Programs\\Python\\Python312;$env:LOCALAPPDATA\\Programs\\Python\\Python312\\Scripts;$env:PATH"
-    Write-Host "         Python installed." -ForegroundColor Green
+    Start-Sleep -Seconds 3
+    $newPyPath = "$env:LOCALAPPDATA\\Programs\\Python\\Python312"
+    $env:PATH  = "$newPyPath;$newPyPath\\Scripts;$env:PATH"
+    $pythonCmd = "python"
+    Write-OK "Python 3.12 installed"
 }
 
-# Install Python dependencies
-Write-Host "  [4/5] Installing dependencies..." -ForegroundColor Yellow
-& python -m pip install flask requests --quiet --no-warn-script-location
-Write-Host "         Dependencies installed." -ForegroundColor Green
+Write-INFO "Installing Python packages..."
+& $pythonCmd -m pip install flask requests --quiet --no-warn-script-location
+Write-OK "Packages installed"
 
-# Create desktop shortcut
-Write-Host "  [5/5] Creating desktop shortcut..." -ForegroundColor Yellow
+# Step 4 - WireGuard
+Write-Step 4 5 "Checking WireGuard VPN"
+$wgExe  = "C:\\Program Files\\WireGuard\\wireguard.exe"
+$wgDest = Join-Path $installDir "wireguard.exe"
+
+if (Test-Path $wgDest) {
+    Write-OK "WireGuard already present"
+} elseif (Test-Path $wgExe) {
+    Copy-Item $wgExe $wgDest -Force
+    Write-OK "WireGuard copied from Program Files"
+} else {
+    Write-WARN "WireGuard not found — downloading..."
+    $wgInstaller = Join-Path $env:TEMP "wireguard-installer.exe"
+    try {
+        Invoke-WebRequest -Uri "https://download.wireguard.com/windows-client/wireguard-installer.exe" -OutFile $wgInstaller -UseBasicParsing
+        Write-INFO "Installing WireGuard..."
+        Start-Process $wgInstaller -ArgumentList "/quiet" -Wait
+        Start-Sleep -Seconds 5
+        if (Test-Path $wgExe) {
+            Copy-Item $wgExe $wgDest -Force
+            Write-OK "WireGuard installed successfully"
+        } else {
+            Write-ERR "WireGuard install may have failed"
+            Write-INFO "Install manually: https://www.wireguard.com/install/"
+        }
+    } catch {
+        Write-ERR "Could not download WireGuard: $_"
+    }
+}
+
+# Step 5 - Shortcut
+Write-Step 5 5 "Creating desktop shortcut"
 try {
-  $batPath = $installDir + "\GamezNET.bat"
-  $lnkPath = $env:USERPROFILE + "\Desktop\GamezNET.lnk"
-  $ws = New-Object -ComObject WScript.Shell
-  $shortcut = $ws.CreateShortcut($lnkPath)
-  $shortcut.TargetPath = $batPath
-  $shortcut.WorkingDirectory = $installDir
-  $shortcut.Description = "GamezNET - Private Game Server Network"
-  $shortcut.WindowStyle = 1
-  $shortcut.Save()
-  Write-Host "         Desktop shortcut created." -ForegroundColor Green
+    $batPath    = Join-Path $installDir "GamezNET.bat"
+    $desktopPath = [System.Environment]::GetFolderPath("Desktop")
+    $lnkPath    = Join-Path $desktopPath "GamezNET.lnk"
+    $ws         = New-Object -ComObject WScript.Shell
+    $shortcut   = $ws.CreateShortcut($lnkPath)
+    $shortcut.TargetPath     = $batPath
+    $shortcut.WorkingDirectory = $installDir
+    $shortcut.Description    = "GamezNET - Private Game Server Network"
+    $shortcut.WindowStyle    = 1
+    $shortcut.Save()
+    Write-OK "Shortcut created on desktop"
 } catch {
-  Write-Host "  [!] Shortcut error: $_" -ForegroundColor Yellow
+    Write-ERR "Shortcut error: $_"
 }
 
 Write-Host ""
-Write-Host "  +==========================================+" -ForegroundColor Cyan
-Write-Host "  |          Setup Complete!                 |" -ForegroundColor Cyan
-Write-Host "  |                                          |" -ForegroundColor Cyan
-Write-Host "  |  GamezNET icon is on your desktop.       |" -ForegroundColor Cyan
-Write-Host "  |  Double-click it and enter your token.   |" -ForegroundColor Cyan
-Write-Host "  +==========================================+" -ForegroundColor Cyan
+Write-Host "  ------------------------------------------------" -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "  " -NoNewline
+Write-Host " INSTALLATION COMPLETE " -BackgroundColor DarkGreen -ForegroundColor White
+Write-Host ""
+Write-Host "  Next steps:" -ForegroundColor White
+Write-Host "   1. Double-click " -NoNewline -ForegroundColor Gray
+Write-Host "GamezNET" -NoNewline -ForegroundColor Cyan
+Write-Host " on your desktop" -ForegroundColor Gray
+Write-Host "   2. Enter the invite token sent to you" -ForegroundColor Gray
+Write-Host "   3. Click Connect — you're in!" -ForegroundColor Gray
 Write-Host ""
 
-# Open install folder as visual confirmation it worked
+# Open install folder and launch app
 Start-Process "explorer.exe" -ArgumentList $installDir
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 1
+Start-Process "cmd.exe" -ArgumentList ('/c "' + $batPath + '"')
 
-# Launch the app - bat self-elevates so no RunAs needed here
-Start-Process $batPath
-
-Write-Host "  Press any key to close this window..." -ForegroundColor Gray
+Write-Host "  Launching GamezNET..." -ForegroundColor DarkCyan
+Write-Host ""
+Write-Host "  Press any key to close this window." -ForegroundColor DarkGray
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 `;
 
