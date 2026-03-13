@@ -598,6 +598,47 @@
     header { animation-delay: 0s; }
     .content { animation-delay: 0.05s; }
     footer { animation-delay: 0.1s; }
+
+    /* ── Appear Offline button ── */
+    .invisible-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      background: transparent;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Alert Banner ── */
+    #alert-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 3px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      border-left: 3px solid;
+      animation: fade-in 0.3s ease both;
+    }
+    #alert-banner.type-info { background: rgba(0,200,255,0.07); border-color: var(--accent); color: var(--text); }
+    #alert-banner.type-warning { background: rgba(255,170,0,0.07); border-color: var(--warn); color: var(--text); }
+    #alert-banner.type-critical { background: rgba(255,51,85,0.1); border-color: var(--danger); color: #ff8899; animation: pulse-alert 1.5s ease-in-out infinite; }
+    @keyframes pulse-alert {
+      0%, 100% { box-shadow: 0 0 0 0 transparent; }
+      50% { box-shadow: 0 0 12px rgba(255,51,85,0.3); }
+    }
+    #alert-banner #alert-icon { font-size: 14px; flex-shrink: 0; }
+    #alert-banner #alert-text { flex: 1; }
+    #alert-dismiss {
+      background: transparent; border: none; color: inherit; cursor: pointer;
+      font-size: 14px; padding: 0 4px; opacity: 0.6; flex-shrink: 0;
+    }
+    #alert-dismiss:hover { opacity: 1; }
   </style>
 </head>
 <body>
@@ -616,6 +657,13 @@
 
   <!-- Main content -->
   <div class="content">
+
+    <!-- Alert Banner -->
+    <div id="alert-banner" style="display:none;">
+      <span id="alert-icon">⚠</span>
+      <span id="alert-text"></span>
+      <button id="alert-dismiss" onclick="dismissAlert()">✕</button>
+    </div>
 
     <!-- MOTD Banner (Always present, fetched live) -->
     <div id="motd-banner" class="motd-banner" style="display:none;">
@@ -728,6 +776,7 @@
   <!-- Footer -->
   <footer>
     <span class="footer-status" id="footer-status">INITIALIZING...</span>
+    <button id="invisible-btn" class="invisible-btn" onclick="toggleInvisible()" style="display:none;">👁 VISIBLE</button>
     <div style="display: flex; gap: 16px; align-items: center;">
       <span class="reset-link" id="change-token-link" onclick="showRetokenPanel()" style="display:none;">Change Token</span>
       <span class="reset-link" onclick="resetConfig()">Reset</span>
@@ -790,7 +839,7 @@
   // ── UI updaters ───────────────────────────────────────────────────────────
   function updateTelemetryUI(t) {
     if (!t) return;
-    
+
     const banner = document.getElementById('motd-banner');
     if (t.motd && t.motd.trim() !== "") {
       banner.style.display = 'flex';
@@ -803,6 +852,8 @@
     document.getElementById('tel-handshake').textContent = t.handshake || 'Never';
     document.getElementById('tel-rx').textContent = t.received || '0 B';
     document.getElementById('tel-tx').textContent = t.sent || '0 B';
+
+    if (t.alert !== undefined) showAlert(t.alert);
   }
 
   function setStatus(statusKey) {
@@ -925,8 +976,13 @@
         setStatus(s.connected ? 'connected' : 'disconnected');
 
         if (s.telemetry) updateTelemetryUI(s.telemetry);
+        if (s.telemetry && s.telemetry.alert) showAlert(s.telemetry.alert);
 
         refreshOnline();
+        initInvisible();
+
+        // Show invisible button
+        document.getElementById('invisible-btn').style.display = 'inline-block';
 
       } else {
         showUnprovisioned();
@@ -1079,6 +1135,65 @@
   }
 
   setInterval(refreshOnline, 30000);
+
+  // ── Appear Offline ────────────────────────────────────────────────────────
+  let invisible = false;
+
+  async function initInvisible() {
+    const res = await fetch('/api/invisible');
+    const d = await res.json();
+    invisible = d.invisible;
+    updateInvisibleBtn();
+  }
+
+  function updateInvisibleBtn() {
+    const btn = document.getElementById('invisible-btn');
+    if (!btn) return;
+    if (invisible) {
+      btn.textContent = '👁 HIDDEN';
+      btn.style.color = 'var(--text-dim)';
+      btn.style.borderColor = 'var(--border2)';
+    } else {
+      btn.textContent = '👁 VISIBLE';
+      btn.style.color = 'var(--accent)';
+      btn.style.borderColor = 'var(--accent)';
+    }
+  }
+
+  async function toggleInvisible() {
+    invisible = !invisible;
+    updateInvisibleBtn();
+    await fetch('/api/invisible', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({invisible})
+    });
+    toast(invisible ? 'You are now invisible to others' : 'You are now visible', invisible ? 'info' : 'success');
+  }
+
+  // ── Alert Banner ──────────────────────────────────────────────────────────
+  let dismissedAlerts = new Set(JSON.parse(localStorage.getItem('dismissedAlerts') || '[]'));
+
+  function dismissAlert() {
+    const banner = document.getElementById('alert-banner');
+    const alertId = banner.dataset.alertId;
+    if (alertId) {
+      dismissedAlerts.add(alertId);
+      localStorage.setItem('dismissedAlerts', JSON.stringify([...dismissedAlerts]));
+    }
+    banner.style.display = 'none';
+  }
+
+  function showAlert(alert) {
+    if (!alert || dismissedAlerts.has(alert.id)) return;
+    const banner = document.getElementById('alert-banner');
+    const icons = {info: '⚡', warning: '⚠', critical: '🔴'};
+    banner.className = `type-${alert.type}`;
+    banner.dataset.alertId = alert.id;
+    document.getElementById('alert-icon').textContent = icons[alert.type] || '⚡';
+    document.getElementById('alert-text').textContent = alert.message;
+    banner.style.display = 'flex';
+  }
 
   // ── Boot ──────────────────────────────────────────────────────────────────
   init();

@@ -76,6 +76,7 @@ function adminHTML() {
       --accent2: #ff6b35;
       --success: #00ff88;
       --danger: #ff3366;
+      --warn: #ffaa00;
       --text: #c8d8e8;
       --muted: #4a6080;
     }
@@ -579,6 +580,45 @@ function adminHTML() {
     .settings-field-row {
       margin-bottom: 16px;
     }
+
+    /* Alert pill buttons */
+    .pill-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .pill-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1px;
+      padding: 4px 12px;
+      background: transparent;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .pill-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .alert-type-btn.selected[data-type="info"] { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.1); }
+    .alert-type-btn.selected[data-type="warning"] { border-color: var(--warn); color: var(--warn); background: rgba(255,170,0,0.1); }
+    .alert-type-btn.selected[data-type="critical"] { border-color: var(--danger); color: var(--danger); background: rgba(255,51,85,0.1); }
+    .alert-dur-btn.selected { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.1); }
+
+    /* Hidden toggle button in token table */
+    .btn-hidden-toggle {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      background: transparent;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-left: 6px;
+    }
+    .btn-hidden-toggle.is-hidden { border-color: var(--danger); color: var(--danger); }
+    .btn-hidden-toggle:hover { border-color: var(--accent); color: var(--accent); }
   </style>
 </head>
 <body>
@@ -669,6 +709,38 @@ function adminHTML() {
       </div>
     </div>
 
+    <!-- Push Alert -->
+    <div class="card">
+      <div class="card-title">Push Alert</div>
+      <div style="margin-bottom: 12px;">
+        <div style="font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px;">Current Alert</div>
+        <div id="current-alert-status" style="font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--muted);">No active alert</div>
+      </div>
+      <div class="settings-field-row">
+        <label>Message</label>
+        <input type="text" id="alert-message" placeholder="e.g. Server restarting in 10 minutes" />
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label>Type</label>
+        <div class="pill-group">
+          <button class="pill-btn alert-type-btn selected" data-type="info" onclick="selectAlertType('info')">Info</button>
+          <button class="pill-btn alert-type-btn" data-type="warning" onclick="selectAlertType('warning')">Warning</button>
+          <button class="pill-btn alert-type-btn" data-type="critical" onclick="selectAlertType('critical')">Critical</button>
+        </div>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <label>Duration</label>
+        <div class="pill-group">
+          <button class="pill-btn alert-dur-btn" data-mins="5" onclick="selectAlertDuration(5)">5m</button>
+          <button class="pill-btn alert-dur-btn selected" data-mins="15" onclick="selectAlertDuration(15)">15m</button>
+          <button class="pill-btn alert-dur-btn" data-mins="30" onclick="selectAlertDuration(30)">30m</button>
+          <button class="pill-btn alert-dur-btn" data-mins="60" onclick="selectAlertDuration(60)">1h</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="pushAlert()">Send Alert</button>
+      <button class="btn-danger" style="margin-left: 8px; vertical-align: middle;" onclick="clearAlert()">Clear Alert</button>
+    </div>
+
     <!-- MOTD -->
     <div class="card">
       <div class="card-title">Message of the Day</div>
@@ -756,6 +828,7 @@ function adminHTML() {
       renderTokenList(tokens, new Set(online.map(p => p.name)));
       loadMotd();
       loadServerConfig();
+      loadAlertStatus();
 
       // Auto-refresh every 15 seconds
       _refreshTimer = setInterval(() => refreshAll(), 15000);
@@ -845,7 +918,10 @@ function adminHTML() {
               <td style="color: #4a6080; font-size: 12px; font-family: 'Share Tech Mono', monospace;">
                 \${t.redeemed && t.redeemed_at ? new Date(t.redeemed_at).toLocaleDateString() : new Date(t.created_at).toLocaleDateString()}
               </td>
-              <td><button class="btn-danger" onclick="revokeToken('\${t.token}')">Revoke</button></td>
+              <td style="white-space: nowrap;">
+                <button class="btn-danger" onclick="revokeToken('\${t.token}')">Revoke</button>
+                <button class="btn-hidden-toggle\${t.hidden ? ' is-hidden' : ''}" onclick="toggleHidden('\${t.token}', '\${t.name}')">\${t.hidden ? 'HIDDEN' : 'VISIBLE'}</button>
+              </td>
             </tr>
           \`).join('')}
         </tbody>
@@ -972,6 +1048,73 @@ function adminHTML() {
     const data = await res.json();
     if (res.ok) { toast('Settings saved!', 'success'); loadServerConfig(); }
     else toast(data.error || 'Failed to save settings', 'error');
+  }
+
+  // ── Hidden toggle ────────────────────────────────────────────────────────
+  async function toggleHidden(token, name) {
+    const res = await fetch('/admin/token/toggle-hidden', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPassword, token })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      toast(\`\${name} is now \${data.hidden ? 'hidden' : 'visible'}\`);
+      refreshAll();
+    } else toast(data.error || 'Failed', true);
+  }
+
+  // ── Push Alert ───────────────────────────────────────────────────────────
+  let alertType = 'info';
+  let alertDuration = 15;
+
+  function selectAlertType(type) {
+    alertType = type;
+    document.querySelectorAll('.alert-type-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector(\`.alert-type-btn[data-type="\${type}"]\`).classList.add('selected');
+  }
+
+  function selectAlertDuration(mins) {
+    alertDuration = mins;
+    document.querySelectorAll('.alert-dur-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector(\`.alert-dur-btn[data-mins="\${mins}"]\`).classList.add('selected');
+  }
+
+  async function pushAlert() {
+    const message = document.getElementById('alert-message').value.trim();
+    if (!message) { toast('Enter a message', true); return; }
+    const res = await fetch('/admin/alert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPassword, message, type: alertType, duration_minutes: alertDuration })
+    });
+    const data = await res.json();
+    if (res.ok) { toast('Alert pushed!'); document.getElementById('alert-message').value = ''; loadAlertStatus(); }
+    else toast(data.error || 'Failed', true);
+  }
+
+  async function clearAlert() {
+    await fetch('/admin/alert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPassword, message: '', duration_minutes: 0 })
+    });
+    toast('Alert cleared');
+    loadAlertStatus();
+  }
+
+  async function loadAlertStatus() {
+    const res = await fetch('/api/alert');
+    const data = await res.json();
+    const el = document.getElementById('current-alert-status');
+    if (data.alert) {
+      const exp = new Date(data.alert.expires_at);
+      el.innerHTML = \`<span style="color:var(--warn)">[[\${data.alert.type.toUpperCase()}]]</span> \${data.alert.message} <span style="color:var(--muted)">· expires \${exp.toLocaleTimeString()}</span>\`;
+      el.style.color = '';
+    } else {
+      el.textContent = 'No active alert';
+      el.style.color = 'var(--muted)';
+    }
   }
 </script>
 </body>
@@ -1133,13 +1276,79 @@ async function handleOnline(request, env) {
   const raw = await env.GAMENET_KV.get('ONLINE_PLAYERS');
   const players = raw ? JSON.parse(raw) : {};
 
+  const hiddenRaw = await env.GAMENET_KV.get('HIDDEN_PLAYERS');
+  const hidden = new Set(hiddenRaw ? JSON.parse(hiddenRaw) : []);
+
   const cutoff = Date.now() - 90 * 1000;
   const online = Object.values(players)
     .filter(p => new Date(p.last_seen).getTime() > cutoff)
+    .filter(p => !hidden.has(p.name))
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(p => ({ name: p.name, vpn_ip: p.vpn_ip, last_seen: p.last_seen }));
 
   return jsonResponse(online);
+}
+
+async function handleAdminTokenToggleHidden(request, env) {
+  const { authed, body } = await requireAdmin(request, env);
+  if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
+
+  const { token } = body;
+  if (!token) return jsonResponse({ error: 'Token required' }, 400);
+
+  const raw = await env.GAMENET_KV.get(`token:${token}`);
+  if (!raw) return jsonResponse({ error: 'Token not found' }, 404);
+
+  const record = JSON.parse(raw);
+  record.hidden = !record.hidden;
+  await env.GAMENET_KV.put(`token:${token}`, JSON.stringify(record));
+
+  // Update HIDDEN_PLAYERS array
+  const hiddenRaw = await env.GAMENET_KV.get('HIDDEN_PLAYERS');
+  let hiddenList = hiddenRaw ? JSON.parse(hiddenRaw) : [];
+  if (record.hidden) {
+    if (!hiddenList.includes(record.name)) hiddenList.push(record.name);
+  } else {
+    hiddenList = hiddenList.filter(n => n !== record.name);
+  }
+  await env.GAMENET_KV.put('HIDDEN_PLAYERS', JSON.stringify(hiddenList));
+
+  return jsonResponse({ success: true, hidden: record.hidden, name: record.name });
+}
+
+async function handleAlert(request, env) {
+  const raw = await env.GAMENET_KV.get('ACTIVE_ALERT');
+  if (!raw) return jsonResponse({ alert: null });
+
+  const alert = JSON.parse(raw);
+  if (new Date(alert.expires_at).getTime() < Date.now()) {
+    await env.GAMENET_KV.delete('ACTIVE_ALERT');
+    return jsonResponse({ alert: null });
+  }
+
+  return jsonResponse({ alert });
+}
+
+async function handleAdminPushAlert(request, env) {
+  const { authed, body } = await requireAdmin(request, env);
+  if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
+
+  const { message, type, duration_minutes } = body;
+
+  if (!duration_minutes || duration_minutes === 0) {
+    await env.GAMENET_KV.delete('ACTIVE_ALERT');
+    return jsonResponse({ success: true, cleared: true });
+  }
+
+  const alert = {
+    id: 'alert_' + Date.now(),
+    message: message || '',
+    type: type || 'info',
+    expires_at: new Date(Date.now() + duration_minutes * 60000).toISOString()
+  };
+
+  await env.GAMENET_KV.put('ACTIVE_ALERT', JSON.stringify(alert));
+  return jsonResponse({ success: true, alert });
 }
 
 // ─── Admin Settings Save ─────────────────────────────────────────────────────
@@ -1376,6 +1585,7 @@ export default {
     if (path === '/api/server-config') return handleServerConfig(request, env);
     if (path === '/admin/token/create' && method === 'POST') return handleAdminTokenCreate(request, env);
     if (path === '/admin/token/revoke' && method === 'POST') return handleAdminTokenRevoke(request, env);
+    if (path === '/admin/token/toggle-hidden' && method === 'POST') return handleAdminTokenToggleHidden(request, env);
     if (path === '/admin/tokens' && method === 'POST') return handleAdminTokenList(request, env);
     if (path === '/api/redeem' && method === 'POST') return handleRedeem(request, env);
     if (path === '/api/version' && method === 'GET') return handleVersion(request, env);
@@ -1384,6 +1594,8 @@ export default {
     if (path === '/admin/motd' && method === 'POST') return handleAdminSetMotd(request, env);
     if (path === '/api/heartbeat' && method === 'POST') return handleHeartbeat(request, env);
     if (path === '/api/online' && method === 'GET') return handleOnline(request, env);
+    if (path === '/api/alert' && method === 'GET') return handleAlert(request, env);
+    if (path === '/admin/alert' && method === 'POST') return handleAdminPushAlert(request, env);
     if (path === '/admin/settings/save' && method === 'POST') return handleAdminSettingsSave(request, env);
     if (path === '/install' && method === 'GET') return handleInstall(request, env);
 
