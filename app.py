@@ -13,6 +13,7 @@ import threading
 import webbrowser
 import time
 import atexit
+import re
 from io import BytesIO
 from flask import Flask, request, jsonify, render_template, send_from_directory
 
@@ -93,6 +94,88 @@ def cleanup_tunnel():
 # Register the cleanup function to run when the script terminates
 atexit.register(cleanup_tunnel)
 
+# ─── Telemetry Engine ─────────────────────────────────────────────────────────
+
+_telemetry = {
+    "ping": "---",
+    "received": "0 B",
+    "sent": "0 B",
+    "handshake": "Never",
+    "motd": "Fetching server status..."
+}
+
+def update_telemetry():
+    """Background thread to poll ping and wg stats silently."""
+    global _telemetry, _connected
+    import urllib.request
+    
+    motd_timer = 0
+    
+    while True:
+        # 1. Update MOTD every ~5 minutes
+        if motd_timer <= 0:
+            try:
+                req = urllib.request.Request(f"{WORKER_URL}/api/motd", headers={'User-Agent': 'GamezNET'})
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode())
+                    _telemetry["motd"] = data.get("message", "Connected to GamezNET")
+            except Exception:
+                pass
+            motd_timer = 150
+        motd_timer -= 1
+
+        if _connected:
+            # 2. Ping Latency (Targeting internal VPN Gateway to prove tunnel works)
+            try:
+                target = "1.1.1.1" # Fallback
+                match = re.search(r"(\d+\.\d+\.\d+)\.", ALLOWED_IPS)
+                if match:
+                    target = f"{match.group(1)}.1"
+
+                CREATE_NO_WINDOW = 0x08000000
+                output = subprocess.check_output(
+                    f"ping -n 1 -w 1000 {target}",
+                    shell=True,
+                    creationflags=CREATE_NO_WINDOW
+                ).decode()
+                
+                match_ping = re.search(r"time[=<](\d+)ms", output)
+                _telemetry["ping"] = f"{match_ping.group(1)}ms" if match_ping else "Timed Out"
+            except subprocess.CalledProcessError:
+                _telemetry["ping"] = "Timed Out"
+            except Exception:
+                _telemetry["ping"] = "Error"
+
+            # 3. WireGuard Stats (wg show)
+            try:
+                wg = wg_exe()
+                if wg:
+                    CREATE_NO_WINDOW = 0x08000000
+                    output = subprocess.check_output(
+                        [wg, "/show", TUNNEL_NAME],
+                        text=True,
+                        creationflags=CREATE_NO_WINDOW
+                    )
+                    
+                    # Parse Handshake
+                    h_match = re.search(r"latest handshake: (.*)", output)
+                    if h_match: _telemetry["handshake"] = h_match.group(1).strip()
+                    
+                    # Parse Transfer
+                    t_match = re.search(r"transfer: ([\d\.]+ \w+) received, ([\d\.]+ \w+) sent", output)
+                    if t_match:
+                        _telemetry["received"] = t_match.group(1)
+                        _telemetry["sent"] = t_match.group(2)
+            except Exception:
+                pass
+        else:
+            _telemetry["ping"] = "---"
+            _telemetry["handshake"] = "Never"
+            _telemetry["received"] = "0 B"
+            _telemetry["sent"] = "0 B"
+
+        time.sleep(2)
+
 # ─── Flask App ────────────────────────────────────────────────────────────────
 
 app = Flask(__name__)
@@ -105,7 +188,10 @@ def index():
 
 @app.route("/api/status", methods=["GET"])
 def api_status():
-    return jsonify({"connected": _connected})
+    return jsonify({
+        "connected": _connected,
+        "telemetry": _telemetry
+    })
 
 @app.route("/api/connect", methods=["POST"])
 def api_connect():
@@ -392,6 +478,9 @@ def run_tray(flask_thread):
 if __name__ == "__main__":
     ensure_admin()
     hide_console()
+
+    # Start Telemetry Thread
+    threading.Thread(target=update_telemetry, daemon=True).start()
 
     # Start Flask in background thread
     flask_thread = threading.Thread(
