@@ -13,6 +13,7 @@ import threading
 import webbrowser
 import time
 import atexit
+from io import BytesIO
 from flask import Flask, request, jsonify, render_template, send_from_directory
 
 # ─── Configuration ────────────────────────────────────────────────────────────
@@ -269,18 +270,138 @@ def ensure_admin():
         )
         sys.exit()
 
+def hide_console():
+    """Hide the console window completely."""
+    try:
+        import win32console, win32gui
+        win32gui.ShowWindow(win32console.GetConsoleWindow(), 0)
+    except Exception:
+        # Fallback using ctypes if pywin32 not available
+        try:
+            hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+            if hwnd:
+                ctypes.windll.user32.ShowWindow(hwnd, 0)
+        except Exception:
+            pass
+
+def make_tray_icon(connected=False):
+    """Draw a simple GZ icon — cyan when connected, dark when not."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        return None
+
+    size = 64
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    # Background circle
+    bg_color = (0, 180, 220, 255) if connected else (30, 48, 70, 255)
+    border_color = (0, 200, 255, 255) if connected else (80, 120, 160, 255)
+    draw.ellipse([2, 2, size-2, size-2], fill=bg_color, outline=border_color, width=3)
+
+    # "GZ" text
+    text_color = (255, 255, 255, 255) if connected else (120, 160, 200, 255)
+    try:
+        font = ImageFont.truetype("arialbd.ttf", 22)
+    except Exception:
+        font = ImageFont.load_default()
+    bbox = draw.textbbox((0, 0), "GZ", font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    draw.text(((size - tw) / 2, (size - th) / 2 - 2), "GZ", fill=text_color, font=font)
+
+    return img
+
+def run_tray(flask_thread):
+    """Run the system tray icon. Blocking — runs on main thread."""
+    try:
+        import pystray
+        from PIL import Image
+    except ImportError:
+        # pystray/Pillow not available — fall back to visible console
+        flask_thread.join()
+        return
+
+    icon_holder = {"icon": None}
+
+    def refresh_icon():
+        img = make_tray_icon(_connected)
+        if img and icon_holder["icon"]:
+            icon_holder["icon"].icon = img
+
+    def on_open(icon, item):
+        webbrowser.open(f"http://localhost:{PORT}")
+
+    def on_disconnect(icon, item):
+        if _connected:
+            try:
+                import urllib.request
+                urllib.request.urlopen(
+                    urllib.request.Request(
+                        f"http://localhost:{PORT}/api/disconnect",
+                        method="POST"
+                    ), timeout=5
+                )
+            except Exception:
+                pass
+            refresh_icon()
+
+    def on_exit(icon, item):
+        cleanup_tunnel()
+        icon.stop()
+        os._exit(0)
+
+    def build_menu():
+        status = "● Connected" if _connected else "○ Disconnected"
+        return pystray.Menu(
+            pystray.MenuItem(status, None, enabled=False),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Open GamezNET", on_open, default=True),
+            pystray.MenuItem("Disconnect", on_disconnect),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Exit", on_exit),
+        )
+
+    img = make_tray_icon(_connected)
+    if not img:
+        flask_thread.join()
+        return
+
+    tray = pystray.Icon(
+        "GamezNET",
+        img,
+        "GamezNET",
+        menu=build_menu()
+    )
+    icon_holder["icon"] = tray
+
+    # Poll connection state and update icon
+    def state_watcher():
+        last = None
+        while True:
+            time.sleep(2)
+            if _connected != last:
+                last = _connected
+                tray.icon = make_tray_icon(_connected)
+                tray.title = "GamezNET — Connected" if _connected else "GamezNET"
+                tray.menu = build_menu()
+    threading.Thread(target=state_watcher, daemon=True).start()
+
+    tray.run()
+
 if __name__ == "__main__":
     ensure_admin()
-    print(f"""
-+========================================+
-|         GamezNET Local Server          |
-|   Running on http://localhost:{PORT}     |
-|   Do not close this window while       |
-|   playing. Close to disconnect.        |
-+========================================+
-""")
-    # Open browser automatically when script starts
+    hide_console()
+
+    # Start Flask in background thread
+    flask_thread = threading.Thread(
+        target=lambda: app.run(host="127.0.0.1", port=PORT, debug=False, use_reloader=False),
+        daemon=True
+    )
+    flask_thread.start()
+
+    # Open browser after Flask is up
     threading.Thread(target=open_browser, daemon=True).start()
-    
-    # Run the server (Waitress is recommended for production, but Flask dev server is fine for local-only)
-    app.run(host="127.0.0.1", port=PORT, debug=False)
+
+    # Run tray icon on main thread (blocks until Exit clicked)
+    run_tray(flask_thread)
