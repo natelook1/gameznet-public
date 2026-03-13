@@ -100,7 +100,7 @@ _connected = False
 
 @app.route("/")
 def index():
-    return render_template("index.html", connected=_connected)
+    return render_template("index.html", connected=_connected, worker_url=WORKER_URL)
 
 @app.route("/api/status", methods=["GET"])
 def api_status():
