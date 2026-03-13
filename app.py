@@ -14,8 +14,20 @@ import webbrowser
 import time
 import atexit
 import re
+import logging
 from io import BytesIO
 from flask import Flask, request, jsonify, render_template, send_from_directory
+
+# ─── Logging ──────────────────────────────────────────────────────────────────
+
+LOG_FILE = os.path.join(os.path.expanduser("~"), "gameznet.log")
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+log = logging.getLogger("gameznet")
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
@@ -206,15 +218,20 @@ def api_status():
 @app.route("/api/connect", methods=["POST"])
 def api_connect():
     global _connected
+    log.info("Connect requested")
     if not os.path.exists(CONFIG_FILE):
+        log.error("No config file found at %s", CONFIG_FILE)
         return jsonify({"error": "No configuration found. Please redeem a token first."}), 400
-        
+
     try:
         with open(CONFIG_FILE, "r") as f:
             config_data = json.load(f)
-            
+        log.info("Config loaded — player=%s vpn_ip=%s", config_data.get("name"), config_data.get("vpn_ip"))
+
         # Fetch live server config (falls back to hardcoded if Worker unreachable)
         srv = fetch_server_config()
+        log.info("Server config — endpoint=%s public_key=%s allowed_ips=%s",
+                 srv["endpoint"], srv["public_key"], srv["allowed_ips"])
 
         # Build the WireGuard config file
         conf_content = f"""[Interface]
@@ -230,23 +247,29 @@ PersistentKeepalive = 25
         conf_path = os.path.join(os.path.expanduser("~"), f"{TUNNEL_NAME}.conf")
         with open(conf_path, "w") as f:
             f.write(conf_content)
-            
+        log.info("WireGuard config written to %s", conf_path)
+
         # Install and start tunnel service
         wg = wg_exe()
         if not wg:
+            log.error("wireguard.exe not found")
             return jsonify({"error": "WireGuard not found. Please run the installer again from https://gamenet.natelook.workers.dev/install"}), 500
+        log.info("Using wireguard.exe at %s", wg)
         CREATE_NO_WINDOW = 0x08000000
-        subprocess.run(
+        install_result = subprocess.run(
             [wg, "/installtunnelservice", conf_path],
             capture_output=True, text=True, timeout=10,
             creationflags=CREATE_NO_WINDOW
         )
+        log.info("installtunnelservice stdout=%r stderr=%r returncode=%s",
+                 install_result.stdout, install_result.stderr, install_result.returncode)
 
         # Verify the tunnel actually came up by checking for a handshake
         # wg.exe show is the correct binary — wireguard.exe does NOT support /show
         wg_show = wg_cli()
+        log.info("wg.exe path: %s", wg_show)
         handshake = False
-        for _ in range(10):
+        for i in range(10):
             time.sleep(1)
             if wg_show:
                 result = subprocess.run(
@@ -254,8 +277,10 @@ PersistentKeepalive = 25
                     capture_output=True, text=True,
                     creationflags=CREATE_NO_WINDOW
                 )
+                log.debug("wg show [%d] stdout=%r stderr=%r", i, result.stdout, result.stderr)
                 if "latest handshake" in result.stdout.lower():
                     handshake = True
+                    log.info("Handshake confirmed on attempt %d", i + 1)
                     break
             else:
                 # wg.exe not found — check service is running as a fallback
@@ -264,12 +289,14 @@ PersistentKeepalive = 25
                     capture_output=True, text=True,
                     creationflags=CREATE_NO_WINDOW
                 )
+                log.debug("sc query [%d]: %r", i, svc.stdout)
                 if "RUNNING" in svc.stdout:
                     handshake = True
+                    log.info("Service RUNNING confirmed on attempt %d (no wg.exe)", i + 1)
                     break
 
         if not handshake:
-            # Tunnel service installed but no handshake — clean up and report failure
+            log.warning("No handshake after 10s — tearing down tunnel")
             subprocess.run(
                 [wg, "/uninstalltunnelservice", TUNNEL_NAME],
                 capture_output=True, creationflags=CREATE_NO_WINDOW
@@ -278,8 +305,10 @@ PersistentKeepalive = 25
 
         with _lock:
             _connected = True
+        log.info("Connected successfully")
         return jsonify({"success": True, "connected": True})
     except Exception as e:
+        log.exception("Unhandled error in api_connect")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/disconnect", methods=["POST"])
@@ -360,6 +389,18 @@ def api_reset():
     if os.path.exists(CONFIG_FILE):
         os.remove(CONFIG_FILE)
     return jsonify({"success": True})
+
+@app.route("/api/logs", methods=["GET"])
+def api_logs():
+    """Return the last 100 lines of the log file for debugging."""
+    try:
+        if not os.path.exists(LOG_FILE):
+            return jsonify({"log": "No log file yet."})
+        with open(LOG_FILE, "r") as f:
+            lines = f.readlines()
+        return jsonify({"log": "".join(lines[-100:])})
+    except Exception as e:
+        return jsonify({"log": f"Error reading log: {e}"})
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 
