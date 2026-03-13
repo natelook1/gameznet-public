@@ -38,8 +38,8 @@ for /f "tokens=5" %%P in ('netstat -aon ^| findstr ":7734 " 2^>nul') do (
     taskkill /F /PID %%P >nul 2>&1
 )
 
-:: Start the Flask server (minimized console window)
+:: Start the app — Python will hide the console and show a tray icon
 cd /d "%INSTALL_DIR%"
-start "GamezNET Server" /min %PY_CMD% app.py
+start "GamezNET" /min %PY_CMD% app.py
 
 exit /b

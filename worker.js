@@ -791,7 +791,7 @@ if (-not $pythonOk) {
     Write-OK "Python 3.12 ready"
 }
 Write-INFO "Configuring local dependencies..."
-& $pythonCmd -m pip install flask requests --quiet
+& $pythonCmd -m pip install flask requests pystray pillow --quiet
 Write-OK "Environment configured"
 
 Write-Step 4 5 "Validating VPN Engine"
