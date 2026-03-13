@@ -12,9 +12,12 @@
  * POST /admin/token/revoke        - Revoke a token
  * POST /admin/tokens              - List all tokens (using POST for pwd auth)
  * GET  /admin/update-ip           - DDNS Endpoint (UDM Pro heartbeat)
+ * POST /admin/settings/save       - Save server settings
  * GET  /api/server-config         - Dynamic config for client apps
  * POST /api/redeem                - Redeem a token (client-facing)
  * GET  /api/status                - Server status check (client-facing)
+ * POST /api/heartbeat             - Player presence heartbeat
+ * GET  /api/online                - Who's online list
  * GET  /install                   - PowerShell one-liner install script
  */
 
@@ -132,7 +135,86 @@ function adminHTML() {
       letter-spacing: 1px;
     }
 
-    .container { max-width: 900px; margin: 0 auto; padding: 32px; }
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .server-ip-chip {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 1px;
+      background: rgba(0,212,255,0.06);
+      border: 1px solid rgba(0,212,255,0.2);
+      padding: 3px 10px;
+      border-radius: 2px;
+    }
+
+    .live-indicator {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--success);
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .live-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+      animation: blink-live 1.2s ease-in-out infinite;
+    }
+
+    @keyframes blink-live {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+
+    .container { max-width: 1000px; margin: 0 auto; padding: 32px; }
+
+    /* Stats row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 16px 20px;
+    }
+
+    .stat-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .stat-value.cyan { color: var(--accent); }
+    .stat-value.green { color: var(--success); font-size: 32px; }
+    .stat-value.muted { color: var(--muted); }
+    .stat-value.mono { color: var(--text); font-size: 14px; margin-top: 6px; }
 
     /* Auth Gate */
     #auth-gate {
@@ -195,7 +277,7 @@ function adminHTML() {
 
     .form-row.single { grid-template-columns: 1fr; }
 
-    input, select {
+    input, select, textarea {
       background: var(--bg);
       border: 1px solid var(--border);
       color: var(--text);
@@ -208,9 +290,19 @@ function adminHTML() {
       outline: none;
     }
 
-    input:focus, select:focus { border-color: var(--accent); }
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
 
-    input::placeholder { color: var(--muted); }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+    input::placeholder, textarea::placeholder { color: var(--muted); }
+
+    input[readonly], textarea[readonly] {
+      color: var(--muted);
+      cursor: not-allowed;
+    }
 
     label {
       display: block;
@@ -222,6 +314,16 @@ function adminHTML() {
     }
 
     .field { margin-bottom: 0; }
+
+    .char-counter {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    .char-counter.warn { color: var(--accent2); }
 
     /* Buttons */
     button {
@@ -244,6 +346,16 @@ function adminHTML() {
 
     .btn-primary:hover { background: #33ddff; transform: translateY(-1px); }
 
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 12px;
+      padding: 6px 12px;
+    }
+
+    .btn-secondary:hover { background: rgba(0,212,255,0.1); }
+
     .btn-danger {
       background: transparent;
       border: 1px solid var(--danger);
@@ -253,6 +365,17 @@ function adminHTML() {
     }
 
     .btn-danger:hover { background: var(--danger); color: white; }
+
+    .btn-icon {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      padding: 3px 8px;
+      letter-spacing: 0;
+    }
+
+    .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
 
     .btn-full { width: 100%; margin-top: 8px; }
 
@@ -270,7 +393,7 @@ function adminHTML() {
     }
 
     .token-table td {
-      padding: 12px;
+      padding: 10px 12px;
       border-bottom: 1px solid rgba(26,42,58,0.5);
       font-size: 14px;
       vertical-align: middle;
@@ -279,7 +402,7 @@ function adminHTML() {
     .token-code {
       font-family: 'Share Tech Mono', monospace;
       color: var(--accent);
-      font-size: 13px;
+      font-size: 12px;
       letter-spacing: 1px;
     }
 
@@ -304,6 +427,30 @@ function adminHTML() {
       color: var(--success);
     }
 
+    .online-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0,255,136,0.08);
+      border: 1px solid rgba(0,255,136,0.3);
+      color: var(--success);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 2px;
+      letter-spacing: 1px;
+      margin-left: 6px;
+    }
+
+    .online-pill-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 4px var(--success);
+      animation: blink-live 1.2s ease-in-out infinite;
+    }
+
     /* Toast */
     #toast {
       position: fixed;
@@ -325,6 +472,7 @@ function adminHTML() {
 
     #toast.show { opacity: 1; transform: translateY(0); }
     #toast.error { border-color: var(--danger); color: var(--danger); }
+    #toast.success { border-color: var(--success); color: var(--success); }
 
     .empty-state {
       text-align: center;
@@ -333,12 +481,13 @@ function adminHTML() {
       font-size: 14px;
     }
 
+    /* Token result */
     .token-result {
       background: rgba(0, 212, 255, 0.05);
       border: 1px solid var(--accent);
       border-radius: 3px;
       padding: 16px;
-      margin-top: 12px;
+      margin-top: 16px;
       display: none;
     }
 
@@ -347,20 +496,88 @@ function adminHTML() {
       color: var(--muted);
       letter-spacing: 1px;
       text-transform: uppercase;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .token-result-value {
       font-family: 'Share Tech Mono', monospace;
-      font-size: 20px;
+      font-size: 24px;
       color: var(--accent);
-      letter-spacing: 3px;
+      letter-spacing: 4px;
+      margin-bottom: 10px;
     }
 
     .token-result-meta {
-      margin-top: 8px;
+      margin-top: 4px;
       font-size: 13px;
       color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .token-result-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Online roster */
+    .online-roster {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .online-tile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(0,255,136,0.03);
+      border: 1px solid rgba(0,255,136,0.1);
+      border-radius: 3px;
+      padding: 10px 14px;
+    }
+
+    .online-tile-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px rgba(0,255,136,0.8);
+      flex-shrink: 0;
+      animation: blink-live 2s ease-in-out infinite;
+    }
+
+    .online-tile-name {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      flex: 1;
+      letter-spacing: 1px;
+    }
+
+    .online-tile-ip {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .online-tile-ago {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .online-empty {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      color: var(--muted);
+      padding: 12px 0;
+    }
+
+    /* Settings card */
+    .settings-field-row {
+      margin-bottom: 16px;
     }
   </style>
 </head>
@@ -369,13 +586,17 @@ function adminHTML() {
 <header>
   <div class="logo">GAMEZ<span>NET</span></div>
   <div class="header-badge">ADMIN CONSOLE</div>
+  <div class="header-right">
+    <div class="server-ip-chip" id="header-server-ip">SERVER IP: —</div>
+    <div class="live-indicator"><span class="live-dot"></span> LIVE</div>
+  </div>
 </header>
 
 <div class="container">
 
   <!-- Auth Gate -->
   <div id="auth-gate">
-    <h2>🔒 Authentication Required</h2>
+    <h2>Authentication Required</h2>
     <p>Enter your admin password to continue</p>
     <div style="width: 320px;">
       <div class="field" style="margin-bottom: 12px;">
@@ -388,6 +609,34 @@ function adminHTML() {
 
   <!-- Main Panel -->
   <div id="main-panel">
+
+    <!-- Stats Row -->
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Redeemed Players</div>
+        <div class="stat-value cyan" id="stat-redeemed">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Online Now</div>
+        <div class="stat-value green" id="stat-online">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending Tokens</div>
+        <div class="stat-value muted" id="stat-pending">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Server Endpoint</div>
+        <div class="stat-value mono" id="stat-endpoint">—</div>
+      </div>
+    </div>
+
+    <!-- Who's Online -->
+    <div class="card">
+      <div class="card-title">Who's Online</div>
+      <div class="online-roster" id="online-roster">
+        <div class="online-empty">Loading...</div>
+      </div>
+    </div>
 
     <!-- Create Token -->
     <div class="card">
@@ -414,6 +663,9 @@ function adminHTML() {
         <div class="token-result-label">Share this token with your player</div>
         <div class="token-result-value" id="token-display"></div>
         <div class="token-result-meta" id="token-meta"></div>
+        <div class="token-result-actions">
+          <button class="btn-secondary" onclick="copyToken(document.getElementById('token-display').textContent)">Copy Token</button>
+        </div>
       </div>
     </div>
 
@@ -422,8 +674,10 @@ function adminHTML() {
       <div class="card-title">Message of the Day</div>
       <div class="form-row single">
         <div class="field">
-          <label>Displayed in the app (leave blank to disable)</label>
-          <input type="text" id="motd-input" placeholder="e.g. Server maintenance Friday 10pm" />
+          <label>Displayed in the app (leave blank to disable, max 120 chars)</label>
+          <input type="text" id="motd-input" placeholder="e.g. Server maintenance Friday 10pm" maxlength="120"
+                 oninput="updateMotdCounter()" />
+          <div class="char-counter" id="motd-counter">0 / 120</div>
         </div>
       </div>
       <button class="btn-primary" onclick="setMotd()">Update MOTD</button>
@@ -438,6 +692,24 @@ function adminHTML() {
       </div>
     </div>
 
+    <!-- Server Settings -->
+    <div class="card">
+      <div class="card-title">Server Settings</div>
+      <div class="settings-field-row">
+        <label>Server Endpoint IP (read-only — update via /admin/update-ip)</label>
+        <input type="text" id="settings-endpoint" readonly placeholder="Loading..." />
+      </div>
+      <div class="settings-field-row">
+        <label>WireGuard Public Key</label>
+        <input type="text" id="settings-pubkey" placeholder="Server public key..." />
+      </div>
+      <div class="settings-field-row">
+        <label>Allowed IPs</label>
+        <input type="text" id="settings-allowedips" placeholder="192.168.8.0/24, 192.168.1.0/24" />
+      </div>
+      <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+
   </div>
 </div>
 
@@ -445,28 +717,50 @@ function adminHTML() {
 
 <script>
   let adminPassword = '';
+  let _refreshTimer = null;
 
-  function toast(msg, isError = false) {
+  function toast(msg, type = '') {
     const el = document.getElementById('toast');
     el.textContent = msg;
-    el.className = 'show' + (isError ? ' error' : '');
-    setTimeout(() => el.className = '', 3000);
+    el.className = 'show' + (type ? ' ' + type : '');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.className = '', 3000);
+  }
+
+  function timeAgo(isoStr) {
+    const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+    if (diff < 60) return diff + 's ago';
+    return Math.floor(diff / 60) + 'm ago';
   }
 
   async function login() {
     adminPassword = document.getElementById('admin-password').value;
-    const res = await fetch('/admin/tokens', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: adminPassword })
-    });
-    if (res.ok) {
+    const [tokRes, onlineRes] = await Promise.all([
+      fetch('/admin/tokens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword })
+      }),
+      fetch('/api/online')
+    ]);
+
+    if (tokRes.ok) {
       document.getElementById('auth-gate').style.display = 'none';
       document.getElementById('main-panel').style.display = 'block';
-      renderTokenList(await res.json());
+
+      const tokens = await tokRes.json();
+      const online = onlineRes.ok ? await onlineRes.json() : [];
+
+      updateStats(tokens, online);
+      renderOnlineRoster(online);
+      renderTokenList(tokens, new Set(online.map(p => p.name)));
       loadMotd();
+      loadServerConfig();
+
+      // Auto-refresh every 15 seconds
+      _refreshTimer = setInterval(() => refreshAll(), 15000);
     } else {
-      toast('Invalid password', true);
+      toast('Invalid password', 'error');
     }
   }
 
@@ -474,12 +768,111 @@ function adminHTML() {
     if (e.key === 'Enter') login();
   });
 
+  async function refreshAll() {
+    try {
+      const [tokRes, onlineRes] = await Promise.all([
+        fetch('/admin/tokens', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: adminPassword })
+        }),
+        fetch('/api/online')
+      ]);
+      if (!tokRes.ok) return;
+      const tokens = await tokRes.json();
+      const online = onlineRes.ok ? await onlineRes.json() : [];
+      updateStats(tokens, online);
+      renderOnlineRoster(online);
+      renderTokenList(tokens, new Set(online.map(p => p.name)));
+    } catch {}
+  }
+
+  function updateStats(tokens, online) {
+    const redeemed = tokens.filter(t => t.redeemed).length;
+    const pending = tokens.filter(t => !t.redeemed).length;
+    document.getElementById('stat-redeemed').textContent = redeemed;
+    document.getElementById('stat-online').textContent = online.length;
+    document.getElementById('stat-pending').textContent = pending;
+  }
+
+  function renderOnlineRoster(online) {
+    const container = document.getElementById('online-roster');
+    if (!online.length) {
+      container.innerHTML = '<div class="online-empty">&#9675; No players currently connected</div>';
+      return;
+    }
+    container.innerHTML = online.map(p => \`
+      <div class="online-tile">
+        <div class="online-tile-dot"></div>
+        <div class="online-tile-name">\${p.name}</div>
+        <div class="online-tile-ip">\${p.vpn_ip}</div>
+        <div class="online-tile-ago">\${timeAgo(p.last_seen)}</div>
+      </div>
+    \`).join('');
+  }
+
+  function renderTokenList(tokens, onlineSet) {
+    const container = document.getElementById('token-list-container');
+    if (!tokens.length) {
+      container.innerHTML = '<div class="empty-state">No tokens yet. Generate one above.</div>';
+      return;
+    }
+    container.innerHTML = \`
+      <table class="token-table">
+        <thead>
+          <tr>
+            <th>TOKEN</th>
+            <th>PLAYER</th>
+            <th>VPN IP</th>
+            <th>STATUS</th>
+            <th>DATE</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          \${tokens.map(t => \`
+            <tr>
+              <td>
+                <span class="token-code">\${t.token}</span>
+                <button class="btn-icon" style="margin-left:6px;" onclick="copyToken('\${t.token}')">copy</button>
+              </td>
+              <td>
+                \${t.name}
+                \${t.redeemed && onlineSet.has(t.name) ? '<span class="online-pill"><span class="online-pill-dot"></span>ONLINE</span>' : ''}
+              </td>
+              <td><span style="font-family: 'Share Tech Mono', monospace; font-size: 12px;">\${t.client_ip}</span></td>
+              <td><span class="badge \${t.redeemed ? 'badge-redeemed' : 'badge-pending'}">\${t.redeemed ? 'REDEEMED' : 'PENDING'}</span></td>
+              <td style="color: #4a6080; font-size: 12px; font-family: 'Share Tech Mono', monospace;">
+                \${t.redeemed && t.redeemed_at ? new Date(t.redeemed_at).toLocaleDateString() : new Date(t.created_at).toLocaleDateString()}
+              </td>
+              <td><button class="btn-danger" onclick="revokeToken('\${t.token}')">Revoke</button></td>
+            </tr>
+          \`).join('')}
+        </tbody>
+      </table>
+    \`;
+  }
+
+  function copyToken(token) {
+    navigator.clipboard.writeText(token).then(() => {
+      toast('Token copied!', 'success');
+    }).catch(() => {
+      const inp = document.createElement('input');
+      inp.value = token;
+      document.body.appendChild(inp);
+      inp.select();
+      document.execCommand('copy');
+      document.body.removeChild(inp);
+      toast('Token copied!', 'success');
+    });
+  }
+
   async function createToken() {
     const name = document.getElementById('new-name').value.trim();
     const ip = document.getElementById('new-ip').value.trim();
     const privkey = document.getElementById('new-privkey').value.trim();
 
-    if (!name || !ip || !privkey) { toast('All fields required', true); return; }
+    if (!name || !ip || !privkey) { toast('All fields required', 'error'); return; }
 
     const res = await fetch('/admin/token/create', {
       method: 'POST',
@@ -495,10 +888,10 @@ function adminHTML() {
       document.getElementById('new-name').value = '';
       document.getElementById('new-ip').value = '';
       document.getElementById('new-privkey').value = '';
-      toast('Token created!');
-      loadTokens();
+      toast('Token created!', 'success');
+      refreshAll();
     } else {
-      toast(data.error || 'Failed to create token', true);
+      toast(data.error || 'Failed to create token', 'error');
     }
   }
 
@@ -510,24 +903,25 @@ function adminHTML() {
       body: JSON.stringify({ password: adminPassword, token })
     });
     toast('Token revoked');
-    loadTokens();
-  }
-
-  async function loadTokens() {
-    const res = await fetch('/admin/tokens', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: adminPassword })
-    });
-    if (res.ok) renderTokenList(await res.json());
+    refreshAll();
   }
 
   async function loadMotd() {
     try {
       const res = await fetch('/api/motd');
       const data = await res.json();
-      document.getElementById('motd-input').value = data.message || '';
+      const val = data.message || '';
+      document.getElementById('motd-input').value = val;
+      updateMotdCounter();
     } catch {}
+  }
+
+  function updateMotdCounter() {
+    const inp = document.getElementById('motd-input');
+    const counter = document.getElementById('motd-counter');
+    const len = inp.value.length;
+    counter.textContent = len + ' / 120';
+    counter.className = 'char-counter' + (len > 100 ? ' warn' : '');
   }
 
   async function setMotd() {
@@ -538,12 +932,13 @@ function adminHTML() {
       body: JSON.stringify({ password: adminPassword, message })
     });
     const data = await res.json();
-    if (res.ok) toast('MOTD updated!');
-    else toast(data.error || 'Failed to update MOTD', true);
+    if (res.ok) toast('MOTD updated!', 'success');
+    else toast(data.error || 'Failed to update MOTD', 'error');
   }
 
   async function clearMotd() {
     document.getElementById('motd-input').value = '';
+    updateMotdCounter();
     const res = await fetch('/admin/motd', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -552,38 +947,31 @@ function adminHTML() {
     if (res.ok) toast('MOTD cleared');
   }
 
-  function renderTokenList(tokens) {
-    const container = document.getElementById('token-list-container');
-    if (!tokens.length) {
-      container.innerHTML = '<div class="empty-state">No tokens yet. Generate one above.</div>';
-      return;
-    }
-    container.innerHTML = \`
-      <table class="token-table">
-        <thead>
-          <tr>
-            <th>TOKEN</th>
-            <th>PLAYER</th>
-            <th>VPN IP</th>
-            <th>STATUS</th>
-            <th>CREATED</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          \${tokens.map(t => \`
-            <tr>
-              <td><span class="token-code">\${t.token}</span></td>
-              <td>\${t.name}</td>
-              <td><span style="font-family: 'Share Tech Mono', monospace; font-size: 13px;">\${t.client_ip}</span></td>
-              <td><span class="badge \${t.redeemed ? 'badge-redeemed' : 'badge-pending'}">\${t.redeemed ? 'REDEEMED' : 'PENDING'}</span></td>
-              <td style="color: #4a6080; font-size: 13px;">\${new Date(t.created_at).toLocaleDateString()}</td>
-              <td><button class="btn-danger" onclick="revokeToken('\${t.token}')">Revoke</button></td>
-            </tr>
-          \`).join('')}
-        </tbody>
-      </table>
-    \`;
+  async function loadServerConfig() {
+    try {
+      const res = await fetch('/api/server-config');
+      const data = await res.json();
+      // Extract just the IP from "ip:port"
+      const ip = data.endpoint ? data.endpoint.split(':')[0] : '—';
+      document.getElementById('header-server-ip').textContent = 'SERVER IP: ' + ip;
+      document.getElementById('stat-endpoint').textContent = data.endpoint || '—';
+      document.getElementById('settings-endpoint').value = ip;
+      document.getElementById('settings-pubkey').value = data.publicKey || '';
+      document.getElementById('settings-allowedips').value = data.allowedIPs || '';
+    } catch {}
+  }
+
+  async function saveSettings() {
+    const public_key = document.getElementById('settings-pubkey').value.trim();
+    const allowed_ips = document.getElementById('settings-allowedips').value.trim();
+    const res = await fetch('/admin/settings/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPassword, public_key, allowed_ips })
+    });
+    const data = await res.json();
+    if (res.ok) { toast('Settings saved!', 'success'); loadServerConfig(); }
+    else toast(data.error || 'Failed to save settings', 'error');
   }
 </script>
 </body>
@@ -661,11 +1049,11 @@ async function handleAdminTokenList(request, env) {
 async function handleUpdateIP(request, env) {
   const url = new URL(request.url);
   const key = url.searchParams.get('key') || request.headers.get('x-admin-password');
-  
+
   if (key !== env.ADMIN_PASSWORD) {
     return jsonResponse({ error: 'Unauthorized' }, 401);
   }
-  
+
   const clientIp = request.headers.get('CF-Connecting-IP');
   if (!clientIp) return jsonResponse({ error: 'No IP detected' }, 400);
 
@@ -699,12 +1087,12 @@ async function handleUpdateIP(request, env) {
       dnsSyncResult = "Error: " + e.message;
     }
   }
-  
-  return jsonResponse({ 
-    success: true, 
-    ip: clientIp, 
+
+  return jsonResponse({
+    success: true,
+    ip: clientIp,
     dns_sync: dnsSyncResult,
-    message: "Endpoint synchronized." 
+    message: "Endpoint synchronized."
   });
 }
 
@@ -718,6 +1106,57 @@ async function handleServerConfig(request, env) {
     publicKey:  publicKey,
     allowedIPs: allowedIPs
   });
+}
+
+// ─── Presence Handlers ───────────────────────────────────────────────────────
+
+async function handleHeartbeat(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const { name, vpn_ip, disconnecting } = body;
+
+  if (!name) return jsonResponse({ error: 'name required' }, 400);
+
+  const raw = await env.GAMENET_KV.get('ONLINE_PLAYERS');
+  const players = raw ? JSON.parse(raw) : {};
+
+  if (disconnecting) {
+    delete players[name];
+  } else {
+    players[name] = { name, vpn_ip: vpn_ip || '', last_seen: new Date().toISOString() };
+  }
+
+  await env.GAMENET_KV.put('ONLINE_PLAYERS', JSON.stringify(players));
+  return jsonResponse({ success: true });
+}
+
+async function handleOnline(request, env) {
+  const raw = await env.GAMENET_KV.get('ONLINE_PLAYERS');
+  const players = raw ? JSON.parse(raw) : {};
+
+  const cutoff = Date.now() - 90 * 1000;
+  const online = Object.values(players)
+    .filter(p => new Date(p.last_seen).getTime() > cutoff)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(p => ({ name: p.name, vpn_ip: p.vpn_ip, last_seen: p.last_seen }));
+
+  return jsonResponse(online);
+}
+
+// ─── Admin Settings Save ─────────────────────────────────────────────────────
+
+async function handleAdminSettingsSave(request, env) {
+  const { authed, body } = await requireAdmin(request, env);
+  if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
+
+  const { public_key, allowed_ips } = body;
+  if (public_key !== undefined && public_key.trim()) {
+    await env.GAMENET_KV.put('SERVER_PUBLIC_KEY', public_key.trim());
+  }
+  if (allowed_ips !== undefined && allowed_ips.trim()) {
+    await env.GAMENET_KV.put('SERVER_ALLOWED_IPS', allowed_ips.trim());
+  }
+
+  return jsonResponse({ success: true });
 }
 
 // ─── Version Handler ─────────────────────────────────────────────────────────
@@ -943,6 +1382,9 @@ export default {
     if (path === '/api/status' && method === 'GET') return jsonResponse({ online: true });
     if (path === '/api/motd' && method === 'GET') return handleMotd(request, env);
     if (path === '/admin/motd' && method === 'POST') return handleAdminSetMotd(request, env);
+    if (path === '/api/heartbeat' && method === 'POST') return handleHeartbeat(request, env);
+    if (path === '/api/online' && method === 'GET') return handleOnline(request, env);
+    if (path === '/admin/settings/save' && method === 'POST') return handleAdminSettingsSave(request, env);
     if (path === '/install' && method === 'GET') return handleInstall(request, env);
 
     return new Response('Not found', { status: 404 });
