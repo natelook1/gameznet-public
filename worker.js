@@ -666,10 +666,13 @@ async function handleUpdateIP(request, env) {
 
 async function handleServerConfig(request, env) {
   const currentIp = await env.GAMENET_KV.get('SERVER_ENDPOINT_IP') || "184.66.15.159";
-  
+  const publicKey  = await env.GAMENET_KV.get('SERVER_PUBLIC_KEY')  || "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI=";
+  const allowedIPs = await env.GAMENET_KV.get('SERVER_ALLOWED_IPS') || "192.168.8.0/24, 192.168.1.0/24";
+
   return jsonResponse({
-    endpoint: `${currentIp}:51820`,
-    publicKey: "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
+    endpoint:   `${currentIp}:51820`,
+    publicKey:  publicKey,
+    allowedIPs: allowedIPs
   });
 }
 
