@@ -16,6 +16,12 @@ Press **Win + R**, type `powershell`, and hit Enter. Paste this and hit Enter:
 irm https://gamenet.natelook.workers.dev/install | iex
 ```
 
+> **What does that command do?**
+> `irm` (Invoke-RestMethod) downloads the GamezNET installer script from our server.
+> `iex` (Invoke-Expression) runs it. This is the standard one-liner pattern for Windows app installers —
+> the same method used by tools like Chocolatey and Scoop.
+> You can inspect the script yourself by pasting just the `irm ...` part into your browser.
+
 > Windows will ask for Administrator access — click **Yes**. The VPN needs it to create the secure tunnel.
 
 *The installer handles everything automatically:*
@@ -23,7 +29,7 @@ irm https://gamenet.natelook.workers.dev/install | iex
 - 📥 Downloads the GamezNET app
 - 🐍 Installs Python if missing
 - 🔒 Installs WireGuard VPN if missing
-- 🖥️ Creates a GamezNET shortcut on your desktop
+- 🖥️ Creates a GamezNET shortcut on your desktop and Start Menu
 
 When it finishes, the app opens in your browser automatically.
 
