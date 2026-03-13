@@ -1,19 +1,21 @@
 /**
- * GameNet - Cloudflare Worker
- * 
- * KV Namespace binding required: GAMENET_KV
- * 
- * Environment Variables (set in Cloudflare dashboard):
- *   ADMIN_PASSWORD  - Password for the admin panel
- * 
- * Routes:
- *   GET  /admin                     - Admin panel UI
- *   POST /admin/token/create        - Generate a new invite token
- *   POST /admin/token/revoke        - Revoke a token
- *   GET  /admin/tokens              - List all tokens
- *   POST /api/redeem                - Redeem a token (client-facing)
- *   GET  /api/status                - Server status check (client-facing)
- *   GET  /install                   - PowerShell one-liner install script
+ * GameNet - Cloudflare Worker (Master Version)
+ * * KV Namespace binding required: GAMENET_KV
+ * * Environment Variables (set in Cloudflare dashboard):
+ * ADMIN_PASSWORD          - Password for the admin panel
+ * CLOUDFLARE_API_TOKEN    - Token with DNS:Edit permissions
+ * CLOUDFLARE_ZONE_ID       - looknet.ca Zone ID
+ * CLOUDFLARE_DNS_RECORD_ID - gaming.looknet.ca A Record ID
+ * * Routes:
+ * GET  /admin                     - Admin panel UI
+ * POST /admin/token/create        - Generate a new invite token
+ * POST /admin/token/revoke        - Revoke a token
+ * POST /admin/tokens              - List all tokens (using POST for pwd auth)
+ * GET  /admin/update-ip           - DDNS Endpoint (UDM Pro heartbeat)
+ * GET  /api/server-config         - Dynamic config for client apps
+ * POST /api/redeem                - Redeem a token (client-facing)
+ * GET  /api/status                - Server status check (client-facing)
+ * GET  /install                   - PowerShell one-liner install script
  */
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -51,7 +53,7 @@ async function requireAdmin(request, env) {
   return { authed: true, body };
 }
 
-// ─── Admin Panel HTML ────────────────────────────────────────────────────────
+// ─── Admin Panel HTML (Cyberpunk UI) ─────────────────────────────────────────
 
 function adminHTML() {
   return `<!DOCTYPE html>
@@ -567,7 +569,6 @@ async function handleAdminTokenCreate(request, env) {
 
   await env.GAMENET_KV.put(`token:${token}`, JSON.stringify(record));
 
-  // Also maintain an index of all token keys
   const indexRaw = await env.GAMENET_KV.get('token_index');
   const index = indexRaw ? JSON.parse(indexRaw) : [];
   index.push(token);
@@ -611,6 +612,69 @@ async function handleAdminTokenList(request, env) {
   return jsonResponse(tokens.filter(Boolean));
 }
 
+// ─── DYNAMIC IP HANDLERS ───────────────────────────────────────────────────
+
+async function handleUpdateIP(request, env) {
+  const url = new URL(request.url);
+  const key = url.searchParams.get('key') || request.headers.get('x-admin-password');
+  
+  if (key !== env.ADMIN_PASSWORD) {
+    return jsonResponse({ error: 'Unauthorized' }, 401);
+  }
+  
+  const clientIp = request.headers.get('CF-Connecting-IP');
+  if (!clientIp) return jsonResponse({ error: 'No IP detected' }, 400);
+
+  // 1. Update KV (Internal Reference for App)
+  await env.GAMENET_KV.put('SERVER_ENDPOINT_IP', clientIp);
+
+  // 2. Update Public Cloudflare DNS A Record for gaming.looknet.ca
+  let dnsSyncResult = "Skipped (Secrets not configured)";
+  if (env.CLOUDFLARE_API_TOKEN && env.CLOUDFLARE_ZONE_ID && env.CLOUDFLARE_DNS_RECORD_ID) {
+    try {
+      const response = await fetch(
+        `https://api.cloudflare.com/client/v4/zones/${env.CLOUDFLARE_ZONE_ID}/dns_records/${env.CLOUDFLARE_DNS_RECORD_ID}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'A',
+            name: 'gaming.looknet.ca',
+            content: clientIp,
+            ttl: 1,
+            proxied: false
+          })
+        }
+      );
+      const resData = await response.json();
+      dnsSyncResult = resData.success ? "Success" : "Failed: " + JSON.stringify(resData.errors);
+    } catch (e) {
+      dnsSyncResult = "Error: " + e.message;
+    }
+  }
+  
+  return jsonResponse({ 
+    success: true, 
+    ip: clientIp, 
+    dns_sync: dnsSyncResult,
+    message: "Endpoint synchronized." 
+  });
+}
+
+async function handleServerConfig(request, env) {
+  const currentIp = await env.GAMENET_KV.get('SERVER_ENDPOINT_IP') || "184.66.15.159";
+  
+  return jsonResponse({
+    endpoint: `${currentIp}:51820`,
+    publicKey: "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
+  });
+}
+
+// ─── Client API Handlers ─────────────────────────────────────────────────────
+
 async function handleRedeem(request, env) {
   const body = await request.json().catch(() => ({}));
   const { token } = body;
@@ -622,7 +686,6 @@ async function handleRedeem(request, env) {
 
   const record = JSON.parse(raw);
 
-  // Mark as redeemed (but still allow re-use — client just re-downloads config)
   record.redeemed = true;
   record.redeemed_at = new Date().toISOString();
   await env.GAMENET_KV.put(`token:${token}`, JSON.stringify(record));
@@ -646,9 +709,6 @@ async function handleStatus(request, env) {
 async function handleInstall(request, env) {
   const script = `
 # GamezNET Installer
-# Run this in PowerShell:
-#   irm https://gamenet.natelook.workers.dev/install | iex
-
 $ErrorActionPreference = 'Continue'
 $repo = "https://raw.githubusercontent.com/natelook1/gamenet-client/main"
 $installDir = "$env:LOCALAPPDATA\\GamezNET"
@@ -668,18 +728,17 @@ function Write-INFO { param($t) Write-Host "               $t" -ForegroundColor 
 
 Clear-Host
 Write-Host ""
-Write-Host "  =====================================================" -ForegroundColor Cyan
-Write-Host "   ___  _   _  __  __  _____  ___   _  _  ___ _____ " -ForegroundColor Cyan
-Write-Host "  / __|| | | ||  \/  ||  ___|/   \ | \| || __|_   _|" -ForegroundColor Cyan
-Write-Host " | (_ || |_| || |\/| || |_  | o o ||    || _|   | |  " -ForegroundColor Cyan
-Write-Host "  \___| \___/ |_|  |_||___|  \___/ |_|\_||___|  |_|  " -ForegroundColor Cyan
-Write-Host "                     N E T                            " -ForegroundColor DarkCyan
-Write-Host "  =====================================================" -ForegroundColor Cyan
-Write-Host "         Private Game Server Network Installer" -ForegroundColor DarkGray
-Write-Host "  =====================================================" -ForegroundColor Cyan
+Write-Host "  ========================================================" -ForegroundColor Cyan
+Write-Host "   ____                             _   _ _____ _____ " -ForegroundColor Cyan
+Write-Host "  / ___| __ _ _ __ ___   ___   __ _| \\\\ | | ____|_   _|" -ForegroundColor Cyan
+Write-Host " | |  _ / _' | '_ ' _ \\\\ / _ \\\\ / _' |  \\\\| |  _|   | |  " -ForegroundColor Cyan
+Write-Host " | |_| | (_| | | | | | |  __/| (_| | |\\\\  | |___  | |  " -ForegroundColor Cyan
+Write-Host "  \\\\____|\\\\__,_|_| |_| |_|\\\\___| \\\\__,_|_| \\\\_|_____| |_|  " -ForegroundColor Cyan
+Write-Host "  ========================================================" -ForegroundColor Cyan
+Write-Host "           Private Game Server Network Installer" -ForegroundColor DarkGray
+Write-Host "  ========================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Check for admin
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-WARN "Relaunching as Administrator..."
@@ -687,154 +746,91 @@ if (-not $isAdmin) {
     exit
 }
 
-# Step 1 - Directories
 Write-Step 1 5 "Preparing install directory"
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-New-Item -ItemType Directory -Force -Path "$installDir\\templates" | Out-Null
-New-Item -ItemType Directory -Force -Path "$installDir\\static" | Out-Null
-Write-OK "Install directory: $installDir"
+New-Item -ItemType Directory -Force -Path "$installDir\\\\templates" | Out-Null
+New-Item -ItemType Directory -Force -Path "$installDir\\\\static" | Out-Null
+Write-OK "Install directory initialized"
 
-# Step 2 - Download files
 Write-Step 2 5 "Downloading GamezNET"
 $files = @(
-    @{ url = "$repo/app.py";               dest = "$installDir\\app.py" },
-    @{ url = "$repo/setup.bat";            dest = "$installDir\\setup.bat" },
-    @{ url = "$repo/GamezNET.bat";         dest = "$installDir\\GamezNET.bat" },
-    @{ url = "$repo/templates/index.html"; dest = "$installDir\\templates\\index.html" },
-    @{ url = "$repo/static/favicon.svg";   dest = "$installDir\\static\\favicon.svg" }
+    @{ url = "$repo/app.py";               dest = "$installDir\\\\app.py" },
+    @{ url = "$repo/setup.bat";            dest = "$installDir\\\\setup.bat" },
+    @{ url = "$repo/GamezNET.bat";         dest = "$installDir\\\\GamezNET.bat" },
+    @{ url = "$repo/templates/index.html"; dest = "$installDir\\\\templates\\\\index.html" },
+    @{ url = "$repo/static/favicon.svg";   dest = "$installDir\\\\static\\\\favicon.svg" }
 )
 foreach ($file in $files) {
     $name = Split-Path $file.url -Leaf
-    Write-INFO "Downloading $name..."
+    Write-INFO "Fetching $name..."
     Invoke-WebRequest -Uri $file.url -OutFile $file.dest -UseBasicParsing
 }
-Write-OK "All files downloaded"
+Write-OK "All components downloaded"
 
-# Step 3 - Python
-Write-Step 3 5 "Checking Python"
+Write-Step 3 5 "Validating Python Environment"
 
-# Refresh PATH to catch newly installed Python
 $machinePath = [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
 $userPath    = [System.Environment]::GetEnvironmentVariable("PATH", "User")
 $env:PATH    = "$userPath;$machinePath"
 
-# Also explicitly add common Python install locations
-$pythonPaths = @(
-    "$env:LOCALAPPDATA\\Programs\\Python\\Python312",
-    "$env:LOCALAPPDATA\\Programs\\Python\\Python311",
-    "$env:LOCALAPPDATA\\Programs\\Python\\Python310",
-    "$env:LOCALAPPDATA\\Programs\\Python\\Python39",
-    "C:\\Python312",
-    "C:\\Python311",
-    "C:\\Python310"
-)
-foreach ($p in $pythonPaths) {
-    if (Test-Path $p) {
-        $env:PATH = "$p;$p\\Scripts;$env:PATH"
-    }
-}
-
-$pythonOk  = $false
-$pythonCmd = $null
-foreach ($cmd in @("python", "python3", "py")) {
-    try {
-        $v = & $cmd --version 2>&1
-        if ($v -match "Python") {
-            $pythonOk  = $true
-            $pythonCmd = $cmd
-            Write-OK "Found $v"
-            break
-        }
-    } catch {}
+$pythonOk = $false
+foreach ($cmd in @("py -3", "python", "python3")) {
+    try { $v = & $cmd --version 2>&1; if ($v -match "Python") { $pythonOk = $true; $pythonCmd = $cmd; Write-OK "Detected $v"; break } } catch {}
 }
 
 if (-not $pythonOk) {
-    Write-WARN "Python not found — downloading Python 3.12..."
+    Write-WARN "Python missing — bootstrapping installer..."
     $pyInstaller = Join-Path $env:TEMP "python-installer.exe"
     Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe" -OutFile $pyInstaller -UseBasicParsing
     Write-INFO "Installing Python (this may take a minute)..."
-    Start-Process $pyInstaller -ArgumentList "/quiet InstallAllUsers=0 PrependPath=1 Include_pip=1" -Wait
+    Start-Process $pyInstaller -ArgumentList "/quiet InstallAllUsers=0 PrependPath=1" -Wait
     Start-Sleep -Seconds 3
-    $newPyPath = "$env:LOCALAPPDATA\\Programs\\Python\\Python312"
-    $env:PATH  = "$newPyPath;$newPyPath\\Scripts;$env:PATH"
-    $pythonCmd = "python"
-    Write-OK "Python 3.12 installed"
+    $pythonCmd = "py -3"
+    Write-OK "Python 3.12 ready"
 }
+Write-INFO "Configuring local dependencies..."
+& $pythonCmd -m pip install flask requests --quiet
+Write-OK "Environment configured"
 
-Write-INFO "Installing Python packages..."
-& $pythonCmd -m pip install flask requests --quiet --no-warn-script-location
-Write-OK "Packages installed"
-
-# Step 4 - WireGuard
-Write-Step 4 5 "Checking WireGuard VPN"
-$wgExe  = "C:\\Program Files\\WireGuard\\wireguard.exe"
+Write-Step 4 5 "Validating VPN Engine"
+$wgExe = "C:\\\\Program Files\\\\WireGuard\\\\wireguard.exe"
 $wgDest = Join-Path $installDir "wireguard.exe"
-
-if (Test-Path $wgDest) {
-    Write-OK "WireGuard already present"
-} elseif (Test-Path $wgExe) {
-    Copy-Item $wgExe $wgDest -Force
-    Write-OK "WireGuard copied from Program Files"
-} else {
-    Write-WARN "WireGuard not found — downloading..."
-    $wgInstaller = Join-Path $env:TEMP "wireguard-installer.exe"
-    try {
-        Invoke-WebRequest -Uri "https://download.wireguard.com/windows-client/wireguard-installer.exe" -OutFile $wgInstaller -UseBasicParsing
-        Write-INFO "Installing WireGuard..."
-        Start-Process $wgInstaller -ArgumentList "/quiet" -Wait
-        Start-Sleep -Seconds 5
-        if (Test-Path $wgExe) {
-            Copy-Item $wgExe $wgDest -Force
-            Write-OK "WireGuard installed successfully"
-        } else {
-            Write-ERR "WireGuard install may have failed"
-            Write-INFO "Install manually: https://www.wireguard.com/install/"
-        }
-    } catch {
-        Write-ERR "Could not download WireGuard: $_"
+if (Test-Path $wgExe) { Copy-Item $wgExe $wgDest -Force; Write-OK "Found existing WireGuard engine" }
+else {
+    Write-WARN "VPN Engine missing — installing..."
+    $wgInst = Join-Path $env:TEMP "wg-inst.exe"
+    Invoke-WebRequest -Uri "https://download.wireguard.com/windows-client/wireguard-installer.exe" -OutFile $wgInst -UseBasicParsing
+    Start-Process $wgInst -ArgumentList "/quiet" -Wait
+    Start-Sleep -Seconds 5
+    if (Test-Path $wgExe) {
+        Copy-Item $wgExe $wgDest -Force
+        Write-OK "VPN Engine successfully deployed"
+    } else {
+        Write-ERR "VPN Engine install failed"
     }
 }
 
-# Step 5 - Shortcut
-Write-Step 5 5 "Creating desktop shortcut"
-try {
-    $batPath    = Join-Path $installDir "GamezNET.bat"
-    $desktopPath = [System.Environment]::GetFolderPath("Desktop")
-    $lnkPath    = Join-Path $desktopPath "GamezNET.lnk"
-    $ws         = New-Object -ComObject WScript.Shell
-    $shortcut   = $ws.CreateShortcut($lnkPath)
-    $shortcut.TargetPath     = $batPath
-    $shortcut.WorkingDirectory = $installDir
-    $shortcut.Description    = "GamezNET - Private Game Server Network"
-    $shortcut.WindowStyle    = 1
-    $shortcut.Save()
-    Write-OK "Shortcut created on desktop"
-} catch {
-    Write-ERR "Shortcut error: $_"
-}
+Write-Step 5 5 "Deploying Shortcuts"
+$ws = New-Object -ComObject WScript.Shell
+$s = $ws.CreateShortcut((Join-Path ([System.Environment]::GetFolderPath("Desktop")) "GamezNET.lnk"))
+$s.TargetPath = Join-Path $installDir "GamezNET.bat"
+$s.WorkingDirectory = $installDir
+$s.Save()
+Write-OK "Desktop shortcut created"
 
 Write-Host ""
-Write-Host "  ------------------------------------------------" -ForegroundColor DarkGray
-Write-Host ""
-Write-Host "  " -NoNewline
-Write-Host " INSTALLATION COMPLETE " -BackgroundColor DarkGreen -ForegroundColor White
+Write-Host "  --------------------------------------------------------" -ForegroundColor DarkGray
+Write-Host "  INSTALLATION COMPLETE" -BackgroundColor DarkGreen -ForegroundColor White
 Write-Host ""
 Write-Host "  Next steps:" -ForegroundColor White
-Write-Host "   1. Double-click " -NoNewline -ForegroundColor Gray
-Write-Host "GamezNET" -NoNewline -ForegroundColor Cyan
-Write-Host " on your desktop" -ForegroundColor Gray
+Write-Host "   1. Double-click GamezNET on your desktop" -ForegroundColor Gray
 Write-Host "   2. Enter the invite token sent to you" -ForegroundColor Gray
-Write-Host "   3. Click Connect — you're in!" -ForegroundColor Gray
+Write-Host "   3. Click Connect - you are in!" -ForegroundColor Gray
 Write-Host ""
+Write-Host "  Opening GamezNET local directory..." -ForegroundColor DarkCyan
 
-# Open install folder and launch app
 Start-Process "explorer.exe" -ArgumentList $installDir
-Start-Sleep -Seconds 1
-Start-Process "cmd.exe" -ArgumentList ('/c "' + $batPath + '"')
-
-Write-Host "  Launching GamezNET..." -ForegroundColor DarkCyan
-Write-Host ""
-Write-Host "  Press any key to close this window." -ForegroundColor DarkGray
+Write-Host "  Press any key to close this installer." -ForegroundColor DarkGray
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 `;
 
@@ -854,7 +850,6 @@ export default {
     const path = url.pathname;
     const method = request.method;
 
-    // CORS preflight
     if (method === 'OPTIONS') {
       return new Response(null, {
         headers: {
@@ -866,11 +861,13 @@ export default {
     }
 
     if (path === '/admin' && method === 'GET') return htmlResponse(adminHTML());
+    if (path === '/admin/update-ip') return handleUpdateIP(request, env);
+    if (path === '/api/server-config') return handleServerConfig(request, env);
     if (path === '/admin/token/create' && method === 'POST') return handleAdminTokenCreate(request, env);
     if (path === '/admin/token/revoke' && method === 'POST') return handleAdminTokenRevoke(request, env);
     if (path === '/admin/tokens' && method === 'POST') return handleAdminTokenList(request, env);
     if (path === '/api/redeem' && method === 'POST') return handleRedeem(request, env);
-    if (path === '/api/status' && method === 'GET') return handleStatus(request, env);
+    if (path === '/api/status' && method === 'GET') return jsonResponse({ online: true });
     if (path === '/install' && method === 'GET') return handleInstall(request, env);
 
     return new Response('Not found', { status: 404 });

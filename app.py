@@ -12,6 +12,7 @@ import subprocess
 import threading
 import webbrowser
 import time
+import atexit
 from flask import Flask, request, jsonify, render_template, send_from_directory
 
 # ─── Configuration ────────────────────────────────────────────────────────────
@@ -37,146 +38,118 @@ def resource_path(relative_path):
 def wg_exe():
     path = resource_path("wireguard.exe")
     if not os.path.exists(path):
-        # Fall back to PATH
-        return "wireguard"
+        # Fall back to Program Files if local exe is missing
+        path = r"C:\Program Files\WireGuard\wireguard.exe"
     return path
 
-def load_config():
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, "r") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {}
+# ─── Zombie Tunnel Prevention ─────────────────────────────────────────────────
 
-def save_config(data):
+def cleanup_tunnel():
+    """
+    Ensures the WireGuard tunnel drops when this Python script exits,
+    even if the user forcibly closes the background command prompt window.
+    """
     try:
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(data, f, indent=2)
-    except Exception as e:
-        print(f"Warning: Could not save config: {e}")
-
-def create_wg_conf(conf_path, private_key, client_ip):
-    content = f"""[Interface]
-PrivateKey = {private_key}
-Address = {client_ip}
-
-[Peer]
-PublicKey = {SERVER_PUBLIC_KEY}
-AllowedIPs = {ALLOWED_IPS}
-Endpoint = {SERVER_ENDPOINT}
-PersistentKeepalive = 25
-"""
-    with open(conf_path, "w") as f:
-        f.write(content)
-
-def is_tunnel_running():
-    """Check if the WireGuard tunnel service is active."""
-    try:
-        result = subprocess.run(
-            ["sc", "query", f"WireGuardTunnel${TUNNEL_NAME}"],
-            capture_output=True, text=True
+        # Hide the command window during cleanup
+        CREATE_NO_WINDOW = 0x08000000
+        subprocess.run(
+            [wg_exe(), "/uninstalltunnelservice", TUNNEL_NAME], 
+            capture_output=True, 
+            creationflags=CREATE_NO_WINDOW
         )
-        return "RUNNING" in result.stdout
     except Exception:
-        return False
+        pass
+
+# Register the cleanup function to run when the script terminates
+atexit.register(cleanup_tunnel)
 
 # ─── Flask App ────────────────────────────────────────────────────────────────
 
-app = Flask(__name__, template_folder="templates", static_folder="static", static_url_path="/static")
-_connected = False
+app = Flask(__name__)
 _lock = threading.Lock()
+_connected = False
 
 @app.route("/")
 def index():
-    return render_template("index.html", worker_url=WORKER_URL)
-
-@app.route("/api/config", methods=["GET"])
-def api_config():
-    """Return saved local config (without private key for security)."""
-    cfg = load_config()
-    return jsonify({
-        "provisioned": bool(cfg.get("private_key")),
-        "name": cfg.get("name", ""),
-        "client_ip": cfg.get("client_ip", "")
-    })
-
-@app.route("/api/provision", methods=["POST"])
-def api_provision():
-    """Save provisioned credentials from token redemption."""
-    data = request.json or {}
-    required = ["private_key", "client_ip", "name"]
-    if not all(k in data for k in required):
-        return jsonify({"error": "Missing required fields"}), 400
-
-    save_config({
-        "private_key": data["private_key"],
-        "client_ip": data["client_ip"],
-        "name": data["name"]
-    })
-    return jsonify({"success": True, "name": data["name"]})
+    return render_template("index.html", connected=_connected)
 
 @app.route("/api/status", methods=["GET"])
 def api_status():
-    """Return current connection status."""
-    global _connected
-    running = is_tunnel_running()
-    with _lock:
-        _connected = running
-    return jsonify({
-        "connected": running,
-        "name": load_config().get("name", ""),
-        "client_ip": load_config().get("client_ip", "")
-    })
+    return jsonify({"connected": _connected})
 
 @app.route("/api/connect", methods=["POST"])
 def api_connect():
-    """Start the WireGuard tunnel."""
     global _connected
-
-    cfg = load_config()
-    if not cfg.get("private_key"):
-        return jsonify({"error": "Not provisioned. Please enter your invite token."}), 400
-
-    if is_tunnel_running():
-        return jsonify({"connected": True, "message": "Already connected"})
-
-    conf_path = os.path.join(os.path.expanduser("~"), f"{TUNNEL_NAME}.conf")
+    if not os.path.exists(CONFIG_FILE):
+        return jsonify({"error": "No configuration found. Please redeem a token first."}), 400
+        
     try:
-        create_wg_conf(conf_path, cfg["private_key"], cfg["client_ip"])
-        result = subprocess.run(
-            [wg_exe(), "/installtunnelservice", conf_path],
-            capture_output=True, text=True, timeout=15
+        with open(CONFIG_FILE, "r") as f:
+            config_data = json.load(f)
+            
+        # Build the WireGuard config file
+        conf_content = f"""[Interface]
+PrivateKey = {config_data['private_key']}
+Address = {config_data['vpn_ip']}
+
+[Peer]
+PublicKey = {SERVER_PUBLIC_KEY}
+Endpoint = {SERVER_ENDPOINT}
+AllowedIPs = {ALLOWED_IPS}
+PersistentKeepalive = 25
+"""
+        conf_path = os.path.join(os.path.expanduser("~"), f"{TUNNEL_NAME}.conf")
+        with open(conf_path, "w") as f:
+            f.write(conf_content)
+            
+        # Install and start tunnel service
+        CREATE_NO_WINDOW = 0x08000000
+        subprocess.run(
+            [wg_exe(), "/installtunnelservice", conf_path], 
+            capture_output=True, text=True, timeout=10,
+            creationflags=CREATE_NO_WINDOW
         )
-        time.sleep(1)  # Give the service a moment to start
-        connected = is_tunnel_running()
+        
         with _lock:
-            _connected = connected
-        if connected:
-            return jsonify({"success": True, "connected": True})
-        else:
-            return jsonify({"error": f"Tunnel failed to start. {result.stderr}"}), 500
-    except subprocess.TimeoutExpired:
-        return jsonify({"error": "Connection timed out"}), 500
+            _connected = True
+        return jsonify({"success": True, "connected": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/disconnect", methods=["POST"])
 def api_disconnect():
-    """Stop the WireGuard tunnel."""
     global _connected
     try:
+        CREATE_NO_WINDOW = 0x08000000
         subprocess.run(
-            [wg_exe(), "/uninstalltunnelservice", TUNNEL_NAME],
-            capture_output=True, text=True, timeout=10
+            [wg_exe(), "/uninstalltunnelservice", TUNNEL_NAME], 
+            capture_output=True, text=True, timeout=10,
+            creationflags=CREATE_NO_WINDOW
         )
         conf_path = os.path.join(os.path.expanduser("~"), f"{TUNNEL_NAME}.conf")
         if os.path.exists(conf_path):
             os.remove(conf_path)
+            
         with _lock:
             _connected = False
         return jsonify({"success": True, "connected": False})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/save_config", methods=["POST"])
+def api_save_config():
+    """Saves the provisioned credentials after a successful token redemption."""
+    data = request.json
+    if not data or 'private_key' not in data or 'vpn_ip' not in data:
+        return jsonify({"error": "Invalid payload"}), 400
+        
+    try:
+        with open(CONFIG_FILE, "w") as f:
+            json.dump({
+                "private_key": data["private_key"],
+                "vpn_ip": data["vpn_ip"]
+            }, f)
+        return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -209,9 +182,14 @@ if __name__ == "__main__":
     ensure_admin()
     print(f"""
 +========================================+
-|         GamezNET Local Server           |
-|   Running at http://localhost:{PORT}     |
+|         GamezNET Local Server          |
+|   Running on http://localhost:{PORT}     |
+|   Do not close this window while       |
+|   playing. Close to disconnect.        |
 +========================================+
 """)
+    # Open browser automatically when script starts
     threading.Thread(target=open_browser, daemon=True).start()
+    
+    # Run the server (Waitress is recommended for production, but Flask dev server is fine for local-only)
     app.run(host="127.0.0.1", port=PORT, debug=False)

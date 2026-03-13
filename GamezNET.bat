@@ -16,28 +16,30 @@ if %errorLevel% NEQ 0 (
     exit /b
 )
 
-:: Bring Python into PATH (checks all common install locations)
-for %%V in (312 311 310 39) do (
-    if exist "%LOCALAPPDATA%\Programs\Python\Python%%V\python.exe" (
-        set "PATH=%LOCALAPPDATA%\Programs\Python\Python%%V;%LOCALAPPDATA%\Programs\Python\Python%%V\Scripts;%PATH%"
-    )
+:: Verify Python - try multiple methods
+set "PY_CMD="
+python --version >nul 2>&1
+if %errorLevel% EQU 0 set "PY_CMD=python"
+
+if not defined PY_CMD (
+    py -3 --version >nul 2>&1
+    if %errorLevel% EQU 0 set "PY_CMD=py -3"
 )
 
-:: Verify Python
-python --version >nul 2>&1
-if %errorLevel% NEQ 0 (
-    echo [!] Python not found. Please run setup.bat first.
+if not defined PY_CMD (
+    echo [!] Python not found. Please re-run the GamezNET installer.
+    echo     irm https://gamenet.natelook.workers.dev/install ^| iex
     pause
     exit /b 1
 )
 
-:: Kill any existing GamezNET server on that port
+:: Kill any existing GamezNET server running on our port
 for /f "tokens=5" %%P in ('netstat -aon ^| findstr ":7734 " 2^>nul') do (
     taskkill /F /PID %%P >nul 2>&1
 )
 
 :: Start the Flask server (minimized console window)
 cd /d "%INSTALL_DIR%"
-start "GamezNET Server" /min python app.py
+start "GamezNET Server" /min %PY_CMD% app.py
 
 exit /b
