@@ -61,12 +61,12 @@
       z-index: 100;
     }
 
-    /* ── Layout ── */
+    /* ── Shell ── */
     .shell {
       display: flex;
       flex-direction: column;
       height: 100vh;
-      max-width: 480px;
+      max-width: 920px;
       margin: 0 auto;
       position: relative;
       z-index: 1;
@@ -74,7 +74,7 @@
 
     /* ── Header ── */
     header {
-      padding: 20px 24px 16px;
+      padding: 16px 28px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
@@ -83,25 +83,23 @@
     }
 
     .logo-mark {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border: 2px solid var(--accent);
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: 'Share Tech Mono', monospace;
-      font-size: 14px;
+      font-size: 13px;
       color: var(--accent);
       box-shadow: 0 0 12px var(--glow), inset 0 0 12px var(--glow);
       flex-shrink: 0;
     }
 
-    .logo-text {
-      flex: 1;
-    }
+    .logo-text { flex: 1; }
 
     .logo-text h1 {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 700;
       letter-spacing: 4px;
       color: #fff;
@@ -109,7 +107,7 @@
     }
 
     .logo-text p {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--text-dim);
       letter-spacing: 2px;
       font-family: 'Share Tech Mono', monospace;
@@ -129,11 +127,32 @@
     /* ── Content area ── */
     .content {
       flex: 1;
-      overflow-y: auto;
-      padding: 20px 24px;
+      overflow: hidden;
+      padding: 18px 28px;
       display: flex;
       flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Full-width banners (alerts, errors, MOTD) ── */
+    .banners { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+
+    /* ── Two-column dashboard ── */
+    .dashboard {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 16px;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+      min-height: 0;
     }
 
     /* ── Section label ── */
@@ -143,10 +162,10 @@
       color: var(--text-dim);
       letter-spacing: 2px;
       text-transform: uppercase;
-      margin-bottom: 8px;
       display: flex;
       align-items: center;
       gap: 8px;
+      margin-bottom: 6px;
     }
 
     .section-label::after {
@@ -156,34 +175,108 @@
       background: var(--border);
     }
 
+    /* ── Alert Banner ── */
+    #alert-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 3px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      border-left: 3px solid;
+      animation: fade-in 0.3s ease both;
+    }
+    #alert-banner.type-info    { background: rgba(0,200,255,0.07); border-color: var(--accent); color: var(--text); }
+    #alert-banner.type-warning { background: rgba(255,170,0,0.07); border-color: var(--warn); color: var(--text); }
+    #alert-banner.type-critical{ background: rgba(255,51,85,0.1); border-color: var(--danger); color: #ff8899; animation: pulse-alert 1.5s ease-in-out infinite; }
+    @keyframes pulse-alert {
+      0%, 100% { box-shadow: none; }
+      50% { box-shadow: 0 0 12px rgba(255,51,85,0.3); }
+    }
+    #alert-banner #alert-icon { font-size: 14px; flex-shrink: 0; }
+    #alert-banner #alert-text { flex: 1; }
+    #alert-dismiss {
+      background: transparent; border: none; color: inherit; cursor: pointer;
+      font-size: 14px; padding: 0 4px; opacity: 0.6; flex-shrink: 0;
+    }
+    #alert-dismiss:hover { opacity: 1; }
+
     /* ── MOTD Banner ── */
     .motd-banner {
       background: rgba(0, 200, 255, 0.05);
       border: 1px solid var(--border2);
       border-left: 3px solid var(--accent);
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-radius: 3px;
       font-family: 'Share Tech Mono', monospace;
       font-size: 12px;
       color: var(--text);
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 4px;
+      gap: 10px;
     }
-
     .motd-icon {
       color: var(--accent);
-      font-size: 14px;
+      font-size: 13px;
       animation: pulse-icon 2s infinite;
+      flex-shrink: 0;
     }
-
     @keyframes pulse-icon {
       0%, 100% { opacity: 1; text-shadow: 0 0 8px var(--accent); }
       50% { opacity: 0.4; text-shadow: none; }
     }
 
-    /* ── Status orb ── */
+    /* ── Error Panel ── */
+    .error-panel {
+      background: rgba(255,51,85,0.06);
+      border: 1px solid rgba(255,51,85,0.25);
+      border-left: 3px solid var(--danger);
+      border-radius: 3px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      animation: fade-in 0.3s ease both;
+    }
+    .error-panel-msg {
+      font-size: 12px;
+      color: #ff8899;
+      font-family: 'Share Tech Mono', monospace;
+      line-height: 1.5;
+    }
+    .error-panel-actions { display: flex; gap: 8px; }
+    .report-btn {
+      background: transparent;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      padding: 4px 12px;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+    .report-btn:hover { background: var(--danger); color: white; }
+    .report-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .dismiss-err-btn {
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--text-dim);
+      padding: 4px 12px;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border-radius: 2px;
+      text-transform: uppercase;
+    }
+
+    /* ── LEFT COL: Status ── */
     .status-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -194,30 +287,23 @@
       gap: 16px;
       position: relative;
       overflow: hidden;
+      flex-shrink: 0;
     }
-
     .status-card::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent-color, var(--border2)), transparent);
+      background: linear-gradient(90deg, transparent, var(--status-line, var(--border2)), transparent);
       transition: background 0.5s;
     }
+    .status-card.st-connected    { --status-line: var(--success); }
+    .status-card.st-connecting   { --status-line: var(--warn); }
+    .status-card.st-disconnected { --status-line: var(--border2); }
 
-    .status-card.connected { --accent-color: var(--accent); }
-    .status-card.connected .status-card::before { opacity: 1; }
-
-    .orb-wrap {
-      position: relative;
-      width: 52px;
-      height: 52px;
-      flex-shrink: 0;
-    }
-
+    .orb-wrap { position: relative; width: 52px; height: 52px; flex-shrink: 0; }
     .orb {
-      width: 52px;
-      height: 52px;
+      width: 52px; height: 52px;
       border-radius: 50%;
       background: var(--orb-color, #1a2a3a);
       border: 2px solid var(--orb-border, var(--border2));
@@ -228,29 +314,13 @@
       transition: all 0.4s;
       position: relative;
     }
-
-    .orb.connected {
-      --orb-color: rgba(0, 232, 122, 0.15);
-      --orb-border: var(--success);
-      box-shadow: 0 0 20px rgba(0, 232, 122, 0.3);
-    }
-
-    .orb.disconnected {
-      --orb-color: rgba(255, 51, 85, 0.1);
-      --orb-border: rgba(255,51,85,0.4);
-    }
-
-    .orb.connecting {
-      --orb-color: rgba(255,170,0,0.1);
-      --orb-border: var(--warn);
-      animation: pulse-orb 1s ease-in-out infinite;
-    }
-
+    .orb.connected    { --orb-color: rgba(0,232,122,0.15); --orb-border: var(--success); box-shadow: 0 0 20px rgba(0,232,122,0.3); }
+    .orb.disconnected { --orb-color: rgba(255,51,85,0.1);  --orb-border: rgba(255,51,85,0.4); }
+    .orb.connecting   { --orb-color: rgba(255,170,0,0.1);  --orb-border: var(--warn); animation: pulse-orb 1s ease-in-out infinite; }
     @keyframes pulse-orb {
       0%, 100% { box-shadow: 0 0 8px rgba(255,170,0,0.3); }
-      50% { box-shadow: 0 0 24px rgba(255,170,0,0.6); }
+      50%       { box-shadow: 0 0 24px rgba(255,170,0,0.6); }
     }
-
     .orb-ring {
       position: absolute;
       inset: -6px;
@@ -258,115 +328,220 @@
       border: 1px solid var(--success);
       opacity: 0;
     }
-
-    .orb.connected .orb-ring {
-      animation: ring-expand 2s ease-out infinite;
-    }
-
+    .orb.connected .orb-ring { animation: ring-expand 2s ease-out infinite; }
     @keyframes ring-expand {
-      0% { opacity: 0.6; transform: scale(1); }
-      100% { opacity: 0; transform: scale(1.4); }
+      0%   { opacity: 0.6; transform: scale(1); }
+      100% { opacity: 0;   transform: scale(1.4); }
     }
 
-    .status-info { flex: 1; }
-
-    .status-main {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      margin-bottom: 2px;
-    }
-
-    .status-main.connected { color: var(--success); }
+    .status-info { flex: 1; min-width: 0; }
+    .status-main { font-size: 18px; font-weight: 700; letter-spacing: 1px; margin-bottom: 2px; }
+    .status-main.connected    { color: var(--success); }
     .status-main.disconnected { color: var(--text-dim); }
-    .status-main.connecting { color: var(--warn); }
-
+    .status-main.connecting   { color: var(--warn); }
     .status-sub {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-dim);
       font-family: 'Share Tech Mono', monospace;
       letter-spacing: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    /* ── Big connect button ── */
+    /* Session timer */
+    .session-timer {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--success);
+      letter-spacing: 1px;
+      margin-top: 4px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .session-timer.visible { opacity: 1; }
+
+    /* ── Connect button ── */
     .connect-btn {
       width: 100%;
-      padding: 16px;
+      padding: 14px;
       border: none;
       border-radius: 4px;
       font-family: 'Rajdhani', sans-serif;
       font-weight: 700;
-      font-size: 16px;
+      font-size: 15px;
       letter-spacing: 3px;
       text-transform: uppercase;
       cursor: pointer;
       transition: all 0.2s;
       position: relative;
       overflow: hidden;
+      flex-shrink: 0;
     }
-
     .connect-btn::before {
       content: '';
-      position: absolute;
-      inset: 0;
+      position: absolute; inset: 0;
       background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
       transform: translateX(-100%);
       transition: transform 0.4s;
     }
-
     .connect-btn:hover::before { transform: translateX(100%); }
-
     .connect-btn.action-connect {
-      background: rgba(0, 200, 255, 0.1);
+      background: rgba(0,200,255,0.1);
       border: 1px solid var(--accent);
       color: var(--accent);
     }
+    .connect-btn.action-connect:hover  { background: rgba(0,200,255,0.2); box-shadow: 0 0 20px var(--glow); }
+    .connect-btn.action-disconnect     { background: rgba(255,51,85,0.1); border: 1px solid var(--danger); color: var(--danger); }
+    .connect-btn.action-disconnect:hover { background: rgba(255,51,85,0.2); }
+    .connect-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .connect-btn.action-connect:disabled { background: rgba(0,200,255,0.05); }
 
-    .connect-btn.action-connect:hover {
-      background: rgba(0, 200, 255, 0.2);
-      box-shadow: 0 0 20px var(--glow);
+    /* ── Telemetry ── */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .tel-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .tel-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .tel-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 15px;
+      color: #fff;
+    }
+    .tel-val.highlight { color: var(--accent); }
+
+    /* ── RIGHT COL: Player info ── */
+    .player-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 18px 20px;
+      flex-shrink: 0;
+    }
+    .player-name-large {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-key {
+      font-size: 10px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .info-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+    }
+    .copyable {
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.03);
+      border: 1px dashed var(--border2);
+      transition: all 0.2s;
+    }
+    .copyable:hover { background: rgba(0,200,255,0.1); border-color: var(--accent); color: var(--accent); }
+
+    /* ── RIGHT COL: Who's Online ── */
+    .online-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 16px 20px;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .online-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; flex: 1; min-height: 0; }
+    .online-player {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0,232,122,0.04);
+      border: 1px solid rgba(0,232,122,0.1);
+      border-radius: 3px;
+      padding: 8px 12px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .op-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px rgba(0,232,122,0.8);
+      flex-shrink: 0;
+      animation: dot-pulse 2s ease-in-out infinite;
+    }
+    @keyframes dot-pulse {
+      0%, 100% { box-shadow: 0 0 6px rgba(0,232,122,0.8); }
+      50%       { box-shadow: 0 0 2px rgba(0,232,122,0.3); }
+    }
+    .op-name { flex: 1; color: var(--text); letter-spacing: 1px; }
+    .op-ip   { color: var(--text-dim); font-size: 11px; }
+    .online-empty {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--text-dim);
+      padding: 8px 0;
+      text-align: center;
     }
 
-    .connect-btn.action-disconnect {
-      background: rgba(255, 51, 85, 0.1);
-      border: 1px solid var(--danger);
-      color: var(--danger);
+    /* ── Setup / Token panels (full width, shown instead of dashboard) ── */
+    .setup-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-
-    .connect-btn.action-disconnect:hover {
-      background: rgba(255, 51, 85, 0.2);
-    }
-
-    .connect-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .connect-btn.action-connect:disabled {
-      background: rgba(0,200,255,0.05);
-    }
-
-    /* ── Token setup panel ── */
     .setup-panel {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 4px;
-      padding: 20px;
+      padding: 28px;
+      width: 100%;
+      max-width: 420px;
     }
-
     .setup-panel.hidden { display: none; }
-
     .setup-intro {
       font-size: 13px;
       color: var(--text-dim);
       line-height: 1.6;
       margin-bottom: 16px;
     }
-
     .setup-intro strong { color: var(--text); }
-
     .field { margin-bottom: 12px; }
-
     .field label {
       display: block;
       font-size: 10px;
@@ -376,7 +551,6 @@
       text-transform: uppercase;
       margin-bottom: 6px;
     }
-
     .field input {
       width: 100%;
       background: var(--bg2);
@@ -390,17 +564,8 @@
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-
-    .field input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px var(--glow);
-    }
-
-    .field input::placeholder {
-      color: var(--border2);
-      letter-spacing: 1px;
-    }
-
+    .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--glow); }
+    .field input::placeholder { color: var(--border2); letter-spacing: 1px; }
     .redeem-btn {
       width: 100%;
       padding: 11px;
@@ -416,121 +581,46 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-
-    .redeem-btn:hover {
-      background: #33d4ff;
-      box-shadow: 0 0 16px var(--glow);
-    }
-
+    .redeem-btn:hover { background: #33d4ff; box-shadow: 0 0 16px var(--glow); }
     .redeem-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* ── Info & Telemetry cards ── */
-    .info-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 16px 20px;
-    }
-
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 0;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .info-row:last-child { border-bottom: none; }
-
-    .info-key {
-      font-size: 11px;
-      font-family: 'Share Tech Mono', monospace;
-      color: var(--text-dim);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    .info-val {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 13px;
-      color: var(--text);
-    }
-
-    .copyable {
-      cursor: pointer;
-      padding: 2px 6px;
-      border-radius: 2px;
-      background: rgba(255,255,255,0.03);
-      border: 1px dashed var(--border2);
-      transition: all 0.2s;
-    }
-
-    .copyable:hover {
-      background: rgba(0, 200, 255, 0.1);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    /* Telemetry Grid */
-    .telemetry-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .tel-card {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .tel-label {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .tel-val {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 14px;
-      color: #fff;
-    }
-
-    .tel-val.highlight { color: var(--accent); }
 
     /* ── Footer ── */
     footer {
-      padding: 12px 24px;
+      padding: 10px 28px;
       border-top: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-shrink: 0;
+      gap: 12px;
     }
-
     .footer-status {
       font-family: 'Share Tech Mono', monospace;
       font-size: 11px;
       color: var(--text-dim);
       letter-spacing: 1px;
     }
-
+    .footer-right { display: flex; gap: 12px; align-items: center; }
+    .invisible-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      background: transparent;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+    }
     .reset-link {
       font-size: 11px;
       font-family: 'Share Tech Mono', monospace;
       color: var(--border2);
-      text-decoration: none;
       letter-spacing: 1px;
       cursor: pointer;
       transition: color 0.2s;
     }
-
     .reset-link:hover { color: var(--danger); }
 
     /* ── Toast ── */
@@ -553,35 +643,9 @@
       z-index: 999;
       pointer-events: none;
     }
-
-    #toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    #toast.error {
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-
-    #toast.success {
-      border-color: var(--success);
-      color: var(--success);
-    }
-
-    /* ── Who's Online ── */
-    .online-player {
-      display: flex; align-items: center; gap: 10px;
-      background: rgba(0,232,122,0.04);
-      border: 1px solid rgba(0,232,122,0.1);
-      border-radius: 3px; padding: 8px 12px;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 12px; margin-bottom: 6px;
-    }
-    .op-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 6px rgba(0,232,122,0.8); flex-shrink: 0; }
-    .op-name { flex: 1; color: var(--text); letter-spacing: 1px; }
-    .op-ip { color: var(--text-dim); font-size: 11px; }
-    .online-empty { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); padding: 8px 0; }
+    #toast.show      { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.error     { border-color: var(--danger);  color: var(--danger); }
+    #toast.success   { border-color: var(--success); color: var(--success); }
 
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 4px; }
@@ -590,104 +654,13 @@
 
     /* ── Animations ── */
     @keyframes fade-in {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(6px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-
     .shell > * { animation: fade-in 0.3s ease both; }
-    header { animation-delay: 0s; }
-    .content { animation-delay: 0.05s; }
-    footer { animation-delay: 0.1s; }
-
-    /* ── Appear Offline button ── */
-    .invisible-btn {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 1px;
-      padding: 3px 8px;
-      background: transparent;
-      border-radius: 2px;
-      cursor: pointer;
-      transition: all 0.2s;
-      border: 1px solid var(--accent);
-      color: var(--accent);
-    }
-
-    /* ── Alert Banner ── */
-    #alert-banner {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      border-radius: 3px;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 12px;
-      border-left: 3px solid;
-      animation: fade-in 0.3s ease both;
-    }
-    #alert-banner.type-info { background: rgba(0,200,255,0.07); border-color: var(--accent); color: var(--text); }
-    #alert-banner.type-warning { background: rgba(255,170,0,0.07); border-color: var(--warn); color: var(--text); }
-    #alert-banner.type-critical { background: rgba(255,51,85,0.1); border-color: var(--danger); color: #ff8899; animation: pulse-alert 1.5s ease-in-out infinite; }
-    @keyframes pulse-alert {
-      0%, 100% { box-shadow: 0 0 0 0 transparent; }
-      50% { box-shadow: 0 0 12px rgba(255,51,85,0.3); }
-    }
-    #alert-banner #alert-icon { font-size: 14px; flex-shrink: 0; }
-    #alert-banner #alert-text { flex: 1; }
-    #alert-dismiss {
-      background: transparent; border: none; color: inherit; cursor: pointer;
-      font-size: 14px; padding: 0 4px; opacity: 0.6; flex-shrink: 0;
-    }
-    #alert-dismiss:hover { opacity: 1; }
-
-    /* ── Error Panel ── */
-    .error-panel {
-      background: rgba(255,51,85,0.06);
-      border: 1px solid rgba(255,51,85,0.25);
-      border-left: 3px solid var(--danger);
-      border-radius: 3px;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      animation: fade-in 0.3s ease both;
-    }
-    .error-panel-msg {
-      font-size: 12px;
-      color: #ff8899;
-      font-family: 'Share Tech Mono', monospace;
-      line-height: 1.5;
-    }
-    .error-panel-actions { display: flex; gap: 8px; }
-    .report-btn {
-      background: transparent;
-      border: 1px solid var(--danger);
-      color: var(--danger);
-      padding: 5px 12px;
-      font-family: 'Rajdhani', sans-serif;
-      font-weight: 700;
-      font-size: 12px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      border-radius: 2px;
-      transition: all 0.2s;
-      text-transform: uppercase;
-    }
-    .report-btn:hover { background: var(--danger); color: white; }
-    .report-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .dismiss-err-btn {
-      background: transparent;
-      border: 1px solid var(--border2);
-      color: var(--text-dim);
-      padding: 5px 12px;
-      font-family: 'Rajdhani', sans-serif;
-      font-weight: 700;
-      font-size: 12px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      border-radius: 2px;
-      text-transform: uppercase;
-    }
+    header     { animation-delay: 0s; }
+    .content   { animation-delay: 0.05s; }
+    footer     { animation-delay: 0.1s; }
   </style>
 </head>
 <body>
@@ -704,129 +677,152 @@
     <div class="version-badge">v2.0</div>
   </header>
 
-  <!-- Main content -->
+  <!-- Content -->
   <div class="content">
 
-    <!-- Alert Banner -->
-    <div id="alert-banner" style="display:none;">
-      <span id="alert-icon">⚠</span>
-      <span id="alert-text"></span>
-      <button id="alert-dismiss" onclick="dismissAlert()">✕</button>
-    </div>
+    <!-- Full-width banners -->
+    <div class="banners" id="banners">
 
-    <!-- Error panel (shown on connect/disconnect failures) -->
-    <div id="error-panel" style="display:none;" class="error-panel">
-      <div class="error-panel-msg" id="error-panel-msg">An error occurred.</div>
-      <div class="error-panel-actions">
-        <button class="report-btn" id="report-btn" onclick="sendReport()">Send to Admin</button>
-        <button class="dismiss-err-btn" onclick="dismissError()">Dismiss</button>
+      <!-- Alert Banner -->
+      <div id="alert-banner" style="display:none;">
+        <span id="alert-icon">⚠</span>
+        <span id="alert-text"></span>
+        <button id="alert-dismiss" onclick="dismissAlert()">✕</button>
       </div>
+
+      <!-- Error panel -->
+      <div id="error-panel" style="display:none;" class="error-panel">
+        <div class="error-panel-msg" id="error-panel-msg">An error occurred.</div>
+        <div class="error-panel-actions">
+          <button class="report-btn" id="report-btn" onclick="sendReport()">Send to Admin</button>
+          <button class="dismiss-err-btn" onclick="dismissError()">Dismiss</button>
+        </div>
+      </div>
+
+      <!-- MOTD -->
+      <div id="motd-banner" class="motd-banner" style="display:none;">
+        <span class="motd-icon">⚡</span>
+        <span id="motd-text"></span>
+      </div>
+
     </div>
 
-    <!-- MOTD Banner (Always present, fetched live) -->
-    <div id="motd-banner" class="motd-banner" style="display:none;">
-      <span class="motd-icon">⚡</span>
-      <span id="motd-text">Fetching server status...</span>
-    </div>
+    <!-- ── DASHBOARD (shown when provisioned) ── -->
+    <div class="dashboard" id="dashboard-section" style="display:none;">
 
-    <!-- Status card -->
-    <div>
-      <div class="section-label">Network Status</div>
-      <div class="status-card" id="status-card">
-        <div class="orb-wrap">
-          <div class="orb disconnected" id="status-orb">
-            <div class="orb-ring"></div>
-            <span id="status-icon">⬡</span>
+      <!-- LEFT: Connection + Telemetry -->
+      <div class="col" id="col-left">
+
+        <div>
+          <div class="section-label">Network</div>
+          <div class="status-card st-disconnected" id="status-card">
+            <div class="orb-wrap">
+              <div class="orb disconnected" id="status-orb">
+                <div class="orb-ring"></div>
+                <span id="status-icon">⬡</span>
+              </div>
+            </div>
+            <div class="status-info">
+              <div class="status-main disconnected" id="status-main">Disconnected</div>
+              <div class="status-sub" id="status-sub">Not connected to server</div>
+              <div class="session-timer" id="session-timer">00:00:00</div>
+            </div>
           </div>
         </div>
-        <div class="status-info">
-          <div class="status-main disconnected" id="status-main">Disconnected</div>
-          <div class="status-sub" id="status-sub">Not connected to server</div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Connect/Disconnect button -->
-    <button class="connect-btn action-connect" id="connect-btn" onclick="toggleConnect()" disabled>
-      Initializing...
-    </button>
+        <button class="connect-btn action-connect" id="connect-btn" onclick="toggleConnect()" disabled>
+          Initializing...
+        </button>
 
-    <!-- Setup panel (shown when not provisioned) -->
-    <div id="setup-panel" class="setup-panel hidden">
-      <div class="section-label" style="margin-bottom: 12px;">First-Time Setup</div>
-      <div class="setup-intro">
-        Enter the <strong>invite token</strong> sent to you. This will configure your VPN credentials automatically.
-      </div>
-      <div class="field">
-        <label>Invite Token</label>
-        <input type="text" id="token-input" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19"
-               oninput="formatToken(this)" />
-      </div>
-      <button class="redeem-btn" id="redeem-btn" onclick="redeemToken()">Activate Token</button>
-    </div>
+        <div>
+          <div class="section-label">Telemetry</div>
+          <div class="telemetry-grid">
+            <div class="tel-card">
+              <span class="tel-label">Latency</span>
+              <span class="tel-val highlight" id="tel-ping">---</span>
+            </div>
+            <div class="tel-card">
+              <span class="tel-label">Handshake</span>
+              <span class="tel-val" id="tel-handshake" style="font-size:12px;">Never</span>
+            </div>
+            <div class="tel-card">
+              <span class="tel-label">Received</span>
+              <span class="tel-val" id="tel-rx">0 B</span>
+            </div>
+            <div class="tel-card">
+              <span class="tel-label">Sent</span>
+              <span class="tel-val" id="tel-tx">0 B</span>
+            </div>
+          </div>
+        </div>
 
-    <!-- Connection info & Telemetry (shown when provisioned) -->
-    <div id="dashboard-section" style="display:none;">
-      
-      <!-- Static Info -->
-      <div id="info-card" class="info-card" style="margin-bottom: 16px;">
-        <div class="section-label" style="margin-bottom: 10px;">Connection Details</div>
-        <div class="info-row">
-          <span class="info-key">Player</span>
-          <span class="info-val" id="info-name">—</span>
-        </div>
-        <div class="info-row">
-          <span class="info-key">VPN IP</span>
-          <span class="info-val copyable" id="info-ip" title="Click to copy IP">—</span>
-        </div>
-        <div class="info-row">
-          <span class="info-key">Server</span>
-          <span class="info-val">{{ worker_url.replace("https://", "") }}</span>
-        </div>
       </div>
 
-      <!-- Live Telemetry -->
-      <div class="section-label" style="margin-bottom: 10px;">Live Telemetry</div>
-      <div class="telemetry-grid">
-        <div class="tel-card">
-          <span class="tel-label">Latency</span>
-          <span class="tel-val highlight" id="tel-ping">---</span>
-        </div>
-        <div class="tel-card">
-          <span class="tel-label">Handshake</span>
-          <span class="tel-val" id="tel-handshake" style="font-size: 12px; margin-top: 2px;">Never</span>
-        </div>
-        <div class="tel-card">
-          <span class="tel-label">Received</span>
-          <span class="tel-val" id="tel-rx">0 B</span>
-        </div>
-        <div class="tel-card">
-          <span class="tel-label">Sent</span>
-          <span class="tel-val" id="tel-tx">0 B</span>
-        </div>
-      </div>
+      <!-- RIGHT: Player + Online -->
+      <div class="col" id="col-right">
 
-      <!-- Who's Online -->
-      <div id="online-section" style="margin-top: 16px;">
-        <div class="section-label" style="margin-bottom: 10px;">Who's Online</div>
-        <div id="online-list-ui"></div>
+        <div>
+          <div class="section-label">Your Session</div>
+          <div class="player-card">
+            <div class="player-name-large" id="info-name">—</div>
+            <div class="info-row">
+              <span class="info-key">VPN IP</span>
+              <span class="info-val copyable" id="info-ip" title="Click to copy">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-key">Server</span>
+              <span class="info-val" style="font-size:11px;">{{ worker_url.replace("https://", "") }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="online-card">
+          <div class="section-label" style="margin-bottom:10px;">Who's Online</div>
+          <div class="online-list" id="online-list-ui">
+            <div class="online-empty">○ Checking...</div>
+          </div>
+        </div>
+
       </div>
 
     </div>
 
-    <!-- Re-token panel (hidden by default, shown when user clicks change token) -->
-    <div id="retoken-panel" class="setup-panel hidden">
-      <div class="section-label" style="margin-bottom: 12px;">Enter New Token</div>
-      <div class="setup-intro">Enter a new invite token to update your credentials.</div>
-      <div class="field" style="margin-top: 12px;">
-        <label>New Invite Token</label>
-        <input type="text" id="retoken-input" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19"
-               oninput="formatToken(this)" />
+    <!-- ── SETUP (shown when not provisioned) ── -->
+    <div class="setup-wrap" id="setup-wrap" style="display:none;">
+      <div id="setup-panel" class="setup-panel">
+        <div class="section-label" style="margin-bottom: 14px;">First-Time Setup</div>
+        <div class="setup-intro">
+          Enter the <strong>invite token</strong> sent to you. This will configure your VPN credentials automatically.
+        </div>
+        <div class="field">
+          <label>Invite Token</label>
+          <input type="text" id="token-input" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19"
+                 oninput="formatToken(this)" />
+        </div>
+        <button class="redeem-btn" id="redeem-btn" onclick="redeemToken()">Activate Token</button>
       </div>
-      <div style="display: flex; gap: 8px;">
-        <button class="redeem-btn" style="flex:1;" onclick="redeemRetoken()">Activate New Token</button>
-        <button class="redeem-btn" style="flex:0 0 auto; background: transparent; border: 1px solid var(--border2); color: var(--text-dim);" onclick="cancelRetoken()">Cancel</button>
+    </div>
+
+    <!-- ── RE-TOKEN (shown when changing token) ── -->
+    <div class="setup-wrap" id="retoken-wrap" style="display:none;">
+      <div class="setup-panel">
+        <div class="section-label" style="margin-bottom: 14px;">Enter New Token</div>
+        <div class="setup-intro">Enter a new invite token to update your credentials.</div>
+        <div class="field" style="margin-top: 12px;">
+          <label>New Invite Token</label>
+          <input type="text" id="retoken-input" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19"
+                 oninput="formatToken(this)" />
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="redeem-btn" style="flex:1;" onclick="redeemRetoken()">Activate New Token</button>
+          <button class="redeem-btn" style="flex:0 0 auto; background: transparent; border: 1px solid var(--border2); color: var(--text-dim);" onclick="cancelRetoken()">Cancel</button>
+        </div>
       </div>
+    </div>
+
+    <!-- Initializing placeholder -->
+    <div class="setup-wrap" id="init-wrap">
+      <div style="font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--text-dim); letter-spacing:2px;">INITIALIZING...</div>
     </div>
 
   </div>
@@ -834,8 +830,8 @@
   <!-- Footer -->
   <footer>
     <span class="footer-status" id="footer-status">INITIALIZING...</span>
-    <button id="invisible-btn" class="invisible-btn" onclick="toggleInvisible()" style="display:none;">👁 VISIBLE</button>
-    <div style="display: flex; gap: 16px; align-items: center;">
+    <div class="footer-right">
+      <button id="invisible-btn" class="invisible-btn" onclick="toggleInvisible()" style="display:none;">👁 VISIBLE</button>
       <span class="reset-link" id="change-token-link" onclick="showRetokenPanel()" style="display:none;">Change Token</span>
       <span class="reset-link" onclick="resetConfig()">Reset</span>
     </div>
@@ -846,16 +842,17 @@
 <div id="toast"></div>
 
 <script>
-  // ── State ────────────────────────────────────────────────────────────────
+  // ── State ─────────────────────────────────────────────────────────────────
   let state = {
     provisioned: false,
     connected: false,
     busy: false,
     name: '',
-    clientIp: ''
+    clientIp: '',
+    connectedAt: null
   };
 
-  // ── Toast ─────────────────────────────────────────────────────────────────
+  // ── Toast ──────────────────────────────────────────────────────────────────
   function toast(msg, type = 'info') {
     const el = document.getElementById('toast');
     el.textContent = msg;
@@ -864,26 +861,51 @@
     el._t = setTimeout(() => el.className = '', 3500);
   }
 
-  // ── Copy IP Helper ────────────────────────────────────────────────────────
+  // ── Session Timer ──────────────────────────────────────────────────────────
+  function startSessionTimer() {
+    state.connectedAt = Date.now();
+    document.getElementById('session-timer').classList.add('visible');
+  }
+
+  function stopSessionTimer() {
+    state.connectedAt = null;
+    document.getElementById('session-timer').classList.remove('visible');
+    document.getElementById('session-timer').textContent = '00:00:00';
+  }
+
+  function formatDuration(ms) {
+    const s = Math.floor(ms / 1000);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return [h, m, sec].map(v => String(v).padStart(2, '0')).join(':');
+  }
+
+  setInterval(() => {
+    if (state.connectedAt) {
+      document.getElementById('session-timer').textContent = formatDuration(Date.now() - state.connectedAt);
+    }
+  }, 1000);
+
+  // ── Copy IP ────────────────────────────────────────────────────────────────
   document.getElementById('info-ip').addEventListener('click', function() {
     const ip = this.textContent;
     if (ip && ip !== '—') {
       navigator.clipboard.writeText(ip).then(() => {
-        toast('IP Copied to Clipboard!', 'success');
-      }).catch(err => {
-        // Fallback for older browsers / iframe restrictions
+        toast('IP copied!', 'success');
+      }).catch(() => {
         const input = document.createElement('input');
         input.value = ip;
         document.body.appendChild(input);
         input.select();
         document.execCommand('copy');
         document.body.removeChild(input);
-        toast('IP Copied to Clipboard!', 'success');
+        toast('IP copied!', 'success');
       });
     }
   });
 
-  // ── Token formatter ───────────────────────────────────────────────────────
+  // ── Token formatter ────────────────────────────────────────────────────────
   function formatToken(input) {
     let val = input.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
     let formatted = '';
@@ -894,91 +916,35 @@
     input.value = formatted;
   }
 
-  // ── UI updaters ───────────────────────────────────────────────────────────
-  function updateTelemetryUI(t) {
-    if (!t) return;
-
-    const banner = document.getElementById('motd-banner');
-    if (t.motd && t.motd.trim() !== "") {
-      banner.style.display = 'flex';
-      document.getElementById('motd-text').textContent = t.motd;
-    } else {
-      banner.style.display = 'none';
-    }
-
-    document.getElementById('tel-ping').textContent = t.ping || '---';
-    document.getElementById('tel-handshake').textContent = t.handshake || 'Never';
-    document.getElementById('tel-rx').textContent = t.received || '0 B';
-    document.getElementById('tel-tx').textContent = t.sent || '0 B';
-
-    if (t.alert !== undefined) showAlert(t.alert);
-  }
-
-  function setStatus(statusKey) {
-    const orb = document.getElementById('status-orb');
-    const main = document.getElementById('status-main');
-    const sub = document.getElementById('status-sub');
-    const icon = document.getElementById('status-icon');
-    const btn = document.getElementById('connect-btn');
-    const footer = document.getElementById('footer-status');
-
-    orb.className = `orb ${statusKey}`;
-
-    if (statusKey === 'connected') {
-      icon.textContent = '⬡';
-      main.textContent = 'Connected';
-      main.className = 'status-main connected';
-      sub.textContent = state.clientIp || 'VPN Active';
-      btn.textContent = 'Disconnect';
-      btn.className = 'connect-btn action-disconnect';
-      btn.disabled = false;
-      footer.textContent = `ACTIVE · ${state.name.toUpperCase()}`;
-    } else if (statusKey === 'connecting') {
-      icon.textContent = '◌';
-      main.textContent = 'Connecting...';
-      main.className = 'status-main connecting';
-      sub.textContent = 'Establishing tunnel';
-      btn.textContent = 'Please wait...';
-      btn.className = 'connect-btn action-connect';
-      btn.disabled = true;
-      footer.textContent = 'CONNECTING...';
-    } else if (statusKey === 'disconnecting') {
-      icon.textContent = '◌';
-      main.textContent = 'Disconnecting...';
-      main.className = 'status-main connecting';
-      sub.textContent = 'Closing tunnel';
-      btn.textContent = 'Please wait...';
-      btn.className = 'connect-btn action-disconnect';
-      btn.disabled = true;
-      footer.textContent = 'DISCONNECTING...';
-    } else {
-      icon.textContent = '⬡';
-      main.textContent = 'Disconnected';
-      main.className = 'status-main disconnected';
-      sub.textContent = 'Click connect to join the server';
-      btn.textContent = 'Connect to Server';
-      btn.className = 'connect-btn action-connect';
-      btn.disabled = !state.provisioned;
-      footer.textContent = state.provisioned ? `READY · ${state.name.toUpperCase()}` : 'AWAITING SETUP';
+  // ── View helpers ──────────────────────────────────────────────────────────
+  function showView(view) {
+    document.getElementById('init-wrap').style.display         = 'none';
+    document.getElementById('dashboard-section').style.display = 'none';
+    document.getElementById('setup-wrap').style.display        = 'none';
+    document.getElementById('retoken-wrap').style.display      = 'none';
+    if (view === 'dashboard') {
+      document.getElementById('dashboard-section').style.display = 'grid';
+    } else if (view === 'setup') {
+      document.getElementById('setup-wrap').style.display = 'flex';
+    } else if (view === 'retoken') {
+      document.getElementById('retoken-wrap').style.display = 'flex';
     }
   }
 
   function showProvisioned() {
-    document.getElementById('setup-panel').classList.add('hidden');
-    document.getElementById('retoken-panel').classList.add('hidden');
-    document.getElementById('dashboard-section').style.display = 'block';
+    showView('dashboard');
     document.getElementById('info-name').textContent = state.name;
-    document.getElementById('info-ip').textContent = state.clientIp;
+    document.getElementById('info-ip').textContent   = state.clientIp;
     document.getElementById('change-token-link').style.display = 'inline';
+    document.getElementById('invisible-btn').style.display = 'inline-block';
     setStatus('disconnected');
   }
 
   function showUnprovisioned() {
-    document.getElementById('setup-panel').classList.remove('hidden');
-    document.getElementById('retoken-panel').classList.add('hidden');
-    document.getElementById('dashboard-section').style.display = 'none';
+    showView('setup');
     document.getElementById('change-token-link').style.display = 'none';
-    document.getElementById('motd-banner').style.display = 'none'; // Hide MOTD if not logged in
+    document.getElementById('invisible-btn').style.display = 'none';
+    document.getElementById('motd-banner').style.display = 'none';
     const btn = document.getElementById('connect-btn');
     btn.textContent = 'Connect to Server';
     btn.disabled = true;
@@ -986,17 +952,159 @@
   }
 
   function showRetokenPanel() {
-    document.getElementById('retoken-panel').classList.remove('hidden');
-    document.getElementById('dashboard-section').style.display = 'none';
+    showView('retoken');
     document.getElementById('change-token-link').style.display = 'none';
     document.getElementById('retoken-input').value = '';
     document.getElementById('retoken-input').focus();
   }
 
   function cancelRetoken() {
-    document.getElementById('retoken-panel').classList.add('hidden');
-    document.getElementById('dashboard-section').style.display = 'block';
+    showView('dashboard');
     document.getElementById('change-token-link').style.display = 'inline';
+  }
+
+  // ── Status ─────────────────────────────────────────────────────────────────
+  function setStatus(statusKey) {
+    const orb    = document.getElementById('status-orb');
+    const card   = document.getElementById('status-card');
+    const main   = document.getElementById('status-main');
+    const sub    = document.getElementById('status-sub');
+    const icon   = document.getElementById('status-icon');
+    const btn    = document.getElementById('connect-btn');
+    const footer = document.getElementById('footer-status');
+
+    orb.className  = `orb ${statusKey}`;
+    card.className = `status-card st-${statusKey}`;
+
+    if (statusKey === 'connected') {
+      icon.textContent = '⬡';
+      main.textContent = 'Connected';
+      main.className   = 'status-main connected';
+      sub.textContent  = state.clientIp || 'VPN Active';
+      btn.textContent  = 'Disconnect';
+      btn.className    = 'connect-btn action-disconnect';
+      btn.disabled     = false;
+      footer.textContent = `ACTIVE · ${state.name.toUpperCase()}`;
+      startSessionTimer();
+    } else if (statusKey === 'connecting') {
+      icon.textContent = '◌';
+      main.textContent = 'Connecting...';
+      main.className   = 'status-main connecting';
+      sub.textContent  = 'Establishing tunnel';
+      btn.textContent  = 'Please wait...';
+      btn.className    = 'connect-btn action-connect';
+      btn.disabled     = true;
+      footer.textContent = 'CONNECTING...';
+    } else if (statusKey === 'disconnecting') {
+      icon.textContent = '◌';
+      main.textContent = 'Disconnecting...';
+      main.className   = 'status-main connecting';
+      sub.textContent  = 'Closing tunnel';
+      btn.textContent  = 'Please wait...';
+      btn.className    = 'connect-btn action-disconnect';
+      btn.disabled     = true;
+      footer.textContent = 'DISCONNECTING...';
+      stopSessionTimer();
+    } else {
+      icon.textContent = '⬡';
+      main.textContent = 'Disconnected';
+      main.className   = 'status-main disconnected';
+      sub.textContent  = 'Click connect to join the server';
+      btn.textContent  = 'Connect to Server';
+      btn.className    = 'connect-btn action-connect';
+      btn.disabled     = !state.provisioned;
+      footer.textContent = state.provisioned ? `READY · ${state.name.toUpperCase()}` : 'AWAITING SETUP';
+      stopSessionTimer();
+    }
+  }
+
+  // ── Telemetry ──────────────────────────────────────────────────────────────
+  function updateTelemetryUI(t) {
+    if (!t) return;
+
+    const banner = document.getElementById('motd-banner');
+    if (t.motd && t.motd.trim()) {
+      banner.style.display = 'flex';
+      document.getElementById('motd-text').textContent = t.motd;
+    } else {
+      banner.style.display = 'none';
+    }
+
+    document.getElementById('tel-ping').textContent      = t.ping      || '---';
+    document.getElementById('tel-handshake').textContent = t.handshake || 'Never';
+    document.getElementById('tel-rx').textContent        = t.received  || '0 B';
+    document.getElementById('tel-tx').textContent        = t.sent      || '0 B';
+
+    if (t.alert !== undefined) showAlert(t.alert);
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  async function init() {
+    try {
+      const res = await fetch('/api/config');
+      const cfg = await res.json();
+      state.provisioned = cfg.provisioned;
+      state.name        = cfg.name;
+      state.clientIp    = cfg.client_ip;
+
+      if (state.provisioned) {
+        showProvisioned();
+        const sres = await fetch('/api/status');
+        const s    = await sres.json();
+        state.connected = s.connected;
+        setStatus(s.connected ? 'connected' : 'disconnected');
+        if (s.connected) startSessionTimer();
+        if (s.telemetry) updateTelemetryUI(s.telemetry);
+        if (s.telemetry && s.telemetry.alert) showAlert(s.telemetry.alert);
+        refreshOnline();
+        initInvisible();
+      } else {
+        showUnprovisioned();
+      }
+    } catch (e) {
+      document.getElementById('init-wrap').style.display = 'none';
+      document.getElementById('footer-status').textContent = 'ERROR · LOCAL SERVER UNREACHABLE';
+    }
+  }
+
+  // ── Token redemption ───────────────────────────────────────────────────────
+  async function redeemToken() {
+    const token = document.getElementById('token-input').value.trim();
+    if (token.replace(/-/g, '').length < 16) {
+      toast('Enter a complete 16-character token', 'error');
+      return;
+    }
+    const btn = document.getElementById('redeem-btn');
+    btn.disabled = true;
+    btn.textContent = 'Activating...';
+    try {
+      const workerRes = await fetch('{{ worker_url }}/api/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+      const data = await workerRes.json();
+      if (!workerRes.ok) {
+        toast(data.error || 'Invalid token', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Activate Token';
+        return;
+      }
+      await fetch('/api/provision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ private_key: data.private_key, client_ip: data.client_ip, name: data.name })
+      });
+      state.provisioned = true;
+      state.name        = data.name;
+      state.clientIp    = data.client_ip;
+      showProvisioned();
+      toast(`Welcome, ${data.name}! You're all set.`, 'success');
+    } catch (e) {
+      toast('Network error — check your internet connection', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Activate Token';
+    }
   }
 
   async function redeemRetoken() {
@@ -1005,105 +1113,15 @@
       toast('Enter a complete 16-character token', 'error');
       return;
     }
-    // Disconnect first if connected
     if (state.connected) {
       await fetch('/api/disconnect', { method: 'POST' });
       state.connected = false;
     }
-    // Reuse the same redeem logic
     document.getElementById('token-input').value = token;
     await redeemToken();
   }
 
-  // ── Init ──────────────────────────────────────────────────────────────────
-  async function init() {
-    try {
-      const res = await fetch('/api/config');
-      const cfg = await res.json();
-      state.provisioned = cfg.provisioned;
-      state.name = cfg.name;
-      state.clientIp = cfg.client_ip;
-
-      if (state.provisioned) {
-        showProvisioned();
-        // Check current connection & telemetry state
-        const sres = await fetch('/api/status');
-        const s = await sres.json();
-
-        state.connected = s.connected;
-        setStatus(s.connected ? 'connected' : 'disconnected');
-
-        if (s.telemetry) updateTelemetryUI(s.telemetry);
-        if (s.telemetry && s.telemetry.alert) showAlert(s.telemetry.alert);
-
-        refreshOnline();
-        initInvisible();
-
-        // Show invisible button
-        document.getElementById('invisible-btn').style.display = 'inline-block';
-
-      } else {
-        showUnprovisioned();
-      }
-    } catch (e) {
-      document.getElementById('footer-status').textContent = 'ERROR · LOCAL SERVER UNREACHABLE';
-    }
-  }
-
-  // ── Token redemption ──────────────────────────────────────────────────────
-  async function redeemToken() {
-    const token = document.getElementById('token-input').value.trim();
-    if (token.replace(/-/g, '').length < 16) {
-      toast('Enter a complete 16-character token', 'error');
-      return;
-    }
-
-    const btn = document.getElementById('redeem-btn');
-    btn.disabled = true;
-    btn.textContent = 'Activating...';
-
-    try {
-      // Call the Cloudflare Worker to redeem token
-      const workerRes = await fetch('{{ worker_url }}/api/redeem', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token })
-      });
-
-      const data = await workerRes.json();
-
-      if (!workerRes.ok) {
-        toast(data.error || 'Invalid token', 'error');
-        btn.disabled = false;
-        btn.textContent = 'Activate Token';
-        return;
-      }
-
-      // Save credentials locally
-      await fetch('/api/provision', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          private_key: data.private_key,
-          client_ip: data.client_ip,
-          name: data.name
-        })
-      });
-
-      state.provisioned = true;
-      state.name = data.name;
-      state.clientIp = data.client_ip;
-      showProvisioned();
-      toast(`Welcome, ${data.name}! You're all set.`, 'success');
-
-    } catch (e) {
-      toast('Network error — check your internet connection', 'error');
-      btn.disabled = false;
-      btn.textContent = 'Activate Token';
-    }
-  }
-
-  // ── Connect / Disconnect ──────────────────────────────────────────────────
+  // ── Connect / Disconnect ───────────────────────────────────────────────────
   async function toggleConnect() {
     if (state.busy) return;
     state.busy = true;
@@ -1111,7 +1129,7 @@
     if (!state.connected) {
       setStatus('connecting');
       try {
-        const res = await fetch('/api/connect', { method: 'POST' });
+        const res  = await fetch('/api/connect', { method: 'POST' });
         const data = await res.json();
         if (data.connected || data.success) {
           state.connected = true;
@@ -1137,11 +1155,10 @@
         state.connected = false;
       }
     }
-
     state.busy = false;
   }
 
-  // ── Reset ─────────────────────────────────────────────────────────────────
+  // ── Reset ──────────────────────────────────────────────────────────────────
   async function resetConfig() {
     if (!confirm('This will remove your saved credentials. You will need your invite token again. Continue?')) return;
     if (state.connected) {
@@ -1156,18 +1173,13 @@
     toast('Reset complete. Enter a new token to continue.');
   }
 
-  // ── Poll status while connected ───────────────────────────────────────────
-  // Changed interval from 5000ms to 2000ms to match the speedy backend polling
+  // ── Status poll ────────────────────────────────────────────────────────────
   setInterval(async () => {
     if (!state.provisioned || state.busy) return;
     try {
       const res = await fetch('/api/status');
-      const s = await res.json();
-      
-      // Update the new UI telemetry block
+      const s   = await res.json();
       if (s.telemetry) updateTelemetryUI(s.telemetry);
-
-      // Handle connection state changes
       if (s.connected !== state.connected && !state.busy) {
         state.connected = s.connected;
         setStatus(s.connected ? 'connected' : 'disconnected');
@@ -1175,33 +1187,34 @@
     } catch {}
   }, 2000);
 
-  // ── Who's Online ──────────────────────────────────────────────────────────
+  // ── Who's Online ───────────────────────────────────────────────────────────
   async function refreshOnline() {
     if (!state.provisioned) return;
     try {
-      const res = await fetch('/api/online');
+      const res    = await fetch('/api/online');
       const online = res.ok ? await res.json() : [];
-      const container = document.getElementById('online-list-ui');
+      const el     = document.getElementById('online-list-ui');
       if (!online.length) {
-        container.innerHTML = '<div class="online-empty">&#9675; No other players online</div>';
+        el.innerHTML = '<div class="online-empty">○ No other players online</div>';
         return;
       }
-      container.innerHTML = online.map(p =>
+      el.innerHTML = online.map(p =>
         `<div class="online-player"><div class="op-dot"></div><div class="op-name">${p.name}</div><div class="op-ip">${p.vpn_ip}</div></div>`
       ).join('');
     } catch {}
   }
-
   setInterval(refreshOnline, 30000);
 
-  // ── Appear Offline ────────────────────────────────────────────────────────
+  // ── Appear Offline ─────────────────────────────────────────────────────────
   let invisible = false;
 
   async function initInvisible() {
-    const res = await fetch('/api/invisible');
-    const d = await res.json();
-    invisible = d.invisible;
-    updateInvisibleBtn();
+    try {
+      const res = await fetch('/api/invisible');
+      const d   = await res.json();
+      invisible = d.invisible;
+      updateInvisibleBtn();
+    } catch {}
   }
 
   function updateInvisibleBtn() {
@@ -1209,11 +1222,11 @@
     if (!btn) return;
     if (invisible) {
       btn.textContent = '👁 HIDDEN';
-      btn.style.color = 'var(--text-dim)';
+      btn.style.color       = 'var(--text-dim)';
       btn.style.borderColor = 'var(--border2)';
     } else {
       btn.textContent = '👁 VISIBLE';
-      btn.style.color = 'var(--accent)';
+      btn.style.color       = 'var(--accent)';
       btn.style.borderColor = 'var(--accent)';
     }
   }
@@ -1229,11 +1242,11 @@
     toast(invisible ? 'You are now invisible to others' : 'You are now visible', invisible ? 'info' : 'success');
   }
 
-  // ── Alert Banner ──────────────────────────────────────────────────────────
+  // ── Alert Banner ───────────────────────────────────────────────────────────
   let dismissedAlerts = new Set(JSON.parse(localStorage.getItem('dismissedAlerts') || '[]'));
 
   function dismissAlert() {
-    const banner = document.getElementById('alert-banner');
+    const banner  = document.getElementById('alert-banner');
     const alertId = banner.dataset.alertId;
     if (alertId) {
       dismissedAlerts.add(alertId);
@@ -1245,15 +1258,15 @@
   function showAlert(alert) {
     if (!alert || dismissedAlerts.has(alert.id)) return;
     const banner = document.getElementById('alert-banner');
-    const icons = {info: '⚡', warning: '⚠', critical: '🔴'};
-    banner.className = `type-${alert.type}`;
-    banner.dataset.alertId = alert.id;
+    const icons  = {info: '⚡', warning: '⚠', critical: '🔴'};
+    banner.className          = `type-${alert.type}`;
+    banner.dataset.alertId    = alert.id;
     document.getElementById('alert-icon').textContent = icons[alert.type] || '⚡';
     document.getElementById('alert-text').textContent = alert.message;
     banner.style.display = 'flex';
   }
 
-  // ── Error Panel ───────────────────────────────────────────────────────────
+  // ── Error Panel ────────────────────────────────────────────────────────────
   let lastError = '';
 
   function showError(msg) {
@@ -1261,7 +1274,7 @@
     document.getElementById('error-panel-msg').textContent = msg;
     const btn = document.getElementById('report-btn');
     btn.textContent = 'Send to Admin';
-    btn.disabled = false;
+    btn.disabled    = false;
     document.getElementById('error-panel').style.display = 'flex';
   }
 
@@ -1273,7 +1286,7 @@
   async function sendReport() {
     const btn = document.getElementById('report-btn');
     btn.textContent = 'Sending...';
-    btn.disabled = true;
+    btn.disabled    = true;
     try {
       const res = await fetch('/api/report', {
         method: 'POST',
@@ -1286,16 +1299,16 @@
       } else {
         toast('Failed to send report', 'error');
         btn.textContent = 'Send to Admin';
-        btn.disabled = false;
+        btn.disabled    = false;
       }
     } catch (e) {
       toast('Could not reach local server', 'error');
       btn.textContent = 'Send to Admin';
-      btn.disabled = false;
+      btn.disabled    = false;
     }
   }
 
-  // ── Boot ──────────────────────────────────────────────────────────────────
+  // ── Boot ───────────────────────────────────────────────────────────────────
   init();
 </script>
 </body>
