@@ -46,6 +46,30 @@ def wg_exe():
         return system
     return None
 
+# ─── Dynamic Server Config ───────────────────────────────────────────────────
+
+def fetch_server_config():
+    """
+    Fetches live server config from the Cloudflare Worker.
+    Falls back to hardcoded values if the Worker is unreachable.
+    """
+    import urllib.request
+    try:
+        with urllib.request.urlopen(f"{WORKER_URL}/api/server-config", timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+            return {
+                "endpoint":   data.get("endpoint",  SERVER_ENDPOINT),
+                "public_key": data.get("publicKey", SERVER_PUBLIC_KEY),
+                "allowed_ips": data.get("allowedIPs", ALLOWED_IPS)
+            }
+    except Exception:
+        # Worker unreachable — use hardcoded fallback silently
+        return {
+            "endpoint":   SERVER_ENDPOINT,
+            "public_key": SERVER_PUBLIC_KEY,
+            "allowed_ips": ALLOWED_IPS
+        }
+
 # ─── Zombie Tunnel Prevention ─────────────────────────────────────────────────
 
 def cleanup_tunnel():
@@ -92,15 +116,18 @@ def api_connect():
         with open(CONFIG_FILE, "r") as f:
             config_data = json.load(f)
             
+        # Fetch live server config (falls back to hardcoded if Worker unreachable)
+        srv = fetch_server_config()
+
         # Build the WireGuard config file
         conf_content = f"""[Interface]
 PrivateKey = {config_data['private_key']}
 Address = {config_data['vpn_ip']}
 
 [Peer]
-PublicKey = {SERVER_PUBLIC_KEY}
-Endpoint = {SERVER_ENDPOINT}
-AllowedIPs = {ALLOWED_IPS}
+PublicKey = {srv['public_key']}
+Endpoint = {srv['endpoint']}
+AllowedIPs = {srv['allowed_ips']}
 PersistentKeepalive = 25
 """
         conf_path = os.path.join(os.path.expanduser("~"), f"{TUNNEL_NAME}.conf")
