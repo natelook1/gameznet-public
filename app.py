@@ -36,11 +36,15 @@ def resource_path(relative_path):
     return os.path.join(base, relative_path)
 
 def wg_exe():
-    path = resource_path("wireguard.exe")
-    if not os.path.exists(path):
-        # Fall back to Program Files if local exe is missing
-        path = r"C:\Program Files\WireGuard\wireguard.exe"
-    return path
+    # Check local install dir first
+    local = resource_path("wireguard.exe")
+    if os.path.exists(local):
+        return local
+    # Fall back to system install
+    system = r"C:\Program Files\WireGuard\wireguard.exe"
+    if os.path.exists(system):
+        return system
+    return None
 
 # ─── Zombie Tunnel Prevention ─────────────────────────────────────────────────
 
@@ -50,13 +54,14 @@ def cleanup_tunnel():
     even if the user forcibly closes the background command prompt window.
     """
     try:
-        # Hide the command window during cleanup
-        CREATE_NO_WINDOW = 0x08000000
-        subprocess.run(
-            [wg_exe(), "/uninstalltunnelservice", TUNNEL_NAME], 
-            capture_output=True, 
-            creationflags=CREATE_NO_WINDOW
-        )
+        wg = wg_exe()
+        if wg:
+            CREATE_NO_WINDOW = 0x08000000
+            subprocess.run(
+                [wg, "/uninstalltunnelservice", TUNNEL_NAME],
+                capture_output=True,
+                creationflags=CREATE_NO_WINDOW
+            )
     except Exception:
         pass
 
@@ -103,13 +108,37 @@ PersistentKeepalive = 25
             f.write(conf_content)
             
         # Install and start tunnel service
+        wg = wg_exe()
+        if not wg:
+            return jsonify({"error": "WireGuard not found. Please run the installer again from https://gamenet.natelook.workers.dev/install"}), 500
         CREATE_NO_WINDOW = 0x08000000
         subprocess.run(
-            [wg_exe(), "/installtunnelservice", conf_path], 
+            [wg, "/installtunnelservice", conf_path],
             capture_output=True, text=True, timeout=10,
             creationflags=CREATE_NO_WINDOW
         )
-        
+
+        # Verify the tunnel actually came up by checking for a handshake
+        handshake = False
+        for _ in range(5):
+            time.sleep(1)
+            result = subprocess.run(
+                [wg, "/show", TUNNEL_NAME],
+                capture_output=True, text=True,
+                creationflags=CREATE_NO_WINDOW
+            )
+            if "latest handshake" in result.stdout.lower():
+                handshake = True
+                break
+
+        if not handshake:
+            # Tunnel service installed but no handshake — clean up and report failure
+            subprocess.run(
+                [wg, "/uninstalltunnelservice", TUNNEL_NAME],
+                capture_output=True, creationflags=CREATE_NO_WINDOW
+            )
+            return jsonify({"error": "Could not reach the game server. Check your connection and try again."}), 503
+
         with _lock:
             _connected = True
         return jsonify({"success": True, "connected": True})
@@ -120,12 +149,14 @@ PersistentKeepalive = 25
 def api_disconnect():
     global _connected
     try:
+        wg = wg_exe()
         CREATE_NO_WINDOW = 0x08000000
-        subprocess.run(
-            [wg_exe(), "/uninstalltunnelservice", TUNNEL_NAME], 
-            capture_output=True, text=True, timeout=10,
-            creationflags=CREATE_NO_WINDOW
-        )
+        if wg:
+            subprocess.run(
+                [wg, "/uninstalltunnelservice", TUNNEL_NAME],
+                capture_output=True, text=True, timeout=10,
+                creationflags=CREATE_NO_WINDOW
+            )
         conf_path = os.path.join(os.path.expanduser("~"), f"{TUNNEL_NAME}.conf")
         if os.path.exists(conf_path):
             os.remove(conf_path)
