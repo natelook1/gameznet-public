@@ -286,6 +286,17 @@ PersistentKeepalive = 25
             return jsonify({"error": "WireGuard not found. Please run the installer again from https://gamenet.natelook.workers.dev/install"}), 500
         log.info("Using wireguard.exe at %s", wg)
         CREATE_NO_WINDOW = 0x08000000
+
+        # Clean up any leftover service from a previous failed attempt
+        uninstall_pre = subprocess.run(
+            [wg, "/uninstalltunnelservice", TUNNEL_NAME],
+            capture_output=True, text=True,
+            creationflags=CREATE_NO_WINDOW
+        )
+        log.debug("pre-connect uninstall: stdout=%r stderr=%r returncode=%s",
+                  uninstall_pre.stdout, uninstall_pre.stderr, uninstall_pre.returncode)
+        time.sleep(1)  # give SCM a moment to clean up
+
         install_result = subprocess.run(
             [wg, "/installtunnelservice", conf_path],
             capture_output=True, text=True, timeout=10,
@@ -293,6 +304,10 @@ PersistentKeepalive = 25
         )
         log.info("installtunnelservice stdout=%r stderr=%r returncode=%s",
                  install_result.stdout, install_result.stderr, install_result.returncode)
+        if install_result.returncode != 0:
+            log.error("installtunnelservice FAILED — stdout=%r stderr=%r",
+                      install_result.stdout, install_result.stderr)
+            return jsonify({"error": f"WireGuard failed to install tunnel service (code {install_result.returncode}). Try running the GamezNET installer again."}), 503
 
         # Verify the tunnel interface actually came up (wg show returns valid output).
         # We do NOT require a handshake here — that needs the server to respond,
