@@ -48,6 +48,16 @@ def wg_exe():
         return system
     return None
 
+def wg_cli():
+    """
+    Returns path to wg.exe — the WireGuard CLI utility used for 'wg show'.
+    Separate from wireguard.exe (the GUI/service manager) which does NOT support /show.
+    """
+    system = r"C:\Program Files\WireGuard\wg.exe"
+    if os.path.exists(system):
+        return system
+    return None
+
 # ─── Dynamic Server Config ───────────────────────────────────────────────────
 
 def fetch_server_config():
@@ -146,13 +156,13 @@ def update_telemetry():
             except Exception:
                 _telemetry["ping"] = "Error"
 
-            # 3. WireGuard Stats (wg show)
+            # 3. WireGuard Stats (wg show via wg.exe, not wireguard.exe)
             try:
-                wg = wg_exe()
+                wg = wg_cli()
                 if wg:
                     CREATE_NO_WINDOW = 0x08000000
                     output = subprocess.check_output(
-                        [wg, "/show", TUNNEL_NAME],
+                        [wg, "show", TUNNEL_NAME],
                         text=True,
                         creationflags=CREATE_NO_WINDOW
                     )
@@ -233,17 +243,30 @@ PersistentKeepalive = 25
         )
 
         # Verify the tunnel actually came up by checking for a handshake
+        # wg.exe show is the correct binary — wireguard.exe does NOT support /show
+        wg_show = wg_cli()
         handshake = False
-        for _ in range(5):
+        for _ in range(10):
             time.sleep(1)
-            result = subprocess.run(
-                [wg, "/show", TUNNEL_NAME],
-                capture_output=True, text=True,
-                creationflags=CREATE_NO_WINDOW
-            )
-            if "latest handshake" in result.stdout.lower():
-                handshake = True
-                break
+            if wg_show:
+                result = subprocess.run(
+                    [wg_show, "show", TUNNEL_NAME],
+                    capture_output=True, text=True,
+                    creationflags=CREATE_NO_WINDOW
+                )
+                if "latest handshake" in result.stdout.lower():
+                    handshake = True
+                    break
+            else:
+                # wg.exe not found — check service is running as a fallback
+                svc = subprocess.run(
+                    ["sc", "query", f"WireGuardTunnel${TUNNEL_NAME}"],
+                    capture_output=True, text=True,
+                    creationflags=CREATE_NO_WINDOW
+                )
+                if "RUNNING" in svc.stdout:
+                    handshake = True
+                    break
 
         if not handshake:
             # Tunnel service installed but no handshake — clean up and report failure
