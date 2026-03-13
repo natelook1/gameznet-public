@@ -1,139 +1,153 @@
-# GamezNET
+🎮 GamezNET
 
-**Private game server network — secure, simple, one command to get started.**
+Private game server network — secure, simple, one command to get started.
 
 No config files. No technical knowledge needed. If you can open PowerShell and paste a line, you're good.
 
----
+🚀 Getting Started
 
-## Getting Started
+Step 1 — Install
 
-### Step 1 — Install
+Press Win + R, type powershell, and hit Enter. Then paste this command and hit Enter:
 
-Press `Win + R`, type `powershell`, hit Enter. Then paste this and hit Enter:
+irm [https://gamenet.natelook.workers.dev/install](https://gamenet.natelook.workers.dev/install) | iex
 
-```powershell
-irm https://gamenet.natelook.workers.dev/install | iex
-```
 
-> Windows will ask for Administrator access — click **Yes**. The VPN needs it to work.
+🛡️ Note: Windows will ask for Administrator access — click Yes. The VPN needs these permissions to securely configure the network tunnel.
 
 The installer handles everything automatically:
-- Downloads the app
-- Installs Python (if you don't have it)
-- Installs WireGuard VPN (if you don't have it)
-- Creates a **GamezNET** shortcut on your desktop
 
-When it's done, the app opens in your browser automatically.
+📥 Downloads the app components.
 
----
+🐍 Installs Python 3 (if you don't have it).
 
-### Step 2 — Enter Your Token
+🌐 Installs WireGuard VPN (if you don't have it).
 
-When the app opens you'll see a token field. Enter the invite token the admin sent you and click **Activate Token**.
+🖥️ Creates a GamezNET shortcut on your desktop.
 
-Your credentials are saved — you'll never need to enter the token again.
+When it's done, the installer opens the application folder so you can see your new files.
 
----
+Step 2 — Activate
 
-### Step 3 — Connect
+Double-click the GamezNET icon on your desktop.
 
-Click **Connect to Server**. That's it. Launch your game and join the server.
+A browser tab will open with a token field.
 
----
+Enter the invite token the admin sent you and click Activate Token.
 
-## Every Time After That
+Your credentials are saved securely — you'll never need to enter the token again.
 
-1. Double-click **GamezNET** on your desktop
-2. Click **Connect to Server**
-3. Play
+Step 3 — Connect
 
-When you're done, click **Disconnect** — or just close the browser tab. Either way the VPN drops cleanly.
+Click Connect to Server. That's it! Launch your game and join the server.
 
----
+🕹️ Every Time After That
 
-## Common Issues
+Double-click GamezNET on your desktop.
 
-**The app didn't open after installing**
-Run the install command again — it's safe to repeat and will fix most issues.
+Click Connect to Server.
 
-**"Python not found" or similar error when launching**
-Run the install command again. It will detect what's missing and fix it.
+Play.
 
-**"Invalid token"**
-Double-check the token was copied correctly, dashes included. Tokens look like `XXXX-XXXX-XXXX-XXXX`. Contact the admin if it still doesn't work.
+When you're done, click Disconnect — or just close the browser tab. Either way, the VPN drops cleanly.
 
-**Got a new token and need to update**
-Click **Change Token** in the bottom-right corner of the app.
+🛠️ Common Issues
 
-**Browser didn't open automatically**
-Open your browser and go to: `http://localhost:7734`
+The app didn't open after installing
+The installer opens the folder and creates a desktop icon. Double-click the GamezNET icon on your desktop to start.
 
-**Connected but can't reach the game server**
-Give it 10 seconds after connecting, then try again. If it keeps happening, contact the admin.
+"Python not found" or similar error when launching
+Run the install command again. It will detect what's missing, fix the system paths, and get you running.
 
----
+"Invalid token"
+Double-check the token was copied correctly, dashes included. Tokens look like XXXX-XXXX-XXXX-XXXX. Contact the admin if it still doesn't work.
 
-## Need Help?
+Got a new token and need to update
+Click Change Token in the bottom-right corner of the app dashboard.
 
-Reach out to the server admin — don't struggle alone. Running the install command again fixes the majority of issues.
+Browser didn't open automatically when launching
+Ensure the terminal window is open, then go to: http://localhost:7734
 
----
+Connected but can't reach the game server
+Give it 10 seconds for the handshake to complete. If it persists, ensure your game is looking at the server address provided by the admin.
+
+🆘 Need Help?
+
+Reach out to the server admin — don't struggle alone. Running the install command again fixes the majority of issues by refreshing the core files.
 
 <details>
 <summary>⚙️ Admin & Developer Reference</summary>
 
-### Stack
+Stack
 
-| Component | Purpose |
-|-----------|---------|
-| Cloudflare Worker + KV | Token management, install script, API |
-| GitHub (this repo) | Client file hosting |
-| Flask (localhost:7734) | Local app server on user's PC |
-| WireGuard | VPN tunnel |
-| UDM Pro | WireGuard server |
+Component
 
-### Key URLs
+Purpose
 
-| | |
-|---|---|
-| Admin panel | https://gamenet.natelook.workers.dev/admin |
-| Install endpoint | https://gamenet.natelook.workers.dev/install |
-| Token redemption API | https://gamenet.natelook.workers.dev/api/redeem |
+Cloudflare Worker + KV
 
-### Adding a Player
+Token management, install script, Discovery API
 
-1. Add them as a WireGuard peer on the UDM Pro — assign them a VPN IP (e.g. `192.168.8.x/32`) and generate a keypair
-2. Open the [admin panel](https://gamenet.natelook.workers.dev/admin)
-3. Enter their name, VPN IP, and private key → click **Generate Token**
-4. Send them the token and the install command
+Cloudflare DNS API
 
-### Revoking a Player
+Automated sync for gaming.looknet.ca
 
-Click **Revoke** in the admin panel. Also remove their peer from the UDM Pro WireGuard config.
+GitHub Repo
 
-### Deploying Worker Updates
+Client file hosting
 
-```bash
+Flask (localhost:7734)
+
+Local app server on user's PC
+
+WireGuard
+
+High-performance VPN tunnel
+
+UDM Pro
+
+WireGuard server & DDNS Heartbeat
+
+Key URLs
+
+Resource
+
+URL
+
+Admin Panel
+
+gamenet.natelook.workers.dev/admin
+
+Install Endpoint
+
+gamenet.natelook.workers.dev/install
+
+Discovery API
+
+gamenet.natelook.workers.dev/api/server-config
+
+Adding a Player
+
+Add them as a WireGuard peer on the UDM Pro — assign them a VPN IP (e.g. 192.168.8.x/32) and generate a keypair.
+
+Open the admin panel.
+
+Enter their name, VPN IP, and private key → click Generate Token.
+
+Send them the token and the install command.
+
+Automated DDNS
+
+The UDM Pro heartbeats to the worker every 15 minutes. This updates the internal KV store and triggers a Cloudflare API call to update the A record for gaming.looknet.ca to your current home IP.
+
+Deploying Updates
+
+Worker:
+
 wrangler deploy
-```
 
-### Pushing Client Updates
 
-```bash
-git add .
-git commit -m "description"
-git push
-```
-
-Users automatically get updated files next time they run the install command.
-
-### UDM Pro Settings (app.py)
-
-```python
-SERVER_PUBLIC_KEY = "your-server-public-key"
-SERVER_ENDPOINT   = "your.public.ip:51820"
-ALLOWED_IPS       = "192.168.8.0/24, 192.168.1.0/24"
-```
+Client:
+Push changes to GitHub. Users automatically get updated files next time they run the install command.
 
 </details>
