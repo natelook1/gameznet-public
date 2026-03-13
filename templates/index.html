@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GameNet</title>
+  <title>GamezNET</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="shortcut icon" href="/static/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -515,9 +517,9 @@
 
   <!-- Header -->
   <header>
-    <div class="logo-mark">GN</div>
+    <div class="logo-mark">GZ</div>
     <div class="logo-text">
-      <h1>GameNet</h1>
+      <h1>GamezNET</h1>
       <p>Private Game Server Network</p>
     </div>
     <div class="version-badge">v1.0</div>
@@ -579,12 +581,30 @@
       </div>
     </div>
 
+    <!-- Re-token panel (hidden by default, shown when user clicks change token) -->
+    <div id="retoken-panel" class="setup-panel hidden">
+      <div class="section-label" style="margin-bottom: 12px;">Enter New Token</div>
+      <div class="setup-intro">Enter a new invite token to update your credentials.</div>
+      <div class="field" style="margin-top: 12px;">
+        <label>New Invite Token</label>
+        <input type="text" id="retoken-input" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19"
+               oninput="formatToken(this)" />
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="redeem-btn" style="flex:1;" onclick="redeemRetoken()">Activate New Token</button>
+        <button class="redeem-btn" style="flex:0 0 auto; background: transparent; border: 1px solid var(--border2); color: var(--text-dim);" onclick="cancelRetoken()">Cancel</button>
+      </div>
+    </div>
+
   </div>
 
   <!-- Footer -->
   <footer>
     <span class="footer-status" id="footer-status">INITIALIZING...</span>
-    <span class="reset-link" onclick="resetConfig()">Reset / Re-enter Token</span>
+    <div style="display: flex; gap: 16px; align-items: center;">
+      <span class="reset-link" id="change-token-link" onclick="showRetokenPanel()" style="display:none;">Change Token</span>
+      <span class="reset-link" onclick="resetConfig()">Reset</span>
+    </div>
   </footer>
 
 </div>
@@ -673,19 +693,53 @@
 
   function showProvisioned() {
     document.getElementById('setup-panel').classList.add('hidden');
+    document.getElementById('retoken-panel').classList.add('hidden');
     document.getElementById('info-card').style.display = 'block';
     document.getElementById('info-name').textContent = state.name;
     document.getElementById('info-ip').textContent = state.clientIp;
+    document.getElementById('change-token-link').style.display = 'inline';
     setStatus('disconnected');
   }
 
   function showUnprovisioned() {
     document.getElementById('setup-panel').classList.remove('hidden');
+    document.getElementById('retoken-panel').classList.add('hidden');
     document.getElementById('info-card').style.display = 'none';
+    document.getElementById('change-token-link').style.display = 'none';
     const btn = document.getElementById('connect-btn');
     btn.textContent = 'Connect to Server';
     btn.disabled = true;
     setStatus('disconnected');
+  }
+
+  function showRetokenPanel() {
+    document.getElementById('retoken-panel').classList.remove('hidden');
+    document.getElementById('info-card').style.display = 'none';
+    document.getElementById('change-token-link').style.display = 'none';
+    document.getElementById('retoken-input').value = '';
+    document.getElementById('retoken-input').focus();
+  }
+
+  function cancelRetoken() {
+    document.getElementById('retoken-panel').classList.add('hidden');
+    document.getElementById('info-card').style.display = 'block';
+    document.getElementById('change-token-link').style.display = 'inline';
+  }
+
+  async function redeemRetoken() {
+    const token = document.getElementById('retoken-input').value.trim();
+    if (token.replace(/-/g, '').length < 16) {
+      toast('Enter a complete 16-character token', 'error');
+      return;
+    }
+    // Disconnect first if connected
+    if (state.connected) {
+      await fetch('/api/disconnect', { method: 'POST' });
+      state.connected = false;
+    }
+    // Reuse the same redeem logic
+    document.getElementById('token-input').value = token;
+    await redeemToken();
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────

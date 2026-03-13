@@ -1,7 +1,7 @@
 """
-GameNet - Local Flask Backend
+GamezNET - Local Flask Backend
 Manages WireGuard tunnel via WireGuard Windows CLI.
-Runs as localhost:7734 — opened automatically by GameNet.bat
+Runs as localhost:7734 — opened automatically by GamezNET.bat
 """
 
 import os
@@ -17,8 +17,8 @@ from flask import Flask, request, jsonify, render_template, send_from_directory
 # ─── Configuration ────────────────────────────────────────────────────────────
 
 WORKER_URL = "https://gamenet.natelook.workers.dev"
-TUNNEL_NAME = "GameNet"
-CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gamenet_config.json")
+TUNNEL_NAME = "GamezNET"
+CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.1.0/24"
@@ -84,7 +84,7 @@ def is_tunnel_running():
 
 # ─── Flask App ────────────────────────────────────────────────────────────────
 
-app = Flask(__name__, template_folder="templates", static_folder="static")
+app = Flask(__name__, template_folder="templates", static_folder="static", static_url_path="/static")
 _connected = False
 _lock = threading.Lock()
 
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     ensure_admin()
     print(f"""
 +========================================+
-|         GameNet Local Server           |
+|         GamezNET Local Server           |
 |   Running at http://localhost:{PORT}     |
 +========================================+
 """)

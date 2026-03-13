@@ -1,9 +1,9 @@
-# GameNet - First Run Setup
+# GamezNET - First Run Setup
 # Right-click this file and select "Run with PowerShell"
 
 Write-Host ""
 Write-Host "  +==========================================+" -ForegroundColor Cyan
-Write-Host "  |           GAMENET INSTALLER              |" -ForegroundColor Cyan
+Write-Host "  |           GAMEZNET INSTALLER              |" -ForegroundColor Cyan
 Write-Host "  |     Private Game Server Network          |" -ForegroundColor Cyan
 Write-Host "  +==========================================+" -ForegroundColor Cyan
 Write-Host ""

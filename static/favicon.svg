@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#07090f"/>
+  <rect x="2" y="2" width="28" height="28" fill="none" stroke="#00c8ff" stroke-width="1.5"/>
+  <text x="16" y="14" font-family="monospace" font-size="7" font-weight="bold" fill="#00c8ff" text-anchor="middle">Gmz</text>
+  <text x="16" y="23" font-family="monospace" font-size="7" font-weight="bold" fill="#00c8ff" text-anchor="middle">NET</text>
+</svg>

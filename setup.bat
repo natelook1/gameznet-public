@@ -1,11 +1,11 @@
 @echo off
 chcp 437 >nul
 setlocal EnableDelayedExpansion
-title GameNet Setup
+title GamezNET Setup
 
 echo.
 echo  +==========================================+
-echo  ^|          GAMENET SETUP v1.0              ^|
+echo  ^|          GAMEZNET SETUP v1.0              ^|
 echo  ^|     Private Game Server Network          ^|
 echo  +==========================================+
 echo.
@@ -114,18 +114,18 @@ if exist "%INSTALL_DIR%wireguard.exe" (
 echo.
 echo  [4/4] Creating desktop shortcut...
 
-set "SHORTCUT=%USERPROFILE%\Desktop\GameNet.lnk"
-set "LAUNCHER=%INSTALL_DIR%GameNet.bat"
+set "SHORTCUT=%USERPROFILE%\Desktop\GamezNET.lnk"
+set "LAUNCHER=%INSTALL_DIR%GamezNET.bat"
 
-powershell -Command "& { $ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT%'); $s.TargetPath = '%LAUNCHER%'; $s.WorkingDirectory = '%INSTALL_DIR%'; $s.Description = 'GameNet - Private Game Server Network'; $s.Save() }"
+powershell -Command "& { $ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT%'); $s.TargetPath = '%LAUNCHER%'; $s.WorkingDirectory = '%INSTALL_DIR%'; $s.Description = 'GamezNET - Private Game Server Network'; $s.Save() }"
 
-echo        Desktop shortcut created: GameNet
+echo        Desktop shortcut created: GamezNET
 
 echo.
 echo  +==========================================+
 echo  ^|         Setup Complete!                  ^|
 echo  ^|                                          ^|
-echo  ^|  Double-click GameNet on your desktop    ^|
+echo  ^|  Double-click GamezNET on your desktop    ^|
 echo  ^|  to launch. Enter your invite token      ^|
 echo  ^|  on first run.                           ^|
 echo  +==========================================+

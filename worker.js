@@ -59,7 +59,7 @@ function adminHTML() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GameNet Admin</title>
+  <title>GamezNET Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
@@ -365,7 +365,7 @@ function adminHTML() {
 <body>
 
 <header>
-  <div class="logo">GAME<span>NET</span></div>
+  <div class="logo">GAMEZ<span>NET</span></div>
   <div class="header-badge">ADMIN CONSOLE</div>
 </header>
 
@@ -638,24 +638,24 @@ async function handleRedeem(request, env) {
 async function handleStatus(request, env) {
   return jsonResponse({
     online: true,
-    service: 'GameNet',
+    service: 'GamezNET',
     timestamp: new Date().toISOString()
   });
 }
 
 async function handleInstall(request, env) {
   const script = `
-# GameNet Installer
+# GamezNET Installer
 # Run this in PowerShell as Administrator:
 #   irm https://gamenet.natelook.workers.dev/install | iex
 
 $ErrorActionPreference = 'Stop'
 $repo = "https://raw.githubusercontent.com/natelook1/gamenet-client/main"
-$installDir = "$env:LOCALAPPDATA\\GameNet"
+$installDir = "$env:LOCALAPPDATA\\GamezNET"
 
 Write-Host ""
 Write-Host "  +==========================================+" -ForegroundColor Cyan
-Write-Host "  |           GAMENET INSTALLER              |" -ForegroundColor Cyan
+Write-Host "  |           GAMEZNET INSTALLER              |" -ForegroundColor Cyan
 Write-Host "  |     Private Game Server Network          |" -ForegroundColor Cyan
 Write-Host "  +==========================================+" -ForegroundColor Cyan
 Write-Host ""
@@ -672,14 +672,16 @@ if (-not $isAdmin) {
 Write-Host "  [1/5] Creating install directory..." -ForegroundColor Yellow
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 New-Item -ItemType Directory -Force -Path "$installDir\\templates" | Out-Null
+New-Item -ItemType Directory -Force -Path "$installDir\\static" | Out-Null
 
 # Download files
-Write-Host "  [2/5] Downloading GameNet files..." -ForegroundColor Yellow
+Write-Host "  [2/5] Downloading GamezNET files..." -ForegroundColor Yellow
 $files = @(
     @{ url = "$repo/app.py";                  dest = "$installDir\\app.py" },
     @{ url = "$repo/setup.bat";               dest = "$installDir\\setup.bat" },
-    @{ url = "$repo/GameNet.bat";             dest = "$installDir\\GameNet.bat" },
-    @{ url = "$repo/templates/index.html";    dest = "$installDir\\templates\\index.html" }
+    @{ url = "$repo/GamezNET.bat";             dest = "$installDir\\GamezNET.bat" },
+    @{ url = "$repo/templates/index.html";    dest = "$installDir\\templates\\index.html" },
+    @{ url = "$repo/static/favicon.svg";      dest = "$installDir\\static\\favicon.svg" }
 )
 foreach ($file in $files) {
     Invoke-WebRequest -Uri $file.url -OutFile $file.dest -UseBasicParsing
@@ -708,10 +710,10 @@ Write-Host "         Dependencies installed." -ForegroundColor Green
 # Create desktop shortcut
 Write-Host "  [5/5] Creating desktop shortcut..." -ForegroundColor Yellow
 $ws = New-Object -ComObject WScript.Shell
-$shortcut = $ws.CreateShortcut("$env:USERPROFILE\\Desktop\\GameNet.lnk")
-$shortcut.TargetPath = "$installDir\\GameNet.bat"
+$shortcut = $ws.CreateShortcut("$env:USERPROFILE\\Desktop\\GamezNET.lnk")
+$shortcut.TargetPath = "$installDir\\GamezNET.bat"
 $shortcut.WorkingDirectory = $installDir
-$shortcut.Description = "GameNet - Private Game Server Network"
+$shortcut.Description = "GamezNET - Private Game Server Network"
 $shortcut.Save()
 Write-Host "         Desktop shortcut created." -ForegroundColor Green
 
@@ -719,13 +721,13 @@ Write-Host ""
 Write-Host "  +==========================================+" -ForegroundColor Cyan
 Write-Host "  |          Setup Complete!                 |" -ForegroundColor Cyan
 Write-Host "  |                                          |" -ForegroundColor Cyan
-Write-Host "  |  Double-click GameNet on your desktop   |" -ForegroundColor Cyan
+Write-Host "  |  Double-click GamezNET on your desktop   |" -ForegroundColor Cyan
 Write-Host "  |  and enter your invite token.            |" -ForegroundColor Cyan
 Write-Host "  +==========================================+" -ForegroundColor Cyan
 Write-Host ""
 
 # Launch the app
-Start-Process "$installDir\\GameNet.bat"
+Start-Process "$installDir\\GamezNET.bat"
 `;
 
   return new Response(script, {
