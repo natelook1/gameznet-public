@@ -417,6 +417,19 @@ function adminHTML() {
       </div>
     </div>
 
+    <!-- MOTD -->
+    <div class="card">
+      <div class="card-title">Message of the Day</div>
+      <div class="form-row single">
+        <div class="field">
+          <label>Displayed in the app (leave blank to disable)</label>
+          <input type="text" id="motd-input" placeholder="e.g. Server maintenance Friday 10pm" />
+        </div>
+      </div>
+      <button class="btn-primary" onclick="setMotd()">Update MOTD</button>
+      <button class="btn-danger" style="margin-left: 8px; vertical-align: middle;" onclick="clearMotd()">Clear</button>
+    </div>
+
     <!-- Token List -->
     <div class="card">
       <div class="card-title">Active Tokens</div>
@@ -451,6 +464,7 @@ function adminHTML() {
       document.getElementById('auth-gate').style.display = 'none';
       document.getElementById('main-panel').style.display = 'block';
       renderTokenList(await res.json());
+      loadMotd();
     } else {
       toast('Invalid password', true);
     }
@@ -506,6 +520,36 @@ function adminHTML() {
       body: JSON.stringify({ password: adminPassword })
     });
     if (res.ok) renderTokenList(await res.json());
+  }
+
+  async function loadMotd() {
+    try {
+      const res = await fetch('/api/motd');
+      const data = await res.json();
+      document.getElementById('motd-input').value = data.message || '';
+    } catch {}
+  }
+
+  async function setMotd() {
+    const message = document.getElementById('motd-input').value.trim();
+    const res = await fetch('/admin/motd', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPassword, message })
+    });
+    const data = await res.json();
+    if (res.ok) toast('MOTD updated!');
+    else toast(data.error || 'Failed to update MOTD', true);
+  }
+
+  async function clearMotd() {
+    document.getElementById('motd-input').value = '';
+    const res = await fetch('/admin/motd', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPassword, message: '' })
+    });
+    if (res.ok) toast('MOTD cleared');
   }
 
   function renderTokenList(tokens) {
@@ -696,6 +740,10 @@ async function handleRedeem(request, env) {
 
   const record = JSON.parse(raw);
 
+  if (record.redeemed) {
+    return jsonResponse({ error: 'Token already redeemed. Contact the admin for a new token.' }, 409);
+  }
+
   record.redeemed = true;
   record.redeemed_at = new Date().toISOString();
   await env.GAMENET_KV.put(`token:${token}`, JSON.stringify(record));
@@ -708,12 +756,21 @@ async function handleRedeem(request, env) {
   });
 }
 
-async function handleStatus(request, env) {
-  return jsonResponse({
-    online: true,
-    service: 'GamezNET',
-    timestamp: new Date().toISOString()
-  });
+async function handleMotd(request, env) {
+  const message = await env.GAMENET_KV.get('MOTD_MESSAGE') || '';
+  return jsonResponse({ message });
+}
+
+async function handleAdminSetMotd(request, env) {
+  const { authed, body } = await requireAdmin(request, env);
+  if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const message = (body.message || '').trim();
+  if (message) {
+    await env.GAMENET_KV.put('MOTD_MESSAGE', message);
+  } else {
+    await env.GAMENET_KV.delete('MOTD_MESSAGE');
+  }
+  return jsonResponse({ success: true });
 }
 
 async function handleInstall(request, env) {
@@ -798,7 +855,7 @@ if (-not $pythonOk) {
     Write-OK "Python 3.12 ready"
 }
 Write-INFO "Configuring local dependencies..."
-& $pythonCmd -m pip install flask requests pystray pillow --quiet
+& $pythonCmd -m pip install flask pystray pillow --quiet
 Write-OK "Environment configured"
 
 Write-Step 4 5 "Validating VPN Engine"
@@ -826,6 +883,12 @@ $s.TargetPath = Join-Path $installDir "GamezNET.bat"
 $s.WorkingDirectory = $installDir
 $s.Save()
 Write-OK "Desktop shortcut created"
+$startMenu = Join-Path ([System.Environment]::GetFolderPath("StartMenu")) "Programs"
+$s2 = $ws.CreateShortcut((Join-Path $startMenu "GamezNET.lnk"))
+$s2.TargetPath = Join-Path $installDir "GamezNET.bat"
+$s2.WorkingDirectory = $installDir
+$s2.Save()
+Write-OK "Start Menu shortcut created"
 
 Write-Host ""
 Write-Host "  --------------------------------------------------------" -ForegroundColor DarkGray
@@ -836,10 +899,10 @@ Write-Host "   1. Double-click GamezNET on your desktop" -ForegroundColor Gray
 Write-Host "   2. Enter the invite token sent to you" -ForegroundColor Gray
 Write-Host "   3. Click Connect - you are in!" -ForegroundColor Gray
 Write-Host ""
-Write-Host "  Opening GamezNET local directory..." -ForegroundColor DarkCyan
+Write-Host "  Launching GamezNET..." -ForegroundColor DarkCyan
 
-Start-Process "explorer.exe" -ArgumentList $installDir
-Write-Host "  Press any key to close this installer." -ForegroundColor DarkGray
+Start-Process -FilePath (Join-Path $installDir "GamezNET.bat")
+Write-Host "  Press any key to close this window." -ForegroundColor DarkGray
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 `;
 
@@ -878,6 +941,8 @@ export default {
     if (path === '/api/redeem' && method === 'POST') return handleRedeem(request, env);
     if (path === '/api/version' && method === 'GET') return handleVersion(request, env);
     if (path === '/api/status' && method === 'GET') return jsonResponse({ online: true });
+    if (path === '/api/motd' && method === 'GET') return handleMotd(request, env);
+    if (path === '/admin/motd' && method === 'POST') return handleAdminSetMotd(request, env);
     if (path === '/install' && method === 'GET') return handleInstall(request, env);
 
     return new Response('Not found', { status: 404 });

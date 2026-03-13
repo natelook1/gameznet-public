@@ -101,7 +101,7 @@ _telemetry = {
     "received": "0 B",
     "sent": "0 B",
     "handshake": "Never",
-    "motd": "Fetching server status..."
+    "motd": ""
 }
 
 def update_telemetry():
