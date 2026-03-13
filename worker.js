@@ -755,7 +755,6 @@ Write-OK "Install directory initialized"
 Write-Step 2 5 "Downloading GamezNET"
 $files = @(
     @{ url = "$repo/app.py";               dest = "$installDir\\\\app.py" },
-    @{ url = "$repo/setup.bat";            dest = "$installDir\\\\setup.bat" },
     @{ url = "$repo/GamezNET.bat";         dest = "$installDir\\\\GamezNET.bat" },
     @{ url = "$repo/templates/index.html"; dest = "$installDir\\\\templates\\\\index.html" },
     @{ url = "$repo/static/favicon.svg";   dest = "$installDir\\\\static\\\\favicon.svg" }
