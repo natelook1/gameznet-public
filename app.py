@@ -39,6 +39,21 @@ SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.1.0/24"
 PORT = 7734
 
+# ─── Single-Instance Protection ───────────────────────────────────────────────
+
+def ensure_single_instance():
+    """
+    Use a named Windows mutex to prevent multiple instances.
+    If another instance is already running, bring its browser window
+    to focus and exit cleanly.
+    """
+    mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "Global\\GamezNET_SingleInstance")
+    if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+        log.info("Another instance is already running — opening browser and exiting.")
+        webbrowser.open(f"http://localhost:{PORT}")
+        sys.exit(0)
+    return mutex  # Must keep reference alive — GC releasing it would free the mutex
+
 # ─── Utility ──────────────────────────────────────────────────────────────────
 
 def resource_path(relative_path):
@@ -440,6 +455,57 @@ def api_logs():
     except Exception as e:
         return jsonify({"log": f"Error reading log: {e}"})
 
+@app.route("/api/report", methods=["POST"])
+def api_report():
+    """Collect log tail and send an error report to the Worker."""
+    import urllib.request
+    data = request.json or {}
+    error_message = data.get("error_message", "No error message provided")
+
+    # Collect the last 150 lines of the log file
+    log_tail = ""
+    try:
+        if os.path.exists(LOG_FILE):
+            with open(LOG_FILE, "r") as f:
+                lines = f.readlines()
+            log_tail = "".join(lines[-150:])
+    except Exception as e:
+        log_tail = f"Could not read log: {e}"
+
+    # Read player config for identification
+    player_name = "Unknown"
+    vpn_ip = ""
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, "r") as f:
+                cfg = json.load(f)
+            player_name = cfg.get("name", "Unknown")
+            vpn_ip = cfg.get("vpn_ip", "")
+    except Exception:
+        pass
+
+    # POST to Worker
+    try:
+        payload = json.dumps({
+            "player": player_name,
+            "vpn_ip": vpn_ip,
+            "error_message": error_message,
+            "log_tail": log_tail
+        }).encode()
+        req = urllib.request.Request(
+            f"{WORKER_URL}/api/report",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            result = json.loads(resp.read().decode())
+        log.info("Error report sent for player=%s error=%s", player_name, error_message)
+        return jsonify({"success": True})
+    except Exception as e:
+        log.error("Failed to send error report: %s", e)
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/online", methods=["GET"])
 def api_online():
     """Proxy to Worker /api/online so the client UI can call it locally."""
@@ -651,6 +717,7 @@ def run_tray(flask_thread):
     tray.run()
 
 if __name__ == "__main__":
+    _instance_mutex = ensure_single_instance()   # ← single-instance guard (must be first)
     ensure_admin()
     hide_console()
 
