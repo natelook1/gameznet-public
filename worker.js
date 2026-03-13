@@ -676,6 +676,13 @@ async function handleServerConfig(request, env) {
   });
 }
 
+// ─── Version Handler ─────────────────────────────────────────────────────────
+
+async function handleVersion(request, env) {
+  const version = await env.GAMENET_KV.get('APP_VERSION') || "1.2";
+  return jsonResponse({ version });
+}
+
 // ─── Client API Handlers ─────────────────────────────────────────────────────
 
 async function handleRedeem(request, env) {
@@ -713,7 +720,7 @@ async function handleInstall(request, env) {
   const script = `
 # GamezNET Installer
 $ErrorActionPreference = 'Continue'
-$repo = "https://raw.githubusercontent.com/natelook1/gamenet-client/main"
+$repo = "https://raw.githubusercontent.com/natelook1/gameznet/main"
 $installDir = "$env:LOCALAPPDATA\\GamezNET"
 
 function Write-Step {
@@ -869,6 +876,7 @@ export default {
     if (path === '/admin/token/revoke' && method === 'POST') return handleAdminTokenRevoke(request, env);
     if (path === '/admin/tokens' && method === 'POST') return handleAdminTokenList(request, env);
     if (path === '/api/redeem' && method === 'POST') return handleRedeem(request, env);
+    if (path === '/api/version' && method === 'GET') return handleVersion(request, env);
     if (path === '/api/status' && method === 'GET') return jsonResponse({ online: true });
     if (path === '/install' && method === 'GET') return handleInstall(request, env);
 
