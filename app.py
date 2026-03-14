@@ -526,7 +526,8 @@ def api_online():
     """Proxy to Worker /api/online so the client UI can call it locally."""
     import urllib.request
     try:
-        with urllib.request.urlopen(f"{WORKER_URL}/api/online", timeout=5) as resp:
+        req = urllib.request.Request(f"{WORKER_URL}/api/online", headers={'User-Agent': 'GamezNET'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.read(), resp.status, {'Content-Type': 'application/json'}
     except Exception as e:
         log.debug("api_online proxy failed: %s", e)
