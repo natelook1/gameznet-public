@@ -1288,10 +1288,23 @@
     btn.textContent = 'Sending...';
     btn.disabled    = true;
     try {
-      const res = await fetch('/api/report', {
+      // Fetch log tail from local Flask, then POST directly to Worker from browser
+      // (bypasses Python urllib which can fail on admin-elevated processes on Windows)
+      let logTail = '';
+      try {
+        const logRes = await fetch('/api/logs');
+        if (logRes.ok) { const d = await logRes.json(); logTail = d.log || ''; }
+      } catch (_) {}
+
+      const res = await fetch('{{ worker_url }}/api/report', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({error_message: lastError || 'Manual report (no error message)'})
+        body: JSON.stringify({
+          player:        state.name || 'Unknown',
+          vpn_ip:        state.clientIp || '',
+          error_message: lastError || 'Manual report (no error message)',
+          log_tail:      logTail
+        })
       });
       if (res.ok) {
         toast('Report sent to admin', 'success');
@@ -1302,7 +1315,7 @@
         btn.disabled    = false;
       }
     } catch (e) {
-      toast('Could not reach local server', 'error');
+      toast('Could not reach server', 'error');
       btn.textContent = 'Send to Admin';
       btn.disabled    = false;
     }
