@@ -65,10 +65,10 @@ http:
       entryPoints: ["websecure"]
       service: gamez-svc
       middlewares: ["pterodactyl-https"]
-    gamenet-router:
-      rule: "Host(`gamenet.looknet.ca`)"
+    gameznet-router:
+      rule: "Host(`gameznet.looknet.ca`)"
       entryPoints: ["websecure"]
-      service: gamenet-svc
+      service: gameznet-svc
     homepage-router:
       rule: "Host(`home.looknet.ca`)"
       entryPoints: ["websecure"]
@@ -236,7 +236,7 @@ http:
     gamez-svc:
       loadBalancer:
         servers: [{url: "http://192.168.30.58:8880"}]
-    gamenet-svc:
+    gameznet-svc:
       loadBalancer:
         servers: [{url: "http://192.168.30.58:3000"}]
     code-svc:
