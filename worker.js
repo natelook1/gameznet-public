@@ -571,11 +571,22 @@ function adminHTML() {
       letter-spacing: 1px;
     }
 
+    .online-tile-game {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--accent);
+      letter-spacing: 1px;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .online-tile-ip {
       font-family: 'Share Tech Mono', monospace;
       font-size: 11px;
       color: var(--muted);
-      flex: 1;
+      flex: 0 0 140px;
     }
 
     .online-tile-ago {
@@ -724,6 +735,7 @@ function adminHTML() {
     .server-stat { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--muted); }
     .server-stat span { color: var(--text); }
 
+    .server-connect { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 1px; user-select: all; cursor: text; }
     .server-actions { display: flex; gap: 8px; }
     .btn-server {
       font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 1px;
@@ -1065,6 +1077,7 @@ function adminHTML() {
         <div class="online-tile-dot"></div>
         <div class="online-tile-name">\${p.name}</div>
         <div class="online-tile-hidden-badge">\${p.hidden ? '[HIDDEN]' : ''}</div>
+        <div class="online-tile-game">\${p.game || ''}</div>
         <div class="online-tile-ip">\${p.vpn_ip}</div>
         <div class="online-tile-ago">\${timeAgo(p.last_seen)}</div>
       </div>
@@ -1440,7 +1453,8 @@ function adminHTML() {
             <div class="server-stat">CPU <span>\${s.cpu}%</span></div>
             <div class="server-stat">RAM <span>\${fmtMem(s.memory_mb)}</span></div>
             <div class="server-stat">UP <span>\${fmtUptime(s.uptime)}</span></div>
-          </div>\` : ''}
+          </div>
+          \${s.port ? \`<div class="server-connect">\${s.host}:\${s.port}</div>\` : ''}\` : ''}
           <div class="server-actions">
             \${isOff ? \`<button class="btn-server btn-server-start" onclick="serverPower('\${s.id}','start')">Start</button>\` : ''}
             \${isRunning ? \`<button class="btn-server btn-server-restart" onclick="serverPower('\${s.id}','restart')">Restart</button>\` : ''}
@@ -1592,7 +1606,7 @@ async function handleServerConfig(request, env) {
   const wanIp    = await env.GAMENET_KV.get('SERVER_ENDPOINT_IP') || "184.66.15.159";
   const localIp  = await env.GAMENET_KV.get('SERVER_LOCAL_IP')    || "";
   const publicKey  = await env.GAMENET_KV.get('SERVER_PUBLIC_KEY')  || "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI=";
-  const allowedIPs = await env.GAMENET_KV.get('SERVER_ALLOWED_IPS') || "192.168.8.0/24, 192.168.1.0/24";
+  const allowedIPs = await env.GAMENET_KV.get('SERVER_ALLOWED_IPS') || "192.168.8.0/24, 192.168.30.0/24";
 
   // Split-horizon: if the client's WAN IP matches the server's WAN IP they're
   // behind the same router. Serve the LAN IP so WireGuard doesn't hairpin.
@@ -1612,7 +1626,7 @@ async function handleServerConfig(request, env) {
 
 async function handleHeartbeat(request, env) {
   const body = await request.json().catch(() => ({}));
-  const { name, vpn_ip, disconnecting } = body;
+  const { name, vpn_ip, disconnecting, game } = body;
 
   if (!name) return jsonResponse({ error: 'name required' }, 400);
 
@@ -1622,7 +1636,7 @@ async function handleHeartbeat(request, env) {
   if (disconnecting) {
     delete players[name];
   } else {
-    players[name] = { name, vpn_ip: vpn_ip || '', last_seen: new Date().toISOString() };
+    players[name] = { name, vpn_ip: vpn_ip || '', last_seen: new Date().toISOString(), game: game || null };
   }
 
   await env.GAMENET_KV.put('ONLINE_PLAYERS', JSON.stringify(players));
@@ -1641,7 +1655,7 @@ async function handleOnline(request, env) {
     .filter(p => new Date(p.last_seen).getTime() > cutoff)
     .filter(p => !hidden.has(p.name))
     .sort((a, b) => a.name.localeCompare(b.name))
-    .map(p => ({ name: p.name, vpn_ip: p.vpn_ip, last_seen: p.last_seen }));
+    .map(p => ({ name: p.name, vpn_ip: p.vpn_ip, last_seen: p.last_seen, game: p.game || null }));
 
   return jsonResponse(online);
 }
@@ -1661,7 +1675,7 @@ async function handleAdminOnline(request, env) {
   const online = Object.values(players)
     .filter(p => new Date(p.last_seen).getTime() > cutoff)
     .sort((a, b) => a.name.localeCompare(b.name))
-    .map(p => ({ name: p.name, vpn_ip: p.vpn_ip, last_seen: p.last_seen, hidden: hidden.has(p.name) }));
+    .map(p => ({ name: p.name, vpn_ip: p.vpn_ip, last_seen: p.last_seen, hidden: hidden.has(p.name), game: p.game || null }));
 
   return jsonResponse(online);
 }
@@ -2026,15 +2040,21 @@ const PTERO_SERVERS = [
 async function fetchPteroServers(env) {
   const results = await Promise.all(PTERO_SERVERS.map(async (s) => {
     try {
-      const res = await fetch(`${PTERO_URL}/api/client/servers/${s.id}/resources`, {
-        headers: {
-          'Authorization': `Bearer ${env.PTERODACTYL_API_KEY}`,
-          'Accept': 'application/json',
-        }
-      });
-      const data = await res.json();
+      const [resourcesRes, detailsRes] = await Promise.all([
+        fetch(`${PTERO_URL}/api/client/servers/${s.id}/resources`, {
+          headers: { 'Authorization': `Bearer ${env.PTERODACTYL_API_KEY}`, 'Accept': 'application/json' }
+        }),
+        fetch(`${PTERO_URL}/api/client/servers/${s.id}`, {
+          headers: { 'Authorization': `Bearer ${env.PTERODACTYL_API_KEY}`, 'Accept': 'application/json' }
+        })
+      ]);
+      const data = await resourcesRes.json();
+      const details = await detailsRes.json();
       const attrs = data.attributes || {};
       const resources = attrs.resources || {};
+      const allocations = details.attributes?.relationships?.allocations?.data || [];
+      const defaultAlloc = allocations.find(a => a.attributes?.is_default) || allocations[0];
+      const port = defaultAlloc?.attributes?.port || null;
       return {
         id: s.id,
         name: s.name,
@@ -2043,9 +2063,11 @@ async function fetchPteroServers(env) {
         memory_mb: Math.round((resources.memory_bytes || 0) / 1048576),
         disk_mb: Math.round((resources.disk_bytes || 0) / 1048576),
         uptime: resources.uptime || 0,
+        port: port,
+        host: '192.168.30.58',
       };
     } catch (e) {
-      return { id: s.id, name: s.name, state: 'unknown', cpu: 0, memory_mb: 0, disk_mb: 0, uptime: 0 };
+      return { id: s.id, name: s.name, state: 'unknown', cpu: 0, memory_mb: 0, disk_mb: 0, uptime: 0, port: null, host: '192.168.30.58' };
     }
   }));
   return results;
