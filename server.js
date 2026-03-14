@@ -271,7 +271,7 @@ Write-Host "  ========================================================" -Foregro
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-WARN "Relaunching as Administrator..."
-    Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command "irm https://gamenet.looknet.ca/install | iex"' -Verb RunAs
+    Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command "irm https://gameznet.looknet.ca/install | iex"' -Verb RunAs
     exit
 }
 
