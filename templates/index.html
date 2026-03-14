@@ -1491,7 +1491,7 @@
   async function pollChat() {
     if (!state.provisioned) return;
     try {
-      const res = await fetch(`/api/chat?since=${encodeURIComponent(chatSince)}`);
+      const res = await fetch(`{{ worker_url }}/api/chat?since=${encodeURIComponent(chatSince)}`);
       const msgs = await res.json();
       if (msgs.length) {
         appendMessages(msgs);
@@ -1506,7 +1506,7 @@
     if (!body || !state.name) return;
     input.value = '';
     try {
-      await fetch('/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name, body }) });
+      await fetch('{{ worker_url }}/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name, body }) });
     } catch {}
   }
 
