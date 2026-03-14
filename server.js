@@ -245,7 +245,7 @@ app.get('/install', (req, res) => {
   const script = `
 # GamezNET Installer - Swarm Edition
 $ErrorActionPreference = 'Continue'
-$repo = "https://raw.githubusercontent.com/natelook1/gameznet/main"
+$repo = "https://raw.githubusercontent.com/natelook1/gameznet-public/main"
 $installDir = "$env:LOCALAPPDATA\\GamezNET"
 
 function Write-Step {
