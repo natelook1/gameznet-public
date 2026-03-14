@@ -218,10 +218,18 @@ app.get('/api/servers', async (req, res) => {
   try {
     const results = await Promise.all(servers.map(async s => {
       try {
-        const resp = await fetch(`${PTERO_URL}/api/client/servers/${s.id}/resources`, { headers: { 'Authorization': `Bearer ${PTERO_KEY}`, 'Accept': 'application/json' } });
-        const d = await resp.json();
+        const headers = { 'Authorization': `Bearer ${PTERO_KEY}`, 'Accept': 'application/json' };
+        const [resResp, allocResp] = await Promise.all([
+          fetch(`${PTERO_URL}/api/client/servers/${s.id}/resources`, { headers }),
+          fetch(`${PTERO_URL}/api/client/servers/${s.id}?include=allocations`, { headers })
+        ]);
+        const [d, allocData] = await Promise.all([resResp.json(), allocResp.json()]);
         const attrs = d.attributes || {};
-        return { id: s.id, name: s.name, state: attrs.current_state || 'offline', cpu: Math.round(attrs.resources?.cpu_absolute || 0), memory_mb: Math.round((attrs.resources?.memory_bytes || 0) / 1048576), uptime: attrs.resources?.uptime || 0 };
+        const allocations = allocData.attributes?.relationships?.allocations?.data || [];
+        const primary = allocations.find(a => a.attributes?.is_default) || allocations[0];
+        const host = primary?.attributes?.ip_alias || primary?.attributes?.ip || null;
+        const port = primary?.attributes?.port || null;
+        return { id: s.id, name: s.name, state: attrs.current_state || 'offline', cpu: Math.round(attrs.resources?.cpu_absolute || 0), memory_mb: Math.round((attrs.resources?.memory_bytes || 0) / 1048576), uptime: attrs.resources?.uptime || 0, host, port };
       } catch (e) { return { id: s.id, name: s.name, state: 'unknown' }; }
     }));
     res.json(results);
