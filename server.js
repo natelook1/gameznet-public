@@ -53,6 +53,12 @@ db.exec(`
     timestamp TEXT, 
     read INTEGER DEFAULT 0
   );
+  CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_name TEXT,
+    body TEXT,
+    sent_at TEXT
+  );
 `);
 
 // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -115,6 +121,24 @@ app.post('/api/redeem', (req, res) => {
   if (record.redeemed) return res.status(409).json({ error: 'Already redeemed' });
   db.prepare("UPDATE tokens SET redeemed = 1, redeemed_at = ? WHERE token = ?").run(new Date().toISOString(), req.body.token);
   res.json({ success: true, name: record.name, private_key: record.private_key, client_ip: record.client_ip });
+});
+
+app.get('/api/chat', (req, res) => {
+  const since = req.query.since || new Date(0).toISOString();
+  res.json(db.prepare("SELECT id, from_name, body, sent_at FROM messages WHERE sent_at > ? ORDER BY sent_at ASC LIMIT 100").all(since));
+});
+
+app.post('/api/chat/send', (req, res) => {
+  const { name, body } = req.body;
+  if (!name || !body || !body.trim()) return res.status(400).json({ error: 'Missing name or body' });
+  if (body.trim().length > 500) return res.status(400).json({ error: 'Message too long' });
+  const player = db.prepare("SELECT name FROM players WHERE name = ?").get(name);
+  if (!player) return res.status(403).json({ error: 'Not a recognized player' });
+  const sent_at = new Date().toISOString();
+  db.prepare("INSERT INTO messages (from_name, body, sent_at) VALUES (?, ?, ?)").run(name, body.trim(), sent_at);
+  // Keep last 500 messages
+  db.prepare("DELETE FROM messages WHERE id NOT IN (SELECT id FROM messages ORDER BY id DESC LIMIT 500)").run();
+  res.json({ success: true, sent_at });
 });
 
 app.get('/api/version', (req, res) => res.json({ min_version: getS('MIN_VERSION', "1.0.0") }));

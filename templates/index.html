@@ -782,6 +782,55 @@
     header     { animation-delay: 0s; }
     .content   { animation-delay: 0.05s; }
     footer     { animation-delay: 0.1s; }
+    /* ── Chat ── */
+    .chat-section { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; }
+    .chat-box {
+      background: var(--card);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      height: 180px;
+      overflow-y: auto;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      scroll-behavior: smooth;
+    }
+    .chat-msg { display: flex; gap: 8px; align-items: baseline; font-size: 12px; line-height: 1.4; }
+    .chat-msg-name { font-family: 'Share Tech Mono', monospace; color: var(--accent); font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+    .chat-msg-name.self { color: var(--accent2); }
+    .chat-msg-body { color: var(--text); word-break: break-word; }
+    .chat-msg-time { margin-left: auto; font-size: 10px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+    .chat-empty { color: var(--muted); font-size: 12px; }
+    .chat-input-row { display: flex; gap: 8px; }
+    .chat-input {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      padding: 7px 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .chat-input:focus { border-color: var(--accent); }
+    .chat-input:disabled { opacity: 0.4; cursor: not-allowed; }
+    .chat-send-btn {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1px;
+      padding: 7px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .chat-send-btn:hover { background: rgba(0,212,255,0.1); }
+    .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -914,6 +963,18 @@
           </div>
         </div>
 
+      </div>
+
+      <!-- CHAT: full width -->
+      <div class="chat-section">
+        <div class="section-label">Network Chat</div>
+        <div class="chat-box" id="chat-box">
+          <div class="chat-empty" id="chat-empty">○ No messages yet</div>
+        </div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chat-input" type="text" placeholder="Type a message..." maxlength="500" disabled />
+          <button class="chat-send-btn" id="chat-send-btn" onclick="sendChat()" disabled>SEND</button>
+        </div>
       </div>
 
     </div>
@@ -1118,6 +1179,7 @@
       btn.disabled     = false;
       footer.textContent = `ACTIVE · ${state.name.toUpperCase()}`;
       startSessionTimer();
+      setChatEnabled(true);
     } else if (statusKey === 'connecting') {
       icon.textContent = '◌';
       main.textContent = 'Connecting...';
@@ -1155,6 +1217,7 @@
       
       footer.textContent = state.provisioned ? `READY · ${state.name.toUpperCase()}` : 'AWAITING SETUP';
       stopSessionTimer();
+      setChatEnabled(false);
     }
   }
 
@@ -1394,6 +1457,65 @@
     } catch {}
   }
   setInterval(refreshOnline, 30000);
+
+  // ── Chat ───────────────────────────────────────────────────────────────────
+  let chatSince = new Date(Date.now() - 3600000).toISOString(); // load last 1hr on init
+
+  function chatTimeStr(iso) {
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function appendMessages(msgs) {
+    if (!msgs.length) return;
+    const box = document.getElementById('chat-box');
+    const empty = document.getElementById('chat-empty');
+    if (empty) empty.remove();
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+    msgs.forEach(m => {
+      const isSelf = m.from_name === state.name;
+      const el = document.createElement('div');
+      el.className = 'chat-msg';
+      el.innerHTML = `<span class="chat-msg-name${isSelf ? ' self' : ''}">${m.from_name}</span><span class="chat-msg-body">${m.body.replace(/</g,'&lt;')}</span><span class="chat-msg-time">${chatTimeStr(m.sent_at)}</span>`;
+      box.appendChild(el);
+    });
+    if (atBottom) box.scrollTop = box.scrollHeight;
+  }
+
+  async function pollChat() {
+    if (!state.provisioned) return;
+    try {
+      const res = await fetch(`/api/chat?since=${encodeURIComponent(chatSince)}`);
+      const msgs = await res.json();
+      if (msgs.length) {
+        appendMessages(msgs);
+        chatSince = msgs[msgs.length - 1].sent_at;
+      }
+    } catch {}
+  }
+
+  async function sendChat() {
+    const input = document.getElementById('chat-input');
+    const body = input.value.trim();
+    if (!body || !state.name) return;
+    input.value = '';
+    try {
+      await fetch('/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name, body }) });
+    } catch {}
+  }
+
+  document.getElementById('chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendChat();
+  });
+
+  function setChatEnabled(enabled) {
+    const inp = document.getElementById('chat-input');
+    const btn = document.getElementById('chat-send-btn');
+    if (inp) inp.disabled = !enabled;
+    if (btn) btn.disabled = !enabled;
+  }
+
+  setInterval(pollChat, 3000);
 
   // ── Appear Offline ─────────────────────────────────────────────────────────
   let invisible = false;
