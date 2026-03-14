@@ -753,8 +753,18 @@ function adminHTML() {
       </div>
       <div class="form-row single">
         <div class="field">
-          <label>WireGuard Private Key</label>
-          <input type="text" id="new-privkey" placeholder="Paste client private key here" />
+          <label style="display:flex;justify-content:space-between;align-items:center;">
+            WireGuard Private Key
+            <button class="btn-secondary" onclick="generateWGKeys()" style="font-size:11px;padding:4px 10px;">⚡ Generate Keys</button>
+          </label>
+          <input type="text" id="new-privkey" placeholder="Paste or generate client private key" />
+        </div>
+      </div>
+      <div id="pubkey-box" style="display:none;margin-bottom:14px;padding:12px;background:rgba(0,200,255,0.05);border:1px solid var(--accent);border-radius:6px;">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">⚠ Copy this public key into UDM Pro before creating the token</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <code id="pubkey-display" style="flex:1;font-size:12px;word-break:break-all;color:var(--accent);"></code>
+          <button class="btn-secondary" onclick="copyPubKey()" style="font-size:11px;padding:4px 10px;flex-shrink:0;">Copy</button>
         </div>
       </div>
       <button class="btn-primary" onclick="createToken()">Generate Token</button>
@@ -883,6 +893,8 @@ function adminHTML() {
     ]);
 
     if (tokRes.ok) {
+      const authData = { password: adminPassword, timestamp: Date.now() };
+      localStorage.setItem('adminAuth', JSON.stringify(authData));
       document.getElementById('auth-gate').style.display = 'none';
       document.getElementById('main-panel').style.display = 'block';
 
@@ -900,9 +912,30 @@ function adminHTML() {
       // Auto-refresh every 15 seconds
       _refreshTimer = setInterval(() => refreshAll(), 15000);
     } else {
+      localStorage.removeItem('adminAuth');
       toast('Invalid password', 'error');
     }
   }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const authDataJSON = localStorage.getItem('adminAuth');
+    if (authDataJSON) {
+      try {
+        const authData = JSON.parse(authDataJSON);
+        const timeout = 60 * 60 * 1000; // 1 hour
+        if (Date.now() - authData.timestamp < timeout) {
+          document.getElementById('admin-password').value = authData.password;
+          login();
+        } else {
+          localStorage.removeItem('adminAuth');
+        }
+      } catch (e) {
+        localStorage.removeItem('adminAuth');
+      }
+    }
+    // Clean up old key just in case
+    localStorage.removeItem('adminPassword');
+  });
 
   document.getElementById('admin-password').addEventListener('keydown', e => {
     if (e.key === 'Enter') login();
@@ -1011,6 +1044,26 @@ function adminHTML() {
     });
   }
 
+  async function generateWGKeys() {
+    try {
+      const kp = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveKey', 'deriveBits']);
+      const toB64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+      const priv = toB64(await crypto.subtle.exportKey('raw', kp.privateKey));
+      const pub  = toB64(await crypto.subtle.exportKey('raw', kp.publicKey));
+      document.getElementById('new-privkey').value = priv;
+      document.getElementById('pubkey-display').textContent = pub;
+      document.getElementById('pubkey-box').style.display = 'block';
+      toast('Keys generated — copy the public key to UDM Pro first!', 'success');
+    } catch (e) {
+      toast('Key generation failed: ' + e.message, 'error');
+    }
+  }
+
+  function copyPubKey() {
+    const key = document.getElementById('pubkey-display').textContent;
+    navigator.clipboard.writeText(key).then(() => toast('Public key copied!', 'success')).catch(() => toast('Copy failed', 'error'));
+  }
+
   async function createToken() {
     const name = document.getElementById('new-name').value.trim();
     const ip = document.getElementById('new-ip').value.trim();
@@ -1032,6 +1085,8 @@ function adminHTML() {
       document.getElementById('new-name').value = '';
       document.getElementById('new-ip').value = '';
       document.getElementById('new-privkey').value = '';
+      document.getElementById('pubkey-box').style.display = 'none';
+      document.getElementById('pubkey-display').textContent = '';
       toast('Token created!', 'success');
       refreshAll();
     } else {
