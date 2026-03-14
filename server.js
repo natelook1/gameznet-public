@@ -158,6 +158,16 @@ app.post('/admin/token/revoke', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+app.post('/admin/player/toggle-hidden', requireAdmin, (req, res) => {
+  const { name } = req.body;
+  const player = db.prepare("SELECT hidden FROM players WHERE name = ?").get(name);
+  if (!player) return res.status(404).end();
+  const newVal = player.hidden ? 0 : 1;
+  db.prepare("UPDATE players SET hidden = ? WHERE name = ?").run(newVal, name);
+  db.prepare("UPDATE tokens SET hidden = ? WHERE name = ?").run(newVal, name);
+  res.json({ success: true, hidden: !!newVal });
+});
+
 app.post('/admin/token/toggle-hidden', requireAdmin, (req, res) => {
   const token = db.prepare("SELECT * FROM tokens WHERE token = ?").get(req.body.token);
   if (!token) return res.status(404).end();
@@ -535,8 +545,25 @@ function adminHTML() {
 
   function renderOnline(online) {
     document.getElementById('online-roster').innerHTML = online.map(p => \`
-      <div class="online-tile"><div class="online-tile-dot"></div><div class="online-tile-name">\${p.name}</div><div class="online-tile-game">\${p.game||'SYSTEM IDLE'}</div><div style="font-family:monospace; color:var(--muted)">\${p.vpn_ip}</div><div style="margin-left:auto;font-size:11px;color:var(--muted)">\${timeAgo(p.last_seen)}</div></div>
+      <div class="online-tile" style="\${p.hidden?'opacity:0.5':''}">
+        <div class="online-tile-dot" style="\${p.hidden?'background:var(--muted)':''}"></div>
+        <div class="online-tile-name">\${p.name}</div>
+        \${p.hidden ? '<span style="font-size:10px;font-family:monospace;color:var(--muted);border:1px solid var(--muted);padding:1px 6px;border-radius:2px;">INVISIBLE</span>' : ''}
+        <div class="online-tile-game">\${p.game||'SYSTEM IDLE'}</div>
+        <div style="font-family:monospace; color:var(--muted)">\${p.vpn_ip}</div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--muted)">\${timeAgo(p.last_seen)}</span>
+          <button class="btn-secondary" style="font-size:10px;padding:2px 8px;" onclick="togglePlayerHidden('\${p.name}')">
+            \${p.hidden ? 'UNHIDE' : 'HIDE'}
+          </button>
+        </div>
+      </div>
     \`).join('') || '<p style="color:var(--muted)">No entities detected.</p>';
+  }
+
+  async function togglePlayerHidden(name) {
+    await fetch('/admin/player/toggle-hidden', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: adminPassword, name }) });
+    refresh();
   }
 
   function renderReports(reports) {
