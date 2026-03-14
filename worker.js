@@ -65,6 +65,7 @@ function adminHTML() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GamezNET Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%2300b4dc' stroke='%2300c8ff' stroke-width='4'/><text x='50' y='66' font-family='sans-serif' font-size='42' font-weight='bold' fill='white' text-anchor='middle'>GZ</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
   <!-- Added TweetNaCl for secure Curve25519 WireGuard key generation -->
@@ -181,7 +182,7 @@ function adminHTML() {
       50% { opacity: 0.2; }
     }
 
-    .container { max-width: 1000px; margin: 0 auto; padding: 32px; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 32px; }
 
     /* Stats row */
     .stats-row {
@@ -555,7 +556,18 @@ function adminHTML() {
       font-size: 13px;
       font-weight: 700;
       color: var(--text);
-      flex: 1;
+      flex: 0 0 160px;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .online-tile-hidden-badge {
+      flex: 0 0 70px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
       letter-spacing: 1px;
     }
 
@@ -563,6 +575,7 @@ function adminHTML() {
       font-family: 'Share Tech Mono', monospace;
       font-size: 11px;
       color: var(--muted);
+      flex: 1;
     }
 
     .online-tile-ago {
@@ -678,6 +691,51 @@ function adminHTML() {
       letter-spacing: 0;
     }
     .toggle-log-btn:hover { border-color: var(--accent); color: var(--accent); transform: none; }
+
+    /* Server cards */
+    .server-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .server-card.state-running { border-color: rgba(0,255,136,0.3); }
+    .server-card.state-starting, .server-card.state-stopping { border-color: rgba(255,170,0,0.3); }
+
+    .server-card-header { display: flex; align-items: center; gap: 10px; }
+    .server-state-dot {
+      width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+      background: var(--muted);
+    }
+    .server-state-dot.running { background: var(--success); box-shadow: 0 0 6px rgba(0,255,136,0.7); animation: blink-live 2s ease-in-out infinite; }
+    .server-state-dot.starting, .server-state-dot.stopping { background: var(--warn); box-shadow: 0 0 6px rgba(255,170,0,0.7); }
+    .server-state-dot.offline { background: var(--danger); }
+
+    .server-name { font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text); flex: 1; }
+    .server-state-label { font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+    .server-state-label.running { color: var(--success); }
+    .server-state-label.starting, .server-state-label.stopping { color: var(--warn); }
+    .server-state-label.offline, .server-state-label.unknown { color: var(--muted); }
+
+    .server-stats { display: flex; gap: 16px; }
+    .server-stat { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--muted); }
+    .server-stat span { color: var(--text); }
+
+    .server-actions { display: flex; gap: 8px; }
+    .btn-server {
+      font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 1px;
+      padding: 4px 12px; background: transparent; border-radius: 2px;
+      cursor: pointer; text-transform: uppercase; transition: all 0.2s;
+    }
+    .btn-server-start { border: 1px solid var(--success); color: var(--success); }
+    .btn-server-start:hover { background: rgba(0,255,136,0.1); }
+    .btn-server-stop { border: 1px solid var(--danger); color: var(--danger); }
+    .btn-server-stop:hover { background: rgba(255,51,102,0.1); }
+    .btn-server-restart { border: 1px solid var(--warn); color: var(--warn); }
+    .btn-server-restart:hover { background: rgba(255,170,0,0.1); }
   </style>
 </head>
 <body>
@@ -851,7 +909,22 @@ function adminHTML() {
         <label>Allowed IPs</label>
         <input type="text" id="settings-allowedips" placeholder="192.168.8.0/24, 192.168.1.0/24" />
       </div>
+      <div class="settings-field-row">
+        <label>Local LAN IP (split-horizon — leave blank to disable)</label>
+        <input type="text" id="settings-localip" placeholder="e.g. 192.168.1.1 — served to clients on the same WAN IP" />
+      </div>
       <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+
+    <!-- Game Servers -->
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between;">
+        <span>Game Servers</span>
+        <a href="https://gamez.looknet.ca" target="_blank" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:1px;text-decoration:none;border:1px solid var(--border);padding:3px 10px;border-radius:2px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">PTERODACTYL ↗</a>
+      </div>
+      <div id="server-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;">
+        <div class="empty-state">Loading servers...</div>
+      </div>
     </div>
 
     <!-- Error Reports -->
@@ -891,7 +964,11 @@ function adminHTML() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: adminPassword })
       }),
-      fetch('/api/online')
+      fetch('/admin/online', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword })
+      })
     ]);
 
     if (tokRes.ok) {
@@ -910,9 +987,11 @@ function adminHTML() {
       loadServerConfig();
       loadAlertStatus();
       loadReports();
+      loadServers();
 
       // Auto-refresh every 15 seconds
       _refreshTimer = setInterval(() => refreshAll(), 15000);
+      setInterval(() => loadServers(), 30000);
     } else {
       localStorage.removeItem('adminAuth');
       toast('Invalid password', 'error');
@@ -951,7 +1030,11 @@ function adminHTML() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password: adminPassword })
         }),
-        fetch('/api/online')
+        fetch('/admin/online', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: adminPassword })
+        })
       ]);
       if (!tokRes.ok) return;
       const tokens = await tokRes.json();
@@ -978,9 +1061,10 @@ function adminHTML() {
       return;
     }
     container.innerHTML = online.map(p => \`
-      <div class="online-tile">
+      <div class="online-tile\${p.hidden ? ' hidden-player' : ''}">
         <div class="online-tile-dot"></div>
         <div class="online-tile-name">\${p.name}</div>
+        <div class="online-tile-hidden-badge">\${p.hidden ? '[HIDDEN]' : ''}</div>
         <div class="online-tile-ip">\${p.vpn_ip}</div>
         <div class="online-tile-ago">\${timeAgo(p.last_seen)}</div>
       </div>
@@ -1168,16 +1252,18 @@ function adminHTML() {
       document.getElementById('settings-endpoint').value = ip;
       document.getElementById('settings-pubkey').value = data.publicKey || '';
       document.getElementById('settings-allowedips').value = data.allowedIPs || '';
+      document.getElementById('settings-localip').value = data.localIp || '';
     } catch {}
   }
 
   async function saveSettings() {
     const public_key = document.getElementById('settings-pubkey').value.trim();
     const allowed_ips = document.getElementById('settings-allowedips').value.trim();
+    const local_ip = document.getElementById('settings-localip').value.trim();
     const res = await fetch('/admin/settings/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: adminPassword, public_key, allowed_ips })
+      body: JSON.stringify({ password: adminPassword, public_key, allowed_ips, local_ip })
     });
     const data = await res.json();
     if (res.ok) { toast('Settings saved!', 'success'); loadServerConfig(); }
@@ -1318,6 +1404,67 @@ function adminHTML() {
     if (item) item.classList.add('read');
     loadReports();
   }
+
+  // ── Game Servers ──────────────────────────────────────────────────────────
+  function fmtMem(mb) {
+    return mb >= 1024 ? (mb / 1024).toFixed(1) + ' GiB' : mb + ' MiB';
+  }
+  function fmtUptime(s) {
+    if (!s) return '—';
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return h ? h + 'h ' + m + 'm' : m + 'm';
+  }
+
+  async function loadServers() {
+    const res = await fetch('/api/servers');
+    if (!res.ok) return;
+    const servers = await res.json();
+    renderServers(servers);
+  }
+
+  function renderServers(servers) {
+    const grid = document.getElementById('server-grid');
+    grid.innerHTML = servers.map(s => {
+      const cls = ['running','starting','stopping'].includes(s.state) ? s.state : 'offline';
+      const isRunning = s.state === 'running';
+      const isOff = s.state === 'offline';
+      return \`
+        <div class="server-card state-\${cls}">
+          <div class="server-card-header">
+            <div class="server-state-dot \${cls}"></div>
+            <div class="server-name">\${s.name}</div>
+            <div class="server-state-label \${cls}">\${s.state}</div>
+          </div>
+          \${isRunning ? \`
+          <div class="server-stats">
+            <div class="server-stat">CPU <span>\${s.cpu}%</span></div>
+            <div class="server-stat">RAM <span>\${fmtMem(s.memory_mb)}</span></div>
+            <div class="server-stat">UP <span>\${fmtUptime(s.uptime)}</span></div>
+          </div>\` : ''}
+          <div class="server-actions">
+            \${isOff ? \`<button class="btn-server btn-server-start" onclick="serverPower('\${s.id}','start')">Start</button>\` : ''}
+            \${isRunning ? \`<button class="btn-server btn-server-restart" onclick="serverPower('\${s.id}','restart')">Restart</button>\` : ''}
+            \${!isOff ? \`<button class="btn-server btn-server-stop" onclick="serverPower('\${s.id}','stop')">Stop</button>\` : ''}
+          </div>
+        </div>
+      \`;
+    }).join('');
+  }
+
+  async function serverPower(server_id, signal) {
+    const res = await fetch('/admin/servers/power', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password: adminPassword, server_id, signal })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      toast(\`\${signal.charAt(0).toUpperCase() + signal.slice(1)} signal sent\`, 'success');
+      setTimeout(loadServers, 3000); // give Pterodactyl a moment then refresh
+    } else {
+      toast(data.error || 'Failed', 'error');
+    }
+  }
 </script>
 </body>
 </html>`;
@@ -1442,14 +1589,22 @@ async function handleUpdateIP(request, env) {
 }
 
 async function handleServerConfig(request, env) {
-  const currentIp = await env.GAMENET_KV.get('SERVER_ENDPOINT_IP') || "184.66.15.159";
+  const wanIp    = await env.GAMENET_KV.get('SERVER_ENDPOINT_IP') || "184.66.15.159";
+  const localIp  = await env.GAMENET_KV.get('SERVER_LOCAL_IP')    || "";
   const publicKey  = await env.GAMENET_KV.get('SERVER_PUBLIC_KEY')  || "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI=";
   const allowedIPs = await env.GAMENET_KV.get('SERVER_ALLOWED_IPS') || "192.168.8.0/24, 192.168.1.0/24";
 
+  // Split-horizon: if the client's WAN IP matches the server's WAN IP they're
+  // behind the same router. Serve the LAN IP so WireGuard doesn't hairpin.
+  const clientIp = request.headers.get('CF-Connecting-IP') || '';
+  const endpointIp = (localIp && clientIp === wanIp) ? localIp : wanIp;
+
   return jsonResponse({
-    endpoint:   `${currentIp}:51820`,
+    endpoint:   `${endpointIp}:51820`,
     publicKey:  publicKey,
-    allowedIPs: allowedIPs
+    allowedIPs: allowedIPs,
+    publicIp:   wanIp,
+    localIp:    localIp
   });
 }
 
@@ -1487,6 +1642,26 @@ async function handleOnline(request, env) {
     .filter(p => !hidden.has(p.name))
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(p => ({ name: p.name, vpn_ip: p.vpn_ip, last_seen: p.last_seen }));
+
+  return jsonResponse(online);
+}
+
+// Admin-only view — no hidden filter, shows all players with recent heartbeats
+async function handleAdminOnline(request, env) {
+  const { authed } = await requireAdmin(request, env);
+  if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
+
+  const raw = await env.GAMENET_KV.get('ONLINE_PLAYERS');
+  const players = raw ? JSON.parse(raw) : {};
+
+  const hiddenRaw = await env.GAMENET_KV.get('HIDDEN_PLAYERS');
+  const hidden = new Set(hiddenRaw ? JSON.parse(hiddenRaw) : []);
+
+  const cutoff = Date.now() - 90 * 1000;
+  const online = Object.values(players)
+    .filter(p => new Date(p.last_seen).getTime() > cutoff)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(p => ({ name: p.name, vpn_ip: p.vpn_ip, last_seen: p.last_seen, hidden: hidden.has(p.name) }));
 
   return jsonResponse(online);
 }
@@ -1559,12 +1734,19 @@ async function handleAdminSettingsSave(request, env) {
   const { authed, body } = await requireAdmin(request, env);
   if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
 
-  const { public_key, allowed_ips } = body;
+  const { public_key, allowed_ips, local_ip } = body;
   if (public_key !== undefined && public_key.trim()) {
     await env.GAMENET_KV.put('SERVER_PUBLIC_KEY', public_key.trim());
   }
   if (allowed_ips !== undefined && allowed_ips.trim()) {
     await env.GAMENET_KV.put('SERVER_ALLOWED_IPS', allowed_ips.trim());
+  }
+  if (local_ip !== undefined) {
+    if (local_ip.trim()) {
+      await env.GAMENET_KV.put('SERVER_LOCAL_IP', local_ip.trim());
+    } else {
+      await env.GAMENET_KV.delete('SERVER_LOCAL_IP');
+    }
   }
 
   return jsonResponse({ success: true });
@@ -1830,6 +2012,84 @@ async function handleAdminReports(request, env) {
   return jsonResponse(reports.filter(Boolean));
 }
 
+// ─── Pterodactyl Handlers ────────────────────────────────────────────────────
+
+const PTERO_URL = 'https://gamez.looknet.ca';
+const PTERO_SERVERS = [
+  { id: '548e8790', name: 'Satisfactory' },
+  { id: 'f8633b6b', name: 'SCUM' },
+  { id: '3919b863', name: 'Enshrouded' },
+  { id: '7540df7a', name: 'Conan Exiles' },
+  { id: '80c1c084', name: 'Project Zomboid' },
+];
+
+async function fetchPteroServers(env) {
+  const results = await Promise.all(PTERO_SERVERS.map(async (s) => {
+    try {
+      const res = await fetch(`${PTERO_URL}/api/client/servers/${s.id}/resources`, {
+        headers: {
+          'Authorization': `Bearer ${env.PTERODACTYL_API_KEY}`,
+          'Accept': 'application/json',
+        }
+      });
+      const data = await res.json();
+      const attrs = data.attributes || {};
+      const resources = attrs.resources || {};
+      return {
+        id: s.id,
+        name: s.name,
+        state: attrs.current_state || 'unknown',
+        cpu: Math.round((resources.cpu_absolute || 0) * 10) / 10,
+        memory_mb: Math.round((resources.memory_bytes || 0) / 1048576),
+        disk_mb: Math.round((resources.disk_bytes || 0) / 1048576),
+        uptime: resources.uptime || 0,
+      };
+    } catch (e) {
+      return { id: s.id, name: s.name, state: 'unknown', cpu: 0, memory_mb: 0, disk_mb: 0, uptime: 0 };
+    }
+  }));
+  return results;
+}
+
+async function handleServers(request, env) {
+  // Serve from cache if fresh
+  const cached = await env.GAMENET_KV.get('PTERO_SERVER_CACHE');
+  if (cached) {
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp < 30000) return jsonResponse(data);
+  }
+
+  const results = await fetchPteroServers(env);
+  await env.GAMENET_KV.put('PTERO_SERVER_CACHE', JSON.stringify({ data: results, timestamp: Date.now() }));
+  return jsonResponse(results);
+}
+
+async function handleAdminServerPower(request, env) {
+  const { authed, body } = await requireAdmin(request, env);
+  if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
+
+  const { server_id, signal } = body;
+  if (!server_id || !signal) return jsonResponse({ error: 'server_id and signal required' }, 400);
+  if (!['start', 'stop', 'restart'].includes(signal)) return jsonResponse({ error: 'Invalid signal' }, 400);
+
+  const valid = PTERO_SERVERS.some(s => s.id === server_id);
+  if (!valid) return jsonResponse({ error: 'Unknown server' }, 404);
+
+  const res = await fetch(`${PTERO_URL}/api/client/servers/${server_id}/power`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.PTERODACTYL_API_KEY}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({ signal })
+  });
+
+  // Bust cache so next poll reflects the new state
+  await env.GAMENET_KV.delete('PTERO_SERVER_CACHE');
+  return jsonResponse({ success: res.ok });
+}
+
 async function handleAdminMarkReportRead(request, env) {
   const { authed, body } = await requireAdmin(request, env);
   if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
@@ -1890,6 +2150,7 @@ export default {
     if (path === '/admin/motd' && method === 'POST') return handleAdminSetMotd(request, env);
     if (path === '/api/heartbeat' && method === 'POST') return handleHeartbeat(request, env);
     if (path === '/api/online' && method === 'GET') return handleOnline(request, env);
+    if (path === '/admin/online' && method === 'POST') return handleAdminOnline(request, env);
     if (path === '/api/alert' && method === 'GET') return handleAlert(request, env);
     if (path === '/admin/alert' && method === 'POST') return handleAdminPushAlert(request, env);
     if (path === '/admin/settings/save' && method === 'POST') return handleAdminSettingsSave(request, env);
@@ -1897,6 +2158,8 @@ export default {
     if (path === '/api/report' && method === 'POST') return handleReport(request, env);
     if (path === '/admin/reports' && method === 'POST') return handleAdminReports(request, env);
     if (path === '/admin/report/read' && method === 'POST') return handleAdminMarkReportRead(request, env);
+    if (path === '/api/servers' && method === 'GET') return handleServers(request, env);
+    if (path === '/admin/servers/power' && method === 'POST') return handleAdminServerPower(request, env);
 
     return new Response('Not found', { status: 404 });
   }
