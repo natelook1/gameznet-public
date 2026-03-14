@@ -68,7 +68,7 @@ function adminHTML() {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
   <!-- Added TweetNaCl for secure Curve25519 WireGuard key generation -->
-  <script src="https://unpkg.com/tweetnacl@1.0.3/nacl-fast.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/1.0.3/nacl-fast.min.js"></script>
   <style>
     :root {
       --bg: #080c10;
@@ -1647,10 +1647,10 @@ Clear-Host
 Write-Host ""
 Write-Host "  ========================================================" -ForegroundColor Cyan
 Write-Host "   ____                             _   _ _____ _____ " -ForegroundColor Cyan
-Write-Host "  / ___| __ _ _ __ ___   ___   __ _| \\\\ | | ____|_   _|" -ForegroundColor Cyan
-Write-Host " | |  _ / _' | '_ ' _ \\\\ / _ \\\\ / _' |  \\\\| |  _|   | |  " -ForegroundColor Cyan
-Write-Host " | |_| | (_| | | | | | |  __/| (_| | |\\\\  | |___  | |  " -ForegroundColor Cyan
-Write-Host "  \\\\____|\\\\__,_|_| |_| |_|\\\\___| \\\\__,_|_| \\\\_|_____| |_|  " -ForegroundColor Cyan
+Write-Host "  / ___| __ _ _ __ ___   ___   __ _| \\| | ____|_   _|" -ForegroundColor Cyan
+Write-Host " | |  _ / _' | '_ ' _ \\ / _ \\ / _' |  \\| |  _|   | |  " -ForegroundColor Cyan
+Write-Host " | |_| | (_| | | | | | |  __/| (_| | |\\  | |___  | |  " -ForegroundColor Cyan
+Write-Host "  \\____|\\__,_|_| |_| |_|\\___| \\__,_|_| \\_|_____| |_|  " -ForegroundColor Cyan
 Write-Host "  ========================================================" -ForegroundColor Cyan
 Write-Host "           Private Game Server Network Installer" -ForegroundColor DarkGray
 Write-Host "  ========================================================" -ForegroundColor Cyan
@@ -1665,16 +1665,16 @@ if (-not $isAdmin) {
 
 Write-Step 1 5 "Preparing install directory"
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-New-Item -ItemType Directory -Force -Path "$installDir\\\\templates" | Out-Null
-New-Item -ItemType Directory -Force -Path "$installDir\\\\static" | Out-Null
+New-Item -ItemType Directory -Force -Path "$installDir\\templates" | Out-Null
+New-Item -ItemType Directory -Force -Path "$installDir\\static" | Out-Null
 Write-OK "Install directory initialized"
 
 Write-Step 2 5 "Downloading GamezNET"
 $files = @(
-    @{ url = "$repo/app.py";               dest = "$installDir\\\\app.py" },
-    @{ url = "$repo/GamezNET.bat";         dest = "$installDir\\\\GamezNET.bat" },
-    @{ url = "$repo/templates/index.html"; dest = "$installDir\\\\templates\\\\index.html" },
-    @{ url = "$repo/static/favicon.svg";   dest = "$installDir\\\\static\\\\favicon.svg" }
+    @{ url = "$repo/app.py";               dest = "$installDir\\app.py" },
+    @{ url = "$repo/GamezNET.bat";         dest = "$installDir\\GamezNET.bat" },
+    @{ url = "$repo/templates/index.html"; dest = "$installDir\\templates\\index.html" },
+    @{ url = "$repo/static/favicon.svg";   dest = "$installDir\\static\\favicon.svg" }
 )
 foreach ($file in $files) {
     $name = Split-Path $file.url -Leaf
@@ -1709,7 +1709,7 @@ Write-INFO "Configuring local dependencies..."
 Write-OK "Environment configured"
 
 Write-Step 4 5 "Validating VPN Engine"
-$wgExe = "C:\\\\Program Files\\\\WireGuard\\\\wireguard.exe"
+$wgExe = "C:\\Program Files\\WireGuard\\wireguard.exe"
 $wgDest = Join-Path $installDir "wireguard.exe"
 if (Test-Path $wgExe) { Copy-Item $wgExe $wgDest -Force; Write-OK "Found existing WireGuard engine" }
 else {
@@ -1851,7 +1851,9 @@ async function handleAdminMarkReportRead(request, env) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const path = url.pathname;
+    
+    // Normalize the path (removes trailing slashes like /admin/ -> /admin)
+    const path = url.pathname.replace(/\/$/, '') || '/';
     const method = request.method;
 
     if (method === 'OPTIONS') {
@@ -1862,6 +1864,16 @@ export default {
           'Access-Control-Allow-Headers': 'Content-Type'
         }
       });
+    }
+
+    // 1. Redirect root URL directly to the admin panel
+    if (path === '/' && method === 'GET') {
+      return Response.redirect(`${url.origin}/admin`, 302);
+    }
+
+    // 2. Suppress 404 errors for browser favicon requests
+    if (path === '/favicon.ico' || path === '/static/favicon.svg') {
+      return new Response(null, { status: 204 }); 
     }
 
     if (path === '/admin' && method === 'GET') return htmlResponse(adminHTML());
