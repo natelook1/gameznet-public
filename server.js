@@ -260,13 +260,12 @@ function Write-OK   { param($t) Write-Host "          [" -NoNewline -ForegroundC
 function Write-WARN { param($t) Write-Host "          [" -NoNewline -ForegroundColor DarkGray; Write-Host " !! " -NoNewline -ForegroundColor Yellow; Write-Host "] $t" -ForegroundColor Gray }
 
 Clear-Host
-Write-Host "  ========================================================" -ForegroundColor Cyan
-Write-Host "   ____                             _   _ _____ _____ " -ForegroundColor Cyan
-Write-Host "  / ___| __ _ _ __ ___   ___   __ _| \\| | ____|_   _|" -ForegroundColor Cyan
-Write-Host " | |  _ / _' | '_ ' _ \\ / _ \\ / _' |  \\| |  _|   | |  " -ForegroundColor Cyan
-Write-Host " | |_| | (_| | | | | | |  __/| (_| | |\\  | |___  | |  " -ForegroundColor Cyan
-Write-Host "  \\____|\\__,_|_| |_| |_|\\___| \\__,_|_| \\_|_____| |_|  " -ForegroundColor Cyan
-Write-Host "  ========================================================" -ForegroundColor Cyan
+Write-Host "  ================================================================" -ForegroundColor Cyan
+Write-Host "   ___  ____  _  _  ____  ____  _  _  ____  ____" -ForegroundColor Cyan
+Write-Host "  / __)(  __)( \/ )(  __)(  __)( \( )(  __)(_  _)" -ForegroundColor Cyan
+Write-Host " ( (_ \ ) _) / \/ \ ) _)  ) _) )  (  ) _)   )(  " -ForegroundColor Cyan
+Write-Host "  \___/(____)\_)(_/(____)(____)(__)\_)(____)  (__)" -ForegroundColor Cyan
+Write-Host "  ================================================================" -ForegroundColor Cyan
 
 Write-Step 1 5 "Preparing install directory"
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
@@ -286,6 +285,7 @@ foreach ($file in $files) {
     Invoke-WebRequest -Uri $file.url -OutFile $file.dest -UseBasicParsing
 }
 Write-OK "All components downloaded"
+(Get-Content "$installDir\\app.py") -replace 'https://YOUR_BACKEND_URL', 'https://gameznet.looknet.ca' | Set-Content "$installDir\\app.py"
 
 Write-Step 3 5 "Validating Python Environment"
 & python -m pip install flask pystray pillow psutil --quiet
