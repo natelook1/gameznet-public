@@ -387,7 +387,7 @@ def api_disconnect():
                 req = urllib.request.Request(
                     f"{WORKER_URL}/api/heartbeat",
                     data=payload,
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
                     method="POST"
                 )
                 urllib.request.urlopen(req, timeout=5)
@@ -510,7 +510,7 @@ def api_report():
         req = urllib.request.Request(
             f"{WORKER_URL}/api/report",
             data=payload,
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
             method="POST"
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
@@ -549,7 +549,7 @@ def api_invisible():
                 with open(CONFIG_FILE, "r") as f:
                     cfg = json.load(f)
                 payload = json.dumps({"name": cfg.get("name",""), "vpn_ip": cfg.get("vpn_ip",""), "disconnecting": True}).encode()
-                req = _urllib_request.Request(f"{WORKER_URL}/api/heartbeat", data=payload, headers={"Content-Type":"application/json"}, method="POST")
+                req = _urllib_request.Request(f"{WORKER_URL}/api/heartbeat", data=payload, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}, method="POST")
                 _urllib_request.urlopen(req, timeout=5)
                 log.debug("Invisible-mode disconnect heartbeat sent")
             except Exception as e:
@@ -587,13 +587,13 @@ def heartbeat_loop():
                 req = urllib.request.Request(
                     f"{WORKER_URL}/api/heartbeat",
                     data=payload,
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
                     method="POST"
                 )
                 urllib.request.urlopen(req, timeout=5)
-                log.debug("Heartbeat sent for %s", cfg.get("name"))
+                log.info("Heartbeat sent for %s", cfg.get("name"))
             except Exception as e:
-                log.debug("Heartbeat failed: %s", e)
+                log.warning("Heartbeat failed: %s", e)
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 
