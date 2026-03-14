@@ -604,4 +604,14 @@ function adminHTML() {
 </html>`;
 }
 
+async function refreshPublicIP() {
+  try {
+    const r = await fetch('https://api.ipify.org?format=json');
+    const { ip } = await r.json();
+    if (ip) setS('SERVER_ENDPOINT_IP', ip);
+  } catch (e) {}
+}
+refreshPublicIP();
+setInterval(refreshPublicIP, 3600000);
+
 app.listen(PORT, () => console.log(`GamezNET Swarm Backend active on port ${PORT}`));
