@@ -28,7 +28,7 @@ if not defined PY_CMD (
 
 if not defined PY_CMD (
     echo [!] Python not found. Please re-run the GamezNET installer.
-    echo     irm https://gamenet.natelook.workers.dev/install ^| iex
+    echo     irm https://gameznet.looknet.ca/install ^| iex
     pause
     exit /b 1
 )

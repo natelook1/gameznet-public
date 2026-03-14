@@ -53,7 +53,7 @@ def detect_game():
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
-WORKER_URL = "https://gamenet.natelook.workers.dev"
+WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
 VERSION = "1.1.0"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
@@ -341,7 +341,7 @@ PersistentKeepalive = 25
         wg = wg_exe()
         if not wg:
             log.error("wireguard.exe not found")
-            return jsonify({"error": "WireGuard not found. Please run the installer again from https://gamenet.natelook.workers.dev/install"}), 500
+            return jsonify({"error": "WireGuard not found. Please run the installer again from https://gameznet.looknet.ca/install"}), 500
         log.info("Using wireguard.exe at %s", wg)
         CREATE_NO_WINDOW = 0x08000000
 
