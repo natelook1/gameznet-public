@@ -478,10 +478,9 @@
       border: 1px solid var(--border);
       border-radius: 4px;
       padding: 16px 20px;
-      flex: 1;
-      min-height: 0;
       display: flex;
       flex-direction: column;
+      max-height: 200px;
     }
     .online-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; flex: 1; min-height: 0; }
     .online-player {
@@ -647,6 +646,117 @@
     #toast.error     { border-color: var(--danger);  color: var(--danger); }
     #toast.success   { border-color: var(--success); color: var(--success); }
 
+    /* ── Game Servers ── */
+    .servers-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .servers-header .section-label { margin-bottom: 0; flex: 1; }
+    .ptero-link {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      text-decoration: none;
+      border: 1px solid var(--border2);
+      padding: 2px 8px;
+      border-radius: 2px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .ptero-link:hover { color: var(--accent); border-color: var(--accent); }
+
+    .server-grid-client {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .srv-card {
+      background: linear-gradient(160deg, rgba(255,255,255,0.025) 0%, transparent 100%);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--border2);
+      border-radius: 4px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .srv-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.015) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .srv-card.srv-running {
+      border-left-color: var(--success);
+      box-shadow: inset 0 0 20px rgba(0,232,122,0.04), 0 0 0 0 rgba(0,232,122,0.1);
+      animation: srv-running-pulse 3s ease-in-out infinite;
+    }
+    @keyframes srv-running-pulse {
+      0%, 100% { box-shadow: inset 0 0 20px rgba(0,232,122,0.04); }
+      50%       { box-shadow: inset 0 0 20px rgba(0,232,122,0.08), 0 0 8px rgba(0,232,122,0.06); }
+    }
+    .srv-card.srv-starting, .srv-card.srv-stopping {
+      border-left-color: var(--warn);
+      animation: srv-warn-pulse 1s ease-in-out infinite;
+    }
+    @keyframes srv-warn-pulse {
+      0%, 100% { box-shadow: none; }
+      50%       { box-shadow: inset 0 0 16px rgba(255,170,0,0.08); }
+    }
+    .srv-card.srv-offline { border-left-color: rgba(255,51,85,0.25); opacity: 0.6; }
+
+    .srv-top { display: flex; align-items: center; gap: 8px; }
+    .srv-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+      background: var(--border2);
+    }
+    .srv-dot.running  { background: var(--success); box-shadow: 0 0 6px rgba(0,232,122,0.8); animation: dot-pulse 2s ease-in-out infinite; }
+    .srv-dot.starting, .srv-dot.stopping { background: var(--warn); box-shadow: 0 0 6px rgba(255,170,0,0.8); }
+    .srv-dot.offline  { background: rgba(255,51,85,0.5); }
+
+    .srv-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+    .srv-card.srv-running .srv-name { color: #fff; }
+
+    .srv-state {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 1px 5px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .srv-state.running  { color: var(--success); background: rgba(0,232,122,0.1); border: 1px solid rgba(0,232,122,0.2); }
+    .srv-state.starting, .srv-state.stopping { color: var(--warn); background: rgba(255,170,0,0.1); border: 1px solid rgba(255,170,0,0.2); }
+    .srv-state.offline, .srv-state.unknown  { color: var(--text-dim); background: transparent; border: 1px solid var(--border); }
+
+    .srv-stats {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      display: flex;
+      gap: 10px;
+      padding-top: 2px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .srv-stats span { color: var(--text); }
+
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -780,6 +890,16 @@
           <div class="section-label" style="margin-bottom:10px;">Who's Online</div>
           <div class="online-list" id="online-list-ui">
             <div class="online-empty">○ Checking...</div>
+          </div>
+        </div>
+
+        <div id="servers-section">
+          <div class="servers-header">
+            <div class="section-label">Game Servers</div>
+            <a class="ptero-link" href="https://gamez.looknet.ca" target="_blank">PTERODACTYL ↗</a>
+          </div>
+          <div class="server-grid-client" id="server-grid-client">
+            <div class="online-empty" style="grid-column:1/-1;">○ Loading...</div>
           </div>
         </div>
 
@@ -1321,8 +1441,47 @@
     }
   }
 
+  // ── Game Servers ──────────────────────────────────────────────────────────
+  function fmtMem(mb) {
+    return mb >= 1024 ? (mb / 1024).toFixed(1) + ' GiB' : mb + ' MiB';
+  }
+
+  async function loadClientServers() {
+    try {
+      const res = await fetch('{{ worker_url }}/api/servers');
+      if (!res.ok) return;
+      const servers = await res.json();
+      renderClientServers(servers);
+    } catch {}
+  }
+
+  function renderClientServers(servers) {
+    const grid = document.getElementById('server-grid-client');
+    if (!grid) return;
+    grid.innerHTML = servers.map(s => {
+      const cls = ['running','starting','stopping'].includes(s.state) ? s.state : 'offline';
+      const isRunning = s.state === 'running';
+      return `
+        <div class="srv-card srv-${cls}">
+          <div class="srv-top">
+            <div class="srv-dot ${cls}"></div>
+            <div class="srv-name">${s.name}</div>
+            <div class="srv-state ${cls}">${s.state}</div>
+          </div>
+          ${isRunning ? `
+          <div class="srv-stats">
+            <div>CPU <span>${s.cpu}%</span></div>
+            <div>RAM <span>${fmtMem(s.memory_mb)}</span></div>
+          </div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  setInterval(loadClientServers, 30000);
+
   // ── Boot ───────────────────────────────────────────────────────────────────
   init();
+  loadClientServers();
 </script>
 </body>
 </html>
