@@ -335,11 +335,10 @@ PersistentKeepalive = 25
                     capture_output=True, text=True,
                     creationflags=CREATE_NO_WINDOW
                 )
-                log.debug("sc query [%d]: %r", i, svc.stdout)
-                if "RUNNING" in svc.stdout:
+                log.debug("wg show [%d] stdout=%r stderr=%r", i, result.stdout, result.stderr)
+                if f"interface: {TUNNEL_NAME.lower()}" in result.stdout.lower():
                     tunnel_up = True
-                    log.info("Service RUNNING confirmed on attempt %d (no wg.exe)", i + 1)
-                    break
+                    log.info("Tunnel interface confirmed on attempt %d", i + 1)
 
         if not tunnel_up:
             log.warning("Tunnel interface did not appear after 10s — tearing down")
