@@ -168,8 +168,7 @@ app.post('/admin/token/toggle-hidden', requireAdmin, (req, res) => {
 });
 
 app.post('/admin/online', requireAdmin, (req, res) => {
-  const cutoff = new Date(Date.now() - 90000).toISOString();
-  res.json(db.prepare("SELECT name, vpn_ip, last_seen, game, hidden FROM players WHERE last_seen > ? ORDER BY name").all(cutoff).map(p => ({...p, hidden: !!p.hidden})));
+  res.json(db.prepare("SELECT name, vpn_ip, last_seen, game, hidden FROM players ORDER BY name").all().map(p => ({...p, hidden: !!p.hidden})));
 });
 
 app.post('/admin/settings/save', requireAdmin, (req, res) => {
