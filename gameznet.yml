@@ -9,6 +9,7 @@ services:
       - /etc/gameznet/backend/data:/app/data
     environment:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - PTERODACTYL_API_KEY=${PTERODACTYL_API_KEY}
     ports:
       - "3000:3000"
     deploy:
