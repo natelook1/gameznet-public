@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  backend:
+    image: gameznet-backend:latest
+    networks:
+      - proxy_public
+    volumes:
+      - /etc/gameznet/backend/data:/app/data
+    ports:
+      - "3000:3000"
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == gamez-vm
+      restart_policy:
+        condition: on-failure
+
+networks:
+  proxy_public:
+    external: true
