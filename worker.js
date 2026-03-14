@@ -67,6 +67,8 @@ function adminHTML() {
   <title>GamezNET Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Added TweetNaCl for secure Curve25519 WireGuard key generation -->
+  <script src="https://unpkg.com/tweetnacl@1.0.3/nacl-fast.min.js"></script>
   <style>
     :root {
       --bg: #080c10;
@@ -1044,15 +1046,23 @@ function adminHTML() {
     });
   }
 
-  async function generateWGKeys() {
+  // --- UPDATED WIREGUARD KEY GENERATOR ---
+  function generateWGKeys() {
     try {
-      const kp = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveKey', 'deriveBits']);
+      if (typeof nacl === 'undefined') {
+        throw new Error("Encryption library not loaded. Check internet connection.");
+      }
+      
+      const keyPair = nacl.box.keyPair();
       const toB64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
-      const priv = toB64(await crypto.subtle.exportKey('raw', kp.privateKey));
-      const pub  = toB64(await crypto.subtle.exportKey('raw', kp.publicKey));
+      
+      const priv = toB64(keyPair.secretKey);
+      const pub  = toB64(keyPair.publicKey);
+      
       document.getElementById('new-privkey').value = priv;
       document.getElementById('pubkey-display').textContent = pub;
       document.getElementById('pubkey-box').style.display = 'block';
+      
       toast('Keys generated — copy the public key to UDM Pro first!', 'success');
     } catch (e) {
       console.error('Key generation failed:', e);
