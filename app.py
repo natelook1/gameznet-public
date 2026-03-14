@@ -65,14 +65,14 @@ def resource_path(relative_path):
     return os.path.join(base, relative_path)
 
 def wg_exe():
-    # Check local install dir first
-    local = resource_path("wireguard.exe")
-    if os.path.exists(local):
-        return local
-    # Fall back to system install
+    # Prefer system install first (contains required wintun.dll)
     system = r"C:\Program Files\WireGuard\wireguard.exe"
     if os.path.exists(system):
         return system
+    # Fall back to local install dir only as a last resort
+    local = resource_path("wireguard.exe")
+    if os.path.exists(local):
+        return local
     return None
 
 def wg_cli():
@@ -324,7 +324,7 @@ PersistentKeepalive = 25
                     creationflags=CREATE_NO_WINDOW
                 )
                 log.debug("wg show [%d] stdout=%r stderr=%r", i, result.stdout, result.stderr)
-                if f"interface: {TUNNEL_NAME}" in result.stdout.lower():
+                if f"interface: {TUNNEL_NAME.lower()}" in result.stdout.lower():
                     tunnel_up = True
                     log.info("Tunnel interface confirmed on attempt %d", i + 1)
                     break
@@ -335,10 +335,11 @@ PersistentKeepalive = 25
                     capture_output=True, text=True,
                     creationflags=CREATE_NO_WINDOW
                 )
-                log.debug("wg show [%d] stdout=%r stderr=%r", i, result.stdout, result.stderr)
-                if f"interface: {TUNNEL_NAME.lower()}" in result.stdout.lower():
+                log.debug("sc query [%d]: %r", i, svc.stdout)
+                if "RUNNING" in svc.stdout:
                     tunnel_up = True
-                    log.info("Tunnel interface confirmed on attempt %d", i + 1)
+                    log.info("Service RUNNING confirmed on attempt %d (no wg.exe)", i + 1)
+                    break
 
         if not tunnel_up:
             log.warning("Tunnel interface did not appear after 10s — tearing down")
