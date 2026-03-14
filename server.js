@@ -117,7 +117,7 @@ app.post('/api/redeem', (req, res) => {
   res.json({ success: true, name: record.name, private_key: record.private_key, client_ip: record.client_ip });
 });
 
-app.get('/api/version', (req, res) => res.json({ min_version: getS('MIN_VERSION', "1.2.0") }));
+app.get('/api/version', (req, res) => res.json({ min_version: getS('MIN_VERSION', "1.0.0") }));
 app.get('/api/motd', (req, res) => res.json({ message: getS('MOTD_MESSAGE', '') }));
 app.get('/api/alert', (req, res) => {
   const alert = db.prepare("SELECT * FROM alerts LIMIT 1").get();

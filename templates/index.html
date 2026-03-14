@@ -795,7 +795,7 @@
       <h1>GamezNET</h1>
       <p>Private Game Server Network</p>
     </div>
-    <div class="version-badge">v2.1</div>
+    <div class="version-badge" id="version-badge">v...</div>
   </header>
 
   <!-- Content -->
@@ -1193,6 +1193,7 @@
         const s    = await sres.json();
         state.connected = s.connected;
         state.updateRequired = s.update_required;
+        if (s.version) document.getElementById('version-badge').textContent = 'v' + s.version;
         setStatus(s.connected ? 'connected' : 'disconnected');
         if (s.connected) startSessionTimer();
         if (s.telemetry) updateTelemetryUI(s.telemetry);
@@ -1359,6 +1360,11 @@
       const res = await fetch('/api/status');
       const s   = await res.json();
       if (s.telemetry) updateTelemetryUI(s.telemetry);
+      if (s.version) document.getElementById('version-badge').textContent = 'v' + s.version;
+      if (s.update_required !== state.updateRequired) {
+        state.updateRequired = s.update_required;
+        if (!state.busy) setStatus(state.connected ? 'connected' : 'disconnected');
+      }
       if (s.connected !== state.connected && !state.busy) {
         state.connected = s.connected;
         setStatus(s.connected ? 'connected' : 'disconnected');
