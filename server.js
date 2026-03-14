@@ -318,7 +318,7 @@ $s.Save()
 Write-OK "Installation Complete"
 
 Start-Process -FilePath (Join-Path $installDir "GamezNET.bat")
-\`;
+`;
   res.setHeader('Content-Type', 'text/plain');
   res.send(script);
 });
@@ -600,7 +600,7 @@ function adminHTML() {
   });
 </script>
 </body>
-</html>\`;
+</html>`;
 }
 
-app.listen(PORT, () => console.log(\`GamezNET Swarm Backend active on port \${PORT}\`));
+app.listen(PORT, () => console.log(`GamezNET Swarm Backend active on port ${PORT}`));
