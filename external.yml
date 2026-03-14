@@ -235,8 +235,7 @@ http:
         servers: [{url: "http://192.168.30.8:8181"}]
     gamez-svc:
       loadBalancer:
-        serversTransport: insecure-transport
-        servers: [{url: "https://192.168.30.58:443"}]
+        servers: [{url: "http://192.168.30.58:8880"}]
     gamenet-svc:
       loadBalancer:
         servers: [{url: "http://192.168.30.58:3000"}]
