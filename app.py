@@ -178,6 +178,7 @@ def update_telemetry():
 
     motd_timer = 0
     alert_timer = 0
+    version_timer = 0
 
     while True:
         # 1. Update MOTD every ~5 minutes
@@ -203,6 +204,12 @@ def update_telemetry():
                 pass
             alert_timer = 30
         alert_timer -= 1
+
+        # 1c. Check Version every ~60 seconds
+        if version_timer <= 0:
+            check_version()
+            version_timer = 30
+        version_timer -= 1
 
         if _connected:
             # 2. Ping Latency (Targeting internal VPN Gateway to prove tunnel works)
@@ -610,20 +617,46 @@ def api_invisible():
 
 @app.route("/api/update", methods=["POST"])
 def api_update():
-    """Pull latest code and restart the app."""
+    """Download latest code from GitHub as a zip and restart the app."""
     install_dir = os.path.dirname(os.path.abspath(__file__))
     try:
-        result = subprocess.run(
-            ["git", "pull"],
-            cwd=install_dir, capture_output=True, text=True, timeout=30,
-            creationflags=0x08000000
-        )
-        if result.returncode != 0:
-            log.error("git pull failed: %s", result.stderr)
-            return jsonify({"error": result.stderr or "git pull failed"}), 500
-        log.info("git pull succeeded: %s", result.stdout.strip())
+        import urllib.request
+        import zipfile
+        import io
+
+        # Standard GitHub repo zip download link
+        zip_url = "https://github.com/natelook1/gameznet/archive/refs/heads/main.zip"
+        log.info("Downloading update from %s", zip_url)
+        
+        req = urllib.request.Request(zip_url, headers={'User-Agent': 'GamezNET'})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            with zipfile.ZipFile(io.BytesIO(resp.read())) as z:
+                for member in z.namelist():
+                    # GitHub zips put everything inside a root folder named "gameznet-main/"
+                    # We strip that prefix so files extract directly into the install_dir
+                    if not member.startswith("gameznet-main/"):
+                        continue
+                        
+                    relative_path = member.replace("gameznet-main/", "", 1)
+                    if not relative_path:  # Skip the root folder itself
+                        continue
+                        
+                    target_path = os.path.join(install_dir, relative_path)
+                    
+                    # If it's a directory, create it
+                    if member.endswith('/'):
+                        os.makedirs(target_path, exist_ok=True)
+                        continue
+                        
+                    # Write the file, ensuring parent directories exist
+                    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                    with open(target_path, "wb") as f:
+                        f.write(z.read(member))
+                        
+        log.info("Update downloaded and extracted successfully.")
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        log.error("Update failed: %s", e)
+        return jsonify({"error": f"Failed to download update: {e}"}), 500
 
     # Restart: launch new instance then exit
     def _restart():
@@ -633,6 +666,7 @@ def api_update():
         os._exit(0)
     threading.Thread(target=_restart, daemon=True).start()
     return jsonify({"success": True})
+
 
 @app.route("/api/alert", methods=["GET"])
 def api_alert():
