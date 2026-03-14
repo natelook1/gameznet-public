@@ -755,7 +755,7 @@ function adminHTML() {
         <div class="field">
           <label style="display:flex;justify-content:space-between;align-items:center;">
             WireGuard Private Key
-            <button class="btn-secondary" onclick="generateWGKeys()" style="font-size:11px;padding:4px 10px;">⚡ Generate Keys</button>
+            <button class="btn-secondary" onclick="generateWGKeys()" style="font-size:11px;padding:4px 10px;">⚡ Key</button>
           </label>
           <input type="text" id="new-privkey" placeholder="Paste or generate client private key" />
         </div>
@@ -1055,6 +1055,7 @@ function adminHTML() {
       document.getElementById('pubkey-box').style.display = 'block';
       toast('Keys generated — copy the public key to UDM Pro first!', 'success');
     } catch (e) {
+      console.error('Key generation failed:', e);
       toast('Key generation failed: ' + e.message, 'error');
     }
   }
