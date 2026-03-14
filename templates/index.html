@@ -992,6 +992,28 @@
                  oninput="formatToken(this)" />
         </div>
         <button class="redeem-btn" id="redeem-btn" onclick="redeemToken()">Activate Token</button>
+        <div style="text-align:center;margin-top:12px;">
+          <span style="font-size:11px;color:var(--muted);font-family:'Share Tech Mono',monospace;letter-spacing:1px;">Don't have a token?</span>
+          <span style="font-size:11px;color:var(--accent);font-family:'Share Tech Mono',monospace;letter-spacing:1px;cursor:pointer;margin-left:6px;" onclick="toggleRequestForm()">REQUEST ACCESS ›</span>
+        </div>
+      </div>
+
+      <!-- Request Token Form (hidden by default) -->
+      <div id="request-panel" class="setup-panel" style="display:none;margin-top:12px;">
+        <div class="section-label" style="margin-bottom:14px;">Request Access</div>
+        <div class="setup-intro">Submit your details and the admin will review your request.</div>
+        <div class="field" style="margin-top:12px;">
+          <label>Your Name</label>
+          <input type="text" id="req-name" placeholder="e.g. Rob" maxlength="32" />
+        </div>
+        <div class="field" style="margin-top:8px;">
+          <label>Email Address</label>
+          <input type="email" id="req-email" placeholder="you@example.com" maxlength="128" />
+        </div>
+        <button class="redeem-btn" id="req-btn" onclick="submitRequest()" style="margin-top:12px;">Send Request</button>
+        <div style="text-align:center;margin-top:8px;">
+          <span style="font-size:11px;color:var(--muted);font-family:'Share Tech Mono',monospace;letter-spacing:1px;cursor:pointer;" onclick="toggleRequestForm()">← Back</span>
+        </div>
       </div>
     </div>
 
@@ -1315,6 +1337,44 @@
       toast('Network error — check your internet connection', 'error');
       btn.disabled = false;
       btn.textContent = 'Activate Token';
+    }
+  }
+
+  function toggleRequestForm() {
+    const setup = document.getElementById('setup-panel');
+    const req   = document.getElementById('request-panel');
+    const showing = req.style.display !== 'none';
+    setup.style.display = showing ? 'block' : 'none';
+    req.style.display   = showing ? 'none'  : 'block';
+  }
+
+  async function submitRequest() {
+    const name  = document.getElementById('req-name').value.trim();
+    const email = document.getElementById('req-email').value.trim();
+    if (!name)  { toast('Please enter your name', 'error'); return; }
+    if (!email) { toast('Please enter your email', 'error'); return; }
+    const btn = document.getElementById('req-btn');
+    btn.disabled = true; btn.textContent = 'Sending...';
+    try {
+      const res  = await fetch('{{ worker_url }}/api/request-token', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ name, email })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById('request-panel').innerHTML = `
+          <div style="text-align:center;padding:20px 0;">
+            <div style="font-size:24px;margin-bottom:12px;">✓</div>
+            <div style="font-family:'Share Tech Mono',monospace;color:var(--success);letter-spacing:1px;margin-bottom:8px;">REQUEST SENT</div>
+            <div style="font-size:12px;color:var(--muted);">The admin will review your request and send you a token.</div>
+          </div>`;
+      } else {
+        toast(data.error || 'Request failed', 'error');
+        btn.disabled = false; btn.textContent = 'Send Request';
+      }
+    } catch {
+      toast('Network error — try again', 'error');
+      btn.disabled = false; btn.textContent = 'Send Request';
     }
   }
 

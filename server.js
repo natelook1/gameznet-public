@@ -59,6 +59,13 @@ db.exec(`
     body TEXT,
     sent_at TEXT
   );
+  CREATE TABLE IF NOT EXISTS token_requests (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    email TEXT,
+    requested_at TEXT,
+    status TEXT DEFAULT 'pending'
+  );
 `);
 
 // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -142,6 +149,27 @@ app.post('/api/chat/send', (req, res) => {
 });
 
 app.get('/api/version', (req, res) => res.json({ min_version: getS('MIN_VERSION', "1.0.0") }));
+
+app.post('/api/request-token', (req, res) => {
+  const { name, email } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Valid email is required' });
+  const existing = db.prepare("SELECT id FROM token_requests WHERE email = ? AND status = 'pending'").get(email.trim().toLowerCase());
+  if (existing) return res.status(409).json({ error: 'A request with this email is already pending' });
+  const id = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+  db.prepare("INSERT INTO token_requests (id, name, email, requested_at, status) VALUES (?, ?, ?, ?, 'pending')").run(id, name.trim(), email.trim().toLowerCase(), new Date().toISOString());
+  res.json({ success: true });
+});
+
+app.post('/admin/requests', requireAdmin, (req, res) => {
+  res.json(db.prepare("SELECT * FROM token_requests ORDER BY requested_at DESC").all());
+});
+
+app.post('/admin/request/dismiss', requireAdmin, (req, res) => {
+  const { id } = req.body;
+  db.prepare("UPDATE token_requests SET status = 'dismissed' WHERE id = ?").run(id);
+  res.json({ success: true });
+});
 app.get('/api/motd', (req, res) => res.json({ message: getS('MOTD_MESSAGE', '') }));
 app.get('/api/alert', (req, res) => {
   const alert = db.prepare("SELECT * FROM alerts LIMIT 1").get();
@@ -506,6 +534,7 @@ function adminHTML() {
     </div>
     <div class="card"><div class="card-title">Active Database</div><div id="token-list"></div></div>
     <div class="card"><div class="card-title">Compute Cluster (Pterodactyl)</div><div id="server-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;"></div></div>
+    <div class="card"><div class="card-title" style="display:flex;align-items:center;gap:10px;">Access Requests <span id="request-badge" style="display:none;background:rgba(255,170,0,0.15);border:1px solid var(--warn);color:var(--warn);font-family:'Share Tech Mono',monospace;font-size:11px;padding:2px 8px;border-radius:2px;"></span></div><div id="requests-list"></div></div>
     <div class="card" id="reports-card"><div class="card-title">Incident Reports</div><div id="reports-container"></div></div>
   </div>
 </div>
@@ -540,16 +569,17 @@ function adminHTML() {
 
   async function refresh() {
     const body = JSON.stringify({ password: adminPassword });
-    const [tRes, oRes, sRes, vRes, rRes, pRes] = await Promise.all([
+    const [tRes, oRes, sRes, vRes, rRes, pRes, reqRes] = await Promise.all([
       fetch('/admin/tokens', { method:'POST', headers:{'Content-Type':'application/json'}, body }),
       fetch('/admin/online', { method:'POST', headers:{'Content-Type':'application/json'}, body }),
       fetch('/api/server-config'),
       fetch('/api/version'),
       fetch('/admin/reports', { method:'POST', headers:{'Content-Type':'application/json'}, body }),
-      fetch('/api/servers')
+      fetch('/api/servers'),
+      fetch('/admin/requests', { method:'POST', headers:{'Content-Type':'application/json'}, body })
     ]);
     if (tRes.ok) {
-      const tokens = await tRes.json(); const online = await oRes.json(); const config = await sRes.json(); const ver = await vRes.json(); const reports = await rRes.json(); const servers = await pRes.json();
+      const tokens = await tRes.json(); const online = await oRes.json(); const config = await sRes.json(); const ver = await vRes.json(); const reports = await rRes.json(); const servers = await pRes.json(); const requests = reqRes.ok ? await reqRes.json() : [];
       document.getElementById('stat-redeemed').textContent = tokens.filter(t => t.redeemed).length;
       document.getElementById('stat-online').textContent = online.length;
       document.getElementById('stat-pending').textContent = tokens.filter(t => !t.redeemed).length;
@@ -560,7 +590,7 @@ function adminHTML() {
       document.getElementById('set-allowed').value = config.allowedIPs;
       document.getElementById('set-local').value = config.localIp || '';
       document.getElementById('set-version').value = ver.min_version;
-      renderTokens(tokens); renderOnline(online); renderReports(reports); renderServers(servers);
+      renderTokens(tokens); renderOnline(online); renderReports(reports); renderServers(servers); renderRequests(requests);
     }
   }
 
@@ -594,6 +624,36 @@ function adminHTML() {
 
   async function togglePlayerHidden(name) {
     await fetch('/admin/player/toggle-hidden', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: adminPassword, name }) });
+    refresh();
+  }
+
+  function renderRequests(requests) {
+    const pending = requests.filter(r => r.status === 'pending');
+    const badge = document.getElementById('request-badge');
+    badge.style.display = pending.length > 0 ? 'inline-block' : 'none';
+    badge.textContent = pending.length + ' PENDING';
+    document.getElementById('requests-list').innerHTML = requests.length === 0
+      ? '<p style="color:var(--muted)">No access requests.</p>'
+      : requests.map(r => \`
+        <div class="report-item" style="\${r.status!=='pending'?'opacity:0.45':''}">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+            <div>
+              <strong style="font-size:13px;">\${r.name}</strong>
+              <span style="font-size:11px;color:var(--muted);margin-left:8px;">\${r.email}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+              <span style="font-size:10px;color:var(--muted)">\${new Date(r.requested_at).toLocaleString()}</span>
+              <span style="font-size:10px;font-family:monospace;padding:1px 6px;border-radius:2px;border:1px solid \${r.status==='pending'?'var(--warn)':'var(--muted)'};color:\${r.status==='pending'?'var(--warn)':'var(--muted)'};">\${r.status.toUpperCase()}</span>
+              \${r.status === 'pending' ? \`<button class="btn-danger" onclick="dismissRequest('\${r.id}')">DISMISS</button>\` : ''}
+            </div>
+          </div>
+        </div>
+      \`).join('');
+  }
+
+  async function dismissRequest(id) {
+    await fetch('/admin/request/dismiss', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: adminPassword, id }) });
+    toast('Request dismissed');
     refresh();
   }
 
