@@ -305,9 +305,9 @@ function Write-WARN { param($t) Write-Host "          [" -NoNewline -ForegroundC
 Clear-Host
 Write-Host "  ================================================================" -ForegroundColor Cyan
 Write-Host "   ___  ____  _  _  ____  ____  _  _  ____  ____" -ForegroundColor Cyan
-Write-Host "  / __)(  __)( \/ )(  __)(  __)( \( )(  __)(_  _)" -ForegroundColor Cyan
-Write-Host " ( (_ \ ) _) / \/ \ ) _)  ) _) )  (  ) _)   )(  " -ForegroundColor Cyan
-Write-Host "  \___/(____)\_)(_/(____)(____)(__)\_)(____)  (__)" -ForegroundColor Cyan
+Write-Host "  / __)(  __)( \\/ )(  __)(  __)( \\( )(  __)(_  _)" -ForegroundColor Cyan
+Write-Host " ( (_ \\ ) _) / \\/ \\ ) _)  ) _) )  (  ) _)   )(  " -ForegroundColor Cyan
+Write-Host "  \\___/(____)\\_)(_/(____)(____)(__)\\_(____) (__)" -ForegroundColor Cyan
 Write-Host "  ================================================================" -ForegroundColor Cyan
 
 Write-Step 1 5 "Preparing install directory"

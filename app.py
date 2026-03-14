@@ -269,6 +269,7 @@ app = Flask(__name__)
 _lock = threading.Lock()
 _connected = False
 _invisible = False
+_full_route = False
 _update_required = False
 
 def _version_tuple(v):
@@ -301,7 +302,8 @@ def api_status():
         "connected": _connected,
         "telemetry": _telemetry,
         "update_required": _update_required,
-        "version": VERSION
+        "version": VERSION,
+        "full_route": _full_route
     })
 
 @app.route("/api/connect", methods=["POST"])
@@ -323,14 +325,16 @@ def api_connect():
                  srv["endpoint"], srv["public_key"], srv["allowed_ips"])
 
         # Build the WireGuard config file
+        allowed_ips = "0.0.0.0/0, ::/0" if _full_route else srv['allowed_ips']
+        dns_line = "DNS = 1.1.1.1, 1.0.0.1\n" if _full_route else ""
         conf_content = f"""[Interface]
 PrivateKey = {config_data['private_key']}
 Address = {config_data['vpn_ip']}
-
+{dns_line}
 [Peer]
 PublicKey = {srv['public_key']}
 Endpoint = {srv['endpoint']}
-AllowedIPs = {srv['allowed_ips']}
+AllowedIPs = {allowed_ips}
 PersistentKeepalive = 25
 """
         conf_path = os.path.join(os.path.expanduser("~"), f"{TUNNEL_NAME}.conf")
@@ -591,6 +595,17 @@ def api_online():
     except Exception as e:
         log.debug("api_online proxy failed: %s", e)
         return jsonify([])
+
+@app.route("/api/invisible", methods=["GET", "POST"])
+@app.route("/api/fullroute", methods=["GET", "POST"])
+def api_fullroute():
+    global _full_route
+    if _connected:
+        return jsonify({"error": "Disconnect first to change routing mode"}), 400
+    data = request.get_json(silent=True) or {}
+    if "enabled" in data:
+        _full_route = bool(data["enabled"])
+    return jsonify({"full_route": _full_route})
 
 @app.route("/api/invisible", methods=["GET", "POST"])
 def api_invisible():
