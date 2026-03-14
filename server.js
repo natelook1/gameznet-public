@@ -227,7 +227,7 @@ app.get('/api/servers', async (req, res) => {
         const attrs = d.attributes || {};
         const allocations = allocData.attributes?.relationships?.allocations?.data || [];
         const primary = allocations.find(a => a.attributes?.is_default) || allocations[0];
-        const host = primary?.attributes?.ip_alias || primary?.attributes?.ip || null;
+        const host = getS('SERVER_LOCAL_IP', null) || null;
         const port = primary?.attributes?.port || null;
         return { id: s.id, name: s.name, state: attrs.current_state || 'offline', cpu: Math.round(attrs.resources?.cpu_absolute || 0), memory_mb: Math.round((attrs.resources?.memory_bytes || 0) / 1048576), uptime: attrs.resources?.uptime || 0, host, port };
       } catch (e) { return { id: s.id, name: s.name, state: 'unknown' }; }
