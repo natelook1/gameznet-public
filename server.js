@@ -425,7 +425,7 @@ function adminHTML() {
   <div class="header-badge">ADMIN CONSOLE</div>
   <div class="report-badge" id="report-badge" style="display:none;"><span id="report-count">0</span> REPORTS</div>
   <div class="header-right">
-    <div class="server-ip-chip" id="header-server-ip">SERVER IP: â€”</div>
+    <div class=”server-ip-chip” id=”header-server-ip”>SERVER IP: —</div>
     <div class="live-indicator"><span class="live-dot"></span> LIVE</div>
   </div>
 </header>
@@ -439,10 +439,10 @@ function adminHTML() {
   </div>
   <div id="main-panel">
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">Provisioned</div><div class="stat-value cyan" id="stat-redeemed">â€”</div></div>
-      <div class="stat-card"><div class="stat-label">Active Nodes</div><div class="stat-value green" id="stat-online">â€”</div></div>
-      <div class="stat-card"><div class="stat-label">Pending Intake</div><div class="stat-value muted" id="stat-pending">â€”</div></div>
-      <div class="stat-card"><div class="stat-label">Core Protocol</div><div class="stat-value mono" id="stat-version">â€”</div></div>
+      <div class="stat-card"><div class="stat-label">Provisioned</div><div class="stat-value cyan" id="stat-redeemed">—</div></div>
+      <div class="stat-card"><div class="stat-label">Active Nodes</div><div class="stat-value green" id="stat-online">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Intake</div><div class="stat-value muted" id="stat-pending">—</div></div>
+      <div class="stat-card"><div class="stat-label">Core Protocol</div><div class="stat-value mono" id="stat-version">—</div></div>
     </div>
     <div class="card"><div class="card-title">Node Roster</div><div id="online-roster"></div></div>
     <div class="card"><div class="card-title">Generate Access Token</div>
