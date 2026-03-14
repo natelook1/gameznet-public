@@ -596,7 +596,6 @@ def api_online():
         log.debug("api_online proxy failed: %s", e)
         return jsonify([])
 
-@app.route("/api/invisible", methods=["GET", "POST"])
 @app.route("/api/fullroute", methods=["GET", "POST"])
 def api_fullroute():
     global _full_route
@@ -606,6 +605,39 @@ def api_fullroute():
     if "enabled" in data:
         _full_route = bool(data["enabled"])
     return jsonify({"full_route": _full_route})
+
+@app.route("/api/chat", methods=["GET"])
+def api_chat():
+    """Proxy GET /api/chat?since= to backend."""
+    import urllib.request
+    since = request.args.get("since", "")
+    try:
+        url = f"{WORKER_URL}/api/chat?since={urllib.request.quote(since)}"
+        req = urllib.request.Request(url, headers={"User-Agent": "GamezNET"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.read(), resp.status, {"Content-Type": "application/json"}
+    except Exception as e:
+        log.debug("api_chat proxy failed: %s", e)
+        return jsonify([])
+
+@app.route("/api/chat/send", methods=["POST"])
+def api_chat_send():
+    """Proxy POST /api/chat/send to backend."""
+    import urllib.request
+    try:
+        data = request.get_json(silent=True) or {}
+        payload = json.dumps(data).encode()
+        req = urllib.request.Request(
+            f"{WORKER_URL}/api/chat/send",
+            data=payload,
+            headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.read(), resp.status, {"Content-Type": "application/json"}
+    except Exception as e:
+        log.debug("api_chat_send proxy failed: %s", e)
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/invisible", methods=["GET", "POST"])
 def api_invisible():
