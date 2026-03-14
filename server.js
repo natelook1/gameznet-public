@@ -557,17 +557,20 @@ function adminHTML() {
   }
 
   function renderServers(servers) {
-    document.getElementById('server-grid').innerHTML = servers.map(s => \`
-      <div class="server-card">
-        <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;"><strong>\${s.name}</strong> <span style="font-size:11px;color:\${s.state==='running'?'var(--success)':'var(--danger)'}">\${s.state.toUpperCase()}</span></div>
+    document.getElementById('server-grid').innerHTML = servers.map(s => {
+      const running = s.state === 'running';
+      const stateColor = running ? 'var(--success)' : s.state === 'starting' ? 'var(--warn)' : 'var(--muted)';
+      return \`
+      <div class="server-card" style="\${!running ? 'opacity:0.45;filter:saturate(0.3)' : ''}">
+        <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;"><strong style="color:\${running?'var(--text)':'var(--muted)'}">\${s.name}</strong> <span style="font-size:11px;color:\${stateColor}">\${s.state.toUpperCase()}</span></div>
         <div style="font-size:11px;color:var(--muted);margin:8px 0; font-family:monospace">CPU: \${s.cpu}% | RAM: \${s.memory_mb} MB | UP: \${Math.floor(s.uptime/3600)}h</div>
         <div style="display:flex;gap:8px;margin-top:8px;">
           <button class="btn-secondary" onclick="power('\${s.id}','start')">Boot</button>
           <button class="btn-danger" onclick="power('\${s.id}','stop')">Kill</button>
           <button class="btn-secondary" style="border-color:var(--warn); color:var(--warn)" onclick="power('\${s.id}','restart')">Reboot</button>
         </div>
-      </div>
-    \`).join('');
+      </div>\`;
+    }).join('');
   }
 
   async function createToken() {
