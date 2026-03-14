@@ -925,6 +925,10 @@ function adminHTML() {
         <label>Local LAN IP (split-horizon — leave blank to disable)</label>
         <input type="text" id="settings-localip" placeholder="e.g. 192.168.1.1 — served to clients on the same WAN IP" />
       </div>
+      <div class="settings-field-row">
+        <label>Min Client Version (bump to force update)</label>
+        <input type="text" id="settings-minversion" placeholder="e.g. 1.1.0" />
+      </div>
       <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
     </div>
 
@@ -1266,6 +1270,11 @@ function adminHTML() {
       document.getElementById('settings-pubkey').value = data.publicKey || '';
       document.getElementById('settings-allowedips').value = data.allowedIPs || '';
       document.getElementById('settings-localip').value = data.localIp || '';
+      try {
+        const vres = await fetch('/api/version');
+        const vdata = await vres.json();
+        document.getElementById('settings-minversion').value = vdata.min_version || '';
+      } catch {}
     } catch {}
   }
 
@@ -1273,10 +1282,11 @@ function adminHTML() {
     const public_key = document.getElementById('settings-pubkey').value.trim();
     const allowed_ips = document.getElementById('settings-allowedips').value.trim();
     const local_ip = document.getElementById('settings-localip').value.trim();
+    const min_version = document.getElementById('settings-minversion').value.trim();
     const res = await fetch('/admin/settings/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: adminPassword, public_key, allowed_ips, local_ip })
+      body: JSON.stringify({ password: adminPassword, public_key, allowed_ips, local_ip, min_version })
     });
     const data = await res.json();
     if (res.ok) { toast('Settings saved!', 'success'); loadServerConfig(); }
@@ -1602,6 +1612,11 @@ async function handleUpdateIP(request, env) {
   });
 }
 
+async function handleVersion(_request, env) {
+  const min_version = await env.GAMENET_KV.get('MIN_VERSION') || "1.0.0";
+  return jsonResponse({ min_version });
+}
+
 async function handleServerConfig(request, env) {
   const wanIp    = await env.GAMENET_KV.get('SERVER_ENDPOINT_IP') || "184.66.15.159";
   const localIp  = await env.GAMENET_KV.get('SERVER_LOCAL_IP')    || "";
@@ -1748,7 +1763,8 @@ async function handleAdminSettingsSave(request, env) {
   const { authed, body } = await requireAdmin(request, env);
   if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
 
-  const { public_key, allowed_ips, local_ip } = body;
+  const { public_key, allowed_ips, local_ip, min_version } = body;
+  
   if (public_key !== undefined && public_key.trim()) {
     await env.GAMENET_KV.put('SERVER_PUBLIC_KEY', public_key.trim());
   }
@@ -1762,15 +1778,11 @@ async function handleAdminSettingsSave(request, env) {
       await env.GAMENET_KV.delete('SERVER_LOCAL_IP');
     }
   }
+  if (min_version !== undefined && min_version.trim()) {
+    await env.GAMENET_KV.put('MIN_VERSION', min_version.trim());
+  }
 
   return jsonResponse({ success: true });
-}
-
-// ─── Version Handler ─────────────────────────────────────────────────────────
-
-async function handleVersion(request, env) {
-  const version = await env.GAMENET_KV.get('APP_VERSION') || "1.2";
-  return jsonResponse({ version });
 }
 
 // ─── Client API Handlers ─────────────────────────────────────────────────────
@@ -2161,12 +2173,12 @@ export default {
     if (path === '/admin' && method === 'GET') return htmlResponse(adminHTML());
     if (path === '/admin/update-ip') return handleUpdateIP(request, env);
     if (path === '/api/server-config') return handleServerConfig(request, env);
+    if (path === '/api/version' && method === 'GET') return handleVersion(request, env);
     if (path === '/admin/token/create' && method === 'POST') return handleAdminTokenCreate(request, env);
     if (path === '/admin/token/revoke' && method === 'POST') return handleAdminTokenRevoke(request, env);
     if (path === '/admin/token/toggle-hidden' && method === 'POST') return handleAdminTokenToggleHidden(request, env);
     if (path === '/admin/tokens' && method === 'POST') return handleAdminTokenList(request, env);
     if (path === '/api/redeem' && method === 'POST') return handleRedeem(request, env);
-    if (path === '/api/version' && method === 'GET') return handleVersion(request, env);
     if (path === '/api/status' && method === 'GET') return jsonResponse({ online: true });
     if (path === '/api/motd' && method === 'GET') return handleMotd(request, env);
     if (path === '/admin/motd' && method === 'POST') return handleAdminSetMotd(request, env);

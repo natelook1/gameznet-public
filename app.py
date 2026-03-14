@@ -55,6 +55,7 @@ def detect_game():
 
 WORKER_URL = "https://gamenet.natelook.workers.dev"
 TUNNEL_NAME = "GamezNET"
+VERSION = "1.1.0"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -121,7 +122,9 @@ def fetch_server_config():
             headers={"Cache-Control": "no-cache", "Pragma": "no-cache", "User-Agent": "GamezNET"}
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read().decode())
+            raw = resp.read().decode()
+            log.debug("fetch_server_config raw response: %s", raw)
+            data = json.loads(raw)
             return {
                 "endpoint":   data.get("endpoint",  SERVER_ENDPOINT),
                 "public_key": data.get("publicKey", SERVER_PUBLIC_KEY),
@@ -259,6 +262,27 @@ app = Flask(__name__)
 _lock = threading.Lock()
 _connected = False
 _invisible = False
+_update_required = False
+
+def _version_tuple(v):
+    try:
+        return tuple(int(x) for x in v.split('.'))
+    except Exception:
+        return (0,)
+
+def check_version():
+    global _update_required
+    import urllib.request
+    try:
+        req = urllib.request.Request(f"{WORKER_URL}/api/version", headers={'User-Agent': 'GamezNET'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+            min_ver = data.get("min_version", "1.0.0")
+            _update_required = _version_tuple(VERSION) < _version_tuple(min_ver)
+            if _update_required:
+                log.warning("Update required: client=%s min=%s", VERSION, min_ver)
+    except Exception as e:
+        log.debug("Version check failed: %s", e)
 
 @app.route("/")
 def index():
@@ -268,7 +292,8 @@ def index():
 def api_status():
     return jsonify({
         "connected": _connected,
-        "telemetry": _telemetry
+        "telemetry": _telemetry,
+        "update_required": _update_required
     })
 
 @app.route("/api/connect", methods=["POST"])
@@ -583,6 +608,32 @@ def api_invisible():
         return jsonify({"invisible": _invisible})
     return jsonify({"invisible": _invisible})
 
+@app.route("/api/update", methods=["POST"])
+def api_update():
+    """Pull latest code and restart the app."""
+    install_dir = os.path.dirname(os.path.abspath(__file__))
+    try:
+        result = subprocess.run(
+            ["git", "pull"],
+            cwd=install_dir, capture_output=True, text=True, timeout=30,
+            creationflags=0x08000000
+        )
+        if result.returncode != 0:
+            log.error("git pull failed: %s", result.stderr)
+            return jsonify({"error": result.stderr or "git pull failed"}), 500
+        log.info("git pull succeeded: %s", result.stdout.strip())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    # Restart: launch new instance then exit
+    def _restart():
+        time.sleep(0.8)
+        script = os.path.join(install_dir, "app.py")
+        subprocess.Popen([sys.executable, script], cwd=install_dir, creationflags=0x08000000)
+        os._exit(0)
+    threading.Thread(target=_restart, daemon=True).start()
+    return jsonify({"success": True})
+
 @app.route("/api/alert", methods=["GET"])
 def api_alert():
     """Proxy GET to Worker /api/alert and return the JSON."""
@@ -763,6 +814,9 @@ if __name__ == "__main__":
     _instance_mutex = ensure_single_instance()   # ← single-instance guard (must be first)
     ensure_admin()
     hide_console()
+
+    # Version check (non-blocking)
+    threading.Thread(target=check_version, daemon=True).start()
 
     # Start Telemetry Thread
     threading.Thread(target=update_telemetry, daemon=True).start()
