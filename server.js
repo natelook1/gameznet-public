@@ -19,16 +19,21 @@ if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 const db = new Database(path.join(dataDir, 'gameznet.db'));
 db.pragma('journal_mode = WAL');
 
+// Schema migrations for columns added after initial deploy
+try { db.exec("ALTER TABLE tokens ADD COLUMN active INTEGER DEFAULT 0"); } catch {}
+try { db.exec("ALTER TABLE token_requests ADD COLUMN status TEXT DEFAULT 'pending'"); } catch {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS tokens (
     token TEXT PRIMARY KEY, 
     name TEXT, 
     client_ip TEXT, 
     private_key TEXT,
-    redeemed INTEGER DEFAULT 0, 
-    created_at TEXT, 
-    redeemed_at TEXT, 
-    hidden INTEGER DEFAULT 0
+    redeemed INTEGER DEFAULT 0,
+    created_at TEXT,
+    redeemed_at TEXT,
+    hidden INTEGER DEFAULT 0,
+    active INTEGER DEFAULT 0
   );
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
   CREATE TABLE IF NOT EXISTS players (
@@ -72,6 +77,35 @@ db.exec(`
 const getS = (k, d) => db.prepare("SELECT value FROM settings WHERE key = ?").get(k)?.value || d;
 const setS = (k, v) => db.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(k, v);
 
+// ─── WireGuard keypair generation ────────────────────────────────────────────
+function generateWGKeypair() {
+  const nacl = require('tweetnacl');
+  const keys = nacl.box.keyPair();
+  const toB64 = b => Buffer.from(b).toString('base64');
+  return { privateKey: toB64(keys.secretKey), publicKey: toB64(keys.publicKey) };
+}
+
+// ─── SSH helper — run a command on UDM ───────────────────────────────────────
+function sshExec(command) {
+  return new Promise((resolve, reject) => {
+    const { Client } = require('ssh2');
+    const conn = new Client();
+    const host = getS('UDM_SSH_HOST', '192.168.30.1');
+    const user = getS('UDM_SSH_USER', 'root');
+    const privateKey = getS('UDM_SSH_KEY', null);
+    if (!privateKey) return reject(new Error('No SSH key configured in settings'));
+    conn.on('ready', () => {
+      conn.exec(command, (err, stream) => {
+        if (err) { conn.end(); return reject(err); }
+        let out = '', errOut = '';
+        stream.on('data', d => out += d);
+        stream.stderr.on('data', d => errOut += d);
+        stream.on('close', (code) => { conn.end(); code === 0 ? resolve(out.trim()) : reject(new Error(errOut.trim() || `Exit ${code}`)); });
+      });
+    }).on('error', reject).connect({ host, port: 22, username: user, privateKey });
+  });
+}
+
 function generateToken() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let token = '';
@@ -99,7 +133,10 @@ app.get('/api/server-config', (req, res) => {
     endpoint: `${endpointIp}:51820`,
     publicKey: getS('SERVER_PUBLIC_KEY', "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="),
     allowedIPs: getS('SERVER_ALLOWED_IPS', "192.168.8.0/24, 192.168.30.0/24"),
-    publicIp: wanIp, localIp
+    publicIp: wanIp, localIp,
+    udmHost: getS('UDM_SSH_HOST', '192.168.30.1'),
+    udmUser: getS('UDM_SSH_USER', 'root'),
+    udmInterface: getS('UDM_WG_INTERFACE', 'wg0')
   });
 });
 
@@ -108,7 +145,9 @@ app.post('/api/heartbeat', (req, res) => {
   if (!name) return res.status(400).end();
   if (disconnecting) {
     db.prepare("DELETE FROM players WHERE name = ?").run(name);
+    db.prepare("UPDATE tokens SET active = 0 WHERE name = ?").run(name);
   } else {
+    db.prepare("UPDATE tokens SET active = 1 WHERE name = ?").run(name);
     const hiddenVal = hidden !== undefined ? (hidden ? 1 : 0) : (db.prepare("SELECT hidden FROM tokens WHERE name = ?").get(name)?.hidden || 0);
     db.prepare(`INSERT INTO players (name, vpn_ip, last_seen, game, hidden) VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT(name) DO UPDATE SET vpn_ip=excluded.vpn_ip, last_seen=excluded.last_seen, game=excluded.game, hidden=excluded.hidden`)
@@ -125,8 +164,10 @@ app.get('/api/online', (req, res) => {
 app.post('/api/redeem', (req, res) => {
   const record = db.prepare("SELECT * FROM tokens WHERE token = ?").get(req.body.token);
   if (!record) return res.status(404).json({ error: 'Invalid token' });
-  if (record.redeemed) return res.status(409).json({ error: 'Already redeemed' });
-  db.prepare("UPDATE tokens SET redeemed = 1, redeemed_at = ? WHERE token = ?").run(new Date().toISOString(), req.body.token);
+  if (record.active) return res.status(409).json({ error: 'This token is already in use on another device' });
+  if (!record.redeemed) {
+    db.prepare("UPDATE tokens SET redeemed = 1, redeemed_at = ? WHERE token = ?").run(new Date().toISOString(), req.body.token);
+  }
   res.json({ success: true, name: record.name, private_key: record.private_key, client_ip: record.client_ip });
 });
 
@@ -148,7 +189,7 @@ app.post('/api/chat/send', (req, res) => {
   res.json({ success: true, sent_at });
 });
 
-app.get('/api/version', (req, res) => res.json({ min_version: getS('MIN_VERSION', "1.0.0") }));
+app.get('/api/version', (req, res) => res.json({ min_version: getS('MIN_VERSION', "1.3.0") }));
 
 app.post('/api/request-token', (req, res) => {
   const { name, email } = req.body;
@@ -169,6 +210,34 @@ app.post('/admin/request/dismiss', requireAdmin, (req, res) => {
   const { id } = req.body;
   db.prepare("UPDATE token_requests SET status = 'dismissed' WHERE id = ?").run(id);
   res.json({ success: true });
+});
+
+app.post('/admin/request/approve', requireAdmin, async (req, res) => {
+  const { id, vpn_ip } = req.body;
+  if (!vpn_ip || !vpn_ip.trim()) return res.status(400).json({ error: 'VPN IP required' });
+  const request = db.prepare("SELECT * FROM token_requests WHERE id = ?").get(id);
+  if (!request) return res.status(404).json({ error: 'Request not found' });
+
+  // Generate WireGuard keypair
+  const { privateKey, publicKey } = generateWGKeypair();
+  const ip = vpn_ip.trim();
+  const wgInterface = getS('UDM_WG_INTERFACE', 'wg0');
+
+  // Add peer to UDM via SSH
+  try {
+    await sshExec(`wg set ${wgInterface} peer ${publicKey} allowed-ips ${ip}/32 && wg-quick save ${wgInterface}`);
+  } catch (e) {
+    return res.status(500).json({ error: `SSH failed: ${e.message}` });
+  }
+
+  // Create token
+  const token = generateToken();
+  const clientIp = ip.includes('/') ? ip.split('/')[0] : ip;
+  db.prepare("INSERT INTO tokens (token, name, client_ip, private_key, redeemed, created_at, hidden) VALUES (?, ?, ?, ?, 0, ?, 0)")
+    .run(token, request.name, `${clientIp}/32`, privateKey, new Date().toISOString());
+  db.prepare("UPDATE token_requests SET status = 'approved' WHERE id = ?").run(id);
+
+  res.json({ success: true, token, name: request.name, vpn_ip: `${clientIp}/32`, public_key: publicKey });
 });
 app.get('/api/motd', (req, res) => res.json({ message: getS('MOTD_MESSAGE', '') }));
 app.get('/api/alert', (req, res) => {
@@ -242,6 +311,24 @@ app.post('/admin/settings/save', requireAdmin, (req, res) => {
   if (local_ip !== undefined) setS('SERVER_LOCAL_IP', local_ip.trim());
   if (min_version) setS('MIN_VERSION', min_version.trim());
   res.json({ success: true });
+});
+
+app.post('/admin/ssh/save', requireAdmin, (req, res) => {
+  const { host, user, key, wg_interface } = req.body;
+  if (host) setS('UDM_SSH_HOST', host.trim());
+  if (user) setS('UDM_SSH_USER', user.trim());
+  if (key) setS('UDM_SSH_KEY', key.trim());
+  if (wg_interface) setS('UDM_WG_INTERFACE', wg_interface.trim());
+  res.json({ success: true });
+});
+
+app.post('/admin/ssh/test', requireAdmin, async (req, res) => {
+  try {
+    const out = await sshExec('echo ok');
+    res.json({ success: true, output: out });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get('/admin/update-ip', requireAdmin, (req, res) => {
@@ -531,6 +618,19 @@ function adminHTML() {
         <div><label>Minimum Version</label><input type="text" id="set-version" /></div>
       </div>
       <button class="btn-primary" style="margin-top:12px;" onclick="saveSettings()">Apply Global Config</button>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <div style="font-size:11px;font-family:'Share Tech Mono',monospace;color:var(--muted);letter-spacing:1px;margin-bottom:10px;">UDM SSH (for auto peer provisioning)</div>
+        <div class="form-row">
+          <div><label>UDM SSH Host</label><input type="text" id="set-udm-host" placeholder="192.168.30.1" /></div>
+          <div><label>SSH User</label><input type="text" id="set-udm-user" placeholder="root" /></div>
+        </div>
+        <div class="form-row" style="margin-top:8px;">
+          <div><label>WG Interface</label><input type="text" id="set-udm-iface" placeholder="wg0" /></div>
+        </div>
+        <div style="margin-top:8px;"><label>SSH Private Key (PEM)</label><textarea id="set-udm-key" rows="4" style="width:100%;background:var(--card);border:1px solid var(--border2);color:var(--text);padding:8px;font-family:monospace;font-size:11px;border-radius:4px;resize:vertical;" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"></textarea></div>
+        <button class="btn-secondary" style="margin-top:8px;" onclick="saveSSHSettings()">Save SSH Config</button>
+        <button class="btn-secondary" style="margin-top:8px;margin-left:8px;" onclick="testSSH()">Test Connection</button>
+      </div>
     </div>
     <div class="card"><div class="card-title">Active Database</div><div id="token-list"></div></div>
     <div class="card"><div class="card-title">Compute Cluster (Pterodactyl)</div><div id="server-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;"></div></div>
@@ -591,6 +691,9 @@ function adminHTML() {
       document.getElementById('set-local').value = config.localIp || '';
       document.getElementById('set-version').value = ver.min_version;
       renderTokens(tokens); renderOnline(online); renderReports(reports); renderServers(servers); renderRequests(requests);
+      document.getElementById('set-udm-host').value = config.udmHost || '';
+      document.getElementById('set-udm-user').value = config.udmUser || '';
+      document.getElementById('set-udm-iface').value = config.udmInterface || '';
     }
   }
 
@@ -644,7 +747,7 @@ function adminHTML() {
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
               <span style="font-size:10px;color:var(--muted)">\${new Date(r.requested_at).toLocaleString()}</span>
               <span style="font-size:10px;font-family:monospace;padding:1px 6px;border-radius:2px;border:1px solid \${r.status==='pending'?'var(--warn)':'var(--muted)'};color:\${r.status==='pending'?'var(--warn)':'var(--muted)'};">\${r.status.toUpperCase()}</span>
-              \${r.status === 'pending' ? \`<button class="btn-danger" onclick="dismissRequest('\${r.id}')">DISMISS</button>\` : ''}
+              \${r.status === 'pending' ? \`<button class="btn-primary" data-approve="\${r.id}" onclick="approveRequest('\${r.id}')" style="font-size:10px;padding:2px 10px;">APPROVE</button><button class="btn-danger" onclick="dismissRequest('\${r.id}')" style="font-size:10px;padding:2px 8px;">DISMISS</button>\` : ''}
             </div>
           </div>
         </div>
@@ -707,6 +810,48 @@ function adminHTML() {
       password: adminPassword, public_key: document.getElementById('set-pubkey').value, allowed_ips: document.getElementById('set-allowed').value, local_ip: document.getElementById('set-local').value, min_version: document.getElementById('set-version').value
     }) });
     toast('Global Settings Updated'); refresh();
+  }
+
+  async function saveSSHSettings() {
+    const body = JSON.stringify({
+      password: adminPassword,
+      host: document.getElementById('set-udm-host').value,
+      user: document.getElementById('set-udm-user').value,
+      key: document.getElementById('set-udm-key').value,
+      wg_interface: document.getElementById('set-udm-iface').value
+    });
+    await fetch('/admin/ssh/save', { method:'POST', headers:{'Content-Type':'application/json'}, body });
+    toast('SSH Config Saved');
+  }
+
+  async function testSSH() {
+    const btn = event.target; btn.textContent = 'Testing...'; btn.disabled = true;
+    try {
+      const res = await fetch('/admin/ssh/test', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: adminPassword }) });
+      const d = await res.json();
+      if (res.ok) toast('SSH OK — UDM reachable', 'success');
+      else toast('SSH Failed: ' + d.error, 'error');
+    } catch { toast('SSH Test Failed', 'error'); }
+    btn.textContent = 'Test Connection'; btn.disabled = false;
+  }
+
+  async function approveRequest(id) {
+    const vpn_ip = prompt('Assign VPN IP for this player (e.g. 192.168.8.10):');
+    if (!vpn_ip) return;
+    const btn = document.querySelector(\`[data-approve="\${id}"]\`);
+    if (btn) { btn.textContent = 'Provisioning...'; btn.disabled = true; }
+    try {
+      const res = await fetch('/admin/request/approve', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: adminPassword, id, vpn_ip }) });
+      const d = await res.json();
+      if (res.ok) {
+        toast(\`Token created: \${d.token}\`, 'success');
+        prompt(\`Send this token to \${d.name}:\`, d.token);
+        refresh();
+      } else {
+        toast('Approve failed: ' + d.error, 'error');
+        if (btn) { btn.textContent = 'APPROVE'; btn.disabled = false; }
+      }
+    } catch { toast('Network error', 'error'); if (btn) { btn.textContent = 'APPROVE'; btn.disabled = false; } }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
