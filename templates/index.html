@@ -1352,12 +1352,6 @@
       const res = await fetch('/api/status');
       const s   = await res.json();
       if (s.telemetry) updateTelemetryUI(s.telemetry);
-      
-      if (s.update_required !== undefined && s.update_required !== state.updateRequired) {
-        state.updateRequired = s.update_required;
-        setStatus(state.connected ? 'connected' : 'disconnected');
-      }
-
       if (s.connected !== state.connected && !state.busy) {
         state.connected = s.connected;
         setStatus(s.connected ? 'connected' : 'disconnected');
@@ -1377,7 +1371,12 @@
         return;
       }
       el.innerHTML = online.map(p =>
-        `<div class="online-player"><div class="op-dot"></div><div class="op-name">${p.name}</div><div class="op-ip">${p.vpn_ip}</div></div>`
+        `<div class="online-player">
+           <div class="op-dot"></div>
+           <div class="op-name">${p.name}</div>
+           ${p.game ? `<div style="flex:1; font-size:10px; color:var(--accent); letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.game}</div>` : '<div style="flex:1;"></div>'}
+           <div class="op-ip">${p.vpn_ip}</div>
+         </div>`
       ).join('');
     } catch {}
   }
