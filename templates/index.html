@@ -1112,9 +1112,9 @@
       icon.textContent = '⬡';
       main.textContent = 'Connected';
       main.className   = 'status-main connected';
-      sub.textContent  = state.clientIp || 'VPN Active';
-      btn.textContent  = 'Disconnect';
-      btn.className    = 'connect-btn action-disconnect';
+      sub.textContent  = state.updateRequired ? '⚠ Update available — disconnect to update' : (state.clientIp || 'VPN Active');
+      btn.textContent  = state.updateRequired ? 'Update Required' : 'Disconnect';
+      btn.className    = state.updateRequired ? 'connect-btn action-update' : 'connect-btn action-disconnect';
       btn.disabled     = false;
       footer.textContent = `ACTIVE · ${state.name.toUpperCase()}`;
       startSessionTimer();
@@ -1266,7 +1266,14 @@
   async function toggleConnect() {
     if (state.busy) return;
     
-    if (state.updateRequired && !state.connected) {
+    if (state.updateRequired) {
+      if (state.connected) {
+        state.busy = true;
+        setStatus('disconnecting');
+        try { await fetch('/api/disconnect', { method: 'POST' }); } catch (e) {}
+        state.connected = false;
+        state.busy = false;
+      }
       await triggerUpdate();
       return;
     }
