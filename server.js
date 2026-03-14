@@ -268,13 +268,6 @@ Write-Host " | |_| | (_| | | | | | |  __/| (_| | |\\  | |___  | |  " -Foreground
 Write-Host "  \\____|\\__,_|_| |_| |_|\\___| \\__,_|_| \\_|_____| |_|  " -ForegroundColor Cyan
 Write-Host "  ========================================================" -ForegroundColor Cyan
 
-$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if (-not $isAdmin) {
-    Write-WARN "Relaunching as Administrator..."
-    Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command "irm https://gameznet.looknet.ca/install | iex"' -Verb RunAs
-    exit
-}
-
 Write-Step 1 5 "Preparing install directory"
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 New-Item -ItemType Directory -Force -Path "$installDir\\templates" | Out-Null
