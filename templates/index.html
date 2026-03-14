@@ -1023,7 +1023,8 @@
   <footer>
     <span class="footer-status" id="footer-status">INITIALIZING...</span>
     <div class="footer-right">
-      <button id="invisible-btn" class="invisible-btn" onclick="toggleInvisible()" style="display:none;">👁 VISIBLE</button>
+      <button id="fullroute-btn" class="invisible-btn" onclick="toggleFullRoute()" style="display:none;" title="Route all internet traffic through the VPN for privacy. Requires reconnect to take effect.">⬡ GAME ONLY</button>
+      <button id="invisible-btn" class="invisible-btn" onclick="toggleInvisible()" style="display:none;" title="Hide yourself from the Who's Online list while staying connected">👁 VISIBLE</button>
       <span class="reset-link" id="change-token-link" onclick="showRetokenPanel()" style="display:none;">Change Token</span>
       <span class="reset-link" onclick="resetConfig()">Reset</span>
     </div>
@@ -1130,6 +1131,7 @@
     document.getElementById('info-ip').textContent   = state.clientIp;
     document.getElementById('change-token-link').style.display = 'inline';
     document.getElementById('invisible-btn').style.display = 'inline-block';
+    document.getElementById('fullroute-btn').style.display = 'inline-block';
     setStatus('disconnected');
   }
 
@@ -1137,6 +1139,7 @@
     showView('setup');
     document.getElementById('change-token-link').style.display = 'none';
     document.getElementById('invisible-btn').style.display = 'none';
+    document.getElementById('fullroute-btn').style.display = 'none';
     document.getElementById('motd-banner').style.display = 'none';
     const btn = document.getElementById('connect-btn');
     btn.textContent = 'Connect to Server';
@@ -1180,6 +1183,7 @@
       footer.textContent = `ACTIVE · ${state.name.toUpperCase()}`;
       startSessionTimer();
       setChatEnabled(true);
+      updateFullRouteBtn();
     } else if (statusKey === 'connecting') {
       icon.textContent = '◌';
       main.textContent = 'Connecting...';
@@ -1218,6 +1222,7 @@
       footer.textContent = state.provisioned ? `READY · ${state.name.toUpperCase()}` : 'AWAITING SETUP';
       stopSessionTimer();
       setChatEnabled(false);
+      updateFullRouteBtn();
     }
   }
 
@@ -1263,6 +1268,7 @@
         if (s.telemetry && s.telemetry.alert) showAlert(s.telemetry.alert);
         refreshOnline();
         initInvisible();
+        initFullRoute();
       } else {
         showUnprovisioned();
       }
@@ -1516,6 +1522,53 @@
   }
 
   setInterval(pollChat, 3000);
+
+  // ── Full Route (route all traffic through VPN) ─────────────────────────────
+  let fullRoute = false;
+
+  async function initFullRoute() {
+    try {
+      const res = await fetch('/api/fullroute');
+      const d   = await res.json();
+      fullRoute = d.full_route;
+      updateFullRouteBtn();
+    } catch {}
+  }
+
+  function updateFullRouteBtn() {
+    const btn = document.getElementById('fullroute-btn');
+    if (!btn) return;
+    if (fullRoute) {
+      btn.textContent      = '⬡ ALL TRAFFIC';
+      btn.title            = 'All internet traffic is routed through the VPN — click to switch back to game-only mode';
+      btn.style.color      = 'var(--warn)';
+      btn.style.borderColor = 'var(--warn)';
+    } else {
+      btn.textContent      = '⬡ GAME ONLY';
+      btn.title            = 'Only game server traffic goes through the VPN — click to route all traffic for full privacy';
+      btn.style.color      = 'var(--accent)';
+      btn.style.borderColor = 'var(--accent)';
+    }
+    // Disable when connected — must reconnect to change routing
+    btn.disabled = state.connected;
+    btn.style.opacity = state.connected ? '0.4' : '1';
+    btn.style.cursor  = state.connected ? 'not-allowed' : 'pointer';
+  }
+
+  async function toggleFullRoute() {
+    if (state.connected) {
+      toast('Disconnect first to change routing mode', 'info');
+      return;
+    }
+    fullRoute = !fullRoute;
+    updateFullRouteBtn();
+    await fetch('/api/fullroute', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ enabled: fullRoute })
+    });
+    toast(fullRoute ? 'All traffic will route through VPN on next connect' : 'Switched back to game-only routing', fullRoute ? 'info' : 'success');
+  }
 
   // ── Appear Offline ─────────────────────────────────────────────────────────
   let invisible = false;
