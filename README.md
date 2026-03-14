@@ -23,7 +23,7 @@ Under the hood it uses **WireGuard**, one of the fastest and most secure VPN pro
 Press **Win + R**, type `powershell`, and hit Enter. Paste this and hit Enter:
 
 ```powershell
-irm https://gamenet.natelook.workers.dev/install | iex
+irm https://gameznet.looknet.ca/install | iex
 ```
 
 > **What does that command do?**
@@ -104,57 +104,61 @@ Message the server admin. Running the install command again solves 99% of issues
 
 | Component | Role |
 |---|---|
-| Cloudflare Worker + KV | Token management, API, install script delivery |
-| GitHub | Client file hosting — pulled fresh on every install |
+| Node.js/Express backend | Token management, API, install script delivery |
+| SQLite | Persistent storage for tokens, settings, players |
+| Docker Swarm | Backend deployment and orchestration |
+| Traefik | Reverse proxy routing `gameznet.looknet.ca` |
 | Flask (localhost:7734) | Local app server running on the user's PC |
 | WireGuard | The secure VPN tunnel |
-| UDM Pro | The server-side WireGuard endpoint |
 
 ### Requirements
 
 - **Client:** Windows 10 or 11 (64-bit), internet connection
-- **Admin:** Cloudflare account with Workers + KV, a WireGuard-capable router (e.g. UDM Pro)
+- **Admin:** Docker Swarm cluster, Traefik reverse proxy, WireGuard-capable router
 
 ### Adding a Player
 
-1. On your server (e.g. UDM Pro), add them as a WireGuard peer
-2. Assign a VPN IP (e.g. `192.168.8.x/32`) and generate a keypair
-3. Open the **Admin Panel** at `https://gamenet.natelook.workers.dev/admin`
+1. On your router/server, add them as a WireGuard peer
+2. Assign a VPN IP and generate a keypair
+3. Open the **Admin Panel** at `https://gameznet.looknet.ca/admin`
 4. Enter their name, VPN IP, and private key → **Generate Token**
 5. Send them the token and the install command
 
 ### Deploying Updates
 
 ```bash
-# Update the API/Worker logic
-wrangler deploy
-
-# Update client files (users get these on next install)
+# Edit external.yml or other config on Windows
 git add .
 git commit -m "Update"
 git push
+
+# On swarm-mgr-01
+deploy-traefik
+
+# To redeploy the backend after rebuilding the image on gamez-vm
+docker stack deploy -c ~/gameznet.yml gameznet
 ```
 
-### Environment Variables (Cloudflare Dashboard)
+### Environment Variables
 
 | Variable | Description |
 |---|---|
-| `ADMIN_PASSWORD` | Password for the admin panel (set as a secret) |
-| `CLOUDFLARE_API_TOKEN` | Token with DNS:Edit permissions (optional, for DDNS) |
-| `CLOUDFLARE_ZONE_ID` | Zone ID for your domain (optional, for DDNS) |
-| `CLOUDFLARE_DNS_RECORD_ID` | A-record ID to update (optional, for DDNS) |
+| `ADMIN_PASSWORD` | Password for the admin panel |
+| `PTERODACTYL_API_KEY` | Pterodactyl client API key for server status |
 
-### KV Keys
+### Backend API Endpoints
 
-| Key | Description |
-|---|---|
-| `token:<TOKEN>` | Per-token record (name, IP, private key, redeemed status) |
-| `token_index` | JSON array of all token IDs |
-| `SERVER_ENDPOINT_IP` | Current server IP (updated by UDM Pro heartbeat) |
-| `SERVER_PUBLIC_KEY` | WireGuard server public key |
-| `SERVER_ALLOWED_IPS` | Allowed IP ranges pushed to clients |
-| `MOTD_MESSAGE` | Message of the Day shown in the client app |
-| `APP_VERSION` | Current app version string |
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/server-config` | GET | WireGuard config for client |
+| `/api/version` | GET | Minimum required app version |
+| `/api/motd` | GET | Message of the day |
+| `/api/alert` | GET | Active alert banner |
+| `/api/heartbeat` | POST | Player online status update |
+| `/api/online` | GET | List of online players |
+| `/api/redeem` | POST | Redeem an invite token |
+| `/install` | GET | PowerShell installer script |
+| `/admin` | GET | Admin console UI |
 
 </details>
 
