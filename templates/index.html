@@ -397,6 +397,16 @@
     .connect-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .connect-btn.action-connect:disabled { background: rgba(0,200,255,0.05); }
 
+    .connect-btn.action-update {
+      background: rgba(255,170,0,0.1);
+      border: 1px solid var(--warn);
+      color: var(--warn);
+    }
+    .connect-btn.action-update:hover {
+      background: rgba(255,170,0,0.2);
+      box-shadow: 0 0 20px rgba(255,170,0,0.2);
+    }
+
     /* ── Telemetry ── */
     .telemetry-grid {
       display: grid;
@@ -970,7 +980,8 @@
     busy: false,
     name: '',
     clientIp: '',
-    connectedAt: null
+    connectedAt: null,
+    updateRequired: false
   };
 
   // ── Toast ──────────────────────────────────────────────────────────────────
@@ -1131,9 +1142,17 @@
       main.textContent = 'Disconnected';
       main.className   = 'status-main disconnected';
       sub.textContent  = 'Click connect to join the server';
-      btn.textContent  = 'Connect to Server';
-      btn.className    = 'connect-btn action-connect';
-      btn.disabled     = !state.provisioned;
+      
+      if (state.updateRequired) {
+        btn.textContent  = 'Update Required';
+        btn.className    = 'connect-btn action-update';
+        btn.disabled     = false;
+      } else {
+        btn.textContent  = 'Connect to Server';
+        btn.className    = 'connect-btn action-connect';
+        btn.disabled     = !state.provisioned;
+      }
+      
       footer.textContent = state.provisioned ? `READY · ${state.name.toUpperCase()}` : 'AWAITING SETUP';
       stopSessionTimer();
     }
@@ -1173,6 +1192,7 @@
         const sres = await fetch('/api/status');
         const s    = await sres.json();
         state.connected = s.connected;
+        state.updateRequired = s.update_required;
         setStatus(s.connected ? 'connected' : 'disconnected');
         if (s.connected) startSessionTimer();
         if (s.telemetry) updateTelemetryUI(s.telemetry);
@@ -1245,6 +1265,12 @@
   // ── Connect / Disconnect ───────────────────────────────────────────────────
   async function toggleConnect() {
     if (state.busy) return;
+    
+    if (state.updateRequired && !state.connected) {
+      await triggerUpdate();
+      return;
+    }
+
     state.busy = true;
 
     if (!state.connected) {
@@ -1279,6 +1305,31 @@
     state.busy = false;
   }
 
+  // ── Update Trigger ─────────────────────────────────────────────────────────
+  async function triggerUpdate() {
+    state.busy = true;
+    const btn = document.getElementById('connect-btn');
+    btn.textContent = 'Updating...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/update', { method: 'POST' });
+      if (res.ok) {
+        toast('Update applied! Restarting...', 'success');
+        setTimeout(() => window.location.reload(), 5000);
+      } else {
+        const data = await res.json();
+        showError(data.error || 'Update failed');
+        state.busy = false;
+        setStatus('disconnected');
+      }
+    } catch (e) {
+      showError('Update failed: could not reach local server');
+      state.busy = false;
+      setStatus('disconnected');
+    }
+  }
+
   // ── Reset ──────────────────────────────────────────────────────────────────
   async function resetConfig() {
     if (!confirm('This will remove your saved credentials. You will need your invite token again. Continue?')) return;
@@ -1301,6 +1352,12 @@
       const res = await fetch('/api/status');
       const s   = await res.json();
       if (s.telemetry) updateTelemetryUI(s.telemetry);
+      
+      if (s.update_required !== undefined && s.update_required !== state.updateRequired) {
+        state.updateRequired = s.update_required;
+        setStatus(state.connected ? 'connected' : 'disconnected');
+      }
+
       if (s.connected !== state.connected && !state.busy) {
         state.connected = s.connected;
         setStatus(s.connected ? 'connected' : 'disconnected');
