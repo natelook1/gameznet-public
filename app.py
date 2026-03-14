@@ -649,7 +649,7 @@ def api_update():
     def _restart():
         time.sleep(0.8)
         script = os.path.join(install_dir, "app.py")
-        subprocess.Popen([sys.executable, script], cwd=install_dir, creationflags=0x08000000)
+        subprocess.Popen([sys.executable, script, "--no-browser"], cwd=install_dir, creationflags=0x08000000)
         os._exit(0)
     threading.Thread(target=_restart, daemon=True).start()
     return jsonify({"success": True})
@@ -852,8 +852,9 @@ if __name__ == "__main__":
     )
     flask_thread.start()
 
-    # Open browser after Flask is up
-    threading.Thread(target=open_browser, daemon=True).start()
+    # Open browser after Flask is up (skip if restarting after update)
+    if "--no-browser" not in sys.argv:
+        threading.Thread(target=open_browser, daemon=True).start()
 
     # Run tray icon on main thread (blocks until Exit clicked)
     run_tray(flask_thread)
