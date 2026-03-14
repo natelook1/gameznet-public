@@ -178,8 +178,9 @@ app.post('/admin/token/toggle-hidden', requireAdmin, (req, res) => {
 });
 
 app.post('/admin/online', requireAdmin, (req, res) => {
-  const cutoff = new Date(Date.now() - 86400000).toISOString();
-  res.json(db.prepare("SELECT name, vpn_ip, last_seen, game, hidden FROM players WHERE last_seen > ? ORDER BY name").all(cutoff).map(p => ({...p, hidden: !!p.hidden})));
+  const cutoff = new Date(Date.now() - 7200000).toISOString();
+  const activeCutoff = new Date(Date.now() - 8000).toISOString();
+  res.json(db.prepare("SELECT name, vpn_ip, last_seen, game, hidden FROM players WHERE last_seen > ? ORDER BY name").all(cutoff).map(p => ({...p, hidden: !!p.hidden, active: p.last_seen > activeCutoff})));
 });
 
 app.post('/admin/settings/save', requireAdmin, (req, res) => {
@@ -545,12 +546,17 @@ function adminHTML() {
   }
 
   function renderOnline(online) {
-    document.getElementById('online-roster').innerHTML = online.map(p => \`
-      <div class="online-tile" style="\${p.hidden?'opacity:0.5':''}">
-        <div class="online-tile-dot" style="\${p.hidden?'background:var(--muted)':''}"></div>
+    document.getElementById('online-roster').innerHTML = online.map(p => {
+      const inactive = !p.active;
+      const tileStyle = inactive ? 'opacity:0.4;filter:saturate(0.2)' : (p.hidden ? 'opacity:0.5' : '');
+      const dotStyle = inactive ? 'background:var(--muted)' : (p.hidden ? 'background:var(--muted)' : '');
+      return \`
+      <div class="online-tile" style="\${tileStyle}">
+        <div class="online-tile-dot" style="\${dotStyle}"></div>
         <div class="online-tile-name">\${p.name}</div>
         \${p.hidden ? '<span style="font-size:10px;font-family:monospace;color:var(--muted);border:1px solid var(--muted);padding:1px 6px;border-radius:2px;">INVISIBLE</span>' : ''}
-        <div class="online-tile-game">\${p.game||'SYSTEM IDLE'}</div>
+        \${inactive ? '<span style="font-size:10px;font-family:monospace;color:var(--muted);border:1px solid var(--muted);padding:1px 6px;border-radius:2px;">OFFLINE</span>' : ''}
+        <div class="online-tile-game">\${inactive ? '' : (p.game||'SYSTEM IDLE')}</div>
         <div style="font-family:monospace; color:var(--muted)">\${p.vpn_ip}</div>
         <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
           <span style="font-size:11px;color:var(--muted)">\${timeAgo(p.last_seen)}</span>
@@ -559,7 +565,7 @@ function adminHTML() {
           </button>
         </div>
       </div>
-    \`).join('') || '<p style="color:var(--muted)">No entities detected.</p>';
+    \`;}).join('') || '<p style="color:var(--muted)">No entities detected.</p>';
   }
 
   async function togglePlayerHidden(name) {
