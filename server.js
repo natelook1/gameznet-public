@@ -519,7 +519,7 @@ function adminHTML() {
       document.getElementById('stat-online').textContent = online.length;
       document.getElementById('stat-pending').textContent = tokens.filter(t => !t.redeemed).length;
       document.getElementById('stat-version').textContent = 'v' + ver.min_version;
-      document.getElementById('header-server-ip').textContent = 'IP: ' + config.publicIp;
+      const headerIp = document.getElementById('header-server-ip'); if (headerIp) headerIp.textContent = 'IP: ' + config.publicIp;
       document.getElementById('set-ip').value = config.publicIp;
       document.getElementById('set-pubkey').value = config.publicKey;
       document.getElementById('set-allowed').value = config.allowedIPs;
