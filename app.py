@@ -55,7 +55,7 @@ def detect_game():
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -597,21 +597,8 @@ def api_invisible():
     if request.method == "POST":
         data = request.json or {}
         new_val = bool(data.get("invisible", False))
-        old_val = _invisible
         _invisible = new_val
         log.info("Invisible mode set to: %s", _invisible)
-        # If turning invisible while connected, send a disconnect heartbeat immediately
-        if new_val and not old_val and _connected and os.path.exists(CONFIG_FILE):
-            try:
-                import urllib.request as _urllib_request
-                with open(CONFIG_FILE, "r") as f:
-                    cfg = json.load(f)
-                payload = json.dumps({"name": cfg.get("name",""), "vpn_ip": cfg.get("vpn_ip",""), "disconnecting": True}).encode()
-                req = _urllib_request.Request(f"{WORKER_URL}/api/heartbeat", data=payload, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}, method="POST")
-                _urllib_request.urlopen(req, timeout=5)
-                log.debug("Invisible-mode disconnect heartbeat sent")
-            except Exception as e:
-                log.debug("Invisible heartbeat failed: %s", e)
         return jsonify({"invisible": _invisible})
     return jsonify({"invisible": _invisible})
 
@@ -625,7 +612,7 @@ def api_update():
         import io
 
         # Standard GitHub repo zip download link
-        zip_url = "https://github.com/natelook1/gameznet/archive/refs/heads/main.zip"
+        zip_url = "https://github.com/natelook1/gameznet-public/archive/refs/heads/main.zip"
         log.info("Downloading update from %s", zip_url)
         
         req = urllib.request.Request(zip_url, headers={'User-Agent': 'GamezNET'})
@@ -634,10 +621,10 @@ def api_update():
                 for member in z.namelist():
                     # GitHub zips put everything inside a root folder named "gameznet-main/"
                     # We strip that prefix so files extract directly into the install_dir
-                    if not member.startswith("gameznet-main/"):
+                    if not member.startswith("gameznet-public-main/"):
                         continue
-                        
-                    relative_path = member.replace("gameznet-main/", "", 1)
+
+                    relative_path = member.replace("gameznet-public-main/", "", 1)
                     if not relative_path:  # Skip the root folder itself
                         continue
                         
@@ -683,18 +670,19 @@ def api_alert():
 # ─── Heartbeat Thread ─────────────────────────────────────────────────────────
 
 def heartbeat_loop():
-    """Send presence heartbeat to the Worker every 30 seconds while connected."""
+    """Send presence heartbeat to the Worker every 3 seconds while connected."""
     import urllib.request
     while True:
-        time.sleep(30)
-        if _connected and not _invisible and os.path.exists(CONFIG_FILE):
+        time.sleep(3)
+        if _connected and os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
                     cfg = json.load(f)
                 payload = json.dumps({
                     "name": cfg.get("name", ""),
                     "vpn_ip": cfg.get("vpn_ip", ""),
-                    "game": detect_game()
+                    "game": detect_game(),
+                    "hidden": _invisible
                 }).encode()
                 req = urllib.request.Request(
                     f"{WORKER_URL}/api/heartbeat",
@@ -703,7 +691,6 @@ def heartbeat_loop():
                     method="POST"
                 )
                 urllib.request.urlopen(req, timeout=5)
-                log.info("Heartbeat sent for %s", cfg.get("name"))
             except Exception as e:
                 log.warning("Heartbeat failed: %s", e)
 

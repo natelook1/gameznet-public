@@ -91,21 +91,21 @@ app.get('/api/server-config', (req, res) => {
 });
 
 app.post('/api/heartbeat', (req, res) => {
-  const { name, vpn_ip, disconnecting, game } = req.body;
+  const { name, vpn_ip, disconnecting, game, hidden } = req.body;
   if (!name) return res.status(400).end();
   if (disconnecting) {
     db.prepare("DELETE FROM players WHERE name = ?").run(name);
   } else {
-    const tokenRecord = db.prepare("SELECT hidden FROM tokens WHERE name = ?").get(name);
+    const hiddenVal = hidden !== undefined ? (hidden ? 1 : 0) : (db.prepare("SELECT hidden FROM tokens WHERE name = ?").get(name)?.hidden || 0);
     db.prepare(`INSERT INTO players (name, vpn_ip, last_seen, game, hidden) VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT(name) DO UPDATE SET vpn_ip=excluded.vpn_ip, last_seen=excluded.last_seen, game=excluded.game, hidden=excluded.hidden`)
-      .run(name, vpn_ip || '', new Date().toISOString(), game || null, tokenRecord ? tokenRecord.hidden : 0);
+      .run(name, vpn_ip || '', new Date().toISOString(), game || null, hiddenVal);
   }
   res.json({ success: true });
 });
 
 app.get('/api/online', (req, res) => {
-  const cutoff = new Date(Date.now() - 90000).toISOString();
+  const cutoff = new Date(Date.now() - 8000).toISOString();
   res.json(db.prepare("SELECT name, vpn_ip, last_seen, game FROM players WHERE last_seen > ? AND hidden = 0 ORDER BY name").all(cutoff));
 });
 
@@ -117,7 +117,7 @@ app.post('/api/redeem', (req, res) => {
   res.json({ success: true, name: record.name, private_key: record.private_key, client_ip: record.client_ip });
 });
 
-app.get('/api/version', (req, res) => res.json({ min_version: getS('MIN_VERSION', "1.1.0") }));
+app.get('/api/version', (req, res) => res.json({ min_version: getS('MIN_VERSION', "1.2.0") }));
 app.get('/api/motd', (req, res) => res.json({ message: getS('MOTD_MESSAGE', '') }));
 app.get('/api/alert', (req, res) => {
   const alert = db.prepare("SELECT * FROM alerts LIMIT 1").get();
@@ -178,7 +178,8 @@ app.post('/admin/token/toggle-hidden', requireAdmin, (req, res) => {
 });
 
 app.post('/admin/online', requireAdmin, (req, res) => {
-  res.json(db.prepare("SELECT name, vpn_ip, last_seen, game, hidden FROM players ORDER BY name").all().map(p => ({...p, hidden: !!p.hidden})));
+  const cutoff = new Date(Date.now() - 86400000).toISOString();
+  res.json(db.prepare("SELECT name, vpn_ip, last_seen, game, hidden FROM players WHERE last_seen > ? ORDER BY name").all(cutoff).map(p => ({...p, hidden: !!p.hidden})));
 });
 
 app.post('/admin/settings/save', requireAdmin, (req, res) => {
