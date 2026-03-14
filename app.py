@@ -29,6 +29,28 @@ logging.basicConfig(
 )
 log = logging.getLogger("gameznet")
 
+# ─── Game Detection ───────────────────────────────────────────────────────────
+
+GAME_PROCESSES = {
+    'FactoryGame-Win64-Shipping.exe': 'Satisfactory',
+    'ProjectZomboid64.exe': 'Project Zomboid',
+    'ProjectZomboid.exe': 'Project Zomboid',
+    'ConanSandbox.exe': 'Conan Exiles',
+    'Enshrouded.exe': 'Enshrouded',
+    'SCUM.exe': 'SCUM',
+}
+
+def detect_game():
+    try:
+        import psutil
+        for proc in psutil.process_iter(['name']):
+            name = proc.info.get('name', '')
+            if name in GAME_PROCESSES:
+                return GAME_PROCESSES[name]
+    except Exception:
+        pass
+    return None
+
 # ─── Configuration ────────────────────────────────────────────────────────────
 
 WORKER_URL = "https://gamenet.natelook.workers.dev"
@@ -36,7 +58,7 @@ TUNNEL_NAME = "GamezNET"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
-ALLOWED_IPS = "192.168.8.0/24, 192.168.1.0/24"
+ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -94,15 +116,19 @@ def fetch_server_config():
     """
     import urllib.request
     try:
-        with urllib.request.urlopen(f"{WORKER_URL}/api/server-config", timeout=5) as resp:
+        req = urllib.request.Request(
+            f"{WORKER_URL}/api/server-config",
+            headers={"Cache-Control": "no-cache", "Pragma": "no-cache", "User-Agent": "GamezNET"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode())
             return {
                 "endpoint":   data.get("endpoint",  SERVER_ENDPOINT),
                 "public_key": data.get("publicKey", SERVER_PUBLIC_KEY),
                 "allowed_ips": data.get("allowedIPs", ALLOWED_IPS)
             }
-    except Exception:
-        # Worker unreachable — use hardcoded fallback silently
+    except Exception as e:
+        log.warning("fetch_server_config failed, using hardcoded fallback: %s", e)
         return {
             "endpoint":   SERVER_ENDPOINT,
             "public_key": SERVER_PUBLIC_KEY,
@@ -582,7 +608,8 @@ def heartbeat_loop():
                     cfg = json.load(f)
                 payload = json.dumps({
                     "name": cfg.get("name", ""),
-                    "vpn_ip": cfg.get("vpn_ip", "")
+                    "vpn_ip": cfg.get("vpn_ip", ""),
+                    "game": detect_game()
                 }).encode()
                 req = urllib.request.Request(
                     f"{WORKER_URL}/api/heartbeat",

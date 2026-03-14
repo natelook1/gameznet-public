@@ -711,6 +711,7 @@
       50%       { box-shadow: inset 0 0 16px rgba(255,170,0,0.08); }
     }
     .srv-card.srv-offline { border-left-color: rgba(255,51,85,0.25); opacity: 0.6; }
+    .srv-connect { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--accent); letter-spacing: 1px; user-select: all; cursor: text; }
 
     .srv-top { display: flex; align-items: center; gap: 8px; }
     .srv-dot {
@@ -1472,7 +1473,8 @@
           <div class="srv-stats">
             <div>CPU <span>${s.cpu}%</span></div>
             <div>RAM <span>${fmtMem(s.memory_mb)}</span></div>
-          </div>` : ''}
+          </div>
+          ${s.port ? `<div class="srv-connect">${s.host}:${s.port}</div>` : ''}` : ''}
         </div>`;
     }).join('');
   }
