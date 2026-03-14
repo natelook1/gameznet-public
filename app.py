@@ -300,7 +300,8 @@ def api_status():
     return jsonify({
         "connected": _connected,
         "telemetry": _telemetry,
-        "update_required": _update_required
+        "update_required": _update_required,
+        "version": VERSION
     })
 
 @app.route("/api/connect", methods=["POST"])
