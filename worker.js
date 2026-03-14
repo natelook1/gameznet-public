@@ -1913,7 +1913,7 @@ if (-not $pythonOk) {
     Write-OK "Python 3.12 ready"
 }
 Write-INFO "Configuring local dependencies..."
-& $pythonCmd -m pip install flask pystray pillow --quiet
+& $pythonCmd -m pip install flask pystray pillow psutil --quiet
 Write-OK "Environment configured"
 
 Write-Step 4 5 "Validating VPN Engine"
