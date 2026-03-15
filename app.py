@@ -693,10 +693,16 @@ def api_update():
         log.error("Update failed: %s", e)
         return jsonify({"error": f"Failed to download update: {e}"}), 500
 
-    # Restart: launch new instance then exit
+    # Restart: release mutex first so new instance can acquire it, then launch and exit
     def _restart():
         time.sleep(0.8)
         script = os.path.join(install_dir, "app.py")
+        # Release the single-instance mutex before spawning so the new process isn't blocked
+        try:
+            ctypes.windll.kernel32.ReleaseMutex(_instance_mutex)
+            ctypes.windll.kernel32.CloseHandle(_instance_mutex)
+        except Exception:
+            pass
         subprocess.Popen([sys.executable, script, "--no-browser"], cwd=install_dir, creationflags=0x08000000)
         os._exit(0)
     threading.Thread(target=_restart, daemon=True).start()
