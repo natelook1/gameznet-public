@@ -239,7 +239,7 @@ app.post('/api/chat/send', (req, res) => {
   res.json({ success: true, sent_at });
 });
 
-app.get('/api/version', (req, res) => res.json({ min_version: getS('MIN_VERSION', "1.3.0") }));
+app.get('/api/version', (req, res) => res.json({ min_version: getS('MIN_VERSION', "1.4.0") }));
 
 app.post('/api/request-token', (req, res) => {
   const { name, email } = req.body;
@@ -964,7 +964,7 @@ function adminHTML() {
           <td style="color:\${isOrphan?'var(--warn)':'var(--text)'}">\${name}\${hiddenName}\${orphanBadge}\${p.pubkey ? \`<br><span style="font-size:9px;color:var(--muted)">\${p.pubkey.slice(0,16)}...</span>\` : ''}</td>
           <td style="color:var(--accent);font-family:monospace">\${p.vpn_ip || '—'}</td>
           <td style="color:\${pingColor};font-family:monospace">\${ping}</td>
-          <td style="color:var(--muted);font-family:monospace">\${player?.active ? fmtDuration(player.connected_at) : '—'}</td>
+          <td style="color:var(--muted);font-family:monospace">\${fmtDuration(player?.connected_at)}</td>
           <td style="color:\${hsColor}">\${hs.label}</td>
           <td style="color:var(--muted);font-size:12px">\${game}</td>
           <td style="font-family:monospace;font-size:12px">\${fmtBytes(p.rx_bytes)} / \${fmtBytes(p.tx_bytes)}</td>
