@@ -18,6 +18,9 @@ if %errorLevel% NEQ 0 (
 
 :: Verify Python - try multiple methods
 set "PY_CMD="
+if exist "%~dp0python_path.txt" (
+    set /p PY_CMD=<"%~dp0python_path.txt"
+)
 python --version >nul 2>&1
 if %errorLevel% EQU 0 set "PY_CMD=python"
 
