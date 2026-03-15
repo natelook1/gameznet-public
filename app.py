@@ -33,6 +33,7 @@ log = logging.getLogger("gameznet")
 
 GAME_PROCESSES = {
     'FactoryGame-Win64-Shipping.exe': 'Satisfactory',
+    'FactoryGameSteam-Win64-Shipping.exe': 'Satisfactory',
     'WorldOfSeaBattleClient.exe': 'World of Sea Battle',
     'League of Legends.exe': 'League of Legends',
     'ProjectZomboid64.exe': 'Project Zomboid',
