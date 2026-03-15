@@ -121,6 +121,18 @@
       border: 1px solid var(--border2);
       padding: 3px 7px;
       border-radius: 2px;
+      transition: all 0.3s;
+    }
+    .version-badge.outdated {
+      color: var(--warn);
+      border-color: var(--warn);
+      cursor: pointer;
+      animation: pulse-update 1.5s ease-in-out infinite;
+    }
+    .version-badge.outdated:hover { background: rgba(255,170,0,0.15); }
+    @keyframes pulse-update {
+      0%, 100% { box-shadow: none; opacity: 1; }
+      50% { box-shadow: 0 0 8px rgba(255,170,0,0.5); opacity: 0.7; }
     }
     .clock { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 2px; }
 
@@ -1809,7 +1821,7 @@
         const s    = await sres.json();
         state.connected = s.connected;
         state.updateRequired = s.update_required;
-        if (s.version) document.getElementById('version-badge').textContent = 'v' + s.version;
+        if (s.version) setVersionBadge(s.version, s.update_required);
         setStatus(s.connected ? 'connected' : 'disconnected');
         if (s.connected) startSessionTimer();
         if (s.telemetry) updateTelemetryUI(s.telemetry);
@@ -1968,6 +1980,21 @@
     state.busy = false;
   }
 
+  // ── Version Badge ───────────────────────────────────────────────────────────
+  function setVersionBadge(version, outdated) {
+    const el = document.getElementById('version-badge');
+    el.textContent = 'v' + version + (outdated ? ' ↑' : '');
+    if (outdated) {
+      el.classList.add('outdated');
+      el.title = 'Update available — click to update';
+      el.onclick = () => triggerUpdate();
+    } else {
+      el.classList.remove('outdated');
+      el.title = '';
+      el.onclick = null;
+    }
+  }
+
   // ── Update Trigger ─────────────────────────────────────────────────────────
   async function triggerUpdate() {
     state.busy = true;
@@ -2015,7 +2042,7 @@
       const res = await fetch('/api/status');
       const s   = await res.json();
       if (s.telemetry) updateTelemetryUI(s.telemetry);
-      if (s.version) document.getElementById('version-badge').textContent = 'v' + s.version;
+      if (s.version) setVersionBadge(s.version, s.update_required);
       if (s.update_required !== state.updateRequired) {
         state.updateRequired = s.update_required;
         if (!state.busy) setStatus(state.connected ? 'connected' : 'disconnected');
