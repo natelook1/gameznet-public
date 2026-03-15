@@ -705,30 +705,26 @@ function adminHTML() {
     } catch(e) { return null; }
   }
 
-  function copyWgCmd(btn) {
-    var cmd = btn.getAttribute('data-cmd');
-    navigator.clipboard.writeText(cmd).then(function() { toast('Public key copied!'); });
+  function copyPubkey(btn) {
+    navigator.clipboard.writeText(btn.getAttribute('data-cmd')).then(function() { toast('Public key copied!'); });
   }
 
   function renderTokens(tokens) {
-    var wgIface = (document.getElementById('set-udm-iface') || {}).value || 'wgsrv1';
-    var rows = tokens.map(function(t) {
-      var pubkey = t.private_key ? derivePublicKey(t.private_key) : null;
-      var ipClean = (t.client_ip || '').replace('/32', '');
-      var pubkeyCell = pubkey
-        ? '<code style="font-size:10px;color:var(--muted);word-break:break-all;">' + pubkey + '</code>'
-          + '<br><button class="btn-secondary" style="margin-top:4px;font-size:9px;padding:2px 6px;" data-cmd="' + pubkey + '" onclick="copyWgCmd(this)">COPY PUBKEY</button>'
-        : 'N/A';
-      return '<tr>'
-        + '<td>' + t.name + '</td>'
-        + '<td><code>' + t.token + '</code></td>'
-        + '<td><code style="color:var(--accent)">' + (t.client_ip || 'N/A') + '</code></td>'
-        + '<td style="max-width:220px;">' + pubkeyCell + '</td>'
-        + '<td><span class="badge ' + (t.redeemed ? 'badge-redeemed' : 'badge-pending') + '">' + (t.redeemed ? 'PROVISIONED' : 'IDLE') + '</span></td>'
-        + '<td><button class="btn-danger" onclick="revoke(\'' + t.token + '\')">Revoke</button></td>'
-        + '</tr>';
-    });
-    document.getElementById('token-list').innerHTML = '<table class="token-table"><thead><tr><th>Identity</th><th>Token</th><th>VPN IP</th><th>Public Key</th><th>Status</th><th>Actions</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>';
+    document.getElementById('token-list').innerHTML = '<table class="token-table"><thead><tr><th>Identity</th><th>Token</th><th>VPN IP</th><th>Public Key</th><th>Status</th><th>Actions</th></tr></thead><tbody>' +
+      tokens.map(t => {
+        const pubkey = t.private_key ? derivePublicKey(t.private_key) : null;
+        const pubkeyHtml = pubkey
+          ? \`<code style="font-size:10px;color:var(--muted);word-break:break-all;">\${pubkey}</code> <button class="btn-secondary" style="font-size:9px;padding:2px 6px;margin-top:4px;" data-cmd="\${pubkey}" onclick="copyPubkey(this)">COPY KEY</button>\`
+          : 'N/A';
+        return \`<tr>
+          <td>\${t.name}</td>
+          <td><code>\${t.token}</code></td>
+          <td><code style="color:var(--accent)">\${t.client_ip || 'N/A'}</code></td>
+          <td style="max-width:220px;">\${pubkeyHtml}</td>
+          <td><span class="badge \${t.redeemed?'badge-redeemed':'badge-pending'}">\${t.redeemed?'PROVISIONED':'IDLE'}</span></td>
+          <td><button class="btn-danger" onclick="revoke('\${t.token}')">Revoke</button></td>
+        </tr>\`;
+      }).join('') + '</tbody></table>';
   }
 
   function renderOnline(online) {
