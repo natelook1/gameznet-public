@@ -103,7 +103,9 @@ function sshExec(command) {
     const host = getS('UDM_SSH_HOST', '192.168.30.1');
     const user = getS('UDM_SSH_USER', 'root');
     const privateKey = getS('UDM_SSH_KEY', null);
-    if (!privateKey) return reject(new Error('No SSH key configured in settings'));
+    const password = getS('UDM_SSH_PASS', null);
+    if (!privateKey && !password) return reject(new Error('No SSH credentials configured in settings'));
+    const authOpts = privateKey ? { privateKey } : { password };
     conn.on('ready', () => {
       conn.exec(command, (err, stream) => {
         if (err) { conn.end(); return reject(err); }
@@ -112,7 +114,7 @@ function sshExec(command) {
         stream.stderr.on('data', d => errOut += d);
         stream.on('close', (code) => { conn.end(); code === 0 ? resolve(out.trim()) : reject(new Error(errOut.trim() || `Exit ${code}`)); });
       });
-    }).on('error', reject).connect({ host, port: 22, username: user, privateKey });
+    }).on('error', reject).connect({ host, port: 22, username: user, ...authOpts });
   });
 }
 
@@ -359,10 +361,11 @@ app.post('/admin/settings/save', requireAdmin, (req, res) => {
 });
 
 app.post('/admin/ssh/save', requireAdmin, (req, res) => {
-  const { host, user, key, wg_interface } = req.body;
+  const { host, user, key, password_ssh, wg_interface } = req.body;
   if (host) setS('UDM_SSH_HOST', host.trim());
   if (user) setS('UDM_SSH_USER', user.trim());
   if (key) setS('UDM_SSH_KEY', key.trim());
+  if (password_ssh !== undefined) setS('UDM_SSH_PASS', password_ssh.trim());
   if (wg_interface) setS('UDM_WG_INTERFACE', wg_interface.trim());
   res.json({ success: true });
 });
@@ -716,8 +719,9 @@ function adminHTML() {
         </div>
         <div class="form-row" style="margin-top:8px;">
           <div><label>WG Interface</label><input type="text" id="set-udm-iface" placeholder="wg0" /></div>
+          <div><label>SSH Password (if no key)</label><input type="password" id="set-udm-pass" placeholder="leave blank to use key" /></div>
         </div>
-        <div style="margin-top:8px;"><label>SSH Private Key (PEM)</label><textarea id="set-udm-key" rows="4" style="width:100%;background:var(--card);border:1px solid var(--border2);color:var(--text);padding:8px;font-family:monospace;font-size:11px;border-radius:4px;resize:vertical;" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"></textarea></div>
+        <div style="margin-top:8px;"><label>SSH Private Key (PEM — optional if using password)</label><textarea id="set-udm-key" rows="4" style="width:100%;background:var(--card);border:1px solid var(--border2);color:var(--text);padding:8px;font-family:monospace;font-size:11px;border-radius:4px;resize:vertical;" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"></textarea></div>
         <button class="btn-secondary" style="margin-top:8px;" onclick="saveSSHSettings()">Save SSH Config</button>
         <button class="btn-secondary" style="margin-top:8px;margin-left:8px;" onclick="testSSH()">Test Connection</button>
       </div>
@@ -985,6 +989,7 @@ function adminHTML() {
       host: document.getElementById('set-udm-host').value,
       user: document.getElementById('set-udm-user').value,
       key: document.getElementById('set-udm-key').value,
+      password_ssh: document.getElementById('set-udm-pass').value,
       wg_interface: document.getElementById('set-udm-iface').value
     });
     await fetch('/admin/ssh/save', { method:'POST', headers:{'Content-Type':'application/json'}, body });
