@@ -223,21 +223,22 @@ app.post('/admin/request/approve', requireAdmin, async (req, res) => {
   const ip = vpn_ip.trim();
   const wgInterface = getS('UDM_WG_INTERFACE', 'wg0');
 
-  // Add peer to UDM via SSH
+  // Try to add peer to UDM via SSH — non-fatal if it fails
+  let sshWarning = null;
   try {
-    await sshExec(`wg set ${wgInterface} peer ${publicKey} allowed-ips ${ip}/32 && wg-quick save ${wgInterface}`);
+    await sshExec(`wg set ${wgInterface} peer ${publicKey} allowed-ips ${ip}/32`);
   } catch (e) {
-    return res.status(500).json({ error: `SSH failed: ${e.message}` });
+    sshWarning = `SSH unavailable — add peer manually in UniFi UI. Public key: ${publicKey}`;
   }
 
-  // Create token
+  // Create token regardless of SSH result
   const token = generateToken();
   const clientIp = ip.includes('/') ? ip.split('/')[0] : ip;
   db.prepare("INSERT INTO tokens (token, name, client_ip, private_key, redeemed, created_at, hidden) VALUES (?, ?, ?, ?, 0, ?, 0)")
     .run(token, request.name, `${clientIp}/32`, privateKey, new Date().toISOString());
   db.prepare("UPDATE token_requests SET status = 'approved' WHERE id = ?").run(id);
 
-  res.json({ success: true, token, name: request.name, vpn_ip: `${clientIp}/32`, public_key: publicKey });
+  res.json({ success: true, token, name: request.name, vpn_ip: `${clientIp}/32`, public_key: publicKey, warning: sshWarning });
 });
 app.get('/api/motd', (req, res) => res.json({ message: getS('MOTD_MESSAGE', '') }));
 app.get('/api/alert', (req, res) => {
@@ -869,7 +870,8 @@ function adminHTML() {
       const res = await fetch('/admin/request/approve', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: adminPassword, id, vpn_ip }) });
       const d = await res.json();
       if (res.ok) {
-        toast(\`Token created: \${d.token}\`, 'success');
+        const msg = d.warning ? \`Token created — NOTE: \${d.warning}\` : \`Token created for \${d.name}\`;
+        alert(msg);
         prompt(\`Send this token to \${d.name}:\`, d.token);
         refresh();
       } else {
