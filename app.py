@@ -214,10 +214,9 @@ def update_telemetry():
         if _connected:
             # 2. Ping Latency (Targeting internal VPN Gateway to prove tunnel works)
             try:
-                target = "1.1.1.1" # Fallback
-                match = re.search(r"(\d+\.\d+\.\d+)\.", ALLOWED_IPS)
-                if match:
-                    target = f"{match.group(1)}.1"
+                # Ping gateway (.1 of last subnet in AllowedIPs = server-side LAN)
+                matches = re.findall(r"(\d+\.\d+\.\d+)\.", ALLOWED_IPS)
+                target = f"{matches[-1]}.1" if matches else SERVER_ENDPOINT.split(":")[0]
 
                 CREATE_NO_WINDOW = 0x08000000
                 output = subprocess.check_output(
