@@ -2,6 +2,8 @@
 
 **Private game server network — secure, invite-only, one command to join.**
 
+![GamezNET](static/screenshot.png)
+
 ---
 
 ## What is GamezNET?
@@ -66,6 +68,38 @@ When you're done, click **Disconnect** in the app or right-click the system tray
 
 ---
 
+## 🖥️ Game Servers
+
+The **Home** tab shows live status for all hosted game servers. Running servers display CPU load, RAM usage, and uptime. Each server card has:
+
+- **IP ⧉** — click to copy the IP address alone (for games that ask for IP without a port)
+- **:Port ⧉** — click to copy the full `IP:Port`
+- **▶ STEAM JOIN** — launches Steam and connects directly to the server
+
+---
+
+## 📺 YouTube
+
+The **YouTube** tab lets you browse and watch gaming videos without leaving the app.
+
+- **Categories** — curated video feeds for the games we play: EVE Online, Project Zomboid, Satisfactory, Monster Hunter, Final Fantasy, Conan Exiles, Enshrouded, World of Tanks, Tarkov, and chill music
+- **Search** — search YouTube directly from the app; your last 5 searches are remembered
+- **Sign in with Google** — sign in to unlock **My Feed**, a personalised stream of recent uploads from your subscribed channels. Your session persists across restarts.
+- **Floating pop-out player** — detach any video into a draggable, resizable window that stays open while you switch tabs
+- **Theater mode** — full-width immersive view for focused watching
+
+---
+
+## 🎙️ Discord
+
+The **Home** tab includes a live **gamEZnet Discord** panel showing:
+
+- Member list with avatars
+- Online and total member counts, refreshed every 30 seconds
+- **Join Discord** button
+
+---
+
 ## 🛠️ Troubleshooting
 
 **App didn't open after installing**
@@ -89,6 +123,9 @@ Go to `http://localhost:7734` in any browser.
 **Connected but can't reach the game server**
 Wait 10 seconds after connecting and try again. If it keeps failing, let the admin know.
 
+**Update required message on launch**
+Run the install command again to get the latest version.
+
 ---
 
 ## 🤝 Need Help?
@@ -104,17 +141,22 @@ Message the server admin. Running the install command again solves 99% of issues
 
 | Component | Role |
 |---|---|
-| Node.js/Express backend | Token management, API, install script delivery |
+| Node.js/Express backend | Token management, API, install script delivery, YouTube/Discord proxy |
 | SQLite | Persistent storage for tokens, settings, players |
 | Docker Swarm | Backend deployment and orchestration |
-| Traefik | Reverse proxy routing `gameznet.looknet.ca` |
+| Traefik | Reverse proxy routing all `*.looknet.ca` traffic |
+| Cloudflare Tunnel | Secure public exposure without open ports |
 | Flask (localhost:7734) | Local app server running on the user's PC |
 | WireGuard | The secure VPN tunnel |
+| Pterodactyl + Wings | Game server management and console |
+| YouTube Data API v3 | Server-side video category browsing (30-min cache) |
+| YouTube OAuth2 | Sign in with Google for personalised feed |
+| Discord Bot API v10 | Live member list and online counts |
 
 ### Requirements
 
 - **Client:** Windows 10 or 11 (64-bit), internet connection
-- **Admin:** Docker Swarm cluster, Traefik reverse proxy, WireGuard-capable router
+- **Server:** Docker Swarm cluster, Traefik reverse proxy, Cloudflare Tunnel
 
 ### Adding a Player
 
@@ -124,19 +166,22 @@ Message the server admin. Running the install command again solves 99% of issues
 4. Enter their name, VPN IP, and private key → **Generate Token**
 5. Send them the token and the install command
 
+### Admin Panel — Integrations
+
+The **Integrations** card stores credentials securely in the database:
+
+| Field | Description |
+|---|---|
+| YouTube API Key | YouTube Data API v3 key — enables category browsing and search |
+| OAuth Client ID | Google OAuth 2.0 client ID — enables Sign in with Google |
+| OAuth Client Secret | Google OAuth 2.0 client secret |
+| Discord Bot Token | Bot token for the gamEZnet Discord server |
+
 ### Deploying Updates
 
 ```bash
-# Edit external.yml or other config on Windows
-git add .
-git commit -m "Update"
-git push
-
 # On swarm-mgr-01
-deploy-traefik
-
-# To redeploy the backend after rebuilding the image on gamez-vm
-docker stack deploy -c ~/gameznet.yml gameznet
+deploy-gameznet
 ```
 
 ### Environment Variables
@@ -144,18 +189,25 @@ docker stack deploy -c ~/gameznet.yml gameznet
 | Variable | Description |
 |---|---|
 | `ADMIN_PASSWORD` | Password for the admin panel |
-| `PTERODACTYL_API_KEY` | Pterodactyl client API key for server status |
+| `PTERODACTYL_API_KEY` | Pterodactyl client API key for game server status and control |
 
 ### Backend API Endpoints
 
 | Endpoint | Method | Description |
 |---|---|---|
 | `/api/server-config` | GET | WireGuard config for client |
-| `/api/version` | GET | Minimum required app version |
+| `/api/version` | GET | Minimum required client version |
 | `/api/motd` | GET | Message of the day |
 | `/api/alert` | GET | Active alert banner |
-| `/api/heartbeat` | POST | Player online status update |
+| `/api/heartbeat` | POST | Player presence update (name, IP, game, ping, version) |
 | `/api/online` | GET | List of online players |
+| `/api/servers` | GET | Game server status from Pterodactyl (30s cache) |
+| `/api/youtube/category` | GET | Curated videos by category |
+| `/api/youtube/search` | GET | YouTube search proxy |
+| `/api/youtube/feed` | GET | Personalised feed for authenticated user |
+| `/api/discord/presence` | GET | Discord guild member list and online counts |
+| `/auth/youtube` | GET | Start YouTube OAuth flow |
+| `/auth/youtube/callback` | GET | OAuth callback handler |
 | `/api/redeem` | POST | Redeem an invite token |
 | `/install` | GET | PowerShell installer script |
 | `/admin` | GET | Admin console UI |
