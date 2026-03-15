@@ -947,8 +947,8 @@ function adminHTML() {
         const hsColor = hs.cls === 'active' ? 'var(--success)' : hs.cls === 'recent' ? 'var(--warn)' : 'var(--muted)';
         const name = p.name || player?.name || (p.pubkey ? p.pubkey.slice(0,12)+'...' : '—');
         const rawPing = player?.ping;
-        const ping = (!rawPing || rawPing === 'None' || rawPing === '---' || rawPing === 'null') ? '—' : rawPing;
-        const pingColor = (ping !== '—' && ping !== 'Timed Out' && ping !== 'Error') ? 'var(--success)' : 'var(--danger)';
+        const ping = !rawPing ? 'no data' : (rawPing === '---' ? 'init' : rawPing);
+        const pingColor = (!rawPing || rawPing === '---') ? 'var(--muted)' : (ping === 'Timed Out' || ping === 'Error' ? 'var(--danger)' : 'var(--success)');
         const game = player?.game || '—';
         const hiddenName = player?.hidden ? \` <span style="font-size:9px;color:var(--muted);border:1px solid var(--muted);padding:0 4px;border-radius:2px;">INVIS</span>\` : '';
         const orphanBadge = isOrphan ? \` <span style="font-size:9px;color:var(--warn);border:1px solid var(--warn);padding:0 4px;border-radius:2px;letter-spacing:1px;">ORPHAN</span>\` : '';
