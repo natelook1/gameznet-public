@@ -713,18 +713,23 @@ function adminHTML() {
       </div>
       <button class="btn-primary" style="margin-top:12px;" onclick="saveSettings()">Apply Global Config</button>
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-        <div style="font-size:11px;font-family:'Share Tech Mono',monospace;color:var(--muted);letter-spacing:1px;margin-bottom:10px;">UDM SSH (for auto peer provisioning)</div>
-        <div class="form-row">
-          <div><label>UDM SSH Host</label><input type="text" id="set-udm-host" placeholder="192.168.30.1" /></div>
-          <div><label>SSH User</label><input type="text" id="set-udm-user" placeholder="root" /></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:11px;font-family:'Share Tech Mono',monospace;color:var(--muted);letter-spacing:1px;">UDM SSH (for auto peer provisioning)</div>
+          <span style="font-size:10px;color:var(--accent);cursor:pointer;font-family:'Share Tech Mono',monospace;" onclick="document.getElementById('ssh-advanced').style.display=document.getElementById('ssh-advanced').style.display==='none'?'block':'none'">ADVANCED ▾</span>
         </div>
-        <div class="form-row" style="margin-top:8px;">
-          <div><label>WG Interface</label><input type="text" id="set-udm-iface" placeholder="wg0" /></div>
-          <div><label>SSH Password (if no key)</label><input type="password" id="set-udm-pass" placeholder="leave blank to use key" /></div>
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <div style="flex:1;"><label>SSH Password</label><input type="password" id="set-udm-pass" placeholder="UDM root password" /></div>
+          <button class="btn-secondary" style="height:40px;" onclick="saveSSHSettings()">Save</button>
+          <button class="btn-secondary" style="height:40px;" onclick="testSSH()">Test</button>
         </div>
-        <div style="margin-top:8px;"><label>SSH Private Key (PEM — optional if using password)</label><textarea id="set-udm-key" rows="4" style="width:100%;background:var(--card);border:1px solid var(--border2);color:var(--text);padding:8px;font-family:monospace;font-size:11px;border-radius:4px;resize:vertical;" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"></textarea></div>
-        <button class="btn-secondary" style="margin-top:8px;" onclick="saveSSHSettings()">Save SSH Config</button>
-        <button class="btn-secondary" style="margin-top:8px;margin-left:8px;" onclick="testSSH()">Test Connection</button>
+        <div id="ssh-advanced" style="display:none;margin-top:12px;">
+          <div class="form-row">
+            <div><label>UDM SSH Host</label><input type="text" id="set-udm-host" placeholder="192.168.30.1" /></div>
+            <div><label>SSH User</label><input type="text" id="set-udm-user" placeholder="root" /></div>
+          </div>
+          <div style="margin-top:8px;"><label>WG Interface</label><input type="text" id="set-udm-iface" placeholder="wgsrv1" style="max-width:240px;" /></div>
+          <div style="margin-top:8px;"><label>SSH Private Key (PEM — optional)</label><textarea id="set-udm-key" rows="4" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;font-family:monospace;font-size:11px;border-radius:3px;resize:vertical;" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"></textarea></div>
+        </div>
       </div>
     </div>
     <div class="card"><div class="card-title">Active Database</div><div id="token-list"></div></div>
@@ -934,17 +939,15 @@ function adminHTML() {
   function renderPeerHealth(peers) {
     const el = document.getElementById('peer-health');
     if (!peers || peers.length === 0) { el.innerHTML = '<p style="color:var(--muted);font-size:12px;font-family:monospace;">No peers found on interface.</p>'; return; }
-    el.innerHTML = '<table class="peer-table"><thead><tr><th>Status</th><th>Identity</th><th>VPN IP</th><th>Endpoint</th><th>Handshake</th><th>Session RX / TX</th><th>Total RX / TX</th></tr></thead><tbody>' +
+    el.innerHTML = '<table class="peer-table"><thead><tr><th>Status</th><th>Identity</th><th>VPN IP</th><th>Handshake</th><th>Session RX / TX</th><th>Total RX / TX</th></tr></thead><tbody>' +
       peers.map(p => {
         const hs = fmtHandshake(p.handshake_age);
         const hsColor = hs.cls === 'active' ? 'var(--success)' : hs.cls === 'recent' ? 'var(--warn)' : 'var(--muted)';
         const label = p.name || (p.pubkey.slice(0,12) + '...');
-        const ep = p.endpoint && p.endpoint !== '(none)' ? p.endpoint : '—';
         return \`<tr>
           <td><span class="peer-dot \${hs.cls}"></span></td>
           <td style="color:var(--text)">\${label}<br><span style="font-size:9px;color:var(--muted)">\${p.pubkey.slice(0,16)}...</span></td>
           <td style="color:var(--accent)">\${p.vpn_ip || '—'}</td>
-          <td style="color:var(--muted);font-size:11px">\${ep}</td>
           <td style="color:\${hsColor}">\${hs.label}</td>
           <td>\${fmtBytes(p.rx_bytes)} / \${fmtBytes(p.tx_bytes)}</td>
           <td style="color:var(--muted)">\${fmtBytes(p.rx_total)} / \${fmtBytes(p.tx_total)}</td>
