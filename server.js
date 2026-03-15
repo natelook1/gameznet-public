@@ -697,9 +697,39 @@ function adminHTML() {
     }
   }
 
+  function derivePublicKey(privKeyB64) {
+    try {
+      const secretKey = Uint8Array.from(atob(privKeyB64), c => c.charCodeAt(0));
+      const keys = nacl.box.keyPair.fromSecretKey(secretKey);
+      return btoa(String.fromCharCode(...new Uint8Array(keys.publicKey)));
+    } catch { return null; }
+  }
+
+  function copyWgCmd(btn) {
+    const cmd = btn.getAttribute('data-cmd');
+    navigator.clipboard.writeText(cmd).then(() => toast('wg set command copied!'));
+  }
+
   function renderTokens(tokens) {
-    document.getElementById('token-list').innerHTML = '<table class="token-table"><thead><tr><th>Identity</th><th>Key</th><th>Status</th><th>Actions</th></tr></thead><tbody>' + 
-      tokens.map(t => \`<tr><td>\${t.name}</td><td><code>\${t.token}</code></td><td><span class="badge \${t.redeemed?'badge-redeemed':'badge-pending'}">\${t.redeemed?'PROVISIONED':'IDLE'}</span></td><td><button class="btn-danger" onclick="revoke('\${t.token}')">Revoke</button></td></tr>\`).join('') + '</tbody></table>';
+    const wgIface = (document.getElementById('set-udm-iface') || {}).value || 'wgsrv1';
+    document.getElementById('token-list').innerHTML = '<table class="token-table"><thead><tr><th>Identity</th><th>Token</th><th>VPN IP</th><th>Public Key</th><th>Status</th><th>Actions</th></tr></thead><tbody>' +
+      tokens.map(t => {
+        const pubkey = t.private_key ? derivePublicKey(t.private_key) : null;
+        const ip = (t.client_ip || '').replace('/32', '');
+        const wgCmd = pubkey && ip ? 'wg set ' + wgIface + ' peer ' + pubkey + ' allowed-ips ' + ip + '/32 && wg-quick save ' + wgIface : null;
+        const pubkeyCell = pubkey
+          ? '<code style="font-size:10px;color:var(--muted);word-break:break-all;">' + pubkey + '</code>'
+            + (wgCmd ? ' <button class="btn-secondary" style="margin-top:4px;font-size:9px;padding:2px 6px;" data-cmd="' + pubkey.replace(/"/g,'&quot;') + '" onclick="copyWgCmd(this)">COPY WG CMD</button>' : '')
+          : '<span style="color:var(--muted)">—</span>';
+        return '<tr>'
+          + '<td>' + t.name + '</td>'
+          + '<td><code>' + t.token + '</code></td>'
+          + '<td><code style="color:var(--accent)">' + (t.client_ip || '—') + '</code></td>'
+          + '<td style="max-width:220px;">' + pubkeyCell + '</td>'
+          + '<td><span class="badge ' + (t.redeemed ? 'badge-redeemed' : 'badge-pending') + '">' + (t.redeemed ? 'PROVISIONED' : 'IDLE') + '</span></td>'
+          + '<td><button class="btn-danger" onclick="revoke(\'' + t.token + '\')">Revoke</button></td>'
+          + '</tr>';
+      }).join('') + '</tbody></table>';
   }
 
   function renderOnline(online) {
