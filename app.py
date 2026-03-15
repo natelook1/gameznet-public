@@ -979,10 +979,40 @@ def run_tray(flask_thread):
                             tray.notify(f"{name} joined GamezNET", "GamezNET")
                         except Exception:
                             pass
+                    for name in known - online:
+                        try:
+                            tray.notify(f"{name} left GamezNET", "GamezNET")
+                        except Exception:
+                            pass
                     known = online
             except Exception:
                 pass
     threading.Thread(target=presence_watcher, daemon=True).start()
+
+    # Notify when admin broadcasts an alert
+    def alert_watcher():
+        import urllib.request as _ur
+        last_alert_id = None
+        while True:
+            time.sleep(15)
+            if not _connected:
+                continue
+            try:
+                req = _ur.Request(f"{WORKER_URL}/api/alert", headers={"User-Agent": "GamezNET"})
+                with _ur.urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode())
+                alert = data.get("alert")
+                if alert and alert.get("id") != last_alert_id:
+                    last_alert_id = alert["id"]
+                    try:
+                        tray.notify(alert.get("message", "Admin alert"), "GamezNET")
+                    except Exception:
+                        pass
+                elif not alert:
+                    last_alert_id = None
+            except Exception:
+                pass
+    threading.Thread(target=alert_watcher, daemon=True).start()
 
     tray.run()
 
