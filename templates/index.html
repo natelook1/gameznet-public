@@ -123,6 +123,7 @@
       padding: 3px 7px;
       border-radius: 2px;
     }
+    .clock { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 2px; }
 
     /* ── Content area ── */
     .content {
@@ -845,6 +846,7 @@
       <p>Private Game Server Network</p>
     </div>
     <div class="version-badge" id="version-badge">v...</div>
+    <div class="clock" id="clock"></div>
   </header>
 
   <!-- Content -->
@@ -967,7 +969,10 @@
 
       <!-- CHAT: full width -->
       <div class="chat-section">
-        <div class="section-label">Network Chat</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div class="section-label" style="margin-bottom:0;">Network Chat</div>
+          <button id="chat-mute-btn" class="invisible-btn" onclick="toggleChatMute()" style="font-size:10px;padding:2px 8px;" title="Toggle message sound">🔔 SOUND</button>
+        </div>
         <div class="chat-box" id="chat-box">
           <div class="chat-empty" id="chat-empty">○ No messages yet</div>
         </div>
@@ -1067,6 +1072,7 @@
     connectedAt: null,
     updateRequired: false
   };
+  let pingHistory = [];
 
   // ── Toast ──────────────────────────────────────────────────────────────────
   function toast(msg, type = 'info') {
@@ -1260,7 +1266,18 @@
       banner.style.display = 'none';
     }
 
-    document.getElementById('tel-ping').textContent      = t.ping      || '---';
+    const rawPing = parseInt(t.ping);
+    if (!isNaN(rawPing)) {
+      pingHistory.push(rawPing);
+      if (pingHistory.length > 30) pingHistory.shift();
+    }
+    if (pingHistory.length >= 2) {
+      const max = Math.max(...pingHistory), min = Math.min(...pingHistory), range = max - min || 1;
+      const pts = pingHistory.map((v, i) => `${(i / (pingHistory.length - 1)) * 48},${16 - ((v - min) / range) * 14}`).join(' ');
+      document.getElementById('tel-ping').innerHTML = (t.ping || '---') + `<svg width="48" height="16" style="margin-left:6px;vertical-align:middle;opacity:0.7;"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+    } else {
+      document.getElementById('tel-ping').textContent = t.ping || '---';
+    }
     document.getElementById('tel-handshake').textContent = t.handshake || 'Never';
     document.getElementById('tel-rx').textContent        = t.received  || '0 B';
     document.getElementById('tel-tx').textContent        = t.sent      || '0 B';
@@ -1545,6 +1562,7 @@
       el.innerHTML = `<span class="chat-msg-name${isSelf ? ' self' : ''}">${m.from_name}</span><span class="chat-msg-body">${m.body.replace(/</g,'&lt;')}</span><span class="chat-msg-time">${chatTimeStr(m.sent_at)}</span>`;
       box.appendChild(el);
     });
+    chatBeep();
     if (atBottom) box.scrollTop = box.scrollHeight;
   }
 
@@ -1579,6 +1597,32 @@
     const btn = document.getElementById('chat-send-btn');
     if (inp) inp.disabled = !enabled;
     if (btn) btn.disabled = !enabled;
+  }
+
+  // ── Chat Audio ─────────────────────────────────────────────────────────────
+  let chatMuted = false;
+
+  function toggleChatMute() {
+    chatMuted = !chatMuted;
+    const btn = document.getElementById('chat-mute-btn');
+    if (btn) btn.textContent = chatMuted ? '🔕 MUTED' : '🔔 SOUND';
+  }
+
+  function chatBeep() {
+    if (chatMuted) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.25);
+    } catch(e) {}
   }
 
   setInterval(pollChat, 3000);
@@ -1780,12 +1824,21 @@
             <div>CPU <span>${s.cpu}%</span></div>
             <div>RAM <span>${fmtMem(s.memory_mb)}</span></div>
           </div>
-          ${s.port ? `<div class="srv-connect">${s.host}:${s.port}</div>` : ''}` : ''}
+          ${s.port ? `<div class="srv-connect" style="cursor:pointer;" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('Server address copied!','success'))">${s.host}:${s.port} ⧉</div>
+          <button onclick="window.open('steam://connect/${s.host}:${s.port}')" style="margin-top:4px;background:transparent;border:1px solid #1b9af7;color:#1b9af7;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;padding:2px 8px;border-radius:2px;cursor:pointer;">▶ STEAM JOIN</button>` : ''}` : ''}
         </div>`;
     }).join('');
   }
 
   setInterval(loadClientServers, 30000);
+
+  // ── Clock ──────────────────────────────────────────────────────────────────
+  function updateClock() {
+    const el = document.getElementById('clock');
+    if (el) el.textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
 
   // ── Boot ───────────────────────────────────────────────────────────────────
   init();
