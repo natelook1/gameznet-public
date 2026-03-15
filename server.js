@@ -931,18 +931,22 @@ function adminHTML() {
       peers.map(p => {
         const player = byIp[p.vpn_ip] || null;
         const hs = fmtHandshake(p.handshake_age);
-        // If player has active heartbeat, override dot to green regardless of handshake
+        const isOrphan = !p.name && !player; // WG entry with no matching token/player
         const dotCls = (player && player.active) ? 'active' : hs.cls;
         const hsColor = hs.cls === 'active' ? 'var(--success)' : hs.cls === 'recent' ? 'var(--warn)' : 'var(--muted)';
         const name = p.name || player?.name || (p.pubkey ? p.pubkey.slice(0,12)+'...' : '—');
-        const ping = player?.ping || '—';
-        const pingColor = (player && player.ping && player.ping !== 'Timed Out' && player.ping !== '---') ? 'var(--success)' : 'var(--muted)';
+        const ping = player?.ping && player.ping !== '---' && player.ping !== 'None' ? player.ping : '—';
+        const pingColor = (ping !== '—' && ping !== 'Timed Out') ? 'var(--success)' : 'var(--muted)';
         const game = player?.game || '—';
         const hiddenName = player?.hidden ? \` <span style="font-size:9px;color:var(--muted);border:1px solid var(--muted);padding:0 4px;border-radius:2px;">INVIS</span>\` : '';
+        const orphanBadge = isOrphan ? \` <span style="font-size:9px;color:var(--warn);border:1px solid var(--warn);padding:0 4px;border-radius:2px;letter-spacing:1px;">ORPHAN</span>\` : '';
         const hideBtn = player ? \`<button class="btn-secondary" style="font-size:10px;padding:2px 8px;" onclick="togglePlayerHidden('\${player.name}')">\${player.hidden?'UNHIDE':'HIDE'}</button>\` : '';
-        return \`<tr style="\${player && !player.active && !p.handshake_age ? 'opacity:0.35' : ''}">
+        const rowStyle = isOrphan
+          ? 'background:rgba(255,170,0,0.04);border-left:2px solid rgba(255,170,0,0.3);'
+          : (!player && hs.cls === 'stale' ? 'opacity:0.4;' : '');
+        return \`<tr style="\${rowStyle}">
           <td><span class="peer-dot \${dotCls}"></span></td>
-          <td style="color:var(--text)">\${name}\${hiddenName}\${p.pubkey ? \`<br><span style="font-size:9px;color:var(--muted)">\${p.pubkey.slice(0,16)}...</span>\` : ''}</td>
+          <td style="color:\${isOrphan?'var(--warn)':'var(--text)'}">\${name}\${hiddenName}\${orphanBadge}\${p.pubkey ? \`<br><span style="font-size:9px;color:var(--muted)">\${p.pubkey.slice(0,16)}...</span>\` : ''}</td>
           <td style="color:var(--accent);font-family:monospace">\${p.vpn_ip || '—'}</td>
           <td style="color:\${pingColor};font-family:monospace">\${ping}</td>
           <td style="color:\${hsColor}">\${hs.label}</td>
