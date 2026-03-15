@@ -105,16 +105,17 @@ function sshExec(command) {
     const privateKey = getS('UDM_SSH_KEY', null);
     const password = getS('UDM_SSH_PASS', null);
     if (!privateKey && !password) return reject(new Error('No SSH credentials configured in settings'));
-    const authOpts = privateKey ? { privateKey } : { password };
-    conn.on('ready', () => {
-      conn.exec(command, (err, stream) => {
-        if (err) { conn.end(); return reject(err); }
-        let out = '', errOut = '';
-        stream.on('data', d => out += d);
-        stream.stderr.on('data', d => errOut += d);
-        stream.on('close', (code) => { conn.end(); code === 0 ? resolve(out.trim()) : reject(new Error(errOut.trim() || `Exit ${code}`)); });
-      });
-    }).on('error', reject).connect({ host, port: 22, username: user, ...authOpts });
+    const authOpts = privateKey ? { privateKey } : { password, tryKeyboard: true };
+    conn.on('keyboard-interactive', (name, instr, lang, prompts, finish) => finish([password || '']))
+      .on('ready', () => {
+        conn.exec(command, (err, stream) => {
+          if (err) { conn.end(); return reject(err); }
+          let out = '', errOut = '';
+          stream.on('data', d => out += d);
+          stream.stderr.on('data', d => errOut += d);
+          stream.on('close', (code) => { conn.end(); code === 0 ? resolve(out.trim()) : reject(new Error(errOut.trim() || `Exit ${code}`)); });
+        });
+      }).on('error', reject).connect({ host, port: 22, username: user, ...authOpts });
   });
 }
 
