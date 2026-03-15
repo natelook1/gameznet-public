@@ -27,6 +27,12 @@ if not defined PY_CMD (
 )
 
 if not defined PY_CMD (
+    for /d %%D in ("%LOCALAPPDATA%\Programs\Python\Python3*") do (
+        if exist "%%D\python.exe" set "PY_CMD=%%D\python.exe"
+    )
+)
+
+if not defined PY_CMD (
     echo [!] Python not found. Please re-run the GamezNET installer.
     echo     irm https://gameznet.looknet.ca/install ^| iex
     pause
