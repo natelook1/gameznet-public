@@ -23,6 +23,7 @@ db.pragma('journal_mode = WAL');
 try { db.exec("ALTER TABLE tokens ADD COLUMN active INTEGER DEFAULT 0"); } catch {}
 try { db.exec("ALTER TABLE token_requests ADD COLUMN status TEXT DEFAULT 'pending'"); } catch {}
 try { db.exec("ALTER TABLE players ADD COLUMN ping TEXT"); } catch {}
+try { db.exec("ALTER TABLE players ADD COLUMN connected_at TEXT"); } catch {}
 try { db.exec(`CREATE TABLE IF NOT EXISTS peer_stats (
   vpn_ip TEXT PRIMARY KEY,
   pubkey TEXT,
@@ -197,9 +198,10 @@ app.post('/api/heartbeat', (req, res) => {
   } else {
     db.prepare("UPDATE tokens SET active = 1 WHERE name = ?").run(name);
     const hiddenVal = hidden !== undefined ? (hidden ? 1 : 0) : (db.prepare("SELECT hidden FROM tokens WHERE name = ?").get(name)?.hidden || 0);
-    db.prepare(`INSERT INTO players (name, vpn_ip, last_seen, game, hidden, ping) VALUES (?, ?, ?, ?, ?, ?)
+    const now = new Date().toISOString();
+    db.prepare(`INSERT INTO players (name, vpn_ip, last_seen, game, hidden, ping, connected_at) VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(name) DO UPDATE SET vpn_ip=excluded.vpn_ip, last_seen=excluded.last_seen, game=excluded.game, hidden=excluded.hidden, ping=excluded.ping`)
-      .run(name, vpn_ip || '', new Date().toISOString(), game || null, hiddenVal, ping || null);
+      .run(name, vpn_ip || '', now, game || null, hiddenVal, ping || null, now);
   }
   res.json({ success: true });
 });
@@ -350,7 +352,7 @@ app.post('/admin/token/toggle-hidden', requireAdmin, (req, res) => {
 app.post('/admin/online', requireAdmin, (req, res) => {
   const cutoff = new Date(Date.now() - 7200000).toISOString();
   const activeCutoff = new Date(Date.now() - 8000).toISOString();
-  res.json(db.prepare("SELECT name, vpn_ip, last_seen, game, hidden, ping FROM players WHERE last_seen > ? ORDER BY name").all(cutoff).map(p => ({...p, hidden: !!p.hidden, active: p.last_seen > activeCutoff})));
+  res.json(db.prepare("SELECT name, vpn_ip, last_seen, game, hidden, ping, connected_at FROM players WHERE last_seen > ? ORDER BY name").all(cutoff).map(p => ({...p, hidden: !!p.hidden, active: p.last_seen > activeCutoff})));
 });
 
 app.post('/admin/settings/save', requireAdmin, (req, res) => {
@@ -907,6 +909,15 @@ function adminHTML() {
     return (b/1073741824).toFixed(2) + ' GiB';
   }
 
+  function fmtDuration(isoStr) {
+    if (!isoStr) return '—';
+    const s = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+    if (s < 60) return s + 's';
+    if (s < 3600) return Math.floor(s / 60) + 'm';
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return m > 0 ? h + 'h ' + m + 'm' : h + 'h';
+  }
+
   function fmtHandshake(secs) {
     if (secs === null) return { label: 'Never', cls: 'stale' };
     if (secs < 180) return { label: secs + 's ago', cls: 'active' };
@@ -927,7 +938,7 @@ function adminHTML() {
       peers = online.map(p => ({ vpn_ip: p.vpn_ip.split('/')[0], name: p.name, handshake_age: null, rx_bytes: 0, tx_bytes: 0, rx_total: 0, tx_total: 0, pubkey: '' }));
     }
 
-    el.innerHTML = '<table class="peer-table"><thead><tr><th>Status</th><th>Identity</th><th>VPN IP</th><th>Ping</th><th>Handshake</th><th>Game</th><th>RX / TX</th><th>Actions</th></tr></thead><tbody>' +
+    el.innerHTML = '<table class="peer-table"><thead><tr><th>Status</th><th>Identity</th><th>VPN IP</th><th>Ping</th><th>Connected</th><th>Handshake</th><th>Game</th><th>RX / TX</th><th>Actions</th></tr></thead><tbody>' +
       peers.map(p => {
         const player = byIp[p.vpn_ip] || null;
         const hs = fmtHandshake(p.handshake_age);
@@ -950,6 +961,7 @@ function adminHTML() {
           <td style="color:\${isOrphan?'var(--warn)':'var(--text)'}">\${name}\${hiddenName}\${orphanBadge}\${p.pubkey ? \`<br><span style="font-size:9px;color:var(--muted)">\${p.pubkey.slice(0,16)}...</span>\` : ''}</td>
           <td style="color:var(--accent);font-family:monospace">\${p.vpn_ip || '—'}</td>
           <td style="color:\${pingColor};font-family:monospace">\${ping}</td>
+          <td style="color:var(--muted);font-family:monospace">\${player?.active ? fmtDuration(player.connected_at) : '—'}</td>
           <td style="color:\${hsColor}">\${hs.label}</td>
           <td style="color:var(--muted);font-size:12px">\${game}</td>
           <td style="font-family:monospace;font-size:12px">\${fmtBytes(p.rx_bytes)} / \${fmtBytes(p.tx_bytes)}</td>
