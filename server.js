@@ -173,11 +173,10 @@ async function pollWgStats() {
 setInterval(pollWgStats, 60000);
 
 // â”€â”€â”€ Client API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/api/server-config', (req, res) => {
+app.get('/api/server-config', (_req, res) => {
   const wanIp = getS('SERVER_ENDPOINT_IP', "184.66.15.159");
   const localIp = getS('SERVER_LOCAL_IP', "");
-  const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
-  const endpointIp = (localIp && clientIp === wanIp) ? localIp : wanIp;
+  const endpointIp = wanIp;
   res.json({
     endpoint: `${endpointIp}:51820`,
     publicKey: getS('SERVER_PUBLIC_KEY', "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="),
