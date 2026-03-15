@@ -1187,6 +1187,48 @@
     }
     .chat-send-btn:hover { background: rgba(0,212,255,0.1); }
     .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Player status presets ── */
+    .status-setter { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+    .status-preset-row { display: flex; gap: 5px; }
+    .status-preset-btn {
+      flex: 1; padding: 4px 6px; border-radius: 2px; font-size: 10px;
+      font-family: 'Share Tech Mono', monospace; letter-spacing: 1px; cursor: pointer;
+      background: transparent; border: 1px solid var(--border2); color: var(--text-dim);
+      transition: all 0.15s;
+    }
+    .status-preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .status-input-row { display: flex; gap: 5px; }
+    .status-text-input {
+      flex: 1; background: var(--bg2); border: 1px solid var(--border);
+      color: var(--text); padding: 5px 8px; border-radius: 2px;
+      font-family: 'Share Tech Mono', monospace; font-size: 11px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .status-text-input:focus { border-color: var(--accent); }
+    .status-set-btn {
+      background: transparent; border: 1px solid var(--accent); color: var(--accent);
+      font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px;
+      padding: 5px 10px; border-radius: 2px; cursor: pointer; transition: background 0.15s;
+    }
+    .status-set-btn:hover { background: rgba(0,200,255,0.1); }
+
+    /* ── Op status label ── */
+    .op-status { font-size: 9px; color: var(--text-dim); font-style: italic; margin-left: 4px; }
+
+    /* ── Discord voice ── */
+    .dc-voice-section { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(88,101,242,0.15); }
+    .dc-voice-channel-name {
+      font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim);
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; padding: 0 2px;
+    }
+    .dc-voice-user {
+      display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 2px;
+      font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text);
+      background: rgba(88,101,242,0.04);
+    }
+    .dc-voice-user img { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; }
+    .dc-voice-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -1341,6 +1383,18 @@
             <div class="info-row">
               <span class="info-key">Server</span>
               <span class="info-val" style="font-size:11px;">{{ worker_url.replace("https://", "") }}</span>
+            </div>
+            <div class="status-setter">
+              <div class="status-preset-row">
+                <button class="status-preset-btn" onclick="setPlayerStatus('AFK')">AFK</button>
+                <button class="status-preset-btn" onclick="setPlayerStatus('BRB')">BRB</button>
+                <button class="status-preset-btn" onclick="setPlayerStatus('Gaming')">Gaming</button>
+                <button class="status-preset-btn" onclick="setPlayerStatus('')" style="border-color:var(--danger);color:var(--danger);">Clear</button>
+              </div>
+              <div class="status-input-row">
+                <input class="status-text-input" id="status-input" type="text" placeholder="Custom status..." maxlength="40" />
+                <button class="status-set-btn" onclick="setStatusFromInput()">SET</button>
+              </div>
             </div>
           </div>
         </div>
@@ -1798,7 +1852,7 @@
       await fetch('/api/provision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ private_key: data.private_key, client_ip: data.client_ip, name: data.name })
+        body: JSON.stringify({ private_key: data.private_key, client_ip: data.client_ip, name: data.name, steam_id: data.steam_id || null })
       });
       state.provisioned = true;
       state.name        = data.name;
@@ -1987,7 +2041,7 @@
       el.innerHTML = online.map(p =>
         `<div class="online-player">
            <div class="op-dot"></div>
-           <div class="op-name">${p.name}</div>
+           <div class="op-name">${p.name}${p.status ? `<span class="op-status">${p.status}</span>` : ''}</div>
            ${p.game ? `<div style="flex:1; font-size:10px; color:var(--accent); letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.game}</div>` : '<div style="flex:1;"></div>'}
            <div class="op-ip">${p.vpn_ip}</div>
          </div>`
@@ -2063,20 +2117,25 @@
     if (btn) btn.textContent = chatMuted ? '🔕 MUTED' : '🔔 SOUND';
   }
 
+  let _audioCtx = null;
   function chatBeep() {
     if (chatMuted) return;
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 880;
-      osc.type = 'sine';
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.25);
+      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const play = () => {
+        const osc = _audioCtx.createOscillator();
+        const gain = _audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(_audioCtx.destination);
+        osc.frequency.value = 880;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.15, _audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.25);
+        osc.start(_audioCtx.currentTime);
+        osc.stop(_audioCtx.currentTime + 0.25);
+      };
+      if (_audioCtx.state === 'suspended') _audioCtx.resume().then(play).catch(() => {});
+      else play();
     } catch(e) {}
   }
 
@@ -2582,9 +2641,12 @@
   // ── Discord presence ───────────────────────────────────────────────────────
   async function loadDiscord() {
     try {
-      const res  = await fetch('/api/discord/presence');
-      if (!res.ok) return;
-      const data = await res.json();
+      const [presRes, voiceRes] = await Promise.all([
+        fetch('/api/discord/presence'),
+        fetch('/api/discord/voice')
+      ]);
+      if (!presRes.ok) return;
+      const data = await presRes.json();
 
       document.getElementById('dc-server-name').textContent = data.guild_name || 'gamEZnet';
       document.getElementById('dc-online').textContent      = data.online_count ?? '—';
@@ -2593,17 +2655,59 @@
       const el = document.getElementById('dc-members');
       if (!data.members || data.members.length === 0) {
         el.innerHTML = '<div class="online-empty">○ No members found</div>';
-        return;
+      } else {
+        // REST API doesn't expose per-member presence — show aggregate online count in header only
+        el.innerHTML = data.members.map(m => `
+          <div class="dc-member">
+            <img class="dc-avatar" src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy">
+            <span class="dc-name">${m.username}</span>
+          </div>`).join('');
       }
-      // REST API doesn't expose per-member presence — show aggregate online count in header only
-      el.innerHTML = data.members.map(m => `
-        <div class="dc-member">
-          <img class="dc-avatar" src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy">
-          <span class="dc-name">${m.username}</span>
-        </div>`).join('');
+
+      if (voiceRes.ok) {
+        const voiceData = await voiceRes.json();
+        renderVoiceChannels(voiceData);
+      }
     } catch (e) {
       console.warn('[Discord]', e.message);
     }
+  }
+
+  function renderVoiceChannels(channels) {
+    if (!channels || channels.length === 0) return;
+    const el = document.getElementById('dc-members');
+    const voiceHtml = channels.map(ch => `
+      <div class="dc-voice-section">
+        <div class="dc-voice-channel-name">🔊 ${ch.channel_name}</div>
+        ${ch.users.map(u => `
+          <div class="dc-voice-user">
+            <div class="dc-voice-dot"></div>
+            <img src="${u.avatar_url || u.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy">
+            <span>${u.username}</span>
+          </div>`).join('')}
+      </div>`).join('');
+    el.insertAdjacentHTML('beforeend', voiceHtml);
+  }
+
+  // ── Player status ──────────────────────────────────────────────────────────
+  async function setPlayerStatus(statusText) {
+    try {
+      await fetch('/api/status/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: statusText })
+      });
+      const input = document.getElementById('status-input');
+      if (input) input.value = statusText;
+      toast(statusText ? `Status set: ${statusText}` : 'Status cleared', 'success');
+    } catch (e) {
+      toast('Failed to set status', 'error');
+    }
+  }
+
+  function setStatusFromInput() {
+    const input = document.getElementById('status-input');
+    if (input) setPlayerStatus(input.value.trim());
   }
 
   // ── YouTube OAuth ──────────────────────────────────────────────────────────

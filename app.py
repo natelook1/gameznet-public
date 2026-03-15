@@ -53,11 +53,23 @@ def detect_game():
         pass
     return None
 
+def detect_game_steam(steam_id):
+    """Query /api/steam/game on WORKER_URL for the player's current game."""
+    import urllib.request
+    try:
+        url = f"{WORKER_URL}/api/steam/game?steam_id={urllib.request.quote(steam_id)}"
+        req = urllib.request.Request(url, headers={"User-Agent": "GamezNET"})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read().decode())
+            return data.get("game") or None
+    except Exception:
+        return None
+
 # ─── Configuration ────────────────────────────────────────────────────────────
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.7.0"
+VERSION = "1.8.0"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -270,8 +282,11 @@ app = Flask(__name__)
 _lock = threading.Lock()
 _connected = False
 _invisible = False
+_player_status = ""
 _full_route = False
 _update_required = False
+_steam_game_cache = None
+_steam_cache_at = 0
 
 def _version_tuple(v):
     try:
@@ -488,12 +503,15 @@ def api_provision():
     if not data or 'private_key' not in data or 'client_ip' not in data:
         return jsonify({"error": "Invalid payload"}), 400
     try:
+        config = {
+            "private_key": data["private_key"],
+            "vpn_ip":      data["client_ip"],
+            "name":        data.get("name", "Player")
+        }
+        if data.get("steam_id"):
+            config["steam_id"] = data["steam_id"]
         with open(CONFIG_FILE, "w") as f:
-            json.dump({
-                "private_key": data["private_key"],
-                "vpn_ip":      data["client_ip"],
-                "name":        data.get("name", "Player")
-            }, f)
+            json.dump(config, f)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -651,6 +669,17 @@ def api_invisible():
         return jsonify({"invisible": _invisible})
     return jsonify({"invisible": _invisible})
 
+@app.route("/api/status/set", methods=["POST"])
+def api_status_set():
+    global _player_status
+    data = request.json or {}
+    new_status = str(data.get("status", ""))
+    if len(new_status) > 40:
+        return jsonify({"error": "Status too long (max 40 characters)"}), 400
+    _player_status = new_status
+    log.info("Player status set to: %r", _player_status)
+    return jsonify({"success": True})
+
 @app.route("/api/update", methods=["POST"])
 def api_update():
     """Download latest code from GitHub as a zip and restart the app."""
@@ -750,19 +779,31 @@ def auth_proxy(subpath):
 def heartbeat_loop():
     """Send presence heartbeat to the Worker every 3 seconds while connected."""
     import urllib.request
+    _steam_counter = 0
     while True:
         time.sleep(3)
         if _connected and os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
                     cfg = json.load(f)
+                # Game detection: try Steam every 30s (10 heartbeat ticks), fall back to process scan
+                steam_id = cfg.get("steam_id")
+                game = None
+                if steam_id:
+                    _steam_counter += 1
+                    if _steam_counter >= 10:
+                        _steam_counter = 0
+                        game = detect_game_steam(steam_id)
+                if game is None:
+                    game = detect_game()
                 payload = json.dumps({
                     "name": cfg.get("name", ""),
                     "vpn_ip": cfg.get("vpn_ip", ""),
-                    "game": detect_game(),
+                    "game": game,
                     "hidden": _invisible,
                     "ping": _telemetry.get("ping", None),
-                    "version": VERSION
+                    "version": VERSION,
+                    "status": _player_status
                 }).encode()
                 req = urllib.request.Request(
                     f"{WORKER_URL}/api/heartbeat",
