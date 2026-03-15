@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.8.1"
+VERSION = "1.8.3"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -199,7 +199,7 @@ def update_telemetry():
     version_timer = 0
 
     while True:
-        # 1. Update MOTD every ~5 minutes
+        # 1. Update MOTD every ~30 seconds
         if motd_timer <= 0:
             try:
                 req = urllib.request.Request(f"{WORKER_URL}/api/motd", headers={'User-Agent': 'GamezNET'})
@@ -208,10 +208,10 @@ def update_telemetry():
                     _telemetry["motd"] = data.get("message", "Connected to GamezNET")
             except Exception:
                 pass
-            motd_timer = 150
+            motd_timer = 15
         motd_timer -= 1
 
-        # 1b. Update Alert every ~60 seconds
+        # 1b. Update Alert every ~10 seconds
         if alert_timer <= 0:
             try:
                 req = urllib.request.Request(f"{WORKER_URL}/api/alert", headers={'User-Agent': 'GamezNET'})
@@ -220,7 +220,7 @@ def update_telemetry():
                     _telemetry["alert"] = data.get("alert", None)
             except Exception:
                 pass
-            alert_timer = 30
+            alert_timer = 5
         alert_timer -= 1
 
         # 1c. Check Version every ~60 seconds
