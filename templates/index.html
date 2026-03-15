@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GamezNET</title>
-  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-  <link rel="shortcut icon" href="/static/favicon.svg">
+  <link rel="icon" type="image/png" href="/static/gameznet.png">
+  <link rel="shortcut icon" href="/static/gameznet.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -66,7 +66,7 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      max-width: 920px;
+      max-width: 1400px;
       margin: 0 auto;
       position: relative;
       z-index: 1;
@@ -85,15 +85,14 @@
     .logo-mark {
       width: 34px;
       height: 34px;
-      border: 2px solid var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 13px;
-      color: var(--accent);
-      box-shadow: 0 0 12px var(--glow), inset 0 0 12px var(--glow);
       flex-shrink: 0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .logo-mark img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
 
     .logo-text { flex: 1; }
@@ -129,7 +128,7 @@
     .content {
       flex: 1;
       overflow: hidden;
-      padding: 18px 28px;
+      padding: 16px 32px;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -142,8 +141,8 @@
     .dashboard {
       flex: 1;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
       overflow: hidden;
       min-height: 0;
     }
@@ -151,8 +150,16 @@
     .col {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
       overflow-y: auto;
+      min-height: 0;
+    }
+
+    /* Sub-grid for online + discord side by side */
+    .col-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
       min-height: 0;
     }
 
@@ -443,15 +450,15 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 4px;
-      padding: 18px 20px;
+      padding: 12px 16px;
       flex-shrink: 0;
     }
     .player-name-large {
-      font-size: 26px;
+      font-size: 22px;
       font-weight: 700;
       letter-spacing: 2px;
       color: #fff;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
     .info-row {
       display: flex;
@@ -488,10 +495,10 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 4px;
-      padding: 16px 20px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      max-height: 200px;
+      min-height: 0;
     }
     .online-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; flex: 1; min-height: 0; }
     .online-player {
@@ -527,6 +534,61 @@
       padding: 8px 0;
       text-align: center;
     }
+
+    /* ── Discord panel ── */
+    .discord-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .discord-header {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .discord-logo {
+      width: 18px; height: 18px; flex-shrink: 0;
+      background: #5865f2; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: #fff; font-weight: bold;
+    }
+    .discord-server-name {
+      flex: 1; font-size: 12px; color: var(--text); letter-spacing: 1px;
+      font-family: 'Share Tech Mono', monospace;
+    }
+    .discord-counts {
+      font-size: 11px; color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace;
+    }
+    .discord-counts span { color: var(--success); }
+    .discord-members {
+      display: flex; flex-direction: column; gap: 4px;
+      flex: 1; min-height: 0; overflow-y: auto;
+    }
+    .dc-member {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 8px; border-radius: 3px;
+      background: rgba(88,101,242,0.05); border: 1px solid rgba(88,101,242,0.1);
+      font-family: 'Share Tech Mono', monospace; font-size: 11px;
+    }
+    .dc-avatar {
+      width: 22px; height: 22px; border-radius: 50%;
+      object-fit: cover; flex-shrink: 0;
+      background: #1e2a3a;
+    }
+    .dc-name { flex: 1; color: var(--text); }
+    .dc-status {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dc-status.online  { background: var(--success); box-shadow: 0 0 5px rgba(0,232,122,0.7); }
+    .dc-status.offline { background: var(--text-dim); }
+    .discord-join {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 7px 0; border-radius: 3px;
+      background: rgba(88,101,242,0.12); border: 1px solid rgba(88,101,242,0.35);
+      color: #8ea1f5; font-size: 11px; letter-spacing: 1.5px;
+      font-family: 'Share Tech Mono', monospace; text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .discord-join:hover { background: rgba(88,101,242,0.22); border-color: #5865f2; color: #fff; }
 
     /* ── Setup / Token panels (full width, shown instead of dashboard) ── */
     .setup-wrap {
@@ -696,14 +758,18 @@
       transition: border-color 0.3s, box-shadow 0.3s;
       position: relative;
       overflow: hidden;
+      background-size: cover;
+      background-position: center right;
     }
     .srv-card::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.015) 0%, transparent 60%);
+      background: linear-gradient(to right, var(--bg) 30%, rgba(7,9,15,0.82) 65%, rgba(7,9,15,0.45) 100%);
       pointer-events: none;
+      z-index: 0;
     }
+    .srv-card > * { position: relative; z-index: 1; }
     .srv-card.srv-running {
       border-left-color: var(--success);
       box-shadow: inset 0 0 20px rgba(0,232,122,0.04), 0 0 0 0 rgba(0,232,122,0.1);
@@ -780,11 +846,300 @@
       to   { opacity: 1; transform: translateY(0); }
     }
     .shell > * { animation: fade-in 0.3s ease both; }
+
+    /* ── Tab nav ── */
+    .tab-nav {
+      display: none;
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      flex-shrink: 0;
+    }
+    .tab-nav.visible { display: flex; }
+    .tab-btn {
+      background: none; border: none; color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 2px;
+      padding: 9px 16px; cursor: pointer; border-bottom: 2px solid transparent;
+      transition: all 0.15s; text-transform: uppercase;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-btn.yt-tab.active { color: #ff4444; border-bottom-color: #ff4444; }
+
+    /* ── YouTube panel ── */
+    #youtube-section {
+      display: none; flex-direction: column;
+      flex: 1; overflow: hidden; min-height: 0;
+      margin: -18px -28px; /* bleed past content padding */
+    }
+    #youtube-section.yt-active { display: flex; }
+
+    .yt-topbar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .yt-wordmark {
+      display: flex; align-items: center; gap: 7px;
+      font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 1px;
+      flex-shrink: 0;
+    }
+
+    .yt-icon {
+      background: #cc0000; border-radius: 4px;
+      width: 26px; height: 18px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .yt-icon::after {
+      content: '';
+      width: 0; height: 0;
+      border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+      border-left: 9px solid white; margin-left: 1px;
+    }
+
+    .yt-search-wrap {
+      flex: 1; position: relative; display: flex; align-items: center;
+    }
+    .yt-search {
+      width: 100%;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 20px; color: var(--text);
+      font-family: 'Rajdhani', sans-serif; font-size: 13px;
+      padding: 6px 32px 6px 14px; outline: none; transition: border-color 0.15s;
+    }
+    .yt-search:focus { border-color: var(--accent); }
+    .yt-search::placeholder { color: var(--text-dim); }
+    .yt-search-clear {
+      position: absolute; right: 10px; background: none; border: none;
+      color: var(--text-dim); cursor: pointer; font-size: 15px; line-height: 1;
+      padding: 0; display: none;
+    }
+    .yt-search-clear:hover { color: var(--text); }
+    .yt-search-history {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; z-index: 200; overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      display: none;
+    }
+    .yt-search-history.open { display: block; }
+    .yt-history-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px; cursor: pointer; font-size: 12px; color: var(--dim);
+      transition: background 0.1s;
+    }
+    .yt-history-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .yt-history-icon { font-size: 10px; opacity: 0.4; flex-shrink: 0; }
+    .srv-uptime { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--dim); letter-spacing: 1px; margin-left: auto; }
+
+    .yt-action-btn {
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: 20px; color: var(--text);
+      font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px;
+      padding: 6px 14px; cursor: pointer; white-space: nowrap; transition: all 0.15s;
+    }
+    .yt-action-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .yt-action-btn.theater-btn { border-color: #7c4dff; color: #7c4dff; }
+    .yt-action-btn.theater-btn:hover { background: rgba(124,77,255,0.15); }
+
+    .yt-google-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: 20px; color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px;
+      padding: 5px 12px; cursor: pointer; white-space: nowrap; transition: all 0.15s;
+    }
+    .yt-google-btn:hover { border-color: #4285f4; color: #4285f4; }
+    .yt-google-btn .g-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      background: conic-gradient(#4285f4 0 25%, #ea4335 25% 50%, #fbbc05 50% 75%, #34a853 75%);
+    }
+    .yt-user-pill {
+      display: none; align-items: center; gap: 6px;
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: 20px; padding: 3px 10px 3px 4px; cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .yt-user-pill:hover { border-color: var(--danger); }
+    .yt-user-pill img {
+      width: 20px; height: 20px; border-radius: 50%; object-fit: cover;
+    }
+    .yt-user-pill span {
+      font-family: 'Share Tech Mono', monospace; font-size: 10px;
+      color: var(--text); letter-spacing: 1px;
+    }
+
+    .yt-chips {
+      display: flex; gap: 8px; padding: 8px 16px;
+      overflow-x: auto; flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .yt-chips::-webkit-scrollbar { height: 0; }
+
+    .yt-chip {
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: 20px; color: var(--text);
+      font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px;
+      padding: 4px 13px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .yt-chip:hover { border-color: var(--text-dim); }
+    .yt-chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+    .yt-body { flex: 1; overflow: hidden; display: flex; min-height: 0; }
+
+    /* Browse grid */
+    .yt-browse {
+      flex: 1; overflow-y: auto; padding: 14px 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 14px; align-content: start;
+    }
+
+    .yt-card { cursor: pointer; border-radius: 6px; overflow: hidden; transition: transform 0.15s; }
+    @keyframes yt-pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    .yt-card:hover { transform: translateY(-2px); }
+    .yt-card:hover .yt-overlay { opacity: 1; }
+
+    .yt-thumb-wrap { position: relative; aspect-ratio: 16/9; overflow: hidden; background: var(--surface); }
+    .yt-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .yt-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.15s;
+    }
+    .yt-play {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(204,0,0,0.9);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .yt-play::after {
+      content: ''; width: 0; height: 0;
+      border-top: 7px solid transparent; border-bottom: 7px solid transparent;
+      border-left: 13px solid white; margin-left: 2px;
+    }
+    .yt-duration {
+      position: absolute; bottom: 5px; right: 6px;
+      background: rgba(0,0,0,0.85); font-family: 'Share Tech Mono', monospace;
+      font-size: 10px; padding: 2px 5px; border-radius: 3px;
+    }
+    .yt-card-info { padding: 7px 4px; background: var(--bg); }
+    .yt-card-title {
+      font-size: 12px; font-weight: 600; line-height: 1.3; margin-bottom: 3px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .yt-card-meta { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; }
+
+    /* Player view */
+    .yt-player-view { display: none; flex: 1; overflow: hidden; }
+    .yt-player-view.active { display: flex; }
+    .yt-player-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .yt-player-frame { flex: 1; background: #000; }
+    .yt-player-frame iframe { width: 100%; height: 100%; border: none; }
+    .yt-player-info {
+      padding: 10px 14px; background: var(--surface);
+      border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+    .yt-player-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .yt-player-meta { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; display: flex; gap: 14px; }
+
+    .yt-related {
+      width: 250px; flex-shrink: 0; overflow-y: auto;
+      border-left: 1px solid var(--border); padding: 10px 8px;
+      background: var(--bg);
+    }
+    .yt-related-label {
+      font-family: 'Share Tech Mono', monospace; font-size: 9px;
+      color: var(--text-dim); letter-spacing: 2px; padding: 0 4px 10px;
+    }
+    .yt-mini {
+      display: flex; gap: 8px; padding: 5px 4px; cursor: pointer;
+      border-radius: 5px; transition: background 0.1s;
+    }
+    .yt-mini:hover { background: var(--surface); }
+    .yt-mini-thumb { width: 88px; aspect-ratio: 16/9; border-radius: 3px; object-fit: cover; background: var(--surface); flex-shrink: 0; }
+    .yt-mini-info { flex: 1; min-width: 0; }
+    .yt-mini-title {
+      font-size: 11px; font-weight: 600; line-height: 1.3;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .yt-mini-meta { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; margin-top: 3px; }
+
+    /* Theater overlay */
+    /* ── Floating player ── */
+    .yt-float {
+      display: none; position: fixed; z-index: 300;
+      bottom: 80px; right: 24px;
+      width: 380px; height: 240px;
+      background: #0a0e18; border: 1px solid var(--border2);
+      border-radius: 6px; box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+      flex-direction: column; overflow: hidden;
+      resize: both;
+    }
+    .yt-float.active { display: flex; }
+    .yt-float.minimized { height: 36px !important; resize: none; }
+    .yt-float-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 10px; height: 36px; min-height: 36px;
+      background: #0d1320; border-bottom: 1px solid var(--border);
+      cursor: move; user-select: none; flex-shrink: 0;
+    }
+    .yt-float-title {
+      flex: 1; font-size: 11px; color: var(--text-dim);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      letter-spacing: 0.5px;
+    }
+    .yt-float-btn {
+      background: none; border: none; color: var(--text-dim);
+      cursor: pointer; font-size: 13px; padding: 2px 4px; line-height: 1;
+    }
+    .yt-float-btn:hover { color: var(--text); }
+    .yt-float iframe {
+      flex: 1; width: 100%; border: none; display: block;
+    }
+    .yt-float.minimized iframe { display: none; }
+
+    .theater-overlay {
+      display: none; position: fixed; inset: 0;
+      background: #000; z-index: 200; flex-direction: column;
+    }
+    .theater-overlay.active { display: flex; }
+    .theater-hud {
+      display: flex; align-items: center; gap: 14px;
+      padding: 8px 18px;
+      background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      flex-shrink: 0;
+    }
+    .theater-logo { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--accent); letter-spacing: 3px; }
+    .theater-players { display: flex; gap: 10px; flex: 1; }
+    .theater-chip {
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 10px 3px 6px; border-radius: 20px;
+      background: rgba(255,255,255,0.06); font-size: 12px; font-weight: 600;
+    }
+    .theater-chip .t-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 5px var(--success); }
+    .theater-exit {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text); font-family: 'Share Tech Mono', monospace;
+      font-size: 10px; letter-spacing: 1px; padding: 5px 14px; border-radius: 3px; cursor: pointer;
+    }
+    .theater-exit:hover { background: rgba(255,255,255,0.18); }
+    .theater-frame { flex: 1; }
+    .theater-frame iframe { width: 100%; height: 100%; border: none; }
+
+    .yt-empty {
+      grid-column: 1 / -1; display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 10px; padding: 60px 20px;
+      color: var(--text-dim); font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    }
     header     { animation-delay: 0s; }
     .content   { animation-delay: 0.05s; }
     footer     { animation-delay: 0.1s; }
     /* ── Chat ── */
-    .chat-section { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; }
+    .chat-section { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
     .chat-box {
       background: var(--card);
       border: 1px solid var(--border2);
@@ -840,7 +1195,7 @@
 
   <!-- Header -->
   <header>
-    <div class="logo-mark">GZ</div>
+    <div class="logo-mark"><img src="/static/gameznet.png" alt="GZ"></div>
     <div class="logo-text">
       <h1>GamezNET</h1>
       <p>Private Game Server Network</p>
@@ -848,6 +1203,34 @@
     <div class="version-badge" id="version-badge">v...</div>
     <div class="clock" id="clock"></div>
   </header>
+
+  <!-- Tab nav (shown once provisioned) -->
+  <div class="tab-nav" id="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('home', this)">HOME</button>
+    <button class="tab-btn yt-tab" onclick="switchTab('youtube', this)">YOUTUBE</button>
+  </div>
+
+  <!-- Floating player (persists across tab switches) -->
+  <div class="yt-float" id="yt-float">
+    <div class="yt-float-bar" id="yt-float-bar">
+      <span class="yt-float-title" id="yt-float-title">—</span>
+      <button class="yt-float-btn" title="Minimise" onclick="ytFloatToggleMin()">▁</button>
+      <button class="yt-float-btn" title="Close" onclick="ytFloatClose()">✕</button>
+    </div>
+    <iframe id="yt-float-iframe" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+  </div>
+
+  <!-- Theater mode (outside content flow) -->
+  <div class="theater-overlay" id="theater-overlay">
+    <div class="theater-hud">
+      <div class="theater-logo">GAMEZNET</div>
+      <div class="theater-players" id="theater-players"></div>
+      <button class="theater-exit" onclick="exitTheater()">✕ EXIT THEATER</button>
+    </div>
+    <div class="theater-frame">
+      <iframe id="theater-iframe" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+    </div>
+  </div>
 
   <!-- Content -->
   <div class="content">
@@ -928,6 +1311,20 @@
           </div>
         </div>
 
+        <div class="chat-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <div class="section-label" style="margin-bottom:0;">Network Chat</div>
+            <button id="chat-mute-btn" class="invisible-btn" onclick="toggleChatMute()" style="font-size:10px;padding:2px 8px;" title="Toggle message sound">🔔 SOUND</button>
+          </div>
+          <div class="chat-box" id="chat-box">
+            <div class="chat-empty" id="chat-empty">○ No messages yet</div>
+          </div>
+          <div class="chat-input-row">
+            <input class="chat-input" id="chat-input" type="text" placeholder="Type a message..." maxlength="500" disabled />
+            <button class="chat-send-btn" id="chat-send-btn" onclick="sendChat()" disabled>SEND</button>
+          </div>
+        </div>
+
       </div>
 
       <!-- RIGHT: Player + Online -->
@@ -948,10 +1345,24 @@
           </div>
         </div>
 
-        <div class="online-card">
-          <div class="section-label" style="margin-bottom:10px;">Who's Online</div>
-          <div class="online-list" id="online-list-ui">
-            <div class="online-empty">○ Checking...</div>
+        <div class="col-pair">
+          <div class="online-card">
+            <div class="section-label" style="margin-bottom:8px;">Who's Online</div>
+            <div class="online-list" id="online-list-ui">
+              <div class="online-empty">○ Checking...</div>
+            </div>
+          </div>
+
+          <div class="discord-card" id="discord-card">
+            <div class="discord-header">
+              <div class="discord-logo">D</div>
+              <div class="discord-server-name" id="dc-server-name">gamEZnet</div>
+              <div class="discord-counts"><span id="dc-online">—</span> online · <span id="dc-total">—</span> members</div>
+            </div>
+            <div class="discord-members" id="dc-members">
+              <div class="online-empty">○ Loading...</div>
+            </div>
+            <a class="discord-join" href="https://discord.gg/6vrEHuVX93" target="_blank">JOIN DISCORD ↗</a>
           </div>
         </div>
 
@@ -967,21 +1378,63 @@
 
       </div>
 
-      <!-- CHAT: full width -->
-      <div class="chat-section">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-          <div class="section-label" style="margin-bottom:0;">Network Chat</div>
-          <button id="chat-mute-btn" class="invisible-btn" onclick="toggleChatMute()" style="font-size:10px;padding:2px 8px;" title="Toggle message sound">🔔 SOUND</button>
+    </div>
+
+    <!-- ── YOUTUBE ── -->
+    <div id="youtube-section">
+      <div class="yt-topbar">
+        <div class="yt-wordmark"><div class="yt-icon"></div> YouTube</div>
+        <div class="yt-search-wrap">
+          <input class="yt-search" id="yt-search" placeholder="Search YouTube..."
+            onkeydown="if(event.key==='Enter')ytSearch()"
+            oninput="ytSearchInput(this)"
+            onfocus="ytHistoryShow()"
+            onblur="ytSearchBlur()">
+          <button class="yt-search-clear" id="yt-search-clear" onmousedown="event.preventDefault()" onclick="ytSearchClear()">✕</button>
+          <div class="yt-search-history" id="yt-search-history"></div>
         </div>
-        <div class="chat-box" id="chat-box">
-          <div class="chat-empty" id="chat-empty">○ No messages yet</div>
-        </div>
-        <div class="chat-input-row">
-          <input class="chat-input" id="chat-input" type="text" placeholder="Type a message..." maxlength="500" disabled />
-          <button class="chat-send-btn" id="chat-send-btn" onclick="sendChat()" disabled>SEND</button>
+        <button class="yt-action-btn theater-btn" id="yt-theater-btn" style="display:none" onclick="enterTheater()">⛶ THEATER</button>
+        <button class="yt-action-btn" id="yt-popout-btn" style="display:none" onclick="ytPopOut()">⧉ POP OUT</button>
+        <button class="yt-action-btn" id="yt-back-btn" style="display:none" onclick="ytBackToBrowse()">← BACK</button>
+        <button class="yt-google-btn" id="yt-signin-btn" onclick="ytSignIn()">
+          <div class="g-dot"></div> SIGN IN
+        </button>
+        <div class="yt-user-pill" id="yt-user-pill" onclick="ytSignOut()">
+          <img id="yt-user-avatar" src="" alt="">
+          <span id="yt-user-name"></span>
         </div>
       </div>
-
+      <div class="yt-chips" id="yt-chips">
+        <div class="yt-chip active" onclick="ytChip(this,'all')">All</div>
+        <div class="yt-chip" id="yt-subs-chip" style="display:none;border-color:#4285f4;color:#4285f4" onclick="ytChip(this,'feed')">▶ MY FEED</div>
+        <div class="yt-chip" onclick="ytChip(this,'eve')">EVE Online</div>
+        <div class="yt-chip" onclick="ytChip(this,'zomboid')">Project Zomboid</div>
+        <div class="yt-chip" onclick="ytChip(this,'satisfactory')">Satisfactory</div>
+        <div class="yt-chip" onclick="ytChip(this,'mhw')">Monster Hunter</div>
+        <div class="yt-chip" onclick="ytChip(this,'ff')">Final Fantasy</div>
+        <div class="yt-chip" onclick="ytChip(this,'conan')">Conan Exiles</div>
+        <div class="yt-chip" onclick="ytChip(this,'enshrouded')">Enshrouded</div>
+        <div class="yt-chip" onclick="ytChip(this,'wot')">World of Tanks</div>
+        <div class="yt-chip" onclick="ytChip(this,'tarkov')">Tarkov</div>
+        <div class="yt-chip" onclick="ytChip(this,'chill')">Chill</div>
+      </div>
+      <div class="yt-body">
+        <div class="yt-browse" id="yt-browse"></div>
+        <div class="yt-player-view" id="yt-player">
+          <div class="yt-player-main">
+            <div class="yt-player-frame">
+              <iframe id="yt-iframe" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+            </div>
+            <div class="yt-player-info">
+              <div class="yt-player-title" id="yt-now-title"></div>
+              <div class="yt-player-meta"><span id="yt-now-channel"></span><span id="yt-now-views"></span></div>
+            </div>
+          </div>
+          <div class="yt-related" id="yt-related">
+            <div class="yt-related-label">UP NEXT</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ── SETUP (shown when not provisioned) ── -->
@@ -1144,6 +1597,7 @@
     document.getElementById('dashboard-section').style.display = 'none';
     document.getElementById('setup-wrap').style.display        = 'none';
     document.getElementById('retoken-wrap').style.display      = 'none';
+    document.getElementById('youtube-section').classList.remove('yt-active');
     if (view === 'dashboard') {
       document.getElementById('dashboard-section').style.display = 'grid';
     } else if (view === 'setup') {
@@ -1155,6 +1609,7 @@
 
   function showProvisioned() {
     showView('dashboard');
+    document.getElementById('tab-nav').classList.add('visible');
     document.getElementById('info-name').textContent = state.name;
     document.getElementById('info-ip').textContent   = state.clientIp;
     document.getElementById('change-token-link').style.display = 'inline';
@@ -1795,6 +2250,14 @@
     return mb >= 1024 ? (mb / 1024).toFixed(1) + ' GiB' : mb + ' MiB';
   }
 
+  function fmtUptime(seconds) {
+    if (!seconds) return '';
+    const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60);
+    if (h >= 24) return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
+    if (h > 0)   return h + 'h ' + m + 'm';
+    return m + 'm';
+  }
+
   async function loadClientServers() {
     try {
       const res = await fetch('{{ worker_url }}/api/servers');
@@ -1812,8 +2275,11 @@
     grid.innerHTML = servers.map(s => {
       const cls = ['running','starting','stopping'].includes(s.state) ? s.state : 'offline';
       const isRunning = s.state === 'running';
+      const banner = s.steam_appid
+        ? `style="background-image:url('https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/header.jpg')"`
+        : '';
       return `
-        <div class="srv-card srv-${cls}">
+        <div class="srv-card srv-${cls}" ${banner}>
           <div class="srv-top">
             <div class="srv-dot ${cls}"></div>
             <div class="srv-name">${s.name}</div>
@@ -1823,9 +2289,15 @@
           <div class="srv-stats">
             <div>CPU <span>${s.cpu}%</span></div>
             <div>RAM <span>${fmtMem(s.memory_mb)}</span></div>
+            ${s.uptime ? `<div class="srv-uptime">UP ${fmtUptime(s.uptime)}</div>` : ''}
           </div>
-          ${s.port ? `<div class="srv-connect" style="cursor:pointer;" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('Server address copied!','success'))">${s.host}:${s.port} ⧉</div>
-          <button onclick="window.open('steam://connect/${s.host}:${s.port}')" style="margin-top:4px;background:transparent;border:1px solid #1b9af7;color:#1b9af7;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;padding:2px 8px;border-radius:2px;cursor:pointer;">▶ STEAM JOIN</button>` : ''}` : ''}
+          ${s.port ? `
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px;">
+            <span class="srv-connect" title="Copy IP only" onclick="navigator.clipboard.writeText('${s.host}').then(()=>toast('IP copied!','success'))" style="cursor:pointer;">${s.host} ⧉</span>
+            <span style="color:var(--border2);font-size:10px;">·</span>
+            <span class="srv-connect" title="Copy IP:Port" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('IP:Port copied!','success'))" style="cursor:pointer;">:${s.port} ⧉</span>
+          </div>
+          <button onclick="location.href='steam://connect/${s.host}:${s.port}'" style="margin-top:4px;background:transparent;border:1px solid #1b9af7;color:#1b9af7;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;padding:2px 8px;border-radius:2px;cursor:pointer;width:100%;">▶ STEAM JOIN</button>` : ''}` : ''}
         </div>`;
     }).join('');
   }
@@ -1840,9 +2312,376 @@
   setInterval(updateClock, 1000);
   updateClock();
 
+  // ── Tab switching ──────────────────────────────────────────────────────────
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const dash = document.getElementById('dashboard-section');
+    const yt   = document.getElementById('youtube-section');
+    if (name === 'youtube') {
+      dash.style.display = 'none';
+      yt.classList.add('yt-active');
+      if (!_ytInitialized) { ytLoadCategory(_ytCat); _ytInitialized = true; }
+    } else {
+      yt.classList.remove('yt-active');
+      dash.style.display = 'grid';
+    }
+  }
+
+  // ── YouTube ────────────────────────────────────────────────────────────────
+  let _ytCat = 'all', _ytCurrentVideo = null, _ytInitialized = false;
+  const _ytCache = {}; // category → video array
+
+  async function ytLoadCategory(cat) {
+    if (_ytCache[cat]) { ytRenderBrowse(_ytCache[cat]); return; }
+    ytRenderSkeleton();
+    try {
+      const r = await fetch(`/api/youtube/category?cat=${encodeURIComponent(cat)}`);
+      if (r.status === 503) { ytRenderApiKeyPrompt(); return; }
+      if (!r.ok) { ytRenderBrowse([]); return; }
+      const data = await r.json();
+      _ytCache[cat] = data;
+      ytRenderBrowse(data);
+    } catch { ytRenderBrowse([]); }
+  }
+
+  function ytRenderApiKeyPrompt() {
+    const el = document.getElementById('yt-browse');
+    el.innerHTML = `<div class="yt-empty" style="flex-direction:column;gap:12px;padding:48px 24px;">
+      <span style="font-size:40px;opacity:0.25">▶</span>
+      <div style="font-size:13px;color:var(--accent);">YouTube API key not configured</div>
+      <div style="font-size:11px;color:var(--dim);max-width:320px;text-align:center;line-height:1.6;">
+        Add your YouTube Data API v3 key in the admin settings panel to enable video browsing.
+      </div>
+    </div>`;
+  }
+
+  function ytRenderSkeleton() {
+    const grid = document.getElementById('yt-browse');
+    grid.style.display = '';
+    grid.innerHTML = Array(12).fill(0).map(() => `
+      <div class="yt-card yt-skeleton">
+        <div class="yt-thumb-wrap" style="background:var(--border2);animation:yt-pulse 1.4s ease-in-out infinite;"></div>
+        <div class="yt-card-info">
+          <div style="height:11px;background:var(--border2);border-radius:2px;margin-bottom:6px;animation:yt-pulse 1.4s ease-in-out infinite;"></div>
+          <div style="height:11px;background:var(--border2);border-radius:2px;width:60%;animation:yt-pulse 1.4s ease-in-out infinite;"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  function ytEsc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+  function ytRenderBrowse(videos) {
+    const el = document.getElementById('yt-browse');
+    if (!videos.length) {
+      el.innerHTML = `<div class="yt-empty"><span style="font-size:32px;opacity:0.3">▶</span>No results — try a different search</div>`;
+      return;
+    }
+    el.innerHTML = videos.map(v => `
+      <div class="yt-card" onclick="ytPlay('${v.id}','${ytEsc(v.title)}','${ytEsc(v.channel)}','${v.views}')">
+        <div class="yt-thumb-wrap">
+          <img class="yt-thumb" src="${v.thumb || `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`}" loading="lazy" onerror="this.style.opacity='0'">
+          <div class="yt-overlay"><div class="yt-play"></div></div>
+          <div class="yt-duration">${v.dur}</div>
+        </div>
+        <div class="yt-card-info">
+          <div class="yt-card-title">${ytEsc(v.title)}</div>
+          <div class="yt-card-meta">${ytEsc(v.channel)} · ${v.views} views</div>
+        </div>
+      </div>`).join('');
+  }
+
+  function ytChip(el, cat) {
+    document.querySelectorAll('.yt-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    _ytCat = cat;
+    ytBackToBrowse(false);
+    if (cat === 'feed') { ytRenderBrowse(_ytSubs); return; }
+    ytLoadCategory(cat);
+  }
+
+  function ytSearchInput(el) {
+    document.getElementById('yt-search-clear').style.display = el.value ? 'block' : 'none';
+  }
+
+  function ytSearchClear() {
+    const el = document.getElementById('yt-search');
+    el.value = '';
+    document.getElementById('yt-search-clear').style.display = 'none';
+    // Restore active category
+    const activeChip = document.querySelector('.yt-chip.active');
+    if (activeChip) {
+      if (_ytCat === 'feed') ytRenderBrowse(_ytSubs);
+      else ytLoadCategory(_ytCat);
+    } else {
+      document.querySelector('.yt-chip').classList.add('active');
+      _ytCat = 'all';
+      ytLoadCategory('all');
+    }
+    el.focus();
+  }
+
+  // ── Search history ─────────────────────────────────────────────────────────
+  function ytHistoryGet() {
+    try { return JSON.parse(localStorage.getItem('yt_search_history') || '[]'); } catch { return []; }
+  }
+  function ytHistorySave(q) {
+    let h = ytHistoryGet().filter(x => x !== q);
+    h.unshift(q);
+    localStorage.setItem('yt_search_history', JSON.stringify(h.slice(0, 5)));
+  }
+  function ytHistoryShow() {
+    const h = ytHistoryGet();
+    const el = document.getElementById('yt-search-history');
+    if (!h.length) return;
+    el.innerHTML = h.map(q => `
+      <div class="yt-history-item" onmousedown="event.preventDefault()" onclick="ytSearchFromHistory('${q.replace(/'/g,"\\'")}')">
+        <span class="yt-history-icon">↩</span>${q}
+      </div>`).join('');
+    el.classList.add('open');
+  }
+  function ytHistoryHide() {
+    document.getElementById('yt-search-history').classList.remove('open');
+  }
+  function ytSearchFromHistory(q) {
+    document.getElementById('yt-search').value = q;
+    document.getElementById('yt-search-clear').style.display = 'block';
+    ytHistoryHide();
+    ytSearch();
+  }
+
+  function ytSearchBlur() {
+    const el = document.getElementById('yt-search');
+    ytHistoryHide();
+    if (!el.value.trim()) ytSearchClear();
+  }
+
+  async function ytSearch(overrideQ) {
+    const q = overrideQ || document.getElementById('yt-search').value.trim();
+    if (!q) return;
+    ytHistorySave(q);
+    ytHistoryHide();
+    if (overrideQ) document.getElementById('yt-search').value = overrideQ;
+    document.querySelectorAll('.yt-chip').forEach(c => c.classList.remove('active'));
+    ytBackToBrowse(false);
+    // Try server-side API proxy first, fall back to local filter
+    try {
+      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(q)}`);
+      if (res.ok) {
+        const data = await res.json();
+        ytRenderBrowse(data);
+        return;
+      }
+    } catch {}
+    // Fallback: filter cached videos
+    const lq = q.toLowerCase();
+    const pool = Object.values(_ytCache).flat();
+    ytRenderBrowse(pool.filter(v => v.title.toLowerCase().includes(lq) || v.channel.toLowerCase().includes(lq)));
+  }
+
+  function ytPlay(id, title, channel, views) {
+    _ytCurrentVideo = { id, title, channel, views };
+    document.getElementById('yt-browse').style.display      = 'none';
+    document.getElementById('yt-player').classList.add('active');
+    document.getElementById('yt-iframe').src = `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
+    document.getElementById('yt-now-title').textContent   = title;
+    document.getElementById('yt-now-channel').textContent = channel;
+    document.getElementById('yt-now-views').textContent   = views + ' views';
+    document.getElementById('yt-theater-btn').style.display = '';
+    document.getElementById('yt-popout-btn').style.display  = '';
+    document.getElementById('yt-back-btn').style.display    = '';
+    // Related — pull from current category cache
+    const pool   = (_ytCat === 'feed' ? _ytSubs : (_ytCache[_ytCat] || Object.values(_ytCache).flat()));
+    const others = pool.filter(v => v.id !== id).slice(0, 6);
+    document.getElementById('yt-related').innerHTML =
+      `<div class="yt-related-label">UP NEXT</div>` +
+      others.map(v => `
+        <div class="yt-mini" onclick="ytPlay('${v.id}','${ytEsc(v.title)}','${ytEsc(v.channel)}','${v.views||''}')">
+          <img class="yt-mini-thumb" src="${v.thumb || `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`}" loading="lazy" onerror="this.style.opacity='0'">
+          <div class="yt-mini-info">
+            <div class="yt-mini-title">${ytEsc(v.title)}</div>
+            <div class="yt-mini-meta">${ytEsc(v.channel)}</div>
+          </div>
+        </div>`).join('');
+  }
+
+  function ytBackToBrowse(stopVideo = true) {
+    document.getElementById('yt-browse').style.display = '';
+    document.getElementById('yt-player').classList.remove('active');
+    if (stopVideo) document.getElementById('yt-iframe').src = '';
+    document.getElementById('yt-theater-btn').style.display = 'none';
+    document.getElementById('yt-popout-btn').style.display  = 'none';
+    document.getElementById('yt-back-btn').style.display    = 'none';
+    _ytCurrentVideo = null;
+  }
+
+  function enterTheater() {
+    if (!_ytCurrentVideo) return;
+    // Populate player chips from current online list
+    const chips = Array.from(document.querySelectorAll('.online-dot')).map(d => {
+      const name = d.closest('.online-player')?.querySelector('.online-name')?.textContent || '';
+      const online = d.classList.contains('online');
+      return name ? `<div class="theater-chip"><span class="t-dot" style="${online?'':'background:var(--text-dim);box-shadow:none'}"></span>${name}</div>` : '';
+    }).join('');
+    document.getElementById('theater-players').innerHTML = chips;
+    document.getElementById('theater-iframe').src =
+      `https://www.youtube.com/embed/${_ytCurrentVideo.id}?autoplay=1&rel=0`;
+    document.getElementById('theater-overlay').classList.add('active');
+  }
+
+  function exitTheater() {
+    document.getElementById('theater-overlay').classList.remove('active');
+    document.getElementById('theater-iframe').src = '';
+  }
+
+  // ── Floating player ────────────────────────────────────────────────────────
+  function ytPopOut() {
+    if (!_ytCurrentVideo) return;
+    const fl = document.getElementById('yt-float');
+    document.getElementById('yt-float-title').textContent = _ytCurrentVideo.title;
+    document.getElementById('yt-float-iframe').src =
+      `https://www.youtube.com/embed/${_ytCurrentVideo.id}?autoplay=1&rel=0`;
+    fl.classList.remove('minimized');
+    fl.classList.add('active');
+    // Stop the inline player so audio doesn't double up
+    document.getElementById('yt-iframe').src = '';
+  }
+
+  function ytFloatClose() {
+    const fl = document.getElementById('yt-float');
+    fl.classList.remove('active', 'minimized');
+    document.getElementById('yt-float-iframe').src = '';
+  }
+
+  function ytFloatToggleMin() {
+    document.getElementById('yt-float').classList.toggle('minimized');
+  }
+
+  // Drag logic for floating player
+  (function() {
+    let dragging = false, ox = 0, oy = 0;
+    const bar = document.getElementById('yt-float-bar');
+    const fl  = document.getElementById('yt-float');
+    bar.addEventListener('mousedown', e => {
+      if (e.target !== bar && e.target.id !== 'yt-float-title') return;
+      dragging = true;
+      const rect = fl.getBoundingClientRect();
+      ox = e.clientX - rect.left;
+      oy = e.clientY - rect.top;
+      fl.style.right = 'auto'; fl.style.bottom = 'auto';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      fl.style.left = (e.clientX - ox) + 'px';
+      fl.style.top  = (e.clientY - oy) + 'px';
+    });
+    document.addEventListener('mouseup', () => { dragging = false; });
+  })();
+
+  // ── Discord presence ───────────────────────────────────────────────────────
+  async function loadDiscord() {
+    try {
+      const res  = await fetch('/api/discord/presence');
+      if (!res.ok) return;
+      const data = await res.json();
+
+      document.getElementById('dc-server-name').textContent = data.guild_name || 'gamEZnet';
+      document.getElementById('dc-online').textContent      = data.online_count ?? '—';
+      document.getElementById('dc-total').textContent       = data.member_count ?? '—';
+
+      const el = document.getElementById('dc-members');
+      if (!data.members || data.members.length === 0) {
+        el.innerHTML = '<div class="online-empty">○ No members found</div>';
+        return;
+      }
+      // REST API doesn't expose per-member presence — show aggregate online count in header only
+      el.innerHTML = data.members.map(m => `
+        <div class="dc-member">
+          <img class="dc-avatar" src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy">
+          <span class="dc-name">${m.username}</span>
+        </div>`).join('');
+    } catch (e) {
+      console.warn('[Discord]', e.message);
+    }
+  }
+
+  // ── YouTube OAuth ──────────────────────────────────────────────────────────
+  let _ytSession = null, _ytSubs = [];
+
+  function ytApplySession(sessionId, name, avatar) {
+    _ytSession = sessionId;
+    localStorage.setItem('yt_session', JSON.stringify({ id: sessionId, name, avatar }));
+    document.getElementById('yt-signin-btn').style.display    = 'none';
+    const pill = document.getElementById('yt-user-pill');
+    pill.style.display = 'flex';
+    document.getElementById('yt-user-name').textContent   = name || 'Signed In';
+    document.getElementById('yt-user-avatar').src         = avatar || '';
+    document.getElementById('yt-subs-chip').style.display = '';
+  }
+
+  function ytSignIn() {
+    const popup = window.open('/auth/youtube', 'yt-auth',
+      'width=500,height=650,left=' + (screen.width/2 - 250) + ',top=' + (screen.height/2 - 325));
+    const handler = e => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === 'yt_auth_ok') {
+        window.removeEventListener('message', handler);
+        ytApplySession(e.data.session, e.data.name, e.data.avatar);
+        ytLoadFeed();
+      } else if (e.data?.type === 'yt_auth_error') {
+        window.removeEventListener('message', handler);
+        console.warn('[YT OAuth]', e.data.error);
+      }
+    };
+    window.addEventListener('message', handler);
+  }
+
+  function ytSignOut() {
+    _ytSession = null; _ytSubs = [];
+    localStorage.removeItem('yt_session');
+    document.getElementById('yt-signin-btn').style.display    = '';
+    document.getElementById('yt-user-pill').style.display     = 'none';
+    document.getElementById('yt-subs-chip').style.display     = 'none';
+    if (_ytCat === 'feed') document.querySelector('.yt-chip').click();
+  }
+
+  async function ytRestoreSession() {
+    try {
+      const stored = localStorage.getItem('yt_session');
+      if (!stored) return;
+      const { id, name, avatar } = JSON.parse(stored);
+      // Verify the session is still alive server-side
+      const r = await fetch(`/api/youtube/session/verify?session=${id}`);
+      if (!r.ok) { localStorage.removeItem('yt_session'); return; }
+      const info = await r.json();
+      ytApplySession(id, info.name || name, info.avatar || avatar);
+      ytLoadFeed();
+    } catch { localStorage.removeItem('yt_session'); }
+  }
+
+  async function ytLoadFeed() {
+    if (!_ytSession) return;
+    const chip = document.getElementById('yt-subs-chip');
+    chip.textContent = '⟳ LOADING...';
+    try {
+      const r = await fetch(`/api/youtube/feed?session=${_ytSession}`);
+      if (!r.ok) { chip.textContent = '▶ MY FEED'; return; }
+      _ytSubs = await r.json();
+      chip.textContent = '▶ MY FEED';
+      if (_ytCat === 'feed') ytRenderBrowse(_ytSubs);
+    } catch (e) {
+      chip.textContent = '▶ MY FEED';
+      console.warn('[YT feed]', e.message);
+    }
+  }
+
   // ── Boot ───────────────────────────────────────────────────────────────────
   init();
   loadClientServers();
+  loadDiscord();
+  ytRestoreSession();
+  setInterval(loadDiscord, 30000);
 </script>
 </body>
 </html>
