@@ -42,13 +42,16 @@ GAME_PROCESSES = {
     'SCUM.exe': 'SCUM',
 }
 
+_GAME_PROCESSES_LOWER = {k.lower(): v for k, v in GAME_PROCESSES.items()}
+
 def detect_game():
     try:
         import psutil
         for proc in psutil.process_iter(['name']):
-            name = proc.info.get('name', '')
-            if name in GAME_PROCESSES:
-                return GAME_PROCESSES[name]
+            name = proc.info.get('name', '') or ''
+            match = GAME_PROCESSES.get(name) or _GAME_PROCESSES_LOWER.get(name.lower())
+            if match:
+                return match
     except Exception:
         pass
     return None
