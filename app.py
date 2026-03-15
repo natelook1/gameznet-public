@@ -220,13 +220,13 @@ def update_telemetry():
 
                 CREATE_NO_WINDOW = 0x08000000
                 output = subprocess.check_output(
-                    f"ping -n 1 -w 1000 {target}",
+                    f"ping -n 2 -w 1500 {target}",
                     shell=True,
                     creationflags=CREATE_NO_WINDOW
                 ).decode()
-                
-                match_ping = re.search(r"time[=<](\d+)ms", output)
-                _telemetry["ping"] = f"{match_ping.group(1)}ms" if match_ping else "Timed Out"
+
+                all_pings = [int(m) for m in re.findall(r"time[=<](\d+)ms", output)]
+                _telemetry["ping"] = f"{min(all_pings)}ms" if all_pings else "Timed Out"
             except subprocess.CalledProcessError:
                 _telemetry["ping"] = "Timed Out"
             except Exception:
