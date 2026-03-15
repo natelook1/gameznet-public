@@ -1763,6 +1763,8 @@
   function renderClientServers(servers) {
     const grid = document.getElementById('server-grid-client');
     if (!grid) return;
+    const order = { running: 0, starting: 1, stopping: 2, offline: 3 };
+    servers = [...servers].sort((a, b) => (order[a.state] ?? 3) - (order[b.state] ?? 3));
     grid.innerHTML = servers.map(s => {
       const cls = ['running','starting','stopping'].includes(s.state) ? s.state : 'offline';
       const isRunning = s.state === 'running';
