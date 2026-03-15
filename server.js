@@ -22,6 +22,16 @@ db.pragma('journal_mode = WAL');
 // Schema migrations for columns added after initial deploy
 try { db.exec("ALTER TABLE tokens ADD COLUMN active INTEGER DEFAULT 0"); } catch {}
 try { db.exec("ALTER TABLE token_requests ADD COLUMN status TEXT DEFAULT 'pending'"); } catch {}
+try { db.exec(`CREATE TABLE IF NOT EXISTS peer_stats (
+  vpn_ip TEXT PRIMARY KEY,
+  pubkey TEXT,
+  rx_bytes INTEGER DEFAULT 0,
+  tx_bytes INTEGER DEFAULT 0,
+  rx_total INTEGER DEFAULT 0,
+  tx_total INTEGER DEFAULT 0,
+  last_handshake_ts INTEGER DEFAULT 0,
+  last_seen TEXT
+)`); } catch {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS tokens (
@@ -122,6 +132,40 @@ const requireAdmin = (req, res, next) => {
   if (pwd === process.env.ADMIN_PASSWORD) return next();
   res.status(401).json({ error: 'Unauthorized' });
 };
+
+// ─── WireGuard peer stats polling ────────────────────────────────────────────
+async function pollWgStats() {
+  try {
+    const iface = getS('UDM_WG_INTERFACE', 'wg0');
+    const raw = await sshExec(`wg show ${iface} dump`);
+    const lines = raw.split('\n').filter(l => l.trim());
+    for (const line of lines) {
+      const parts = line.split('\t');
+      if (parts.length < 8) continue; // interface line has 4 fields, peer lines have 8
+      const [pubkey, , , allowed_ips, last_hs_ts, rx_str, tx_str] = parts;
+      if (!pubkey || pubkey.length < 10) continue;
+      const vpn_ip = (allowed_ips || '').split('/')[0] || '';
+      if (!vpn_ip) continue;
+      const rx = parseInt(rx_str) || 0;
+      const tx = parseInt(tx_str) || 0;
+      const hs = parseInt(last_hs_ts) || 0;
+      const existing = db.prepare("SELECT rx_bytes, tx_bytes, rx_total, tx_total FROM peer_stats WHERE vpn_ip = ?").get(vpn_ip);
+      let rx_total = rx, tx_total = tx;
+      if (existing) {
+        const rdelta = rx >= existing.rx_bytes ? rx - existing.rx_bytes : rx;
+        const tdelta = tx >= existing.tx_bytes ? tx - existing.tx_bytes : tx;
+        rx_total = existing.rx_total + rdelta;
+        tx_total = existing.tx_total + tdelta;
+      }
+      db.prepare(`INSERT INTO peer_stats (vpn_ip, pubkey, rx_bytes, tx_bytes, rx_total, tx_total, last_handshake_ts, last_seen)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(vpn_ip) DO UPDATE SET pubkey=excluded.pubkey, rx_bytes=excluded.rx_bytes, tx_bytes=excluded.tx_bytes,
+          rx_total=excluded.rx_total, tx_total=excluded.tx_total, last_handshake_ts=excluded.last_handshake_ts, last_seen=excluded.last_seen`)
+        .run(vpn_ip, pubkey, rx, tx, rx_total, tx_total, hs, new Date().toISOString());
+    }
+  } catch (e) { /* SSH unavailable — silent */ }
+}
+setInterval(pollWgStats, 60000);
 
 // â”€â”€â”€ Client API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/server-config', (req, res) => {
@@ -327,6 +371,35 @@ app.post('/admin/ssh/test', requireAdmin, async (req, res) => {
   try {
     const out = await sshExec('echo ok');
     res.json({ success: true, output: out });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/admin/wg/peers', requireAdmin, async (req, res) => {
+  try {
+    const iface = getS('UDM_WG_INTERFACE', 'wg0');
+    const raw = await sshExec(`wg show ${iface} dump`);
+    const now = Math.floor(Date.now() / 1000);
+    const lines = raw.split('\n').filter(l => l.trim());
+    const peers = [];
+    for (const line of lines) {
+      const parts = line.split('\t');
+      if (parts.length < 8) continue;
+      const [pubkey, , endpoint, allowed_ips, last_hs_ts, rx_str, tx_str] = parts;
+      if (!pubkey || pubkey.length < 10) continue;
+      const vpn_ip = (allowed_ips || '').split('/')[0] || '';
+      const rx_bytes = parseInt(rx_str) || 0;
+      const tx_bytes = parseInt(tx_str) || 0;
+      const last_hs = parseInt(last_hs_ts) || 0;
+      const handshake_age = last_hs > 0 ? now - last_hs : null;
+      const stats = db.prepare("SELECT rx_total, tx_total FROM peer_stats WHERE vpn_ip = ?").get(vpn_ip);
+      const token = db.prepare("SELECT name FROM tokens WHERE client_ip = ? OR client_ip = ?").get(vpn_ip, vpn_ip + '/32');
+      peers.push({ pubkey, endpoint, vpn_ip, handshake_age, rx_bytes, tx_bytes,
+        rx_total: stats?.rx_total ?? rx_bytes, tx_total: stats?.tx_total ?? tx_bytes,
+        name: token?.name || null });
+    }
+    res.json(peers);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -568,6 +641,15 @@ function adminHTML() {
     .report-item { background: rgba(255,51,85,0.04); border: 1px solid rgba(255,51,85,0.15); border-radius: 3px; padding: 14px 16px; margin-bottom: 10px; }
     .report-item.read { opacity: 0.5; border-color: var(--border); }
     .report-log { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--muted); background: #05080c; border: 1px solid var(--border); padding: 12px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; display: none; margin-top: 10px; }
+
+    .peer-table { width: 100%; border-collapse: collapse; }
+    .peer-table th { text-align: left; font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border); letter-spacing: 1px; text-transform: uppercase; }
+    .peer-table td { padding: 10px 12px; border-bottom: 1px solid rgba(26,42,58,0.4); font-size: 13px; font-family: 'Share Tech Mono', monospace; }
+    .peer-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+    .peer-dot.active { background: var(--success); box-shadow: 0 0 6px var(--success); }
+    .peer-dot.recent { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+    .peer-dot.stale { background: var(--muted); }
+    .peer-error { color: var(--danger); font-family: 'Share Tech Mono', monospace; font-size: 12px; padding: 12px 0; }
   </style>
 </head>
 <body>
@@ -596,6 +678,13 @@ function adminHTML() {
       <div class="stat-card"><div class="stat-label">Core Protocol</div><div class="stat-value mono" id="stat-version">—</div></div>
     </div>
     <div class="card"><div class="card-title">Node Roster</div><div id="online-roster"></div></div>
+    <div class="card">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+        VPN Mesh Health
+        <button class="btn-secondary" style="font-size:10px;padding:2px 10px;" onclick="refreshPeers()">⟳ REFRESH</button>
+      </div>
+      <div id="peer-health"><p style="color:var(--muted);font-size:12px;font-family:monospace;">Loading peer data...</p></div>
+    </div>
     <div class="card"><div class="card-title">Generate Access Token</div>
       <div class="form-row"><input type="text" id="new-name" placeholder="Entity Name" /><input type="text" id="new-ip" placeholder="Internal IP (e.g. 192.168.8.x/32)" /></div>
       <div style="display:flex;gap:8px;align-items:center;">
@@ -692,6 +781,7 @@ function adminHTML() {
       document.getElementById('set-local').value = config.localIp || '';
       document.getElementById('set-version').value = ver.min_version;
       renderTokens(tokens); renderOnline(online); renderReports(reports); renderServers(servers); renderRequests(requests);
+      refreshPeers();
       document.getElementById('set-udm-host').value = config.udmHost || '';
       document.getElementById('set-udm-user').value = config.udmUser || '';
       document.getElementById('set-udm-iface').value = config.udmInterface || '';
@@ -818,6 +908,57 @@ function adminHTML() {
         </div>
       </div>\`;
     }).join('');
+  }
+
+  function fmtBytes(b) {
+    if (!b) return '0 B';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b/1024).toFixed(1) + ' KiB';
+    if (b < 1073741824) return (b/1048576).toFixed(1) + ' MiB';
+    return (b/1073741824).toFixed(2) + ' GiB';
+  }
+
+  function fmtHandshake(secs) {
+    if (secs === null) return { label: 'Never', cls: 'stale' };
+    if (secs < 180) return { label: secs + 's ago', cls: 'active' };
+    if (secs < 900) return { label: Math.floor(secs/60) + 'm ago', cls: 'recent' };
+    if (secs < 3600) return { label: Math.floor(secs/60) + 'm ago', cls: 'stale' };
+    return { label: Math.floor(secs/3600) + 'h ago', cls: 'stale' };
+  }
+
+  function renderPeerHealth(peers) {
+    const el = document.getElementById('peer-health');
+    if (!peers || peers.length === 0) { el.innerHTML = '<p style="color:var(--muted);font-size:12px;font-family:monospace;">No peers found on interface.</p>'; return; }
+    el.innerHTML = '<table class="peer-table"><thead><tr><th>Status</th><th>Identity</th><th>VPN IP</th><th>Endpoint</th><th>Handshake</th><th>Session RX / TX</th><th>Total RX / TX</th></tr></thead><tbody>' +
+      peers.map(p => {
+        const hs = fmtHandshake(p.handshake_age);
+        const hsColor = hs.cls === 'active' ? 'var(--success)' : hs.cls === 'recent' ? 'var(--warn)' : 'var(--muted)';
+        const label = p.name || (p.pubkey.slice(0,12) + '...');
+        const ep = p.endpoint && p.endpoint !== '(none)' ? p.endpoint : '—';
+        return \`<tr>
+          <td><span class="peer-dot \${hs.cls}"></span></td>
+          <td style="color:var(--text)">\${label}<br><span style="font-size:9px;color:var(--muted)">\${p.pubkey.slice(0,16)}...</span></td>
+          <td style="color:var(--accent)">\${p.vpn_ip || '—'}</td>
+          <td style="color:var(--muted);font-size:11px">\${ep}</td>
+          <td style="color:\${hsColor}">\${hs.label}</td>
+          <td>\${fmtBytes(p.rx_bytes)} / \${fmtBytes(p.tx_bytes)}</td>
+          <td style="color:var(--muted)">\${fmtBytes(p.rx_total)} / \${fmtBytes(p.tx_total)}</td>
+        </tr>\`;
+      }).join('') + '</tbody></table>';
+  }
+
+  async function refreshPeers() {
+    try {
+      const res = await fetch('/admin/wg/peers', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: adminPassword }) });
+      if (res.ok) {
+        renderPeerHealth(await res.json());
+      } else {
+        const d = await res.json();
+        document.getElementById('peer-health').innerHTML = \`<p class="peer-error">SSH Error: \${d.error}</p>\`;
+      }
+    } catch (e) {
+      document.getElementById('peer-health').innerHTML = '<p class="peer-error">Could not reach UDM — check SSH config.</p>';
+    }
   }
 
   async function createToken() {
