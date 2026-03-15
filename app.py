@@ -73,7 +73,7 @@ def ensure_single_instance():
     mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "Global\\GamezNET_SingleInstance")
     if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
         log.info("Another instance is already running — opening browser and exiting.")
-        webbrowser.open(f"http://localhost:{PORT}")
+        webbrowser.open(f"http://gameznet.local:{PORT}")
         sys.exit(0)
     return mutex  # Must keep reference alive — GC releasing it would free the mutex
 
@@ -770,7 +770,7 @@ def heartbeat_loop():
 
 def open_browser():
     time.sleep(1.2)
-    webbrowser.open(f"http://localhost:{PORT}")
+    webbrowser.open(f"http://gameznet.local:{PORT}")
 
 def ensure_admin():
     """Re-launch with admin rights if needed."""
@@ -844,7 +844,7 @@ def run_tray(flask_thread):
             icon_holder["icon"].icon = img
 
     def on_open(icon, item):
-        webbrowser.open(f"http://localhost:{PORT}")
+        webbrowser.open(f"http://gameznet.local:{PORT}")
 
     def on_disconnect(icon, item):
         if _connected:
@@ -852,7 +852,7 @@ def run_tray(flask_thread):
                 import urllib.request
                 urllib.request.urlopen(
                     urllib.request.Request(
-                        f"http://localhost:{PORT}/api/disconnect",
+                        f"http://127.0.0.1:{PORT}/api/disconnect",
                         method="POST"
                     ), timeout=5
                 )
@@ -919,7 +919,7 @@ if __name__ == "__main__":
 
     # Start Flask in background thread
     flask_thread = threading.Thread(
-        target=lambda: app.run(host="127.0.0.1", port=PORT, debug=False, use_reloader=False),
+        target=lambda: app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False),
         daemon=True
     )
     flask_thread.start()
