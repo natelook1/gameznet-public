@@ -80,11 +80,21 @@ The **Home** tab shows live status for all hosted game servers. Running servers 
 
 ---
 
+## 🎙️ Discord
+
+The **Home** tab includes a live **gamEZnet Discord** panel showing:
+
+- Member list with avatars and voice channel activity
+- Online and total member counts, refreshed every 30 seconds
+- **Join Discord** button
+
+---
+
 ## 📺 YouTube
 
 The **YouTube** tab lets you browse and watch gaming videos without leaving the app.
 
-- **Categories** — curated video feeds for the games we play: EVE Online, Project Zomboid, Satisfactory, Monster Hunter, Final Fantasy, Conan Exiles, Enshrouded, World of Sea Battle, World of Tanks, Tarkov, and chill music
+- **Categories** — curated video feeds for the games we play: EVE Online, Project Zomboid, Satisfactory, Monster Hunter, Final Fantasy, Conan Exiles, Enshrouded, World of Sea Battle, World of Tanks, Tarkov, League of Legends, and chill music
 - **Search** — search YouTube directly from the app; your last 5 searches are remembered
 - **Sign in with Google** — sign in to unlock **My Feed**, a personalised stream of recent uploads from your subscribed channels. Your session persists across restarts.
 - **Floating pop-out player** — detach any video into a draggable, resizable window that stays open while you switch tabs
@@ -92,13 +102,9 @@ The **YouTube** tab lets you browse and watch gaming videos without leaving the 
 
 ---
 
-## 🎙️ Discord
+## 💬 Player Status
 
-The **Home** tab includes a live **gamEZnet Discord** panel showing:
-
-- Member list with avatars
-- Online and total member counts, refreshed every 30 seconds
-- **Join Discord** button
+Set a custom status visible to everyone on the network. Use the preset buttons (**AFK**, **BRB**, **Gaming**) or type your own message. Your status appears next to your name in the online player list.
 
 ---
 
@@ -143,7 +149,7 @@ Message the server admin. Running the install command again solves 99% of issues
 
 | Component | Role |
 |---|---|
-| Node.js/Express backend | Token management, API, install script delivery, YouTube/Discord proxy |
+| Node.js/Express backend | Token management, API, install script delivery, YouTube/Discord/Steam proxy |
 | SQLite | Persistent storage for tokens, settings, players |
 | Docker Swarm | Backend deployment and orchestration |
 | Traefik | Reverse proxy routing all `*.looknet.ca` traffic |
@@ -153,7 +159,8 @@ Message the server admin. Running the install command again solves 99% of issues
 | Pterodactyl + Wings | Game server management and console |
 | YouTube Data API v3 | Server-side video category browsing (30-min cache) |
 | YouTube OAuth2 | Sign in with Google for personalised feed |
-| Discord Bot API v10 | Live member list and online counts |
+| Discord Bot API v10 | Live member list, online counts, and voice channel activity |
+| Steam Web API | Game detection via player summaries |
 
 ### Requirements
 
@@ -165,12 +172,16 @@ Message the server admin. Running the install command again solves 99% of issues
 1. On your router/server, add them as a WireGuard peer
 2. Assign a VPN IP and generate a keypair
 3. Open the **Admin Panel** at `https://gameznet.looknet.ca/admin`
-4. Enter their name, VPN IP, and private key → **Generate Token**
+4. Enter their name, VPN IP, private key, and optional Steam ID → **Generate Token**
 5. Send them the token and the install command
 
-### Admin Panel — Integrations
+### Admin Panel — Configuration
 
-The **Integrations** card stores credentials securely in the database:
+The **Configuration** card has two tabs:
+
+**Settings tab** — WireGuard endpoint, public key, allowed IPs, local gateway, and minimum required client version. Also contains UDM SSH settings for automatic peer provisioning.
+
+**Integrations tab** — API credentials stored securely in the database:
 
 | Field | Description |
 |---|---|
@@ -178,6 +189,8 @@ The **Integrations** card stores credentials securely in the database:
 | OAuth Client ID | Google OAuth 2.0 client ID — enables Sign in with Google |
 | OAuth Client Secret | Google OAuth 2.0 client secret |
 | Discord Bot Token | Bot token for the gamEZnet Discord server |
+| Alerts Channel ID | Discord channel ID for server start/stop notifications |
+| Steam API Key | Steam Web API key — enables game detection via Steam |
 
 ### Deploying Updates
 
@@ -201,13 +214,16 @@ deploy-gameznet
 | `/api/version` | GET | Minimum required client version |
 | `/api/motd` | GET | Message of the day |
 | `/api/alert` | GET | Active alert banner |
-| `/api/heartbeat` | POST | Player presence update (name, IP, game, ping, version) |
+| `/api/heartbeat` | POST | Player presence update (name, IP, game, ping, version, status) |
 | `/api/online` | GET | List of online players |
+| `/api/status/set` | POST | Set custom player status |
 | `/api/servers` | GET | Game server status from Pterodactyl (30s cache) |
 | `/api/youtube/category` | GET | Curated videos by category |
 | `/api/youtube/search` | GET | YouTube search proxy |
 | `/api/youtube/feed` | GET | Personalised feed for authenticated user |
 | `/api/discord/presence` | GET | Discord guild member list and online counts |
+| `/api/discord/voice` | GET | Discord voice channel activity (15s cache) |
+| `/api/steam/game` | GET | Steam player game detection (30s cache) |
 | `/auth/youtube` | GET | Start YouTube OAuth flow |
 | `/auth/youtube/callback` | GET | OAuth callback handler |
 | `/api/redeem` | POST | Redeem an invite token |
