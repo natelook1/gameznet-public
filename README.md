@@ -66,6 +66,8 @@ That's it. You won't need the token again.
 
 When you're done, click **Disconnect** in the app or right-click the system tray icon. The VPN tunnel closes cleanly.
 
+You'll get a **system tray notification** whenever a friend joins the network while you're connected.
+
 ---
 
 ## 🖥️ Game Servers
@@ -82,7 +84,7 @@ The **Home** tab shows live status for all hosted game servers. Running servers 
 
 The **YouTube** tab lets you browse and watch gaming videos without leaving the app.
 
-- **Categories** — curated video feeds for the games we play: EVE Online, Project Zomboid, Satisfactory, Monster Hunter, Final Fantasy, Conan Exiles, Enshrouded, World of Tanks, Tarkov, and chill music
+- **Categories** — curated video feeds for the games we play: EVE Online, Project Zomboid, Satisfactory, Monster Hunter, Final Fantasy, Conan Exiles, Enshrouded, World of Sea Battle, World of Tanks, Tarkov, and chill music
 - **Search** — search YouTube directly from the app; your last 5 searches are remembered
 - **Sign in with Google** — sign in to unlock **My Feed**, a personalised stream of recent uploads from your subscribed channels. Your session persists across restarts.
 - **Floating pop-out player** — detach any video into a draggable, resizable window that stays open while you switch tabs
@@ -118,13 +120,13 @@ Your token was already used. Contact the admin to get a new one.
 Click **Change Token** in the bottom-right corner of the app.
 
 **Browser didn't open automatically**
-Go to `http://localhost:7734` in any browser.
+Go to `http://gameznet.local:7734` in any browser.
 
 **Connected but can't reach the game server**
 Wait 10 seconds after connecting and try again. If it keeps failing, let the admin know.
 
 **Update required message on launch**
-Run the install command again to get the latest version.
+Click the **Update Required** button in the app — it will download and apply the update automatically, then restart. If the button doesn't work, run the install command again.
 
 ---
 
@@ -146,7 +148,7 @@ Message the server admin. Running the install command again solves 99% of issues
 | Docker Swarm | Backend deployment and orchestration |
 | Traefik | Reverse proxy routing all `*.looknet.ca` traffic |
 | Cloudflare Tunnel | Secure public exposure without open ports |
-| Flask (localhost:7734) | Local app server running on the user's PC |
+| Flask (gameznet.local:7734) | Local app server running on the user's PC |
 | WireGuard | The secure VPN tunnel |
 | Pterodactyl + Wings | Game server management and console |
 | YouTube Data API v3 | Server-side video category browsing (30-min cache) |
