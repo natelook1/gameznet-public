@@ -22,6 +22,7 @@ db.pragma('journal_mode = WAL');
 // Schema migrations for columns added after initial deploy
 try { db.exec("ALTER TABLE tokens ADD COLUMN active INTEGER DEFAULT 0"); } catch {}
 try { db.exec("ALTER TABLE token_requests ADD COLUMN status TEXT DEFAULT 'pending'"); } catch {}
+try { db.exec("ALTER TABLE players ADD COLUMN ping TEXT"); } catch {}
 try { db.exec(`CREATE TABLE IF NOT EXISTS peer_stats (
   vpn_ip TEXT PRIMARY KEY,
   pubkey TEXT,
@@ -188,7 +189,7 @@ app.get('/api/server-config', (req, res) => {
 });
 
 app.post('/api/heartbeat', (req, res) => {
-  const { name, vpn_ip, disconnecting, game, hidden } = req.body;
+  const { name, vpn_ip, disconnecting, game, hidden, ping } = req.body;
   if (!name) return res.status(400).end();
   if (disconnecting) {
     db.prepare("DELETE FROM players WHERE name = ?").run(name);
@@ -196,9 +197,9 @@ app.post('/api/heartbeat', (req, res) => {
   } else {
     db.prepare("UPDATE tokens SET active = 1 WHERE name = ?").run(name);
     const hiddenVal = hidden !== undefined ? (hidden ? 1 : 0) : (db.prepare("SELECT hidden FROM tokens WHERE name = ?").get(name)?.hidden || 0);
-    db.prepare(`INSERT INTO players (name, vpn_ip, last_seen, game, hidden) VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(name) DO UPDATE SET vpn_ip=excluded.vpn_ip, last_seen=excluded.last_seen, game=excluded.game, hidden=excluded.hidden`)
-      .run(name, vpn_ip || '', new Date().toISOString(), game || null, hiddenVal);
+    db.prepare(`INSERT INTO players (name, vpn_ip, last_seen, game, hidden, ping) VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(name) DO UPDATE SET vpn_ip=excluded.vpn_ip, last_seen=excluded.last_seen, game=excluded.game, hidden=excluded.hidden, ping=excluded.ping`)
+      .run(name, vpn_ip || '', new Date().toISOString(), game || null, hiddenVal, ping || null);
   }
   res.json({ success: true });
 });
@@ -349,7 +350,7 @@ app.post('/admin/token/toggle-hidden', requireAdmin, (req, res) => {
 app.post('/admin/online', requireAdmin, (req, res) => {
   const cutoff = new Date(Date.now() - 7200000).toISOString();
   const activeCutoff = new Date(Date.now() - 8000).toISOString();
-  res.json(db.prepare("SELECT name, vpn_ip, last_seen, game, hidden FROM players WHERE last_seen > ? ORDER BY name").all(cutoff).map(p => ({...p, hidden: !!p.hidden, active: p.last_seen > activeCutoff})));
+  res.json(db.prepare("SELECT name, vpn_ip, last_seen, game, hidden, ping FROM players WHERE last_seen > ? ORDER BY name").all(cutoff).map(p => ({...p, hidden: !!p.hidden, active: p.last_seen > activeCutoff})));
 });
 
 app.post('/admin/settings/save', requireAdmin, (req, res) => {
@@ -681,13 +682,12 @@ function adminHTML() {
       <div class="stat-card"><div class="stat-label">Pending Intake</div><div class="stat-value muted" id="stat-pending">—</div></div>
       <div class="stat-card"><div class="stat-label">Core Protocol</div><div class="stat-value mono" id="stat-version">—</div></div>
     </div>
-    <div class="card"><div class="card-title">Node Roster</div><div id="online-roster"></div></div>
     <div class="card">
       <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
-        VPN Mesh Health
+        Network Roster
         <button class="btn-secondary" style="font-size:10px;padding:2px 10px;" onclick="refreshPeers()">⟳ REFRESH</button>
       </div>
-      <div id="peer-health"><p style="color:var(--muted);font-size:12px;font-family:monospace;">Loading peer data...</p></div>
+      <div id="network-roster"><p style="color:var(--muted);font-size:12px;font-family:monospace;">Loading...</p></div>
     </div>
     <div class="card"><div class="card-title">Generate Access Token</div>
       <div class="form-row"><input type="text" id="new-name" placeholder="Entity Name" /><input type="text" id="new-ip" placeholder="Internal IP (e.g. 192.168.8.x/32)" /></div>
@@ -790,8 +790,8 @@ function adminHTML() {
       document.getElementById('set-allowed').value = config.allowedIPs;
       document.getElementById('set-local').value = config.localIp || '';
       document.getElementById('set-version').value = ver.min_version;
-      renderTokens(tokens); renderOnline(online); renderReports(reports); renderServers(servers); renderRequests(requests);
-      refreshPeers();
+      renderTokens(tokens); renderReports(reports); renderServers(servers); renderRequests(requests);
+      refreshPeers(online);
       document.getElementById('set-udm-host').value = config.udmHost || '';
       document.getElementById('set-udm-user').value = config.udmUser || '';
       document.getElementById('set-udm-iface').value = config.udmInterface || '';
@@ -828,28 +828,7 @@ function adminHTML() {
       }).join('') + '</tbody></table>';
   }
 
-  function renderOnline(online) {
-    document.getElementById('online-roster').innerHTML = online.map(p => {
-      const inactive = !p.active;
-      const tileStyle = inactive ? 'opacity:0.4;filter:saturate(0.2)' : (p.hidden ? 'opacity:0.5' : '');
-      const dotStyle = inactive ? 'background:var(--muted)' : (p.hidden ? 'background:var(--muted)' : '');
-      return \`
-      <div class="online-tile" style="\${tileStyle}">
-        <div class="online-tile-dot" style="\${dotStyle}"></div>
-        <div class="online-tile-name">\${p.name}</div>
-        \${p.hidden ? '<span style="font-size:10px;font-family:monospace;color:var(--muted);border:1px solid var(--muted);padding:1px 6px;border-radius:2px;">INVISIBLE</span>' : ''}
-        \${inactive ? '<span style="font-size:10px;font-family:monospace;color:var(--muted);border:1px solid var(--muted);padding:1px 6px;border-radius:2px;">OFFLINE</span>' : ''}
-        <div class="online-tile-game">\${inactive ? '' : (p.game||'SYSTEM IDLE')}</div>
-        <div style="font-family:monospace; color:var(--muted)">\${p.vpn_ip}</div>
-        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-          <span style="font-size:11px;color:var(--muted)">\${timeAgo(p.last_seen)}</span>
-          <button class="btn-secondary" style="font-size:10px;padding:2px 8px;" onclick="togglePlayerHidden('\${p.name}')">
-            \${p.hidden ? 'UNHIDE' : 'HIDE'}
-          </button>
-        </div>
-      </div>
-    \`;}).join('') || '<p style="color:var(--muted)">No entities detected.</p>';
-  }
+  let _lastOnline = [];
 
   async function togglePlayerHidden(name) {
     await fetch('/admin/player/toggle-hidden', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: adminPassword, name }) });
@@ -936,36 +915,58 @@ function adminHTML() {
     return { label: Math.floor(secs/3600) + 'h ago', cls: 'stale' };
   }
 
-  function renderPeerHealth(peers) {
-    const el = document.getElementById('peer-health');
-    if (!peers || peers.length === 0) { el.innerHTML = '<p style="color:var(--muted);font-size:12px;font-family:monospace;">No peers found on interface.</p>'; return; }
-    el.innerHTML = '<table class="peer-table"><thead><tr><th>Status</th><th>Identity</th><th>VPN IP</th><th>Handshake</th><th>Session RX / TX</th><th>Total RX / TX</th></tr></thead><tbody>' +
+  function renderRoster(peers, online) {
+    const el = document.getElementById('network-roster');
+    // Build lookup: vpn_ip → player data
+    const byIp = {};
+    for (const p of online) byIp[p.vpn_ip.split('/')[0]] = p;
+
+    if (!peers || peers.length === 0) {
+      // No wg data — fall back to heartbeat-only list
+      if (!online.length) { el.innerHTML = '<p style="color:var(--muted);font-size:12px;font-family:monospace;">No nodes detected.</p>'; return; }
+      peers = online.map(p => ({ vpn_ip: p.vpn_ip.split('/')[0], name: p.name, handshake_age: null, rx_bytes: 0, tx_bytes: 0, rx_total: 0, tx_total: 0, pubkey: '' }));
+    }
+
+    el.innerHTML = '<table class="peer-table"><thead><tr><th>Status</th><th>Identity</th><th>VPN IP</th><th>Ping</th><th>Handshake</th><th>Game</th><th>RX / TX</th><th>Actions</th></tr></thead><tbody>' +
       peers.map(p => {
+        const player = byIp[p.vpn_ip] || null;
         const hs = fmtHandshake(p.handshake_age);
+        // If player has active heartbeat, override dot to green regardless of handshake
+        const dotCls = (player && player.active) ? 'active' : hs.cls;
         const hsColor = hs.cls === 'active' ? 'var(--success)' : hs.cls === 'recent' ? 'var(--warn)' : 'var(--muted)';
-        const label = p.name || (p.pubkey.slice(0,12) + '...');
-        return \`<tr>
-          <td><span class="peer-dot \${hs.cls}"></span></td>
-          <td style="color:var(--text)">\${label}<br><span style="font-size:9px;color:var(--muted)">\${p.pubkey.slice(0,16)}...</span></td>
-          <td style="color:var(--accent)">\${p.vpn_ip || '—'}</td>
+        const name = p.name || player?.name || (p.pubkey ? p.pubkey.slice(0,12)+'...' : '—');
+        const ping = player?.ping || '—';
+        const pingColor = (player && player.ping && player.ping !== 'Timed Out' && player.ping !== '---') ? 'var(--success)' : 'var(--muted)';
+        const game = player?.game || '—';
+        const hiddenName = player?.hidden ? \` <span style="font-size:9px;color:var(--muted);border:1px solid var(--muted);padding:0 4px;border-radius:2px;">INVIS</span>\` : '';
+        const hideBtn = player ? \`<button class="btn-secondary" style="font-size:10px;padding:2px 8px;" onclick="togglePlayerHidden('\${player.name}')">\${player.hidden?'UNHIDE':'HIDE'}</button>\` : '';
+        return \`<tr style="\${player && !player.active && !p.handshake_age ? 'opacity:0.35' : ''}">
+          <td><span class="peer-dot \${dotCls}"></span></td>
+          <td style="color:var(--text)">\${name}\${hiddenName}\${p.pubkey ? \`<br><span style="font-size:9px;color:var(--muted)">\${p.pubkey.slice(0,16)}...</span>\` : ''}</td>
+          <td style="color:var(--accent);font-family:monospace">\${p.vpn_ip || '—'}</td>
+          <td style="color:\${pingColor};font-family:monospace">\${ping}</td>
           <td style="color:\${hsColor}">\${hs.label}</td>
-          <td>\${fmtBytes(p.rx_bytes)} / \${fmtBytes(p.tx_bytes)}</td>
-          <td style="color:var(--muted)">\${fmtBytes(p.rx_total)} / \${fmtBytes(p.tx_total)}</td>
+          <td style="color:var(--muted);font-size:12px">\${game}</td>
+          <td style="font-family:monospace;font-size:12px">\${fmtBytes(p.rx_bytes)} / \${fmtBytes(p.tx_bytes)}</td>
+          <td>\${hideBtn}</td>
         </tr>\`;
       }).join('') + '</tbody></table>';
   }
 
-  async function refreshPeers() {
+  async function refreshPeers(online) {
+    if (online) _lastOnline = online;
     try {
       const res = await fetch('/admin/wg/peers', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: adminPassword }) });
       if (res.ok) {
-        renderPeerHealth(await res.json());
+        renderRoster(await res.json(), _lastOnline);
       } else {
         const d = await res.json();
-        document.getElementById('peer-health').innerHTML = \`<p class="peer-error">SSH Error: \${d.error}</p>\`;
+        // Fall back to heartbeat-only roster if SSH fails
+        renderRoster(null, _lastOnline);
+        document.getElementById('network-roster').insertAdjacentHTML('beforeend', \`<p class="peer-error" style="margin-top:8px;">VPN data unavailable: \${d.error}</p>\`);
       }
-    } catch (e) {
-      document.getElementById('peer-health').innerHTML = '<p class="peer-error">Could not reach UDM — check SSH config.</p>';
+    } catch {
+      renderRoster(null, _lastOnline);
     }
   }
 

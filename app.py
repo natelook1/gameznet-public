@@ -730,7 +730,8 @@ def heartbeat_loop():
                     "name": cfg.get("name", ""),
                     "vpn_ip": cfg.get("vpn_ip", ""),
                     "game": detect_game(),
-                    "hidden": _invisible
+                    "hidden": _invisible,
+                    "ping": _telemetry.get("ping", None)
                 }).encode()
                 req = urllib.request.Request(
                     f"{WORKER_URL}/api/heartbeat",
