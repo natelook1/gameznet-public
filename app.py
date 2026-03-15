@@ -55,7 +55,7 @@ def detect_game():
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -753,7 +753,8 @@ def heartbeat_loop():
                     "vpn_ip": cfg.get("vpn_ip", ""),
                     "game": detect_game(),
                     "hidden": _invisible,
-                    "ping": _telemetry.get("ping", None)
+                    "ping": _telemetry.get("ping", None),
+                    "version": VERSION
                 }).encode()
                 req = urllib.request.Request(
                     f"{WORKER_URL}/api/heartbeat",
