@@ -902,6 +902,36 @@ def run_tray(flask_thread):
                 tray.menu = build_menu()
     threading.Thread(target=state_watcher, daemon=True).start()
 
+    # Notify when friends come online
+    def presence_watcher():
+        import urllib.request as _ur
+        known = None  # None = first poll, don't notify yet
+        my_name = None
+        while True:
+            time.sleep(5)
+            if not _connected:
+                known = None
+                continue
+            try:
+                if my_name is None and os.path.exists(CONFIG_FILE):
+                    with open(CONFIG_FILE) as f:
+                        my_name = json.load(f).get("name", "")
+                req = _ur.Request(f"{WORKER_URL}/api/online", headers={"User-Agent": "GamezNET"})
+                with _ur.urlopen(req, timeout=5) as resp:
+                    online = {p["name"] for p in json.loads(resp.read()) if p.get("name") != my_name}
+                if known is None:
+                    known = online
+                else:
+                    for name in online - known:
+                        try:
+                            tray.notify(f"{name} joined GamezNET", "GamezNET")
+                        except Exception:
+                            pass
+                    known = online
+            except Exception:
+                pass
+    threading.Thread(target=presence_watcher, daemon=True).start()
+
     tray.run()
 
 if __name__ == "__main__":
