@@ -714,6 +714,29 @@ def api_alert():
         log.debug("api_alert proxy failed: %s", e)
         return jsonify({"alert": None})
 
+@app.route("/api/<path:subpath>", methods=["GET", "POST"])
+def api_proxy(subpath):
+    """Catch-all proxy for unhandled /api/* routes — forwards to backend."""
+    import urllib.request as _ur
+    try:
+        qs = request.query_string.decode()
+        url = f"{WORKER_URL}/api/{subpath}" + (f"?{qs}" if qs else "")
+        req = _ur.Request(url, headers={"User-Agent": "GamezNET"})
+        with _ur.urlopen(req, timeout=10) as resp:
+            return resp.read(), resp.status, {"Content-Type": resp.headers.get("Content-Type", "application/json")}
+    except Exception as e:
+        log.debug("api proxy failed for %s: %s", subpath, e)
+        return jsonify({"error": str(e)}), 502
+
+@app.route("/auth/<path:subpath>", methods=["GET", "POST"])
+def auth_proxy(subpath):
+    """Proxy /auth/* routes to backend (YouTube OAuth)."""
+    import urllib.request as _ur
+    qs = request.query_string.decode()
+    url = f"{WORKER_URL}/auth/{subpath}" + (f"?{qs}" if qs else "")
+    from flask import redirect
+    return redirect(url)
+
 # ─── Heartbeat Thread ─────────────────────────────────────────────────────────
 
 def heartbeat_loop():
