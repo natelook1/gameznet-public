@@ -579,9 +579,13 @@
     .op-steam-sub { display: flex; gap: 10px; font-size: 10px; color: var(--text-dim); padding-left: 2px; }
     .op-steam-level { color: var(--accent); }
     .op-steam-hrs { color: rgba(0,200,255,0.6); }
-    .op-games-strip { display: flex; gap: 3px; padding-left: 2px; }
-    .op-game-cap { height: 16px; width: auto; border-radius: 1px; opacity: 0.65; transition: opacity 0.15s; cursor: default; }
+    .op-games-strip { display: flex; gap: 4px; padding-left: 2px; flex-wrap: nowrap; }
+    .op-game-cap { height: 20px; width: auto; border-radius: 2px; opacity: 0.65; transition: opacity 0.15s; cursor: default; }
     .op-game-cap:hover { opacity: 1; }
+    .op-ping { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 0.5px; flex-shrink: 0; padding: 1px 5px; border-radius: 2px; }
+    .op-ping.good { color: var(--success); background: rgba(0,232,122,0.08); }
+    .op-ping.ok   { color: var(--warn);    background: rgba(255,170,0,0.08); }
+    .op-ping.bad  { color: var(--danger);  background: rgba(255,51,85,0.08); }
     /* Session profile header */
     .session-profile-row { display: flex; align-items: flex-start; gap: 10px; }
     .session-avatar-wrap { flex-shrink: 0; width: 46px; height: 46px; }
@@ -3085,17 +3089,22 @@
           return parts.length ? `<div class="op-steam-sub">${parts.join('')}</div>` : '';
         })() : '';
         const gamesStrip = lib?.top?.length
-          ? `<div class="op-games-strip">${lib.top.slice(0, 6).map(g =>
+          ? `<div class="op-games-strip">${lib.top.slice(0, 8).map(g =>
               `<img class="op-game-cap" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_sm_120.jpg" title="${g.name} · ${Math.round(g.playtime / 60)}h" loading="lazy" onerror="this.style.display='none'" />`
             ).join('')}</div>`
           : '';
+        const pingHtml = p.ping != null ? (() => {
+          const cls = p.ping < 50 ? 'good' : p.ping < 100 ? 'ok' : 'bad';
+          return `<span class="op-ping ${cls}">${p.ping}ms</span>`;
+        })() : '';
         return `<div class="online-player">
           ${avatar}
           <div class="op-info">
             <div class="op-row1">
               <div class="op-dot"></div>
               <div class="op-name">${p.name}${p.status ? `<span class="op-status">${p.status}</span>` : ''}</div>
-              ${p.game ? `<div style="flex:1;font-size:10px;color:var(--accent);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.game}</div>` : '<div style="flex:1;"></div>'}
+              ${p.game ? `<div style="flex:1;font-size:10px;color:var(--accent);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${p.game}</div>` : '<div style="flex:1;"></div>'}
+              ${pingHtml}
               <div class="op-ip">${p.vpn_ip}</div>
             </div>
             ${steamSub}
