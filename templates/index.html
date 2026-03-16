@@ -1030,7 +1030,12 @@
     .srv-chip.srv-offline { opacity: 0.6; }
     .srv-chip-icon {
       width: 34px; height: 34px; border-radius: 3px; flex-shrink: 0;
-      background: var(--panel) center/cover; overflow: hidden;
+      background: var(--panel) top center/cover; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .srv-chip-icon-letter {
+      font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight: 700;
+      color: rgba(255,255,255,0.7); text-transform: uppercase; user-select: none;
     }
     .srv-chip-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .srv-chip-name { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
@@ -1059,6 +1064,10 @@
     .srv-modal-stat { background:var(--bg2); border:1px solid var(--border); border-radius:3px; padding:8px 10px; display:flex; flex-direction:column; gap:3px; }
     .srv-modal-stat-label { font-family:'Share Tech Mono',monospace; font-size:8px; color:var(--text-dim); letter-spacing:1px; }
     .srv-modal-stat-val { font-family:'Share Tech Mono',monospace; font-size:15px; color:var(--text); }
+    .srv-modal-host { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg2); border:1px solid var(--border); border-radius:3px; }
+    .srv-modal-host-label { font-family:'Share Tech Mono',monospace; font-size:8px; color:var(--text-dim); letter-spacing:1px; flex-shrink:0; }
+    .srv-modal-host-val { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--accent); cursor:pointer; flex:1; }
+    .srv-modal-host-val:hover { color:var(--text); }
     .srv-modal-ports { display:flex; gap:8px; flex-wrap:wrap; }
     .srv-modal-port-btn { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--accent); border:1px solid rgba(0,212,255,0.3); background:rgba(0,212,255,0.05); border-radius:3px; padding:5px 10px; cursor:pointer; letter-spacing:0.5px; transition:all 0.15s; }
     .srv-modal-port-btn:hover { background:rgba(0,212,255,0.12); border-color:var(--accent); }
@@ -2353,6 +2362,10 @@
       </div>
     </div>
     <div class="srv-modal-body">
+      <div class="srv-modal-host" id="srv-modal-host" style="display:none;">
+        <span class="srv-modal-host-label">SERVER IP</span>
+        <span class="srv-modal-host-val" id="srv-modal-host-val" onclick="navigator.clipboard.writeText(this.dataset.ip).then(()=>toast('IP copied!','success'))"></span>
+      </div>
       <div class="srv-modal-stats" id="srv-modal-stats" style="display:none;"></div>
       <div class="srv-modal-ports" id="srv-modal-ports"></div>
       <div id="srv-modal-actions"></div>
@@ -3387,7 +3400,15 @@
     } catch {}
   }
 
-  const _isMinecraft = n => /minecraft/i.test(n);
+  // Matches "minecraft", "mincraft" typo, "bedrock", and "geyser" server names
+  const _isMinecraft = n => /min.?craft|bedrock|geyser/i.test(n);
+
+  // Deterministic pastel-ish color from server name for no-art fallback
+  function _srvColor(name) {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+    return `hsl(${Math.abs(h) % 360},40%,28%)`;
+  }
 
   function renderClientServers(servers) {
     const strip = document.getElementById('server-strip-inner');
@@ -3398,12 +3419,13 @@
     servers = [...servers].sort((a, b) => (order[a.state] ?? 3) - (order[b.state] ?? 3));
     strip.innerHTML = servers.map(s => {
       const cls = ['running','starting','stopping'].includes(s.state) ? s.state : 'offline';
-      const iconStyle = s.steam_appid
-        ? `style="background-image:url('https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/capsule_sm_120.jpg')"`
-        : '';
+      const iconInner = s.steam_appid
+        ? `style="background-image:url('https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/library_600x900.jpg')"`
+        : `style="background:${_srvColor(s.name)}"`;
+      const letterFallback = s.steam_appid ? '' : `<span class="srv-chip-icon-letter">${s.name.substring(0,2)}</span>`;
       return `<div class="srv-chip srv-${cls}" onclick="openSrvModal('${s.id}')">
         <div class="srv-dot ${cls}"></div>
-        <div class="srv-chip-icon" ${iconStyle}></div>
+        <div class="srv-chip-icon" ${iconInner}>${letterFallback}</div>
         <div class="srv-chip-info">
           <div class="srv-chip-name">${s.name}</div>
           <div class="srv-chip-status ${cls}">${s.state}</div>
@@ -3423,10 +3445,21 @@
     banner.style.backgroundImage = s.steam_appid
       ? `url('https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/header.jpg')`
       : '';
+    banner.style.background = s.steam_appid ? '' : _srvColor(s.name);
     document.getElementById('srv-modal-name').textContent = s.name;
     const badge = document.getElementById('srv-modal-badge');
     badge.textContent = s.state;
     badge.className = `srv-modal-badge ${cls}`;
+    // Host IP (always shown)
+    const hostRow = document.getElementById('srv-modal-host');
+    const hostVal = document.getElementById('srv-modal-host-val');
+    if (s.host) {
+      hostVal.textContent = s.host + ' ⧉';
+      hostVal.dataset.ip = s.host;
+      hostRow.style.display = 'flex';
+    } else {
+      hostRow.style.display = 'none';
+    }
     const stats = document.getElementById('srv-modal-stats');
     if (isRunning) {
       stats.style.display = 'grid';
@@ -3438,7 +3471,7 @@
       stats.style.display = 'none';
     }
     const ports = document.getElementById('srv-modal-ports');
-    if (isRunning && s.port) {
+    if (s.port) {
       if (_isMinecraft(s.name)) {
         const bp = s.extra_ports?.[0] || 19132;
         ports.innerHTML = `
