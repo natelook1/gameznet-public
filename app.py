@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.8.6"
+VERSION = "1.8.7"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -774,6 +774,7 @@ def api_alert():
 def api_proxy(subpath):
     """Catch-all proxy for unhandled /api/* routes — forwards to backend."""
     import urllib.request as _ur
+    import urllib.error as _ue
     try:
         qs = request.query_string.decode()
         url = f"{WORKER_URL}/api/{subpath}" + (f"?{qs}" if qs else "")
@@ -782,8 +783,12 @@ def api_proxy(subpath):
         req = _ur.Request(url, data=body, headers={"User-Agent": "GamezNET", "Content-Type": ct})
         with _ur.urlopen(req, timeout=10) as resp:
             return resp.read(), resp.status, {"Content-Type": resp.headers.get("Content-Type", "application/json")}
+    except _ue.HTTPError as e:
+        body = e.read()
+        log.error("api proxy HTTP %s for %s: %s", e.code, subpath, body)
+        return body, e.code, {"Content-Type": e.headers.get("Content-Type", "application/json")}
     except Exception as e:
-        log.debug("api proxy failed for %s: %s", subpath, e)
+        log.error("api proxy failed for %s: %s", subpath, e)
         return jsonify({"error": str(e)}), 502
 
 @app.route("/auth/<path:subpath>", methods=["GET", "POST"])
