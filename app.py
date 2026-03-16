@@ -785,26 +785,41 @@ def api_remote_start_host():
             with open(config_path, "w") as f:
                 f.write(f"enc_id = ''\npassword = '{password}'\nsalt = ''\n")
 
+        # Kill any existing RustDesk so we get a fresh ID log
+        subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True)
+        time.sleep(1)
+
+        # Clear stale ID log so we know any entry we read is fresh
+        if os.path.exists(id_log_path):
+            try:
+                os.remove(id_log_path)
+            except Exception:
+                pass
+
         # Start RustDesk (hashes the password on startup)
-        subprocess.Popen([rustdesk_exe], close_fds=True)
-        time.sleep(4)
+        subprocess.Popen([rustdesk_exe])
+        time.sleep(3)
 
         # Run --get-id to populate the log
-        subprocess.run([rustdesk_exe, "--get-id"], capture_output=True, timeout=5)
-        time.sleep(2)
+        subprocess.run([rustdesk_exe, "--get-id"], capture_output=True, timeout=8)
 
-        # Read ID from log
+        # Poll for the log file — up to 10s
         rustdesk_id = None
-        if os.path.exists(id_log_path):
+        for _ in range(20):
+            time.sleep(0.5)
+            if not os.path.exists(id_log_path):
+                continue
             with open(id_log_path, "r") as f:
                 for line in reversed(f.readlines()):
                     m = re.search(r"Generated id (\d+)", line)
                     if m:
                         rustdesk_id = m.group(1)
                         break
+            if rustdesk_id:
+                break
 
         if not rustdesk_id:
-            return jsonify({"error": "Could not read RustDesk ID"}), 500
+            return jsonify({"error": "Could not read RustDesk ID — try again"}), 500
 
         # Post ID back to backend so helper can poll for it
         import urllib.request as _ur2
