@@ -1028,14 +1028,12 @@
     .srv-chip.srv-running { border-color: rgba(0,232,122,0.3); }
     .srv-chip.srv-running:hover { border-color: rgba(0,232,122,0.7); }
     .srv-chip.srv-offline { opacity: 0.6; }
-    .srv-chip-icon {
-      width: 34px; height: 34px; border-radius: 3px; flex-shrink: 0;
-      background: var(--panel) top center/cover; overflow: hidden;
+    .srv-chip-img { height: 28px; width: auto; border-radius: 2px; flex-shrink: 0; display: block; }
+    .srv-chip-icon-text {
+      height: 28px; width: 50px; border-radius: 2px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-    }
-    .srv-chip-icon-letter {
-      font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight: 700;
-      color: rgba(255,255,255,0.7); text-transform: uppercase; user-select: none;
+      font-family: 'Share Tech Mono', monospace; font-size: 11px; font-weight: 700;
+      color: rgba(255,255,255,0.75); text-transform: uppercase; user-select: none; letter-spacing: 1px;
     }
     .srv-chip-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .srv-chip-name { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
@@ -3419,13 +3417,12 @@
     servers = [...servers].sort((a, b) => (order[a.state] ?? 3) - (order[b.state] ?? 3));
     strip.innerHTML = servers.map(s => {
       const cls = ['running','starting','stopping'].includes(s.state) ? s.state : 'offline';
-      const iconInner = s.steam_appid
-        ? `style="background-image:url('https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/library_600x900.jpg')"`
-        : `style="background:${_srvColor(s.name)}"`;
-      const letterFallback = s.steam_appid ? '' : `<span class="srv-chip-icon-letter">${s.name.substring(0,2)}</span>`;
+      const iconEl = s.steam_appid
+        ? `<img class="srv-chip-img" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/capsule_sm_120.jpg" loading="lazy" onerror="this.style.display='none'" />`
+        : `<div class="srv-chip-icon-text" style="background:${_srvColor(s.name)}">${s.name.substring(0,2)}</div>`;
       return `<div class="srv-chip srv-${cls}" onclick="openSrvModal('${s.id}')">
         <div class="srv-dot ${cls}"></div>
-        <div class="srv-chip-icon" ${iconInner}>${letterFallback}</div>
+        ${iconEl}
         <div class="srv-chip-info">
           <div class="srv-chip-name">${s.name}</div>
           <div class="srv-chip-status ${cls}">${s.state}</div>
@@ -3444,8 +3441,8 @@
     const banner = document.getElementById('srv-modal-banner');
     banner.style.backgroundImage = s.steam_appid
       ? `url('https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/header.jpg')`
-      : '';
-    banner.style.background = s.steam_appid ? '' : _srvColor(s.name);
+      : 'none';
+    banner.style.backgroundColor = s.steam_appid ? '' : _srvColor(s.name);
     document.getElementById('srv-modal-name').textContent = s.name;
     const badge = document.getElementById('srv-modal-badge');
     badge.textContent = s.state;
