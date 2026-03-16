@@ -122,6 +122,19 @@ Click the **✎** icon next to your name in the **Your Session** card to open th
 
 ---
 
+## 🗑️ Uninstalling
+
+Double-click the **"Uninstall GamezNET"** shortcut on your desktop. It will:
+
+- Stop the running app
+- Disconnect and remove the WireGuard VPN tunnel
+- Remove the `gameznet.local` hosts entry
+- Delete all shortcuts and the install directory
+
+WireGuard and Python are left in place — they may be used by other applications.
+
+---
+
 ## 🛠️ Troubleshooting
 
 **App didn't open after installing**
