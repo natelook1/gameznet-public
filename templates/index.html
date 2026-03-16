@@ -537,8 +537,50 @@
       0%, 100% { box-shadow: 0 0 6px rgba(0,232,122,0.8); }
       50%       { box-shadow: 0 0 2px rgba(0,232,122,0.3); }
     }
-    .op-name { flex: 1; color: var(--text); letter-spacing: 1px; }
-    .op-ip   { color: var(--text-dim); font-size: 11px; }
+    .op-name { color: var(--text); letter-spacing: 1px; }
+    .op-ip   { color: var(--text-dim); font-size: 11px; flex-shrink: 0; }
+    .op-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      object-fit: cover; flex-shrink: 0;
+      border: 1px solid rgba(0,200,255,0.2);
+    }
+    .op-avatar-ph {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      background: rgba(0,200,255,0.08); border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace;
+    }
+    .op-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .op-row1 { display: flex; align-items: center; gap: 8px; }
+    .op-steam-sub { display: flex; gap: 10px; font-size: 10px; color: var(--text-dim); padding-left: 2px; }
+    .op-steam-level { color: var(--accent); }
+    .op-steam-hrs { color: rgba(0,200,255,0.6); }
+    .op-games-strip { display: flex; gap: 3px; padding-left: 2px; }
+    .op-game-cap { height: 16px; width: auto; border-radius: 1px; opacity: 0.65; transition: opacity 0.15s; cursor: default; }
+    .op-game-cap:hover { opacity: 1; }
+    /* Steam section in Your Session card */
+    .steam-section {
+      border-top: 1px solid var(--border);
+      padding-top: 10px; margin-top: 6px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .steam-link-btn {
+      flex: 1; background: transparent; border: 1px solid #1b9af7; color: #1b9af7;
+      font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px;
+      padding: 6px 10px; cursor: pointer; border-radius: 2px; transition: all 0.15s;
+    }
+    .steam-link-btn:hover { background: rgba(27,154,247,0.1); }
+    .steam-linked-info { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .steam-self-avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(0,200,255,0.3); flex-shrink: 0; }
+    .steam-self-text { flex: 1; min-width: 0; }
+    .steam-self-name { font-size: 11px; color: var(--accent); font-family: 'Share Tech Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .steam-self-stats { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; }
+    .steam-unlink-btn {
+      background: transparent; border: 1px solid var(--border2); color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 1px;
+      padding: 4px 7px; cursor: pointer; border-radius: 2px; flex-shrink: 0;
+    }
+    .steam-unlink-btn:hover { border-color: var(--danger); color: var(--danger); }
     .online-empty {
       font-family: 'Share Tech Mono', monospace;
       font-size: 12px;
@@ -1708,6 +1750,17 @@
               </div>
             </div>
             <button class="remote-help-btn" id="remote-help-btn" onclick="openRemote()" disabled>🛟 GET HELP FROM A PLAYER</button>
+            <div class="steam-section" id="steam-section">
+              <div class="steam-linked-info" id="steam-linked-view" style="display:none;">
+                <img class="steam-self-avatar" id="steam-avatar-self" src="" />
+                <div class="steam-self-text">
+                  <div class="steam-self-name" id="steam-name-self"></div>
+                  <div class="steam-self-stats" id="steam-stats-self"></div>
+                </div>
+                <button class="steam-unlink-btn" onclick="unlinkSteam()">UNLINK</button>
+              </div>
+              <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM ACCOUNT</button>
+            </div>
           </div>
         </div>
 
@@ -1892,7 +1945,13 @@
     name: '',
     clientIp: '',
     connectedAt: null,
-    updateRequired: false
+    updateRequired: false,
+    steam_id: null,
+    steam_name: null,
+    steam_avatar: null,
+    steam_level: 0,
+    steam_game_count: 0,
+    steam_library: null,
   };
   let pingHistory = [];
 
@@ -2122,6 +2181,14 @@
 
       if (state.provisioned) {
         showProvisioned();
+        // Fetch steam profile from server (may have been linked/updated since last session)
+        try {
+          const sp = await fetch(`{{ worker_url }}/api/steam/profile?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+          if (sp.steam_id) {
+            Object.assign(state, { steam_id: sp.steam_id, steam_name: sp.steam_name, steam_avatar: sp.steam_avatar, steam_level: sp.steam_level || 0, steam_game_count: sp.steam_game_count || 0, steam_library: sp.steam_library || null });
+          }
+        } catch {}
+        updateSteamUI();
         const sres = await fetch('/api/status');
         const s    = await sres.json();
         state.connected = s.connected;
@@ -2172,10 +2239,17 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ private_key: data.private_key, client_ip: data.client_ip, name: data.name, steam_id: data.steam_id || null })
       });
-      state.provisioned = true;
-      state.name        = data.name;
-      state.clientIp    = data.client_ip;
+      state.provisioned       = true;
+      state.name              = data.name;
+      state.clientIp          = data.client_ip;
+      state.steam_id          = data.steam_id || null;
+      state.steam_name        = data.steam_name || null;
+      state.steam_avatar      = data.steam_avatar || null;
+      state.steam_level       = data.steam_level || 0;
+      state.steam_game_count  = data.steam_game_count || 0;
+      state.steam_library     = data.steam_library || null;
       showProvisioned();
+      updateSteamUI();
       toast(`Welcome, ${data.name}! You're all set.`, 'success');
     } catch (e) {
       toast('Network error — check your internet connection', 'error');
@@ -2520,14 +2594,41 @@
       document.title = `GamezNET (${online.length} online)`;
       const lbl = el.closest('.online-card')?.querySelector('.section-label');
       if (lbl) lbl.textContent = `Who's Online  ·  ${online.length}`;
-      el.innerHTML = online.map(p =>
-        `<div class="online-player">
-           <div class="op-dot"></div>
-           <div class="op-name">${p.name}${p.status ? `<span class="op-status">${p.status}</span>` : ''}</div>
-           ${p.game ? `<div style="flex:1; font-size:10px; color:var(--accent); letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.game}</div>` : '<div style="flex:1;"></div>'}
-           <div class="op-ip">${p.vpn_ip}</div>
-         </div>`
-      ).join('');
+      el.innerHTML = online.map(p => {
+        const avatar = p.steam_avatar
+          ? `<img class="op-avatar" src="${p.steam_avatar}" loading="lazy" />`
+          : `<div class="op-avatar-ph">${p.name[0].toUpperCase()}</div>`;
+        let lib = null;
+        try { lib = p.steam_library ? JSON.parse(p.steam_library) : null; } catch {}
+        const steamSub = p.steam_id ? (() => {
+          const parts = [];
+          if (p.steam_level != null) parts.push(`<span class="op-steam-level">Lv.${p.steam_level}</span>`);
+          if (p.steam_game_count) parts.push(`<span>${p.steam_game_count} games</span>`);
+          if (lib?.top?.length) {
+            const top = lib.top[0];
+            parts.push(`<span class="op-steam-hrs">${Math.round(top.playtime / 60)}h ${top.name}</span>`);
+          }
+          return parts.length ? `<div class="op-steam-sub">${parts.join('')}</div>` : '';
+        })() : '';
+        const gamesStrip = lib?.top?.length
+          ? `<div class="op-games-strip">${lib.top.slice(0, 6).map(g =>
+              `<img class="op-game-cap" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_sm_120.jpg" title="${g.name} · ${Math.round(g.playtime / 60)}h" loading="lazy" onerror="this.style.display='none'" />`
+            ).join('')}</div>`
+          : '';
+        return `<div class="online-player">
+          ${avatar}
+          <div class="op-info">
+            <div class="op-row1">
+              <div class="op-dot"></div>
+              <div class="op-name">${p.name}${p.status ? `<span class="op-status">${p.status}</span>` : ''}</div>
+              ${p.game ? `<div style="flex:1;font-size:10px;color:var(--accent);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.game}</div>` : '<div style="flex:1;"></div>'}
+              <div class="op-ip">${p.vpn_ip}</div>
+            </div>
+            ${steamSub}
+            ${gamesStrip}
+          </div>
+        </div>`;
+      }).join('');
     } catch {}
   }
   setInterval(refreshOnline, 30000);
@@ -3240,6 +3341,56 @@
   }
   document.getElementById('rename-overlay').addEventListener('click', e => { if (e.target.id === 'rename-overlay') closeRename(); });
   document.getElementById('rename-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') closeRename(); });
+
+  // ── Steam Integration ──────────────────────────────────────────────────────
+  function updateSteamUI() {
+    const linked = document.getElementById('steam-linked-view');
+    const btn    = document.getElementById('steam-link-btn');
+    if (!linked || !btn) return;
+    if (state.steam_id) {
+      linked.style.display = 'flex';
+      btn.style.display    = 'none';
+      document.getElementById('steam-avatar-self').src = state.steam_avatar || '';
+      document.getElementById('steam-name-self').textContent = state.steam_name || state.steam_id;
+      const lvl = state.steam_level ? `Lv.${state.steam_level}` : '';
+      const cnt = state.steam_game_count ? `${state.steam_game_count} games` : '';
+      document.getElementById('steam-stats-self').textContent = [lvl, cnt].filter(Boolean).join(' · ');
+    } else {
+      linked.style.display = 'none';
+      btn.style.display    = '';
+    }
+  }
+
+  async function linkSteam() {
+    if (!state.name) return;
+    try {
+      await fetch('/api/steam/link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
+      toast('Steam login opened — complete it in your browser', 'info');
+      // Poll server until the link appears (up to 5 min)
+      const poll = setInterval(async () => {
+        try {
+          const d = await fetch(`{{ worker_url }}/api/steam/profile?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+          if (d.steam_id) {
+            clearInterval(poll);
+            Object.assign(state, { steam_id: d.steam_id, steam_name: d.steam_name, steam_avatar: d.steam_avatar, steam_level: d.steam_level, steam_game_count: d.steam_game_count, steam_library: d.steam_library });
+            updateSteamUI();
+            toast(`Steam linked: ${d.steam_name || d.steam_id}`, 'success');
+          }
+        } catch {}
+      }, 3000);
+      setTimeout(() => clearInterval(poll), 5 * 60 * 1000);
+    } catch { toast('Failed to open Steam link', true); }
+  }
+
+  async function unlinkSteam() {
+    if (!state.name) return;
+    try {
+      await fetch('{{ worker_url }}/api/steam/unlink', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
+      Object.assign(state, { steam_id: null, steam_name: null, steam_avatar: null, steam_level: 0, steam_game_count: 0, steam_library: null });
+      updateSteamUI();
+      toast('Steam account unlinked', 'info');
+    } catch { toast('Failed to unlink Steam', true); }
+  }
 
   // ── Remote Assistance ──────────────────────────────────────────────────────
   const remoteState = { active: false, role: null, helper: null, requester: null, pollTimer: null, _sessionPass: null, _toastTimer: null, _steps: [] };
