@@ -112,7 +112,13 @@ The **YouTube** tab lets you browse and watch gaming videos without leaving the 
 
 ## 💬 Player Status
 
-Set a custom status visible to everyone on the network. Use the preset buttons (**AFK**, **BRB**, **Gaming**) or type your own message. Your status appears next to your name in the online player list.
+Set a custom status visible to everyone on the network. Use the preset buttons (**AFK**, **BRB**, **Gaming**) or type your own message. Your status appears next to your name in the online player list. Your status is saved locally and restored automatically after an app update or restart.
+
+---
+
+## ✏️ Changing Your Name
+
+Click the **✎** icon next to your name in the **Your Session** card to open the rename dialog. Enter a new name (2–24 characters, letters/numbers/spaces/dashes only) and click **Save**. The change is validated against your VPN identity server-side and takes effect immediately.
 
 ---
 
@@ -201,6 +207,10 @@ The **Configuration** card has two tabs:
 | Support Channel ID | Private Discord channel for player support request notifications |
 | Steam API Key | Steam Web API key — enables game detection via Steam |
 
+### Admin Panel — Incident Reports
+
+The **Incident Reports** section shows player-submitted error reports. Each report has a **Dismiss** button to mark it read, and a **Clear all from [player]** button to delete every report from that player at once. Reports are rate-limited to one per 5 minutes per player.
+
 ### Admin Panel — Messages
 
 The **Messages** card lets the admin post a **Message of the Day** (shown in the banner on every client) and a timed **Broadcast Alert** (shown as a coloured banner and triggers a tray notification on all connected clients).
@@ -250,7 +260,8 @@ All variables are loaded from `/etc/gameznet/.env` at deploy time. Credentials a
 | `/api/session` | GET | Active scheduled session (auto-expires 2h after start) |
 | `/api/session/set` | POST | Create or replace scheduled session |
 | `/api/session/clear` | POST | Remove active session |
-| `/api/report` | POST | Submit player support request |
+| `/api/rename` | POST | Change display name — validated by VPN IP + current name |
+| `/api/report` | POST | Submit player support request (rate-limited: 1 per 5 min per player) |
 | `/api/youtube/category` | GET | Curated videos by category |
 | `/api/youtube/search` | GET | YouTube search proxy |
 | `/api/youtube/feed` | GET | Personalised feed for authenticated user |
