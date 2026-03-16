@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.14.8"
+VERSION = "1.14.9"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
