@@ -68,6 +68,8 @@ When you're done, click **Disconnect** in the app or right-click the system tray
 
 You'll get a **system tray notification** when a friend joins or leaves the network while you're connected, and when the admin posts a broadcast alert.
 
+The three dashboard panels (**Network**, **Your Session / Who's Online**, **Game Servers**) can be dragged into any order — grab the `· · ·` handle at the top of each column and drop it where you want it. Your layout is saved automatically.
+
 ---
 
 ## 🖥️ Game Servers
@@ -90,11 +92,11 @@ The admin can schedule a session from the **+ Schedule Session** button below th
 
 ## 🎙️ Discord
 
-The **Home** tab includes a live **gamEZnet Discord** panel showing:
+The **Discord** tab shows a live view of the gamEZnet server:
 
 - Member list with avatars and voice channel activity
-- Online and total member counts, refreshed every 30 seconds
-- **Join Discord** button
+- Online count shown as a badge directly in the tab header — visible at a glance without opening the tab
+- Total member count and **Join Discord** button
 
 ---
 
@@ -122,17 +124,32 @@ Click the **✎** icon next to your name in the **Your Session** card to open th
 
 ---
 
-## 🛟 Remote Assistance *(in development)*
+## 🔵 Steam Account
+
+Link your Steam account once to unlock richer player cards across the network.
+
+In the **Your Session** card, click **⊕ LINK STEAM ACCOUNT**. Your default browser opens a Steam login page — sign in to verify ownership, then close the window. Your profile is linked automatically.
+
+Once linked, your player card in the **Who's Online** list shows:
+
+- Steam avatar and display name
+- Steam level and total games owned
+- Top-played game with hours
+- Game capsule strip — your 6 most-played games with hover tooltips
+
+Steam profile data is cached and refreshed every 6 hours. You can unlink at any time from the **Your Session** card.
+
+---
+
+## 🛟 Remote Assistance
 
 Players can request remote help directly from other online players — no admin involvement needed.
 
-When you need help, click **Get Help from a Player** in the Your Session card. Select who you want help from, add an optional message describing the issue, and send the request. The other player gets a notification and can accept or decline.
+When you need help, click **Get Help from a Player** in the Your Session card. Select who you want help from, add an optional message describing the issue, and send the request. The other player gets a sound notification and can accept or decline.
 
-If they accept, a secure remote desktop session is established automatically over the WireGuard VPN using **RustDesk** — a free, open-source remote desktop tool. RustDesk is downloaded on first use and cached locally. The connection is direct and peer-to-peer; no traffic passes through a relay server.
+If they accept, a progress modal walks both sides through the connection. A secure remote desktop session is established automatically over the WireGuard VPN using **RustDesk** — a free, open-source remote desktop tool. RustDesk is downloaded on first use and cached locally. The connection is direct and peer-to-peer; no traffic passes through a relay server.
 
-Either player can end the session at any time. RustDesk is left installed for future use and is removed cleanly if you uninstall GamezNET.
-
-> **Note:** This feature is currently in development. End-to-end testing is in progress.
+Either player can cancel at any time using the **CANCEL** button in the modal. When one side ends the session, the other side's modal closes automatically.
 
 ---
 
@@ -201,7 +218,7 @@ Message the server admin. Running the install command again solves 99% of issues
 | YouTube Data API v3 | Server-side video category browsing (30-min cache) |
 | YouTube OAuth2 | Sign in with Google for personalised feed |
 | Discord Bot API v10 | Live member list, online counts, voice activity, and alert/support notifications |
-| Steam Web API | Game detection via player summaries |
+| Steam Web API | Steam OpenID auth, player profile linking, avatar, level, game library |
 
 ### Requirements
 
@@ -232,7 +249,7 @@ The **Configuration** card has two tabs:
 | Discord Bot Token | Bot token for the gamEZnet Discord server |
 | Alerts Channel ID | Discord channel ID for server start/stop notifications |
 | Support Channel ID | Private Discord channel for player support request notifications |
-| Steam API Key | Steam Web API key — enables game detection via Steam |
+| Steam API Key | Steam Web API key — enables game detection, profile linking, avatar + level + library |
 
 ### Admin Panel — Incident Reports
 
@@ -306,6 +323,11 @@ All variables are loaded from `/etc/gameznet/.env` at deploy time. Credentials a
 | `/api/remote/ready` | POST | Host posts RustDesk ID once started |
 | `/api/remote/status` | GET | Poll session status and credentials |
 | `/api/remote/end` | POST | End the remote session |
+| `/api/remote/connected` | POST | Helper confirms RustDesk launched |
+| `/auth/steam` | GET | Redirect to Steam OpenID login |
+| `/auth/steam/callback` | GET | Steam OpenID callback — verify, fetch profile, link token |
+| `/api/steam/profile` | GET | Fetch cached Steam profile by player name |
+| `/api/steam/unlink` | POST | Remove Steam link from a token |
 
 </details>
 
