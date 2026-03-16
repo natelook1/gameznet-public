@@ -1477,11 +1477,13 @@
       left: 0; border-left: none; border-radius: 0 8px 8px 0;
     }
     .chat-float.chat-minimized {
-      height: 36px; overflow: hidden;
+      height: 36px; width: 164px; overflow: hidden;
     }
+    .chat-float.chat-minimized .chat-float-hdr { border-bottom: none; cursor: grab; }
     .chat-float.chat-dragging {
       border-radius: 6px !important; border: 1px solid var(--accent) !important;
       box-shadow: 0 8px 32px rgba(0,212,255,0.2); transition: none !important;
+      width: 300px !important;
     }
     .chat-float-hdr {
       display: flex;
@@ -4637,7 +4639,8 @@
     let dock = JSON.parse(localStorage.getItem('gz-chat-dock') || 'null') || { side: 'right', top: 180 };
 
     function clampTop(t) {
-      return Math.max(44, Math.min(window.innerHeight - (minimized ? 36 : 290) - 44, t));
+      const h = minimized ? 36 : 290;
+      return Math.max(44, Math.min(window.innerHeight - h - 48, t));
     }
     function applyPos() {
       panel.style.top    = clampTop(dock.top) + 'px';
@@ -4664,10 +4667,6 @@
       if (!minimized) badge.style.display = 'none';
     };
 
-    panel.addEventListener('click', e => {
-      if (minimized && !e.target.closest('.chat-float-btn')) toggleChatFloat();
-    });
-
     window._chatUnreadCount = 0;
     window._chatMarkUnread = function() {
       if (!minimized) return;
@@ -4675,32 +4674,43 @@
       badge.textContent = window._chatUnreadCount;
       badge.style.display = '';
     };
-    panel.addEventListener('click', () => { window._chatUnreadCount = 0; badge.style.display = 'none'; });
 
-    // Edge-snap drag
-    let dragging = false, ox = 0, oy = 0;
+    // Edge-snap drag — works whether minimized or expanded
+    // Distinguish drag vs click by movement distance
+    let dragging = false, didDrag = false, ox = 0, oy = 0, sx = 0, sy = 0;
     hdr.addEventListener('mousedown', e => {
       if (e.target.closest('.chat-float-btn')) return;
-      if (minimized) return;
-      dragging = true;
+      dragging = true; didDrag = false;
       const r = panel.getBoundingClientRect();
       ox = e.clientX - r.left;
       oy = e.clientY - r.top;
-      panel.classList.remove('chat-docked-left', 'chat-docked-right');
-      panel.classList.add('chat-dragging');
-      panel.style.left = panel.style.right = panel.style.bottom = '';
-      panel.style.top  = r.top  + 'px';
-      panel.style.left = r.left + 'px';
+      sx = e.clientX; sy = e.clientY;
       e.preventDefault();
     });
     document.addEventListener('mousemove', e => {
       if (!dragging) return;
+      if (!didDrag && (Math.abs(e.clientX - sx) > 5 || Math.abs(e.clientY - sy) > 5)) {
+        didDrag = true;
+        const r = panel.getBoundingClientRect();
+        panel.classList.remove('chat-docked-left', 'chat-docked-right');
+        panel.classList.add('chat-dragging');
+        panel.style.left = panel.style.right = panel.style.bottom = '';
+        panel.style.top  = r.top  + 'px';
+        panel.style.left = r.left + 'px';
+      }
+      if (!didDrag) return;
       panel.style.left = (e.clientX - ox) + 'px';
       panel.style.top  = (e.clientY - oy) + 'px';
     });
-    document.addEventListener('mouseup', () => {
+    document.addEventListener('mouseup', e => {
       if (!dragging) return;
       dragging = false;
+      if (!didDrag) {
+        // It was a click — toggle expand/collapse if minimized
+        if (minimized && !e.target.closest('.chat-float-btn')) toggleChatFloat();
+        window._chatUnreadCount = 0; badge.style.display = 'none';
+        return;
+      }
       panel.classList.remove('chat-dragging');
       const r = panel.getBoundingClientRect();
       dock.side = (r.left + r.width / 2) < window.innerWidth / 2 ? 'left' : 'right';
