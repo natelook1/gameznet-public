@@ -1354,21 +1354,32 @@
     }
     .remote-help-btn:hover { border-color:var(--accent); color:var(--accent); }
     .remote-help-btn:disabled { opacity:0.4; cursor:not-allowed; }
-    .remote-status-card {
-      margin-top:10px; padding:10px 12px; background:var(--bg);
-      border:1px solid var(--accent); border-radius:3px; font-size:11px;
-      display:none;
-    }
-    .remote-status-card.active { display:block; }
-    .remote-status-label { color:var(--accent); font-family:'Share Tech Mono',monospace; letter-spacing:1px; margin-bottom:4px; }
-    .remote-status-msg { color:var(--text-dim); }
-    .remote-end-btn {
-      margin-top:8px; padding:4px 12px; background:none;
-      border:1px solid var(--danger); border-radius:3px;
-      color:var(--danger); font-family:'Share Tech Mono',monospace;
-      font-size:10px; letter-spacing:1px; cursor:pointer;
-    }
-    .remote-end-btn:hover { background:var(--danger); color:white; }
+    /* Remote assistance progress modal */
+    #remote-progress { display:none; background:var(--surface); border:1px solid var(--border2); border-radius:4px; padding:24px; max-width:380px; width:92%; }
+    .rp-header { margin-bottom:18px; }
+    .rp-title { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--accent); letter-spacing:2px; text-transform:uppercase; margin-bottom:4px; }
+    .rp-who { font-size:12px; color:var(--text-dim); }
+    .rp-steps { list-style:none; padding:0; margin:0 0 14px; }
+    .rp-step { display:flex; align-items:center; gap:10px; padding:6px 0; font-size:12px; color:var(--muted); border-bottom:1px solid rgba(255,255,255,0.03); transition:color 0.2s; }
+    .rp-step:last-child { border-bottom:none; }
+    .rp-step.rp-done { color:var(--text-dim); }
+    .rp-step.rp-active { color:var(--accent); font-weight:500; }
+    .rp-icon { width:16px; text-align:center; font-size:11px; flex-shrink:0; font-family:'Share Tech Mono',monospace; }
+    .rp-step.rp-active .rp-icon { animation:rp-pulse 1.2s ease-in-out infinite; }
+    @keyframes rp-pulse { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+    .rp-bar-track { height:2px; background:var(--border); border-radius:1px; margin-bottom:16px; overflow:hidden; }
+    .rp-bar-fill { height:100%; background:var(--accent); border-radius:1px; transition:width 0.5s cubic-bezier(.4,0,.2,1), background 0.4s; width:0; }
+    .rp-bar-fill.rp-complete { background:var(--success); }
+    .rp-creds { display:none; padding:10px 12px; background:var(--bg); border:1px solid var(--border2); border-radius:3px; margin-bottom:16px; }
+    .rp-creds-label { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:1px; margin-bottom:8px; }
+    .rp-cred-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; }
+    .rp-cred-row:last-child { margin-bottom:0; }
+    .rp-cred-key { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text-dim); letter-spacing:1px; }
+    .rp-cred-val { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text); cursor:pointer; }
+    .rp-cred-val:hover { color:var(--accent); }
+    .rp-foot { display:flex; justify-content:flex-end; }
+    .rp-cancel-btn { padding:5px 16px; background:none; border:1px solid var(--danger); border-radius:3px; color:var(--danger); font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:1px; cursor:pointer; transition:all 0.15s; }
+    .rp-cancel-btn:hover { background:var(--danger); color:white; }
     /* Incoming request toast */
     #remote-incoming {
       display:none; position:fixed; bottom:24px; right:24px; z-index:2000;
@@ -1480,7 +1491,7 @@
 
   <!-- Remote Assistance — request modal -->
   <div id="remote-overlay">
-    <div class="sched-modal" style="max-width:380px;">
+    <div class="sched-modal" id="remote-request-modal" style="max-width:380px;">
       <div class="sched-modal-title">🛟 REQUEST HELP</div>
       <div id="remote-modal-body">
         <div style="margin-bottom:14px;font-size:12px;color:var(--text-dim);">
@@ -1502,16 +1513,21 @@
           <button class="btn-primary" id="remote-send-btn" onclick="submitRemoteRequest()">Send Request</button>
         </div>
       </div>
-      <div id="remote-modal-waiting" style="display:none;text-align:center;padding:16px 0;">
-        <div style="font-size:24px;margin-bottom:10px;">⏳</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:1px;">WAITING FOR RESPONSE</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-top:6px;" id="remote-waiting-name"></div>
-        <button class="remote-end-btn" style="margin-top:16px;" onclick="cancelRemoteRequest()">Cancel Request</button>
+    </div>
+    <div id="remote-progress">
+      <div class="rp-header">
+        <div class="rp-title">🛟 REMOTE ASSISTANCE</div>
+        <div class="rp-who" id="rp-who"></div>
       </div>
-      <div id="remote-modal-connecting" style="display:none;text-align:center;padding:16px 0;">
-        <div style="font-size:24px;margin-bottom:10px;">🔗</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:1px;">STARTING RUSTDESK...</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-top:6px;">Setting up secure connection</div>
+      <ul class="rp-steps" id="rp-steps-list"></ul>
+      <div class="rp-bar-track"><div class="rp-bar-fill" id="rp-bar"></div></div>
+      <div class="rp-creds" id="rp-creds">
+        <div class="rp-creds-label">CONNECTION DETAILS — CLICK TO COPY</div>
+        <div class="rp-cred-row"><span class="rp-cred-key">ID</span><span class="rp-cred-val" id="rp-cred-id" onclick="copyText(this.textContent)">—</span></div>
+        <div class="rp-cred-row"><span class="rp-cred-key">PASSWORD</span><span class="rp-cred-val" id="rp-cred-pass" onclick="copyText(this.textContent)">—</span></div>
+      </div>
+      <div class="rp-foot">
+        <button class="rp-cancel-btn" id="rp-cancel-btn" onclick="endRemoteSession()">CANCEL</button>
       </div>
     </div>
   </div>
@@ -1692,46 +1708,6 @@
               </div>
             </div>
             <button class="remote-help-btn" id="remote-help-btn" onclick="openRemote()" disabled>🛟 GET HELP FROM A PLAYER</button>
-            <!-- host: waiting for helper to accept -->
-            <div class="remote-status-card" id="rsc-pending" style="display:none;">
-              <div class="remote-status-label">⏳ WAITING FOR RESPONSE</div>
-              <div class="remote-status-msg" id="rsc-pending-msg"></div>
-              <div id="rsc-pending-preview" style="display:none;font-size:11px;color:var(--text-dim);font-style:italic;margin-bottom:10px;padding:6px 8px;background:var(--bg2);border-left:2px solid var(--border2);border-radius:0 3px 3px 0;"></div>
-              <button class="remote-end-btn" onclick="cancelRemoteRequest()">Cancel</button>
-            </div>
-            <!-- host: helper accepted, starting rustdesk -->
-            <div class="remote-status-card" id="rsc-accepted" style="display:none;">
-              <div class="remote-status-label">✓ ACCEPTED — STARTING RUSTDESK</div>
-              <div class="remote-status-msg">Getting your RustDesk ID...</div>
-            </div>
-            <!-- host: session active -->
-            <div class="remote-status-card" id="rsc-host-active" style="display:none;">
-              <div class="remote-status-label">SESSION ACTIVE</div>
-              <div class="remote-status-msg" id="rsc-host-active-msg"></div>
-              <button class="remote-end-btn" onclick="endRemoteSession()">END SESSION</button>
-            </div>
-            <!-- helper: waiting for host rustdesk id -->
-            <div class="remote-status-card" id="rsc-helper-waiting" style="display:none;">
-              <div class="remote-status-label">⏳ WAITING FOR HOST</div>
-              <div class="remote-status-msg" id="rsc-helper-waiting-msg"></div>
-              <button class="remote-end-btn" onclick="endRemoteSession()">Cancel</button>
-            </div>
-            <!-- helper: connecting -->
-            <div class="remote-status-card" id="rsc-helper-connecting" style="display:none;">
-              <div class="remote-status-label">🔗 CONNECTING</div>
-              <div class="remote-status-msg">Launching RustDesk...</div>
-            </div>
-            <!-- gui fallback (either side) -->
-            <div class="remote-status-card" id="rsc-gui" style="display:none;">
-              <div class="remote-status-label">SESSION ACTIVE</div>
-              <div class="remote-status-msg">Open RustDesk and connect manually</div>
-              <div class="remote-gui-info">
-                <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px;">RUSTDESK CREDENTIALS — CLICK TO COPY</div>
-                <div class="cred-row"><span class="cred-key">ID</span><span class="cred-val" id="remote-cred-id" onclick="copyText(this.textContent)">—</span></div>
-                <div class="cred-row"><span class="cred-key">Password</span><span class="cred-val" id="remote-cred-pass" onclick="copyText(this.textContent)">—</span></div>
-              </div>
-              <button class="remote-end-btn" onclick="endRemoteSession()">END SESSION</button>
-            </div>
           </div>
         </div>
 
@@ -2646,6 +2622,25 @@
     } catch(e) {}
   }
 
+  function playNotificationSound() {
+    try {
+      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const beep = (freq, start) => {
+        const osc = _audioCtx.createOscillator();
+        const gain = _audioCtx.createGain();
+        osc.connect(gain); gain.connect(_audioCtx.destination);
+        osc.frequency.value = freq; osc.type = 'sine';
+        gain.gain.setValueAtTime(0, _audioCtx.currentTime + start);
+        gain.gain.linearRampToValueAtTime(0.2, _audioCtx.currentTime + start + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + start + 0.28);
+        osc.start(_audioCtx.currentTime + start);
+        osc.stop(_audioCtx.currentTime + start + 0.3);
+      };
+      const play = () => { beep(660, 0); beep(880, 0.18); };
+      if (_audioCtx.state === 'suspended') _audioCtx.resume().then(play).catch(() => {}); else play();
+    } catch(e) {}
+  }
+
   setInterval(pollChat, 3000);
 
   // ── Full Route (route all traffic through VPN) ─────────────────────────────
@@ -3247,14 +3242,56 @@
   document.getElementById('rename-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') closeRename(); });
 
   // ── Remote Assistance ──────────────────────────────────────────────────────
-  const remoteState = { active: false, role: null, helper: null, requester: null, pollTimer: null, _sessionPass: null, _toastTimer: null };
+  const remoteState = { active: false, role: null, helper: null, requester: null, pollTimer: null, _sessionPass: null, _toastTimer: null, _steps: [] };
 
-  function _showRsc(id) {
-    ['rsc-pending','rsc-accepted','rsc-host-active','rsc-helper-waiting','rsc-helper-connecting','rsc-gui'].forEach(i => {
-      document.getElementById(i).style.display = i === id ? '' : 'none';
-    });
+  const _hostSteps  = n => [`Request sent to ${n}`, `Waiting for ${n} to accept`, `${n} accepted`, `Starting RustDesk`, `Connection ID ready`, `${n} is connecting`, `Session active`];
+  const _helperSteps = n => [`Accepted ${n}'s request`, `Waiting for ${n} to start RustDesk`, `Host ready — got connection ID`, `Launching RustDesk`, `Connected to ${n}`];
+
+  function _rpInit(role, name) {
+    remoteState._steps = role === 'host' ? _hostSteps(name) : _helperSteps(name);
+    document.getElementById('rp-who').textContent = role === 'host' ? `Getting help from ${name}` : `Helping ${name}`;
+    document.getElementById('rp-steps-list').innerHTML = remoteState._steps.map((s, i) =>
+      `<li class="rp-step" id="rp-step-${i}"><span class="rp-icon" id="rp-icon-${i}">○</span><span>${s}</span></li>`
+    ).join('');
+    document.getElementById('rp-creds').style.display = 'none';
+    const bar = document.getElementById('rp-bar');
+    bar.style.width = '0%'; bar.classList.remove('rp-complete');
   }
-  function _hideAllRsc() { _showRsc(null); }
+
+  function _rpStep(n, isDone) {
+    const total = remoteState._steps.length;
+    remoteState._steps.forEach((_, i) => {
+      const el = document.getElementById(`rp-step-${i}`);
+      const ic = document.getElementById(`rp-icon-${i}`);
+      if (!el) return;
+      if (i < n)        { el.className = 'rp-step rp-done';   ic.textContent = '✓'; }
+      else if (i === n) { el.className = isDone ? 'rp-step rp-done' : 'rp-step rp-active'; ic.textContent = isDone ? '●' : '◈'; }
+      else              { el.className = 'rp-step';            ic.textContent = '○'; }
+    });
+    const bar = document.getElementById('rp-bar');
+    bar.style.width = (isDone ? 100 : Math.round(n / (total - 1) * 100)) + '%';
+    if (isDone) bar.classList.add('rp-complete');
+    const btn = document.getElementById('rp-cancel-btn');
+    if (btn) btn.textContent = isDone ? 'END SESSION' : 'CANCEL';
+  }
+
+  function _rpShowCreds(id, pass) {
+    document.getElementById('rp-cred-id').textContent = id;
+    document.getElementById('rp-cred-pass').textContent = pass;
+    document.getElementById('rp-creds').style.display = '';
+  }
+
+  function _rpShow() {
+    document.getElementById('remote-request-modal').style.display = 'none';
+    document.getElementById('remote-progress').style.display = '';
+    document.getElementById('remote-overlay').classList.add('active');
+  }
+
+  function _rpHide() {
+    document.getElementById('remote-overlay').classList.remove('active');
+    document.getElementById('remote-request-modal').style.display = '';
+    document.getElementById('remote-progress').style.display = 'none';
+  }
 
   function openRemote() {
     const sel = document.getElementById('remote-helper-select');
@@ -3263,16 +3300,16 @@
       .map(el => el.firstChild?.textContent?.trim() || el.textContent.trim())
       .filter(n => n && n !== state.name)
       .forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
-    document.getElementById('remote-modal-body').style.display = '';
-    document.getElementById('remote-modal-waiting').style.display = 'none';
-    document.getElementById('remote-modal-connecting').style.display = 'none';
     document.getElementById('remote-modal-error').style.display = 'none';
     document.getElementById('remote-msg-input').value = '';
+    document.getElementById('remote-send-btn').disabled = false;
+    document.getElementById('remote-request-modal').style.display = '';
+    document.getElementById('remote-progress').style.display = 'none';
     document.getElementById('remote-overlay').classList.add('active');
   }
 
   function closeRemote() {
-    document.getElementById('remote-overlay').classList.remove('active');
+    if (!remoteState.active) document.getElementById('remote-overlay').classList.remove('active');
   }
 
   async function submitRemoteRequest() {
@@ -3289,27 +3326,21 @@
       });
       const data = await res.json();
       if (!res.ok) { errEl.textContent = data.error || 'Failed to send request.'; errEl.style.display = ''; document.getElementById('remote-send-btn').disabled = false; return; }
-      remoteState.active = true; remoteState.role = 'requester'; remoteState.helper = helper; remoteState._sessionPass = data.password;
-      // Close modal, show pending card
-      closeRemote();
-      document.getElementById('rsc-pending-msg').textContent = `Waiting for ${helper} to accept...`;
-      const preview = document.getElementById('rsc-pending-preview');
-      if (message) { preview.textContent = `"${message}"`; preview.style.display = ''; } else { preview.style.display = 'none'; }
-      _showRsc('rsc-pending');
+      remoteState.active = true; remoteState.role = 'host'; remoteState.helper = helper; remoteState._sessionPass = data.password;
       updateRemoteHelpBtn(false);
-      // Poll for accepted
+      _rpInit('host', helper);
+      _rpStep(1);
+      _rpShow();
       remoteState.pollTimer = setInterval(async () => {
         try {
           const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
           if (sd.status === 'accepted') {
             clearInterval(remoteState.pollTimer);
-            _showRsc('rsc-accepted');
+            _rpStep(2); setTimeout(() => _rpStep(3), 500);
             await _startRustDeskHost();
           } else if (sd.status === 'none') {
             clearInterval(remoteState.pollTimer);
-            _hideAllRsc();
-            remoteState.active = false;
-            updateRemoteHelpBtn(true);
+            _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true);
             toast('Help request expired or was declined.', true);
           }
         } catch {}
@@ -3320,7 +3351,7 @@
   async function cancelRemoteRequest() {
     clearInterval(remoteState.pollTimer);
     await fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
-    remoteState.active = false; _hideAllRsc(); updateRemoteHelpBtn(true); closeRemote();
+    remoteState.active = false; _rpHide(); updateRemoteHelpBtn(true);
   }
 
   async function _startRustDeskHost() {
@@ -3330,17 +3361,15 @@
         body: JSON.stringify({ password: remoteState._sessionPass, requester: state.name })
       });
       const data = await res.json();
-      if (!res.ok || data.error) { toast(data.error || 'Failed to start RustDesk', true); _hideAllRsc(); remoteState.active = false; updateRemoteHelpBtn(true); return; }
-      // Show active or GUI fallback
+      if (!res.ok || data.error) { toast(data.error || 'Failed to start RustDesk', true); _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true); return; }
+      _rpStep(4); setTimeout(() => _rpStep(5), 500);
       if (data.mode === 'gui') {
-        document.getElementById('remote-cred-id').textContent = data.rustdesk_id;
-        document.getElementById('remote-cred-pass').textContent = remoteState._sessionPass;
-        _showRsc('rsc-gui');
+        _rpShowCreds(data.rustdesk_id, remoteState._sessionPass);
+        setTimeout(() => _rpStep(6, true), 500);
       } else {
-        document.getElementById('rsc-host-active-msg').textContent = `${remoteState.helper} is connecting to your machine`;
-        _showRsc('rsc-host-active');
+        setTimeout(() => _rpStep(6, true), 1000);
       }
-    } catch { toast('Failed to start RustDesk', true); _hideAllRsc(); remoteState.active = false; updateRemoteHelpBtn(true); }
+    } catch { toast('Failed to start RustDesk', true); _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true); }
   }
 
   // ── Helper side ──
@@ -3358,7 +3387,6 @@
         if (data.message) { msgEl.textContent = `"${data.message}"`; msgEl.style.display = ''; } else { msgEl.style.display = 'none'; }
         document.getElementById('remote-incoming').classList.add('active');
         playNotificationSound();
-        // 60s countdown
         _toastCountdown = 60;
         clearInterval(remoteState._toastTimer);
         remoteState._toastTimer = setInterval(() => {
@@ -3387,20 +3415,19 @@
       if (!res.ok) { toast(data.error || 'Failed to accept', true); _pendingRequester = null; return; }
       remoteState.active = true; remoteState.role = 'helper'; remoteState.requester = _pendingRequester;
       updateRemoteHelpBtn(false);
-      // Show waiting card while host starts RustDesk
-      document.getElementById('rsc-helper-waiting-msg').textContent = `Waiting for ${_pendingRequester} to start RustDesk...`;
-      _showRsc('rsc-helper-waiting');
-      // Poll for ready
+      _rpInit('helper', _pendingRequester);
+      _rpStep(1);
+      _rpShow();
       remoteState.pollTimer = setInterval(async () => {
         try {
           const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
           if (sd.status === 'ready') {
             clearInterval(remoteState.pollTimer);
-            _showRsc('rsc-helper-connecting');
+            _rpStep(2); setTimeout(() => _rpStep(3), 500);
             await _startRustDeskHelper(sd.rustdesk_id, sd.password);
           } else if (sd.status === 'none') {
             clearInterval(remoteState.pollTimer);
-            _hideAllRsc(); remoteState.active = false; updateRemoteHelpBtn(true);
+            _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true);
             toast('Session ended by host.', true);
           }
         } catch {}
@@ -3416,16 +3443,10 @@
         body: JSON.stringify({ rustdesk_id, password })
       });
       const data = await res.json();
-      if (!res.ok || data.error) { toast(data.error || 'Failed to start RustDesk', true); _hideAllRsc(); remoteState.active = false; updateRemoteHelpBtn(true); return; }
-      if (data.mode === 'gui') {
-        document.getElementById('remote-cred-id').textContent = data.rustdesk_id;
-        document.getElementById('remote-cred-pass').textContent = data.password;
-        _showRsc('rsc-gui');
-      } else {
-        document.getElementById('rsc-host-active-msg').textContent = `Connected to ${remoteState.requester}`;
-        _showRsc('rsc-host-active');
-      }
-    } catch { toast('Failed to start RustDesk', true); _hideAllRsc(); remoteState.active = false; updateRemoteHelpBtn(true); }
+      if (!res.ok || data.error) { toast(data.error || 'Failed to start RustDesk', true); _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true); return; }
+      if (data.mode === 'gui') { _rpShowCreds(data.rustdesk_id, data.password); }
+      _rpStep(4, true);
+    } catch { toast('Failed to start RustDesk', true); _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true); }
   }
 
   function declineRemoteRequest() {
@@ -3440,7 +3461,7 @@
     await fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
     await fetch('/api/remote/cleanup', { method: 'POST' }).catch(() => {});
     remoteState.active = false; remoteState.role = null;
-    _hideAllRsc();
+    _rpHide();
     updateRemoteHelpBtn(true);
     toast('Remote session ended.');
   }
@@ -3450,7 +3471,7 @@
     if (btn) btn.disabled = !enabled;
   }
 
-  document.getElementById('remote-overlay').addEventListener('click', e => { if (e.target.id === 'remote-overlay') closeRemote(); });
+  document.getElementById('remote-overlay').addEventListener('click', e => { if (e.target.id === 'remote-overlay' && !remoteState.active) closeRemote(); });
 
   // ── YouTube OAuth ──────────────────────────────────────────────────────────
   let _ytSession = null, _ytSubs = [];
