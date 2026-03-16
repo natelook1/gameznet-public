@@ -719,8 +719,16 @@
     .dc-reaction img { width: 14px; height: 14px; }
     .dc-sys-msg { font-size: 11px; color: var(--text-dim); padding: 3px 0 3px 56px; font-family: 'Share Tech Mono',monospace; font-style: italic; }
     .dc-msg-empty { display: flex; align-items: center; justify-content: center; flex: 1; min-height: 120px; color: var(--text-dim); font-size: 13px; font-family: 'Share Tech Mono',monospace; }
-    .dc-input-stub { padding: 10px 20px; border-top: 1px solid var(--border); text-align: center; font-size: 11px; color: var(--text-dim); font-family: 'Share Tech Mono',monospace; flex-shrink: 0; background: rgba(0,0,0,0.1); }
-    .dc-input-stub a { color: #5865f2; text-decoration: none; }
+    .dc-input-area { padding: 8px 16px 12px; flex-shrink: 0; border-top: 1px solid var(--border); background: rgba(0,0,0,0.1); }
+    .dc-input-label { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono',monospace; margin-bottom: 6px; }
+    .dc-input-row { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; transition: border-color 0.15s; }
+    .dc-input-row:focus-within { border-color: rgba(88,101,242,0.5); }
+    .dc-input-row input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 13px; font-family: 'Share Tech Mono',monospace; }
+    .dc-input-row input::placeholder { color: var(--text-dim); }
+    .dc-input-row input:disabled { opacity: 0.4; cursor: not-allowed; }
+    .dc-send-btn { background: none; border: none; color: #5865f2; font-size: 18px; cursor: pointer; padding: 0 2px; opacity: 0.7; transition: opacity 0.15s; flex-shrink: 0; line-height: 1; }
+    .dc-send-btn:hover:not(:disabled) { opacity: 1; }
+    .dc-send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
     /* Member sidebar */
     .dc-member-sidebar { width: 200px; flex-shrink: 0; background: rgba(0,0,0,0.25); border-left: 1px solid var(--border); overflow-y: auto; padding: 12px 8px; }
     .dc-msec-hdr { font-size: 10px; font-family: 'Share Tech Mono',monospace; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; padding: 8px 8px 4px; }
@@ -730,6 +738,24 @@
     .dc-mitem-name { font-size: 12px; font-family: 'Share Tech Mono',monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); flex: 1; }
     .dc-mitem:hover .dc-mitem-name { color: var(--text); }
     .dc-mitem-voice { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex-shrink: 0; box-shadow: 0 0 4px rgba(0,232,122,0.5); }
+    .dc-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(0,0,0,0.3); }
+    .dc-status-dot.online  { background: #23a559; }
+    .dc-status-dot.idle    { background: #f0b232; }
+    .dc-status-dot.dnd     { background: #f23f43; }
+    .dc-status-dot.offline { background: #80848e; }
+    .dc-activity { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono',monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dc-pins-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 3px; transition: color 0.15s, background 0.15s; margin-left: auto; }
+    .dc-pins-btn:hover { color: var(--text); background: rgba(255,255,255,0.07); }
+    .dc-pins-panel { display: none; position: absolute; top: 48px; right: 8px; width: 340px; max-height: 420px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; z-index: 100; padding: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .dc-pins-panel.open { display: block; }
+    .dc-pin-item { padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .dc-pin-item:last-child { border-bottom: none; }
+    .dc-pin-hdr { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .dc-pin-hdr img { width: 18px; height: 18px; border-radius: 50%; }
+    .dc-pin-author { font-size: 11px; font-weight: 700; color: var(--text); font-family: 'Rajdhani',sans-serif; }
+    .dc-pin-ts { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono',monospace; }
+    .dc-pin-content { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
+    .dc-pin-empty { font-size: 11px; color: var(--text-dim); font-family: 'Share Tech Mono',monospace; text-align: center; padding: 16px 0; }
     .discord-join {
       display: flex; align-items: center; justify-content: center;
       gap: 6px; padding: 7px 0; border-radius: 3px;
@@ -1957,16 +1983,28 @@
         </div>
         <!-- Center: Messages -->
         <div class="dc-messages-pane">
-          <div class="dc-chan-hdr">
+          <div class="dc-chan-hdr" style="position:relative;">
             <span class="dc-chan-hdr-hash">#</span>
             <span class="dc-chan-hdr-name" id="dc-chan-hdr-name">select a channel</span>
             <span class="dc-chan-hdr-sep" id="dc-chan-hdr-sep"></span>
             <span class="dc-chan-hdr-topic" id="dc-chan-hdr-topic"></span>
+            <button class="dc-pins-btn" id="dc-pins-btn" title="Pinned messages" onclick="toggleDcPins()" style="display:none;">📌</button>
+            <div class="dc-pins-panel" id="dc-pins-panel">
+              <div style="font-size:11px;font-family:'Share Tech Mono',monospace;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px;">PINNED MESSAGES</div>
+              <div id="dc-pins-list"><div class="dc-pin-empty">Loading...</div></div>
+            </div>
           </div>
           <div class="dc-msgs-scroll" id="dc-msgs-scroll">
             <div id="dc-msgs-list"><div class="dc-msg-empty">↑ pick a channel to read messages</div></div>
           </div>
-          <div class="dc-input-stub">🔒 Read-only — <a href="https://discord.gg/6vrEHuVX93" target="_blank">Join Discord</a> to send messages</div>
+          <div class="dc-input-area">
+            <div class="dc-input-label" id="dc-input-label">select a channel to start chatting</div>
+            <div class="dc-input-row">
+              <input type="text" id="dc-msg-input" placeholder="Select a channel..." maxlength="2000" disabled
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();dcSendMessage();}">
+              <button class="dc-send-btn" id="dc-send-btn" onclick="dcSendMessage()" disabled title="Send (Enter)">➤</button>
+            </div>
+          </div>
         </div>
         <!-- Right: Member list -->
         <div class="dc-member-sidebar" id="dc-member-list">
@@ -3444,16 +3482,18 @@
     const voiceIds = new Set();
     for (const cat of (data.categories || [])) for (const ch of (cat.voice_channels || [])) for (const u of ch.users) voiceIds.add(u.id);
     for (const ch of (data.uncategorized?.voice_channels || [])) for (const u of ch.users) voiceIds.add(u.id);
+    const statusOrder = { online: 0, idle: 1, dnd: 2, offline: 3 };
     const voice = (data.members || []).filter(m => voiceIds.has(m.id));
-    const rest  = (data.members || []).filter(m => !voiceIds.has(m.id));
+    const rest  = (data.members || []).filter(m => !voiceIds.has(m.id))
+      .sort((a, b) => (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3));
     let html = '';
     if (voice.length) {
       html += `<div class="dc-msec-hdr">🔊 In Voice — ${voice.length}</div>`;
-      html += voice.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span><div class="dc-mitem-voice"></div></div>`).join('');
+      html += voice.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">🎮 ${m.activity}</div>` : ''}</div><div class="dc-mitem-voice"></div></div>`).join('');
     }
     if (rest.length) {
       html += `<div class="dc-msec-hdr">Members — ${rest.length}</div>`;
-      html += rest.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span></div>`).join('');
+      html += rest.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">🎮 ${m.activity}</div>` : ''}</div><div class="dc-status-dot ${m.status || 'offline'}"></div></div>`).join('');
     }
     if (!html) html = '<div style="padding:8px;color:var(--text-dim);font-size:10px;font-family:\'Share Tech Mono\',monospace;">No members</div>';
     el.innerHTML = html;
@@ -3470,6 +3510,17 @@
     dcLoadMessages(id);
     if (dcState.msgInterval) clearInterval(dcState.msgInterval);
     dcState.msgInterval = setInterval(() => dcLoadMessages(dcState.activeChannel), 10000);
+    // Show pins button, reset pins panel
+    document.getElementById('dc-pins-btn').style.display = '';
+    document.getElementById('dc-pins-panel').classList.remove('open');
+    document.getElementById('dc-pins-list').innerHTML = '<div class="dc-pin-empty">Click 📌 to load</div>';
+    // Enable message input
+    const input = document.getElementById('dc-msg-input');
+    const btn   = document.getElementById('dc-send-btn');
+    input.placeholder = `Message #${name}`;
+    input.disabled = false;
+    btn.disabled = false;
+    document.getElementById('dc-input-label').textContent = `Sending as ${state.name || 'you'}`;
   }
 
   async function dcLoadMessages(channelId) {
@@ -3569,6 +3620,37 @@
     return s;
   }
 
+  async function dcSendMessage() {
+    const input = document.getElementById('dc-msg-input');
+    const btn   = document.getElementById('dc-send-btn');
+    const content = input.value.trim();
+    if (!content || !dcState.activeChannel || !state.name) return;
+    input.disabled = true;
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/discord/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel:    dcState.activeChannel,
+          content,
+          name:       state.name,
+          avatar_url: state.steam_avatar || null
+        })
+      });
+      if (res.ok) {
+        input.value = '';
+        await dcLoadMessages(dcState.activeChannel);
+      } else {
+        const err = await res.json();
+        toast(err.error || 'Failed to send message', 'error');
+      }
+    } catch { toast('Could not reach local server', 'error'); }
+    input.disabled = false;
+    btn.disabled = false;
+    input.focus();
+  }
+
   function dcTime(d) {
     const now = new Date();
     const t = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -3576,6 +3658,34 @@
     const yest = new Date(now - 86400000);
     if (d.toDateString() === yest.toDateString()) return `Yesterday at ${t}`;
     return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear().toString().slice(2)} ${t}`;
+  }
+
+  async function toggleDcPins() {
+    const panel = document.getElementById('dc-pins-panel');
+    if (panel.classList.toggle('open')) {
+      await dcLoadPins(dcState.activeChannel);
+    }
+  }
+
+  async function dcLoadPins(channelId) {
+    if (!channelId) return;
+    const list = document.getElementById('dc-pins-list');
+    list.innerHTML = '<div class="dc-pin-empty">Loading...</div>';
+    try {
+      const res = await fetch(`/api/discord/pins?channel=${channelId}`);
+      if (!res.ok) { list.innerHTML = '<div class="dc-pin-empty">Cannot load pins</div>'; return; }
+      const pins = await res.json();
+      if (!pins.length) { list.innerHTML = '<div class="dc-pin-empty">No pinned messages</div>'; return; }
+      list.innerHTML = pins.map(m => `
+        <div class="dc-pin-item">
+          <div class="dc-pin-hdr">
+            <img src="${m.author.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy">
+            <span class="dc-pin-author">${m.author.username}</span>
+            <span class="dc-pin-ts">${dcTime(new Date(m.timestamp))}</span>
+          </div>
+          <div class="dc-pin-content">${dcMarkdown(m.content) || (m.attachments.length ? '📎 ' + m.attachments[0].filename : '(no text)')}</div>
+        </div>`).join('');
+    } catch (e) { list.innerHTML = '<div class="dc-pin-empty">Error loading pins</div>'; }
   }
 
   // ── Player status ──────────────────────────────────────────────────────────
@@ -4054,6 +4164,13 @@
   })();
 
   // ── Boot ───────────────────────────────────────────────────────────────────
+  document.addEventListener('click', e => {
+    const panel = document.getElementById('dc-pins-panel');
+    if (panel?.classList.contains('open') && !panel.contains(e.target) && !e.target.closest('#dc-pins-btn')) {
+      panel.classList.remove('open');
+    }
+  });
+
   init();
   loadClientServers();
   loadDiscord();
