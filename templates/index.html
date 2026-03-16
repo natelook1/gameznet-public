@@ -1342,6 +1342,52 @@
     #rename-overlay.active { display:flex; }
     .rename-btn { background:none; border:none; color:var(--text-dim); font-size:16px; cursor:pointer; padding:0 2px; line-height:1; opacity:0.5; transition:opacity 0.15s; }
     .rename-btn:hover { opacity:1; color:var(--accent); }
+
+    /* Remote Assistance */
+    #remote-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(3px); z-index:1000; align-items:center; justify-content:center; }
+    #remote-overlay.active { display:flex; }
+    .remote-help-btn {
+      width:100%; margin-top:10px; padding:7px 0;
+      background:none; border:1px solid var(--border2); border-radius:3px;
+      color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:11px;
+      letter-spacing:1px; cursor:pointer; transition:all 0.15s;
+    }
+    .remote-help-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .remote-help-btn:disabled { opacity:0.4; cursor:not-allowed; }
+    .remote-status-card {
+      margin-top:10px; padding:10px 12px; background:var(--bg);
+      border:1px solid var(--accent); border-radius:3px; font-size:11px;
+      display:none;
+    }
+    .remote-status-card.active { display:block; }
+    .remote-status-label { color:var(--accent); font-family:'Share Tech Mono',monospace; letter-spacing:1px; margin-bottom:4px; }
+    .remote-status-msg { color:var(--text-dim); }
+    .remote-end-btn {
+      margin-top:8px; padding:4px 12px; background:none;
+      border:1px solid var(--danger); border-radius:3px;
+      color:var(--danger); font-family:'Share Tech Mono',monospace;
+      font-size:10px; letter-spacing:1px; cursor:pointer;
+    }
+    .remote-end-btn:hover { background:var(--danger); color:white; }
+    /* Incoming request toast */
+    #remote-incoming {
+      display:none; position:fixed; bottom:24px; right:24px; z-index:2000;
+      background:var(--bg2); border:1px solid var(--accent); border-radius:4px;
+      padding:16px 18px; min-width:280px; box-shadow:0 4px 24px rgba(0,0,0,0.5);
+    }
+    #remote-incoming.active { display:block; }
+    .remote-incoming-title { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--accent); letter-spacing:1px; margin-bottom:6px; }
+    .remote-incoming-msg { font-size:13px; color:var(--text); margin-bottom:12px; }
+    .remote-incoming-actions { display:flex; gap:8px; }
+    .remote-accept-btn { flex:1; padding:6px; background:var(--accent); border:none; border-radius:3px; color:#000; font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:1px; cursor:pointer; }
+    .remote-decline-btn { flex:1; padding:6px; background:none; border:1px solid var(--border2); border-radius:3px; color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:1px; cursor:pointer; }
+    .remote-decline-btn:hover { border-color:var(--danger); color:var(--danger); }
+    /* GUI fallback info box */
+    .remote-gui-info { margin-top:8px; padding:8px 10px; background:var(--bg); border:1px solid var(--border2); border-radius:3px; font-size:11px; }
+    .remote-gui-info .cred-row { display:flex; justify-content:space-between; margin-bottom:3px; }
+    .remote-gui-info .cred-key { color:var(--text-dim); }
+    .remote-gui-info .cred-val { color:var(--text); font-family:'Share Tech Mono',monospace; cursor:pointer; }
+    .remote-gui-info .cred-val:hover { color:var(--accent); }
     #schedule-modal { background:var(--bg2); border:1px solid var(--border2); border-radius:4px; padding:24px; max-width:420px; width:92%; }
     #schedule-modal h3 { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--accent); letter-spacing:2px; text-transform:uppercase; margin:0 0 16px; }
     .schedule-game-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:8px; margin-bottom:14px; max-height:200px; overflow-y:auto; }
@@ -1428,6 +1474,50 @@
         <button class="btn-secondary" onclick="closeRename()">Cancel</button>
         <button class="btn-primary" onclick="submitRename()">Save</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Remote Assistance — request modal -->
+  <div id="remote-overlay">
+    <div class="sched-modal" style="max-width:380px;">
+      <div class="sched-modal-title">🛟 REQUEST HELP</div>
+      <div id="remote-modal-body">
+        <div style="margin-bottom:14px;font-size:12px;color:var(--text-dim);">
+          Select a player to ask for remote assistance. They'll get a notification and can accept or decline.
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;color:var(--text-dim);letter-spacing:1px;">WHO DO YOU WANT HELP FROM?</label>
+          <select id="remote-helper-select" style="width:100%;margin-top:6px;padding:8px;background:var(--bg);border:1px solid var(--border2);border-radius:3px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;">
+            <option value="">— select a player —</option>
+          </select>
+        </div>
+        <div id="remote-modal-error" style="display:none;color:var(--danger);font-size:11px;margin-bottom:10px;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button class="btn-secondary" onclick="closeRemote()">Cancel</button>
+          <button class="btn-primary" id="remote-send-btn" onclick="submitRemoteRequest()">Send Request</button>
+        </div>
+      </div>
+      <div id="remote-modal-waiting" style="display:none;text-align:center;padding:16px 0;">
+        <div style="font-size:24px;margin-bottom:10px;">⏳</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:1px;">WAITING FOR RESPONSE</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:6px;" id="remote-waiting-name"></div>
+        <button class="remote-end-btn" style="margin-top:16px;" onclick="cancelRemoteRequest()">Cancel Request</button>
+      </div>
+      <div id="remote-modal-connecting" style="display:none;text-align:center;padding:16px 0;">
+        <div style="font-size:24px;margin-bottom:10px;">🔗</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:1px;">STARTING RUSTDESK...</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:6px;">Setting up secure connection</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remote Assistance — incoming request toast -->
+  <div id="remote-incoming">
+    <div class="remote-incoming-title">🛟 HELP REQUEST</div>
+    <div class="remote-incoming-msg" id="remote-incoming-msg">Someone needs help.</div>
+    <div class="remote-incoming-actions">
+      <button class="remote-accept-btn" onclick="acceptRemoteRequest()">Accept</button>
+      <button class="remote-decline-btn" onclick="declineRemoteRequest()">Decline</button>
     </div>
   </div>
 
@@ -1594,6 +1684,17 @@
                 <input class="status-text-input" id="status-input" type="text" placeholder="Custom status..." maxlength="40" />
                 <button class="status-set-btn" onclick="setStatusFromInput()">SET</button>
               </div>
+            </div>
+            <button class="remote-help-btn" id="remote-help-btn" onclick="openRemote()" disabled>🛟 GET HELP FROM A PLAYER</button>
+            <div class="remote-status-card" id="remote-status-card">
+              <div class="remote-status-label" id="remote-status-label">CONNECTING...</div>
+              <div class="remote-status-msg" id="remote-status-msg"></div>
+              <div id="remote-gui-info" class="remote-gui-info" style="display:none;">
+                <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px;">OPEN RUSTDESK AND ENTER THESE CREDENTIALS</div>
+                <div class="cred-row"><span class="cred-key">ID</span><span class="cred-val" id="remote-cred-id" onclick="copyText(this.textContent)">—</span></div>
+                <div class="cred-row"><span class="cred-key">Password</span><span class="cred-val" id="remote-cred-pass" onclick="copyText(this.textContent)">—</span></div>
+              </div>
+              <button class="remote-end-btn" onclick="endRemoteSession()">END SESSION</button>
             </div>
           </div>
         </div>
@@ -1923,6 +2024,7 @@
       startSessionTimer();
       setChatEnabled(true);
       updateFullRouteBtn();
+      updateRemoteHelpBtn(true);
     } else if (statusKey === 'connecting') {
       icon.textContent = '◌';
       main.textContent = 'Connecting...';
@@ -1962,6 +2064,7 @@
       stopSessionTimer();
       setChatEnabled(false);
       updateFullRouteBtn();
+      updateRemoteHelpBtn(false);
     }
   }
 
@@ -2416,6 +2519,7 @@
     } catch {}
   }
   setInterval(refreshOnline, 30000);
+  setInterval(pollRemotePending, 5000);
 
   // ── Chat ───────────────────────────────────────────────────────────────────
   let chatSince = new Date(Date.now() - 3600000).toISOString(); // load last 1hr on init
@@ -3105,6 +3209,179 @@
   }
   document.getElementById('rename-overlay').addEventListener('click', e => { if (e.target.id === 'rename-overlay') closeRename(); });
   document.getElementById('rename-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') closeRename(); });
+
+  // ── Remote Assistance ──────────────────────────────────────────────────────
+  const remoteState = { active: false, role: null, helper: null, requester: null, pollTimer: null };
+
+  function openRemote() {
+    // Populate helper select with online players (excluding self)
+    const sel = document.getElementById('remote-helper-select');
+    sel.innerHTML = '<option value="">— select a player —</option>';
+    const online = Array.from(document.querySelectorAll('#online-list-ui .op-name'))
+      .map(el => el.firstChild?.textContent?.trim() || el.textContent.trim())
+      .filter(n => n && n !== state.name);
+    online.forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n; opt.textContent = n;
+      sel.appendChild(opt);
+    });
+    document.getElementById('remote-modal-body').style.display = '';
+    document.getElementById('remote-modal-waiting').style.display = 'none';
+    document.getElementById('remote-modal-connecting').style.display = 'none';
+    document.getElementById('remote-modal-error').style.display = 'none';
+    document.getElementById('remote-overlay').classList.add('active');
+  }
+
+  function closeRemote() {
+    document.getElementById('remote-overlay').classList.remove('active');
+  }
+
+  async function submitRemoteRequest() {
+    const helper = document.getElementById('remote-helper-select').value;
+    const errEl = document.getElementById('remote-modal-error');
+    if (!helper) { errEl.textContent = 'Please select a player.'; errEl.style.display = ''; return; }
+    errEl.style.display = 'none';
+    document.getElementById('remote-send-btn').disabled = true;
+    try {
+      const res = await fetch('/api/remote/request', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requester: state.name, requester_ip: state.vpn_ip, helper })
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || 'Failed to send request.'; errEl.style.display = ''; document.getElementById('remote-send-btn').disabled = false; return; }
+      // Show waiting state
+      remoteState.active = true; remoteState.role = 'requester'; remoteState.helper = helper; remoteState._sessionPass = data.password;
+      document.getElementById('remote-modal-body').style.display = 'none';
+      document.getElementById('remote-modal-waiting').style.display = '';
+      document.getElementById('remote-waiting-name').textContent = `Waiting for ${helper} to accept...`;
+      // Poll for acceptance
+      remoteState.pollTimer = setInterval(async () => {
+        try {
+          const sr = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`);
+          const sd = await sr.json();
+          if (sd.status === 'accepted') {
+            clearInterval(remoteState.pollTimer);
+            document.getElementById('remote-modal-waiting').style.display = 'none';
+            document.getElementById('remote-modal-connecting').style.display = '';
+            await startRustDeskHost();
+          } else if (sd.status === 'none') {
+            clearInterval(remoteState.pollTimer);
+            closeRemote();
+            toast('Help request expired or was declined.', true);
+            remoteState.active = false;
+          }
+        } catch {}
+      }, 3000);
+    } catch { errEl.textContent = 'Network error.'; errEl.style.display = ''; document.getElementById('remote-send-btn').disabled = false; }
+  }
+
+  async function cancelRemoteRequest() {
+    clearInterval(remoteState.pollTimer);
+    await fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
+    remoteState.active = false;
+    closeRemote();
+  }
+
+  async function startRustDeskHost() {
+    try {
+      const res = await fetch('/api/remote/start-host', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: remoteState._sessionPass })
+      });
+      const data = await res.json();
+      closeRemote();
+      if (!res.ok || data.error) { toast(data.error || 'Failed to start RustDesk', true); return; }
+      // Show status card
+      setRemoteStatusCard('active', `${remoteState.helper} is connecting...`);
+      if (data.mode === 'gui') {
+        document.getElementById('remote-gui-info').style.display = '';
+        document.getElementById('remote-cred-id').textContent = data.rustdesk_id;
+        document.getElementById('remote-cred-pass').textContent = remoteState._sessionPass;
+      }
+    } catch (e) { toast('Failed to start remote session', true); }
+  }
+
+  // Incoming request — helper side
+  let _pendingRequester = null;
+
+  async function pollRemotePending() {
+    if (!state.name || remoteState.active) return;
+    try {
+      const res = await fetch(`/api/remote/pending?name=${encodeURIComponent(state.name)}`);
+      const data = await res.json();
+      if (data.pending && data.requester !== _pendingRequester) {
+        _pendingRequester = data.requester;
+        document.getElementById('remote-incoming-msg').textContent = `${data.requester} is asking for your help.`;
+        document.getElementById('remote-incoming').classList.add('active');
+        playNotificationSound();
+      }
+    } catch {}
+  }
+
+  async function acceptRemoteRequest() {
+    document.getElementById('remote-incoming').classList.remove('active');
+    try {
+      const res = await fetch('/api/remote/accept', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ helper: state.name, requester: _pendingRequester })
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error || 'Failed to accept', true); return; }
+      remoteState.active = true; remoteState.role = 'helper'; remoteState.requester = _pendingRequester;
+      setRemoteStatusCard('active', `Connecting to ${_pendingRequester}...`);
+      // Start helper side
+      const hr = await fetch('/api/remote/start-helper', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rustdesk_id: data.rustdesk_id, password: data.password })
+      });
+      const hd = await hr.json();
+      if (!hr.ok) { toast(hd.error || 'Failed to start RustDesk', true); return; }
+      if (hd.mode === 'gui') {
+        setRemoteStatusCard('active', `Open RustDesk and connect manually`);
+        document.getElementById('remote-gui-info').style.display = '';
+        document.getElementById('remote-cred-id').textContent = hd.rustdesk_id;
+        document.getElementById('remote-cred-pass').textContent = hd.password;
+      } else {
+        setRemoteStatusCard('active', `Connected to ${_pendingRequester}`);
+      }
+    } catch { toast('Failed to start remote session', true); }
+    _pendingRequester = null;
+  }
+
+  function declineRemoteRequest() {
+    document.getElementById('remote-incoming').classList.remove('active');
+    fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
+    _pendingRequester = null;
+  }
+
+  async function endRemoteSession() {
+    clearInterval(remoteState.pollTimer);
+    await fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
+    await fetch('/api/remote/cleanup', { method: 'POST' }).catch(() => {});
+    remoteState.active = false; remoteState.role = null;
+    setRemoteStatusCard('hidden');
+    document.getElementById('remote-help-btn').disabled = false;
+    toast('Remote session ended.');
+  }
+
+  function setRemoteStatusCard(mode, msg) {
+    const card = document.getElementById('remote-status-card');
+    const label = document.getElementById('remote-status-label');
+    const msgEl = document.getElementById('remote-status-msg');
+    if (mode === 'hidden') { card.classList.remove('active'); return; }
+    card.classList.add('active');
+    label.textContent = mode === 'active' ? 'SESSION ACTIVE' : 'CONNECTING...';
+    msgEl.textContent = msg || '';
+    document.getElementById('remote-help-btn').disabled = true;
+  }
+
+  // Enable the help button when connected, disable when not
+  function updateRemoteHelpBtn(connected) {
+    const btn = document.getElementById('remote-help-btn');
+    if (btn) btn.disabled = !connected || remoteState.active;
+  }
+
+  document.getElementById('remote-overlay').addEventListener('click', e => { if (e.target.id === 'remote-overlay') closeRemote(); });
 
   // ── YouTube OAuth ──────────────────────────────────────────────────────────
   let _ytSession = null, _ytSubs = [];
