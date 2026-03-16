@@ -193,10 +193,11 @@
     .col-handle:active { cursor: grabbing; }
     .col.col-dragging { opacity: 0.35; }
     .col.col-drag-over { outline: 1px dashed var(--accent); outline-offset: 3px; border-radius: 4px; }
-    /* Default column order: Session | Network | Servers */
-    #col-right   { order: 1; }
-    #col-left    { order: 2; }
-    #col-servers { order: 3; }
+    /* Default column order: Who's Online | Network | Steam Social */
+    #col-right   { order: 1; flex: 1; min-width: 0; }
+    #col-left    { order: 2; flex: 0 0 260px; }
+    #col-steam   { order: 3; flex: 0 0 250px; min-width: 0; }
+    #col-right .online-card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
     /* ── Section label ── */
     .section-label {
@@ -1542,6 +1543,23 @@
     .chat-send-btn:hover { background: rgba(0,212,255,0.1); }
     .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+    /* ── Compact identity card (col-right) ── */
+    .player-identity-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .player-identity-row { display: flex; align-items: center; gap: 6px; }
+    .player-identity-ip { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); margin-left: auto; cursor: pointer; }
+    .player-identity-ip:hover { color: var(--text); }
+    .help-icon-btn { background: none; border: 1px solid var(--border2); border-radius: 2px; color: var(--text-dim); font-size: 9px; font-family: 'Share Tech Mono', monospace; padding: 2px 6px; cursor: pointer; letter-spacing: 1px; transition: all 0.15s; white-space: nowrap; }
+    .help-icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .help-icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ── Footer status setter ── */
+    .footer-status-setter { display: flex; align-items: center; gap: 4px; flex: 1; margin: 0 10px; }
+    .footer-preset-btn { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 1px; padding: 2px 6px; background: transparent; border: 1px solid var(--border2); border-radius: 2px; color: var(--text-dim); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .footer-preset-btn:hover { border-color: var(--text); color: var(--text); }
+    .footer-status-text { flex: 1; background: transparent; border: 1px solid var(--border); border-radius: 2px; color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 9px; padding: 2px 6px; outline: none; min-width: 60px; max-width: 150px; transition: border-color 0.15s; }
+    .footer-status-text:focus { border-color: var(--accent); }
+    .footer-set-btn { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 1px; padding: 2px 8px; background: transparent; border: 1px solid var(--accent); border-radius: 2px; color: var(--accent); cursor: pointer; white-space: nowrap; }
+
     /* ── Player status presets ── */
     .status-setter { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
     .status-preset-row { display: flex; gap: 5px; }
@@ -2054,32 +2072,12 @@
 
         <div>
           <div class="section-label">Your Session</div>
-          <div class="player-card">
-            <div style="display:flex;align-items:center;gap:8px;">
+          <div class="player-identity-card">
+            <div class="player-identity-row">
               <div class="player-name-large" id="info-name">—</div>
               <button class="rename-btn" onclick="openRename()" title="Change name">✎</button>
+              <span class="player-identity-ip copyable" id="info-ip" title="Click to copy">—</span>
             </div>
-            <div class="info-row">
-              <span class="info-key">VPN IP</span>
-              <span class="info-val copyable" id="info-ip" title="Click to copy">—</span>
-            </div>
-            <div class="info-row">
-              <span class="info-key">Server</span>
-              <span class="info-val" style="font-size:11px;">{{ worker_url.replace("https://", "") }}</span>
-            </div>
-            <div class="status-setter">
-              <div class="status-preset-row">
-                <button class="status-preset-btn" onclick="setPlayerStatus('AFK')">AFK</button>
-                <button class="status-preset-btn" onclick="setPlayerStatus('BRB')">BRB</button>
-                <button class="status-preset-btn" onclick="setPlayerStatus('Gaming')">Gaming</button>
-                <button class="status-preset-btn" onclick="setPlayerStatus('')" style="border-color:var(--danger);color:var(--danger);">Clear</button>
-              </div>
-              <div class="status-input-row">
-                <input class="status-text-input" id="status-input" type="text" placeholder="Custom status..." maxlength="40" />
-                <button class="status-set-btn" onclick="setStatusFromInput()">SET</button>
-              </div>
-            </div>
-            <button class="remote-help-btn" id="remote-help-btn" onclick="openRemote()" disabled>🛟 GET HELP FROM A PLAYER</button>
             <div class="steam-section" id="steam-section">
               <div class="steam-linked-info" id="steam-linked-view" style="display:none;">
                 <img class="steam-self-avatar" id="steam-avatar-self" src="" />
@@ -2095,7 +2093,10 @@
         </div>
 
         <div class="online-card">
-          <div class="section-label" style="margin-bottom:8px;">Who's Online</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div class="section-label" style="margin-bottom:0;">Who's Online</div>
+            <button class="help-icon-btn" id="remote-help-btn" onclick="openRemote()" disabled title="Request remote desktop help from a player">🛟 HELP</button>
+          </div>
           <div class="online-list" id="online-list-ui">
             <div class="online-empty">○ Checking...</div>
           </div>
@@ -2302,6 +2303,14 @@
   <!-- Footer -->
   <footer>
     <span class="footer-status" id="footer-status">INITIALIZING...</span>
+    <div class="footer-status-setter" id="footer-status-setter" style="display:none;">
+      <button class="footer-preset-btn" onclick="setPlayerStatus('AFK')">AFK</button>
+      <button class="footer-preset-btn" onclick="setPlayerStatus('BRB')">BRB</button>
+      <button class="footer-preset-btn" onclick="setPlayerStatus('Gaming')">Gaming</button>
+      <button class="footer-preset-btn" onclick="setPlayerStatus('')" style="border-color:var(--danger);color:var(--danger);">✕</button>
+      <input class="footer-status-text" id="status-input" type="text" placeholder="status..." maxlength="40" />
+      <button class="footer-set-btn" onclick="setStatusFromInput()">SET</button>
+    </div>
     <div class="footer-right">
       <button id="fullroute-btn" class="invisible-btn" onclick="toggleFullRoute()" style="display:none;" title="Route all internet traffic through the VPN for privacy. Requires reconnect to take effect.">⬡ GAME ONLY</button>
       <button id="invisible-btn" class="invisible-btn" onclick="toggleInvisible()" style="display:none;" title="Hide yourself from the Who's Online list while staying connected">👁 VISIBLE</button>
@@ -2425,6 +2434,7 @@
     document.getElementById('change-token-link').style.display = 'inline';
     document.getElementById('invisible-btn').style.display = 'inline-block';
     document.getElementById('fullroute-btn').style.display = 'inline-block';
+    document.getElementById('footer-status-setter').style.display = 'flex';
     setStatus('disconnected');
   }
 
@@ -2433,6 +2443,7 @@
     document.getElementById('change-token-link').style.display = 'none';
     document.getElementById('invisible-btn').style.display = 'none';
     document.getElementById('fullroute-btn').style.display = 'none';
+    document.getElementById('footer-status-setter').style.display = 'none';
     document.getElementById('motd-banner').style.display = 'none';
     const btn = document.getElementById('connect-btn');
     btn.textContent = 'Connect to Server';
@@ -3356,11 +3367,12 @@
         : '';
       let portsHtml = '';
       if (isRunning && s.port) {
-        if (isMinecraft(s.name) && s.extra_ports?.length) {
-          // Dual port: Java + Bedrock
+        if (isMinecraft(s.name)) {
+          // Dual port: Java + Bedrock (Geyser); fallback to 19132 if not in Pterodactyl allocations
+          const bedrockPort = s.extra_ports?.[0] || 19132;
           portsHtml = `<div class="srv-compact-ports">
             <span class="srv-compact-port-label">Java</span><span class="srv-compact-port" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('Java port copied!','success'))">:${s.port} ⧉</span>
-            <span class="srv-compact-port-label">Bedrock</span><span class="srv-compact-port" onclick="navigator.clipboard.writeText('${s.host}:${s.extra_ports[0]}').then(()=>toast('Bedrock port copied!','success'))">:${s.extra_ports[0]} ⧉</span>
+            <span class="srv-compact-port-label">Bedrock</span><span class="srv-compact-port" onclick="navigator.clipboard.writeText('${s.host}:${bedrockPort}').then(()=>toast('Bedrock port copied!','success'))">:${bedrockPort} ⧉</span>
           </div>`;
         } else {
           const steamJoin = s.steam_appid
@@ -4581,15 +4593,15 @@
   (function initColumnDrag() {
     const cols = Array.from(document.querySelectorAll('#dashboard-section > .col'));
     // Default order: Steam Social | Network | Your Session
-    const DEFAULT_ORDER = { 'col-steam': 1, 'col-left': 2, 'col-right': 3 };
-    const saved = JSON.parse(localStorage.getItem('gz-col-order2') || 'null');
+    const DEFAULT_ORDER = { 'col-right': 1, 'col-left': 2, 'col-steam': 3 };
+    const saved = JSON.parse(localStorage.getItem('gz-col-order3') || 'null');
     const order = saved || DEFAULT_ORDER;
     cols.forEach(c => { if (order[c.id] != null) c.style.order = order[c.id]; });
 
     function saveOrder() {
       const map = {};
       cols.forEach(c => { map[c.id] = c.style.order || getComputedStyle(c).order; });
-      localStorage.setItem('gz-col-order2', JSON.stringify(map));
+      localStorage.setItem('gz-col-order3', JSON.stringify(map));
     }
 
     let dragging = null;
