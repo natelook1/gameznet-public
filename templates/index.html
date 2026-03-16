@@ -2858,7 +2858,7 @@
             <span style="color:var(--border2);font-size:10px;">·</span>
             <span class="srv-connect" title="Copy IP:Port" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('IP:Port copied!','success'))" style="cursor:pointer;">:${s.port} ⧉</span>
           </div>
-          <button onclick="location.href='steam://connect/${s.host}:${s.port}'" style="margin-top:4px;background:transparent;border:1px solid #1b9af7;color:#1b9af7;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;padding:2px 8px;border-radius:2px;cursor:pointer;width:100%;">▶ STEAM JOIN</button>` : ''}` : ''}
+          <button onclick="location.href='${s.steam_appid == 526870 ? `steam://rungameid/526870//+open ${s.host}:${s.port}` : `steam://connect/${s.host}:${s.port}`}'" style="margin-top:4px;background:transparent;border:1px solid #1b9af7;color:#1b9af7;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;padding:2px 8px;border-radius:2px;cursor:pointer;width:100%;">▶ STEAM JOIN</button>` : ''}` : ''}
         </div>`;
     }).join('');
   }
