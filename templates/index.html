@@ -152,14 +152,15 @@
     /* ── Two-column dashboard ── */
     .dashboard {
       flex: 1;
-      display: grid;
-      grid-template-columns: 320px 1fr 1.1fr;
+      display: flex;
       gap: 16px;
       overflow: hidden;
       min-height: 0;
     }
 
     .col {
+      flex: 1;
+      min-width: 260px;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -167,13 +168,25 @@
       min-height: 0;
     }
 
-    /* Sub-grid for online + discord side by side */
-    .col-pair {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      min-height: 0;
+    /* Column drag handle */
+    .col-handle {
+      display: flex;
+      justify-content: center;
+      height: 14px;
+      cursor: grab;
+      opacity: 0.2;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+      user-select: none;
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--text-dim);
+      padding-top: 2px;
     }
+    .col-handle:hover { opacity: 0.6; cursor: grab; }
+    .col-handle:active { cursor: grabbing; }
+    .col.col-dragging { opacity: 0.35; }
+    .col.col-drag-over { outline: 1px dashed var(--accent); outline-offset: 3px; border-radius: 4px; }
 
     /* ── Section label ── */
     .section-label {
@@ -919,6 +932,19 @@
     .tab-btn:hover { color: var(--text); }
     .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
     .tab-btn.yt-tab.active { color: #ff4444; border-bottom-color: #ff4444; }
+    .tab-btn.dc-tab.active { color: #5865f2; border-bottom-color: #5865f2; }
+    .dc-tab-badge { display: inline-block; background: #5865f2; color: #fff; font-size: 9px; padding: 1px 5px; border-radius: 8px; margin-left: 5px; vertical-align: middle; line-height: 1.4; }
+    #discord-section {
+      display: none; flex-direction: column;
+      flex: 1; overflow: hidden; min-height: 0;
+      padding: 16px 28px;
+    }
+    #discord-section.dc-active { display: flex; }
+    .dc-section-bar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 14px; flex-shrink: 0;
+      border-bottom: 1px solid var(--border); padding-bottom: 12px;
+    }
 
     /* ── YouTube panel ── */
     #youtube-section {
@@ -1483,6 +1509,7 @@
   <div class="tab-nav" id="tab-nav">
     <button class="tab-btn active" onclick="switchTab('home', this)">HOME</button>
     <button class="tab-btn yt-tab" onclick="switchTab('youtube', this)">YOUTUBE</button>
+    <button class="tab-btn dc-tab" onclick="switchTab('discord', this)">DISCORD<span class="dc-tab-badge" id="tab-dc-online" style="display:none;"></span></button>
   </div>
 
   <!-- Floating player (persists across tab switches) -->
@@ -1659,6 +1686,7 @@
 
       <!-- LEFT: Connection + Telemetry -->
       <div class="col" id="col-left">
+        <div class="col-handle" title="Drag to reorder">· · ·</div>
 
         <div>
           <div class="section-label">Network</div>
@@ -1721,6 +1749,7 @@
 
       <!-- RIGHT: Player + Online -->
       <div class="col" id="col-right">
+        <div class="col-handle" title="Drag to reorder">· · ·</div>
 
         <div>
           <div class="section-label">Your Session</div>
@@ -1764,24 +1793,10 @@
           </div>
         </div>
 
-        <div class="col-pair">
-          <div class="online-card">
-            <div class="section-label" style="margin-bottom:8px;">Who's Online</div>
-            <div class="online-list" id="online-list-ui">
-              <div class="online-empty">○ Checking...</div>
-            </div>
-          </div>
-
-          <div class="discord-card" id="discord-card">
-            <div class="discord-header">
-              <div class="discord-logo">D</div>
-              <div class="discord-server-name" id="dc-server-name">gamEZnet</div>
-              <div class="discord-counts"><span id="dc-online">—</span> online · <span id="dc-total">—</span> members</div>
-            </div>
-            <div class="discord-members" id="dc-members">
-              <div class="online-empty">○ Loading...</div>
-            </div>
-            <a class="discord-join" href="https://discord.gg/6vrEHuVX93" target="_blank">JOIN DISCORD ↗</a>
+        <div class="online-card">
+          <div class="section-label" style="margin-bottom:8px;">Who's Online</div>
+          <div class="online-list" id="online-list-ui">
+            <div class="online-empty">○ Checking...</div>
           </div>
         </div>
 
@@ -1789,6 +1804,7 @@
 
       <!-- SERVERS: dedicated 3rd column -->
       <div class="col" id="col-servers">
+        <div class="col-handle" title="Drag to reorder">· · ·</div>
         <div id="servers-section">
           <div class="servers-header">
             <div class="section-label">Game Servers</div>
@@ -1856,6 +1872,19 @@
             <div class="yt-related-label">UP NEXT</div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ── DISCORD TAB ── -->
+    <div id="discord-section">
+      <div class="dc-section-bar">
+        <div class="discord-logo" style="width:22px;height:22px;font-size:12px;">D</div>
+        <div class="discord-server-name" id="dc-server-name">gamEZnet</div>
+        <div class="discord-counts"><span id="dc-online">—</span> online · <span id="dc-total">—</span> members</div>
+        <a class="discord-join" href="https://discord.gg/6vrEHuVX93" target="_blank" style="margin-left:auto;width:auto;padding:6px 20px;">JOIN DISCORD ↗</a>
+      </div>
+      <div class="discord-members" id="dc-members" style="flex:1;overflow-y:auto;">
+        <div class="online-empty">○ Loading...</div>
       </div>
     </div>
 
@@ -2027,7 +2056,7 @@
     document.getElementById('retoken-wrap').style.display      = 'none';
     document.getElementById('youtube-section').classList.remove('yt-active');
     if (view === 'dashboard') {
-      document.getElementById('dashboard-section').style.display = 'grid';
+      document.getElementById('dashboard-section').style.display = 'flex';
     } else if (view === 'setup') {
       document.getElementById('setup-wrap').style.display = 'flex';
     } else if (view === 'retoken') {
@@ -2980,13 +3009,17 @@
     btn.classList.add('active');
     const dash = document.getElementById('dashboard-section');
     const yt   = document.getElementById('youtube-section');
+    const dc   = document.getElementById('discord-section');
+    dash.style.display = 'none';
+    yt.classList.remove('yt-active');
+    dc.classList.remove('dc-active');
     if (name === 'youtube') {
-      dash.style.display = 'none';
       yt.classList.add('yt-active');
       if (!_ytInitialized) { ytLoadCategory(_ytCat); _ytInitialized = true; }
+    } else if (name === 'discord') {
+      dc.classList.add('dc-active');
     } else {
-      yt.classList.remove('yt-active');
-      dash.style.display = 'grid';
+      dash.style.display = 'flex';
     }
   }
 
@@ -3254,6 +3287,8 @@
       document.getElementById('dc-server-name').textContent = data.guild_name || 'gamEZnet';
       document.getElementById('dc-online').textContent      = data.online_count ?? '—';
       document.getElementById('dc-total').textContent       = data.member_count ?? '—';
+      const badge = document.getElementById('tab-dc-online');
+      if (badge && data.online_count != null) { badge.textContent = data.online_count; badge.style.display = ''; }
 
       const el = document.getElementById('dc-members');
       if (!data.members || data.members.length === 0) {
@@ -3717,6 +3752,56 @@
       console.warn('[YT feed]', e.message);
     }
   }
+
+  // ── Column drag reorder ────────────────────────────────────────────────────
+  (function initColumnDrag() {
+    const dash = document.getElementById('dashboard-section');
+    // Restore saved order
+    const saved = JSON.parse(localStorage.getItem('gz-col-order') || 'null');
+    if (saved) {
+      saved.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) dash.appendChild(el);
+      });
+    }
+    let dragging = null;
+    document.querySelectorAll('#dashboard-section > .col').forEach(col => {
+      const handle = col.querySelector('.col-handle');
+      if (!handle) return;
+      // Only allow drag when initiated from handle
+      handle.addEventListener('mousedown', () => col.setAttribute('draggable', 'true'));
+      col.addEventListener('dragstart', e => {
+        dragging = col;
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => col.classList.add('col-dragging'), 0);
+      });
+      col.addEventListener('dragend', () => {
+        col.setAttribute('draggable', 'false');
+        col.classList.remove('col-dragging');
+        document.querySelectorAll('.col-drag-over').forEach(c => c.classList.remove('col-drag-over'));
+        dragging = null;
+        const order = Array.from(dash.querySelectorAll(':scope > .col')).map(c => c.id);
+        localStorage.setItem('gz-col-order', JSON.stringify(order));
+      });
+      col.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (dragging && dragging !== col) col.classList.add('col-drag-over');
+      });
+      col.addEventListener('dragleave', e => {
+        if (!col.contains(e.relatedTarget)) col.classList.remove('col-drag-over');
+      });
+      col.addEventListener('drop', e => {
+        e.preventDefault();
+        col.classList.remove('col-drag-over');
+        if (!dragging || dragging === col) return;
+        const cols = Array.from(dash.querySelectorAll(':scope > .col'));
+        const dragIdx = cols.indexOf(dragging);
+        const dropIdx = cols.indexOf(col);
+        if (dragIdx < dropIdx) dash.insertBefore(dragging, col.nextSibling);
+        else dash.insertBefore(dragging, col);
+      });
+    });
+  })();
 
   // ── Boot ───────────────────────────────────────────────────────────────────
   init();
