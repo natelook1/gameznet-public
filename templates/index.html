@@ -1385,40 +1385,50 @@
     .content   { animation-delay: 0.05s; }
     footer     { animation-delay: 0.1s; }
     /* ── Chat ── */
-    /* ── Network column collapse when connected ── */
-    #col-left {
-      transition: max-width 0.45s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    #col-left.net-connected {
-      max-width: 200px;
-      min-width: 0 !important;
-      overflow: hidden;
+    /* ── Network column — hide when connected (pill takes over) ── */
+    #col-left.net-connected { display: none; }
+
+    /* ── Network status pill (tab-nav, right side) ── */
+    .net-pill {
+      display: none;
+      align-items: center;
+      gap: 7px;
+      margin-left: auto;
+      padding: 5px 12px;
+      border: 1px solid rgba(0,232,122,0.3);
+      border-radius: 3px;
+      background: rgba(0,232,122,0.06);
       cursor: pointer;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--success);
+      transition: background 0.15s;
+      position: relative;
     }
-    #col-left.net-connected:hover {
-      max-width: 2000px;
-      min-width: 260px;
-      overflow-y: auto;
-      cursor: default;
+    .net-pill:hover { background: rgba(0,232,122,0.12); }
+    .net-pill.visible { display: flex; }
+    .net-pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 6px rgba(0,232,122,0.8); animation: dot-pulse 2s ease-in-out infinite; }
+    .net-pill-ip { color: var(--text-dim); font-size: 9px; }
+
+    /* ── Network dropdown ── */
+    .net-dropdown {
+      display: none;
+      position: fixed;
+      top: 94px;
+      right: 28px;
+      width: 280px;
+      background: #0f1623;
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+      z-index: 900;
+      padding: 14px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
     }
-    .net-collapsible {
-      overflow: hidden;
-      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-      max-height: 1000px;
-      opacity: 1;
-    }
-    #col-left.net-connected .net-collapsible {
-      max-height: 0;
-      opacity: 0;
-    }
-    #col-left.net-connected:hover .net-collapsible {
-      max-height: 1000px;
-      opacity: 1;
-    }
-    #col-left.net-connected .connect-btn::after {
-      content: ' ···';
-      opacity: 0.5;
-    }
+    .net-dropdown.open { display: flex; }
 
     /* ── Floating Network Chat panel ── */
     .chat-float {
@@ -1426,10 +1436,10 @@
       bottom: 40px;
       right: 24px;
       width: 320px;
-      background: var(--panel);
+      background: #0f1623;
       border: 1px solid var(--border2);
       border-radius: 6px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.75);
       z-index: 800;
       display: flex;
       flex-direction: column;
@@ -1760,6 +1770,31 @@
     <button class="tab-btn active" onclick="switchTab('home', this)">HOME</button>
     <button class="tab-btn yt-tab" onclick="switchTab('youtube', this)">YOUTUBE</button>
     <button class="tab-btn dc-tab" onclick="switchTab('discord', this)">DISCORD<span class="dc-tab-badge" id="tab-dc-online" style="display:none;"></span></button>
+    <div class="net-pill" id="net-pill" onclick="toggleNetDropdown()">
+      <div class="net-pill-dot"></div>
+      <span>CONNECTED</span>
+      <span class="net-pill-ip" id="net-pill-ip"></span>
+      <span id="net-pill-timer">00:00:00</span>
+    </div>
+  </div>
+
+  <!-- Network dropdown (shown when pill clicked) -->
+  <div class="net-dropdown" id="net-dropdown">
+    <div class="status-card st-connected" style="padding:10px 12px;">
+      <div class="orb-wrap"><div class="orb connected"><div class="orb-ring"></div><span>⬡</span></div></div>
+      <div class="status-info">
+        <div class="status-main connected">Connected</div>
+        <div class="status-sub" id="dd-sub"></div>
+        <div class="session-timer visible" id="dd-timer">00:00:00</div>
+      </div>
+    </div>
+    <div class="telemetry-grid">
+      <div class="tel-card"><span class="tel-label">Latency</span><span class="tel-val highlight" id="dd-ping">---</span></div>
+      <div class="tel-card"><span class="tel-label">Handshake</span><span class="tel-val" id="dd-handshake" style="font-size:11px;">Never</span></div>
+      <div class="tel-card"><span class="tel-label">Received</span><span class="tel-val" id="dd-rx">0 B</span></div>
+      <div class="tel-card"><span class="tel-label">Sent</span><span class="tel-val" id="dd-tx">0 B</span></div>
+    </div>
+    <button id="dd-disconnect-btn" onclick="toggleConnect(); toggleNetDropdown();" class="connect-btn action-disconnect" style="margin-top:2px;">Disconnect</button>
   </div>
 
   <!-- Floating player (persists across tab switches) -->
@@ -2329,7 +2364,10 @@
 
   setInterval(() => {
     if (state.connectedAt) {
-      document.getElementById('session-timer').textContent = formatDuration(Date.now() - state.connectedAt);
+      const t = formatDuration(Date.now() - state.connectedAt);
+      document.getElementById('session-timer').textContent = t;
+      document.getElementById('net-pill-timer').textContent = t;
+      document.getElementById('dd-timer').textContent = t;
     }
   }, 1000);
 
@@ -2439,6 +2477,9 @@
       startSessionTimer();
       document.getElementById('col-left').classList.add('net-connected');
       document.getElementById('chat-float').style.display = '';
+      document.getElementById('net-pill').classList.add('visible');
+      document.getElementById('net-pill-ip').textContent = state.clientIp || '';
+      document.getElementById('dd-sub').textContent = state.clientIp || 'VPN Active';
       setChatEnabled(true);
       updateFullRouteBtn();
       updateRemoteHelpBtn(true);
@@ -2480,6 +2521,8 @@
       footer.textContent = state.provisioned ? `READY · ${state.name.toUpperCase()}` : 'AWAITING SETUP';
       document.getElementById('col-left').classList.remove('net-connected');
       document.getElementById('chat-float').style.display = 'none';
+      document.getElementById('net-pill').classList.remove('visible');
+      document.getElementById('net-dropdown').classList.remove('open');
       stopSessionTimer();
       setChatEnabled(false);
       updateFullRouteBtn();
@@ -2514,6 +2557,11 @@
     document.getElementById('tel-handshake').textContent = t.handshake || 'Never';
     document.getElementById('tel-rx').textContent        = t.received  || '0 B';
     document.getElementById('tel-tx').textContent        = t.sent      || '0 B';
+    // Mirror into dropdown
+    document.getElementById('dd-ping').textContent       = t.ping      || '---';
+    document.getElementById('dd-handshake').textContent  = t.handshake || 'Never';
+    document.getElementById('dd-rx').textContent         = t.received  || '0 B';
+    document.getElementById('dd-tx').textContent         = t.sent      || '0 B';
 
     if (t.alert !== undefined) showAlert(t.alert);
   }
@@ -4446,6 +4494,17 @@
       console.warn('[YT feed]', e.message);
     }
   }
+
+  // ── Network dropdown ───────────────────────────────────────────────────────
+  function toggleNetDropdown() {
+    document.getElementById('net-dropdown').classList.toggle('open');
+  }
+  document.addEventListener('click', e => {
+    const dd = document.getElementById('net-dropdown');
+    if (dd?.classList.contains('open') && !dd.contains(e.target) && !e.target.closest('#net-pill')) {
+      dd.classList.remove('open');
+    }
+  });
 
   // ── Floating chat panel ────────────────────────────────────────────────────
   (function initChatFloat() {
