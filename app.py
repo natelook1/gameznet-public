@@ -858,6 +858,18 @@ def api_remote_start_host():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/steam/link", methods=["POST"])
+def api_steam_link():
+    """Open Steam OpenID login in the default browser to link the player's Steam account."""
+    data = request.json or {}
+    name = data.get("name", "")
+    if not name:
+        return jsonify({"error": "Missing name"}), 400
+    import webbrowser
+    webbrowser.open(f"{WORKER_URL}/auth/steam?token={name}")
+    return jsonify({"success": True})
+
+
 def _notify_connected(helper):
     """Tell the backend the helper has launched RustDesk so the host modal can advance."""
     if not helper:
