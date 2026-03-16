@@ -1012,37 +1012,58 @@
     }
     .srv-stats span { color: var(--text); }
 
-    /* ── Server strip ── */
+    /* ── Server strip (chip icons) ── */
     .server-strip-wrap { flex-shrink: 0; }
     .server-strip-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-    .server-strip { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+    .server-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
     .server-strip::-webkit-scrollbar { height: 3px; }
     .server-strip::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-    .srv-compact {
-      flex-shrink: 0; width: 210px; height: 78px; border-radius: 4px;
-      border: 1px solid var(--border2); background: var(--panel) center/cover;
-      position: relative; overflow: hidden; display: flex; flex-direction: column;
-      justify-content: flex-end; padding: 7px 9px; gap: 3px; cursor: default;
-      transition: border-color 0.2s;
+    .srv-chip {
+      flex-shrink: 0; height: 44px; padding: 0 10px 0 5px; border-radius: 4px;
+      border: 1px solid var(--border2); background: var(--surface);
+      display: flex; align-items: center; gap: 7px;
+      cursor: pointer; transition: border-color 0.15s, background 0.15s;
     }
-    .srv-compact::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(7,9,15,0.94) 50%, rgba(7,9,15,0.55) 100%); }
-    .srv-compact > * { position: relative; }
-    .srv-compact.srv-running { border-color: rgba(0,232,122,0.35); }
-    .srv-compact.srv-offline { opacity: 0.65; }
-    .srv-compact-top { display: flex; align-items: center; gap: 5px; }
-    .srv-compact-name { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
-    .srv-compact-state { font-size: 8px; font-family: 'Share Tech Mono', monospace; letter-spacing: 1px; text-transform: uppercase; }
-    .srv-compact-state.running { color: var(--success); }
-    .srv-compact-state.offline, .srv-compact-state.unknown { color: var(--text-dim); }
-    .srv-compact-state.starting, .srv-compact-state.stopping { color: var(--warn); }
-    .srv-compact-stats { font-size: 9px; font-family: 'Share Tech Mono', monospace; color: var(--text-dim); display: flex; gap: 8px; }
-    .srv-compact-stats span { color: var(--text); }
-    .srv-compact-ports { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    .srv-compact-port { font-size: 9px; font-family: 'Share Tech Mono', monospace; color: var(--accent); cursor: pointer; }
-    .srv-compact-port:hover { color: var(--text); text-decoration: underline; }
-    .srv-compact-port-label { font-size: 8px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; margin-right: 1px; }
-    .srv-compact-join { font-size: 8px; font-family: 'Share Tech Mono', monospace; color: #1b9af7; border: 1px solid #1b9af7; padding: 1px 6px; border-radius: 2px; cursor: pointer; background: transparent; margin-left: auto; }
-    .srv-compact-join:hover { background: rgba(27,154,247,0.1); }
+    .srv-chip:hover { border-color: var(--accent); background: var(--panel); }
+    .srv-chip.srv-running { border-color: rgba(0,232,122,0.3); }
+    .srv-chip.srv-running:hover { border-color: rgba(0,232,122,0.7); }
+    .srv-chip.srv-offline { opacity: 0.6; }
+    .srv-chip-icon {
+      width: 34px; height: 34px; border-radius: 3px; flex-shrink: 0;
+      background: var(--panel) center/cover; overflow: hidden;
+    }
+    .srv-chip-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .srv-chip-name { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+    .srv-chip-status { font-size: 8px; font-family: 'Share Tech Mono', monospace; letter-spacing: 1px; text-transform: uppercase; }
+    .srv-chip-status.running { color: var(--success); }
+    .srv-chip-status.offline, .srv-chip-status.unknown { color: var(--text-dim); }
+    .srv-chip-status.starting, .srv-chip-status.stopping { color: var(--warn); }
+
+    /* ── Server detail modal ── */
+    #server-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:1000; align-items:center; justify-content:center; }
+    #server-modal-overlay.active { display:flex; }
+    .srv-modal { background:var(--surface); border:1px solid var(--border2); border-radius:8px; overflow:hidden; width:480px; max-width:94vw; animation:srvModalIn 0.22s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes srvModalIn { from { opacity:0; transform:scale(0.88) translateY(16px); } to { opacity:1; transform:none; } }
+    .srv-modal-banner { height:140px; background:var(--panel) center/cover; position:relative; overflow:hidden; }
+    .srv-modal-banner::after { content:''; position:absolute; inset:0; background:linear-gradient(to top, rgba(7,9,15,0.95) 0%, rgba(7,9,15,0.25) 100%); }
+    .srv-modal-banner-inner { position:absolute; bottom:0; left:0; right:0; padding:12px 16px; display:flex; align-items:flex-end; gap:10px; z-index:1; }
+    .srv-modal-name { font-size:20px; font-weight:700; letter-spacing:0.5px; flex:1; line-height:1.2; }
+    .srv-modal-badge { font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:1.5px; padding:3px 8px; border-radius:2px; text-transform:uppercase; flex-shrink:0; }
+    .srv-modal-badge.running { background:rgba(0,232,122,0.12); color:var(--success); border:1px solid rgba(0,232,122,0.3); }
+    .srv-modal-badge.offline, .srv-modal-badge.unknown { background:rgba(255,255,255,0.05); color:var(--text-dim); border:1px solid var(--border2); }
+    .srv-modal-badge.starting, .srv-modal-badge.stopping { background:rgba(255,165,0,0.1); color:var(--warn); border:1px solid rgba(255,165,0,0.35); }
+    .srv-modal-close { position:absolute; top:10px; right:10px; z-index:2; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.15); border-radius:3px; color:var(--text-dim); font-size:12px; padding:3px 7px; cursor:pointer; font-family:'Share Tech Mono',monospace; transition:all 0.15s; }
+    .srv-modal-close:hover { color:var(--text); border-color:var(--text-dim); }
+    .srv-modal-body { padding:16px; display:flex; flex-direction:column; gap:12px; }
+    .srv-modal-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .srv-modal-stat { background:var(--bg2); border:1px solid var(--border); border-radius:3px; padding:8px 10px; display:flex; flex-direction:column; gap:3px; }
+    .srv-modal-stat-label { font-family:'Share Tech Mono',monospace; font-size:8px; color:var(--text-dim); letter-spacing:1px; }
+    .srv-modal-stat-val { font-family:'Share Tech Mono',monospace; font-size:15px; color:var(--text); }
+    .srv-modal-ports { display:flex; gap:8px; flex-wrap:wrap; }
+    .srv-modal-port-btn { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--accent); border:1px solid rgba(0,212,255,0.3); background:rgba(0,212,255,0.05); border-radius:3px; padding:5px 10px; cursor:pointer; letter-spacing:0.5px; transition:all 0.15s; }
+    .srv-modal-port-btn:hover { background:rgba(0,212,255,0.12); border-color:var(--accent); }
+    .srv-modal-steam-btn { font-family:'Share Tech Mono',monospace; font-size:11px; color:#1b9af7; border:1px solid #1b9af7; background:transparent; border-radius:3px; padding:7px 16px; cursor:pointer; letter-spacing:1px; transition:all 0.15s; }
+    .srv-modal-steam-btn:hover { background:rgba(27,154,247,0.12); }
 
     /* ── Steam Social column ── */
     .steam-friend-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
@@ -2321,6 +2342,24 @@
 
 </div>
 
+<!-- ── Server detail modal ── -->
+<div id="server-modal-overlay" onclick="if(event.target===this)closeSrvModal()">
+  <div class="srv-modal">
+    <div class="srv-modal-banner" id="srv-modal-banner">
+      <button class="srv-modal-close" onclick="closeSrvModal()">✕ CLOSE</button>
+      <div class="srv-modal-banner-inner">
+        <div class="srv-modal-name" id="srv-modal-name">—</div>
+        <div class="srv-modal-badge" id="srv-modal-badge">OFFLINE</div>
+      </div>
+    </div>
+    <div class="srv-modal-body">
+      <div class="srv-modal-stats" id="srv-modal-stats" style="display:none;"></div>
+      <div class="srv-modal-ports" id="srv-modal-ports"></div>
+      <div id="srv-modal-actions"></div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -3348,6 +3387,8 @@
     } catch {}
   }
 
+  const _isMinecraft = n => /minecraft/i.test(n);
+
   function renderClientServers(servers) {
     const strip = document.getElementById('server-strip-inner');
     const wrap  = document.getElementById('server-strip-wrap');
@@ -3355,48 +3396,74 @@
     if (wrap) wrap.style.display = servers.length ? '' : 'none';
     const order = { running: 0, starting: 1, stopping: 2, offline: 3 };
     servers = [...servers].sort((a, b) => (order[a.state] ?? 3) - (order[b.state] ?? 3));
-    const isMinecraft = n => /minecraft/i.test(n);
     strip.innerHTML = servers.map(s => {
       const cls = ['running','starting','stopping'].includes(s.state) ? s.state : 'offline';
-      const isRunning = s.state === 'running';
-      const bgStyle = s.steam_appid
-        ? `background-image:url('https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/header.jpg')`
+      const iconStyle = s.steam_appid
+        ? `style="background-image:url('https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/capsule_sm_120.jpg')"`
         : '';
-      const statsHtml = isRunning
-        ? `<div class="srv-compact-stats"><span>${s.cpu}%</span> CPU · <span>${fmtMem(s.memory_mb)}</span> RAM${s.uptime ? ` · UP ${fmtUptime(s.uptime)}` : ''}</div>`
-        : '';
-      let portsHtml = '';
-      if (isRunning && s.port) {
-        if (isMinecraft(s.name)) {
-          // Dual port: Java + Bedrock (Geyser); fallback to 19132 if not in Pterodactyl allocations
-          const bedrockPort = s.extra_ports?.[0] || 19132;
-          portsHtml = `<div class="srv-compact-ports">
-            <span class="srv-compact-port-label">Java</span><span class="srv-compact-port" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('Java port copied!','success'))">:${s.port} ⧉</span>
-            <span class="srv-compact-port-label">Bedrock</span><span class="srv-compact-port" onclick="navigator.clipboard.writeText('${s.host}:${bedrockPort}').then(()=>toast('Bedrock port copied!','success'))">:${bedrockPort} ⧉</span>
-          </div>`;
-        } else {
-          const steamJoin = s.steam_appid
-            ? `<button class="srv-compact-join" onclick="location.href='${s.steam_appid == 526870 ? `steam://rungameid/${s.steam_appid}//+open ${s.host}:${s.port}` : `steam://connect/${s.host}:${s.port}`}'">▶ STEAM</button>`
-            : '';
-          portsHtml = `<div class="srv-compact-ports">
-            <span class="srv-compact-port" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('IP:Port copied!','success'))">:${s.port} ⧉</span>
-            ${steamJoin}
-          </div>`;
-        }
-      }
-      return `<div class="srv-compact srv-${cls}" style="${bgStyle}">
-        <div class="srv-compact-top">
-          <div class="srv-dot ${cls}"></div>
-          <div class="srv-compact-name">${s.name}</div>
-          <div class="srv-compact-state ${cls}">${s.state}</div>
+      return `<div class="srv-chip srv-${cls}" onclick="openSrvModal('${s.id}')">
+        <div class="srv-dot ${cls}"></div>
+        <div class="srv-chip-icon" ${iconStyle}></div>
+        <div class="srv-chip-info">
+          <div class="srv-chip-name">${s.name}</div>
+          <div class="srv-chip-status ${cls}">${s.state}</div>
         </div>
-        ${statsHtml}
-        ${portsHtml}
       </div>`;
     }).join('');
-    // Load game news for running servers with steam appids
     const appids = [...new Set(servers.filter(s => s.state === 'running' && s.steam_appid).map(s => s.steam_appid))];
     loadSteamNews(appids);
+  }
+
+  function openSrvModal(serverId) {
+    const s = _serverList.find(x => x.id === serverId);
+    if (!s) return;
+    const cls = ['running','starting','stopping'].includes(s.state) ? s.state : 'offline';
+    const isRunning = s.state === 'running';
+    const banner = document.getElementById('srv-modal-banner');
+    banner.style.backgroundImage = s.steam_appid
+      ? `url('https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/header.jpg')`
+      : '';
+    document.getElementById('srv-modal-name').textContent = s.name;
+    const badge = document.getElementById('srv-modal-badge');
+    badge.textContent = s.state;
+    badge.className = `srv-modal-badge ${cls}`;
+    const stats = document.getElementById('srv-modal-stats');
+    if (isRunning) {
+      stats.style.display = 'grid';
+      stats.innerHTML = `
+        <div class="srv-modal-stat"><div class="srv-modal-stat-label">CPU</div><div class="srv-modal-stat-val">${s.cpu}%</div></div>
+        <div class="srv-modal-stat"><div class="srv-modal-stat-label">RAM</div><div class="srv-modal-stat-val">${fmtMem(s.memory_mb)}</div></div>
+        <div class="srv-modal-stat"><div class="srv-modal-stat-label">Uptime</div><div class="srv-modal-stat-val">${s.uptime ? fmtUptime(s.uptime) : '—'}</div></div>`;
+    } else {
+      stats.style.display = 'none';
+    }
+    const ports = document.getElementById('srv-modal-ports');
+    if (isRunning && s.port) {
+      if (_isMinecraft(s.name)) {
+        const bp = s.extra_ports?.[0] || 19132;
+        ports.innerHTML = `
+          <button class="srv-modal-port-btn" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('Java port copied!','success'))">Java :${s.port} ⧉</button>
+          <button class="srv-modal-port-btn" onclick="navigator.clipboard.writeText('${s.host}:${bp}').then(()=>toast('Bedrock port copied!','success'))">Bedrock :${bp} ⧉</button>`;
+      } else {
+        ports.innerHTML = `<button class="srv-modal-port-btn" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('IP:Port copied!','success'))">:${s.port} ⧉</button>`;
+      }
+    } else {
+      ports.innerHTML = '';
+    }
+    const actions = document.getElementById('srv-modal-actions');
+    if (isRunning && s.steam_appid) {
+      const url = s.steam_appid == 526870
+        ? `steam://rungameid/${s.steam_appid}//+open ${s.host}:${s.port}`
+        : `steam://connect/${s.host}:${s.port}`;
+      actions.innerHTML = `<button class="srv-modal-steam-btn" onclick="location.href='${url}'">▶ STEAM JOIN</button>`;
+    } else {
+      actions.innerHTML = '';
+    }
+    document.getElementById('server-modal-overlay').classList.add('active');
+  }
+
+  function closeSrvModal() {
+    document.getElementById('server-modal-overlay').classList.remove('active');
   }
 
   setInterval(loadClientServers, 30000);
