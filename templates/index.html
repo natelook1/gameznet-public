@@ -1467,7 +1467,10 @@
           </div>
           <div style="text-align:right;flex-shrink:0;">
             <div class="session-countdown" id="session-countdown-disp" style="font-size:16px;margin-bottom:8px;"></div>
-            <button class="btn-cancel-session" id="session-cancel-btn" onclick="clearSession()" style="display:none;">Cancel</button>
+            <div style="display:flex;gap:6px;justify-content:flex-end;">
+              <button class="btn-cancel-session" id="session-edit-btn" onclick="editSession()" style="display:none;border-color:var(--accent);color:var(--accent);">Edit</button>
+              <button class="btn-cancel-session" id="session-cancel-btn" onclick="clearSession()" style="display:none;">Cancel</button>
+            </div>
           </div>
         </div>
       </div>
@@ -2239,9 +2242,12 @@
     document.getElementById('session-time-disp').textContent = t.toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
     document.getElementById('session-msg-disp').textContent = session.message || '';
     document.getElementById('session-msg-disp').style.display = session.message ? 'block' : 'none';
-    // Show cancel only for host or if name matches
-    const myName = document.getElementById('info-name').textContent;
-    cancelBtn.style.display = (myName && (myName === session.host || myName === '—')) ? 'inline-block' : 'inline-block';
+    // Show cancel/edit only for the host
+    const myName = state.name;
+    const isHost = myName && myName === session.host;
+    cancelBtn.style.display = isHost ? 'inline-block' : 'none';
+    const editBtn = document.getElementById('session-edit-btn');
+    if (editBtn) editBtn.style.display = isHost ? 'inline-block' : 'none';
     // Countdown
     function tick() {
       const diff = new Date(session.scheduled_time) - Date.now();
@@ -2262,24 +2268,33 @@
   }
 
   async function clearSession() {
-    await fetch('/api/session/clear', { method: 'POST' });
-    renderSession(null);
+    const res = await fetch('/api/session/clear', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name: state.name, vpn_ip: state.clientIp })
+    });
+    if (res.ok) { renderSession(null); }
+    else { const d = await res.json(); toast(d.error || 'Could not cancel session', true); }
+  }
+
+  function editSession() {
+    if (!_currentSession) return;
+    openScheduleModal(_currentSession);
   }
 
   let _schedGames = [];
   let _schedSelected = null;
 
-  async function openScheduleModal() {
+  async function openScheduleModal(prefill) {
     _schedSelected = null;
     _schedGames = [];
     const grid = document.getElementById('sched-game-grid');
     grid.innerHTML = '<div style="color:var(--muted);font-size:11px;grid-column:1/-1;">Loading servers...</div>';
     document.getElementById('schedule-overlay').classList.add('active');
-    // Set default time to 1 hour from now
-    const def = new Date(Date.now() + 3600000);
+    // Default time: 1 hour from now (or prefill)
+    const def = prefill ? new Date(prefill.scheduled_time) : new Date(Date.now() + 3600000);
     def.setSeconds(0, 0);
     document.getElementById('sched-time').value = def.toISOString().slice(0,16);
-    document.getElementById('sched-msg').value = '';
+    document.getElementById('sched-msg').value = prefill?.message || '';
     try {
       const res = await fetch('/api/servers');
       const servers = await res.json();
@@ -2291,6 +2306,11 @@
         : '';
       return `<button class="sched-game-btn" onclick="selectSchedGame(${i})" id="sched-g-${i}">${img}<span>${g.name}</span></button>`;
     }).join('') || '<div style="color:var(--muted);font-size:11px;grid-column:1/-1;">No servers found</div>';
+    // Pre-select game if editing
+    if (prefill) {
+      const idx = _schedGames.findIndex(g => g.name === prefill.game);
+      if (idx >= 0) selectSchedGame(idx);
+    }
   }
 
   function selectSchedGame(i) {
@@ -2308,8 +2328,8 @@
     const scheduled_time = document.getElementById('sched-time').value;
     if (!scheduled_time) { toast('Pick a date and time'); return; }
     const message = document.getElementById('sched-msg').value.trim();
-    const host = document.getElementById('info-name').textContent;
-    const body = { host, game: _schedSelected.name, steam_appid: _schedSelected.steam_appid, scheduled_time: new Date(scheduled_time).toISOString(), message };
+    const host = state.name;
+    const body = { host, vpn_ip: state.clientIp, game: _schedSelected.name, steam_appid: _schedSelected.steam_appid, scheduled_time: new Date(scheduled_time).toISOString(), message };
     const res = await fetch('/api/session/set', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
     if (res.ok) {
       closeScheduleModal();
