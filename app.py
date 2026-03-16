@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.10"
+VERSION = "1.9.11"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -783,8 +783,8 @@ def api_update():
                         
         log.info("Update downloaded and extracted successfully.")
     except Exception as e:
-        log.error("Update failed: %s", e)
-        return jsonify({"error": f"Failed to download update: {e}"}), 500
+        log.error("Update failed: %r", e, exc_info=True)
+        return jsonify({"error": f"Failed to download update: {repr(e)}"}), 500
 
     # Restart: release mutex first so new instance can acquire it, then launch and exit
     def _restart():
