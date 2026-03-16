@@ -170,23 +170,33 @@
 
     /* Column drag handle */
     .col-handle {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(3, 4px);
+      grid-template-rows: repeat(2, 4px);
+      gap: 3px;
       justify-content: center;
-      height: 14px;
+      align-content: center;
+      height: 20px;
       cursor: grab;
-      opacity: 0.2;
-      transition: opacity 0.15s;
+      opacity: 0.4;
+      transition: opacity 0.15s, background 0.15s;
       flex-shrink: 0;
       user-select: none;
-      font-size: 11px;
-      letter-spacing: 4px;
-      color: var(--text-dim);
-      padding-top: 2px;
+      border-radius: 3px;
+      margin-bottom: 2px;
     }
-    .col-handle:hover { opacity: 0.6; cursor: grab; }
+    .col-handle span {
+      display: block; width: 4px; height: 4px;
+      border-radius: 50%; background: var(--text-dim);
+    }
+    .col-handle:hover { opacity: 1; background: rgba(255,255,255,0.05); }
     .col-handle:active { cursor: grabbing; }
     .col.col-dragging { opacity: 0.35; }
     .col.col-drag-over { outline: 1px dashed var(--accent); outline-offset: 3px; border-radius: 4px; }
+    /* Default column order: Session | Network | Servers */
+    #col-right   { order: 1; }
+    #col-left    { order: 2; }
+    #col-servers { order: 3; }
 
     /* ── Section label ── */
     .section-label {
@@ -1686,7 +1696,7 @@
 
       <!-- LEFT: Connection + Telemetry -->
       <div class="col" id="col-left">
-        <div class="col-handle" title="Drag to reorder">· · ·</div>
+        <div class="col-handle" title="Drag to reorder columns"><span></span><span></span><span></span><span></span><span></span><span></span></div>
 
         <div>
           <div class="section-label">Network</div>
@@ -1749,7 +1759,7 @@
 
       <!-- RIGHT: Player + Online -->
       <div class="col" id="col-right">
-        <div class="col-handle" title="Drag to reorder">· · ·</div>
+        <div class="col-handle" title="Drag to reorder columns"><span></span><span></span><span></span><span></span><span></span><span></span></div>
 
         <div>
           <div class="section-label">Your Session</div>
@@ -1804,7 +1814,7 @@
 
       <!-- SERVERS: dedicated 3rd column -->
       <div class="col" id="col-servers">
-        <div class="col-handle" title="Drag to reorder">· · ·</div>
+        <div class="col-handle" title="Drag to reorder columns"><span></span><span></span><span></span><span></span><span></span><span></span></div>
         <div id="servers-section">
           <div class="servers-header">
             <div class="section-label">Game Servers</div>
@@ -2615,6 +2625,21 @@
     try {
       const res    = await fetch('/api/online');
       const online = res.ok ? await res.json() : [];
+      // Fallback: if steam isn't loaded yet, pull our own data from the list
+      if (!state.steam_id && state.name) {
+        const self = online.find(p => p.name === state.name);
+        if (self && self.steam_id) {
+          Object.assign(state, {
+            steam_id: self.steam_id,
+            steam_name: self.steam_name,
+            steam_avatar: self.steam_avatar,
+            steam_level: self.steam_level || 0,
+            steam_game_count: self.steam_game_count || 0,
+            steam_library: self.steam_library || null
+          });
+          updateSteamUI();
+        }
+      }
       const el     = document.getElementById('online-list-ui');
       if (!online.length) {
         el.innerHTML = '<div class="online-empty">○ No other players online</div>';
@@ -3755,20 +3780,21 @@
 
   // ── Column drag reorder ────────────────────────────────────────────────────
   (function initColumnDrag() {
-    const dash = document.getElementById('dashboard-section');
-    // Restore saved order
-    const saved = JSON.parse(localStorage.getItem('gz-col-order') || 'null');
-    if (saved) {
-      saved.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) dash.appendChild(el);
-      });
+    const cols = Array.from(document.querySelectorAll('#dashboard-section > .col'));
+    // Restore saved CSS order values
+    const saved = JSON.parse(localStorage.getItem('gz-col-order2') || 'null');
+    if (saved) cols.forEach(c => { if (saved[c.id] != null) c.style.order = saved[c.id]; });
+
+    function saveOrder() {
+      const map = {};
+      cols.forEach(c => { map[c.id] = c.style.order || getComputedStyle(c).order; });
+      localStorage.setItem('gz-col-order2', JSON.stringify(map));
     }
+
     let dragging = null;
-    document.querySelectorAll('#dashboard-section > .col').forEach(col => {
+    cols.forEach(col => {
       const handle = col.querySelector('.col-handle');
       if (!handle) return;
-      // Only allow drag when initiated from handle
       handle.addEventListener('mousedown', () => col.setAttribute('draggable', 'true'));
       col.addEventListener('dragstart', e => {
         dragging = col;
@@ -3778,10 +3804,9 @@
       col.addEventListener('dragend', () => {
         col.setAttribute('draggable', 'false');
         col.classList.remove('col-dragging');
-        document.querySelectorAll('.col-drag-over').forEach(c => c.classList.remove('col-drag-over'));
+        cols.forEach(c => c.classList.remove('col-drag-over'));
         dragging = null;
-        const order = Array.from(dash.querySelectorAll(':scope > .col')).map(c => c.id);
-        localStorage.setItem('gz-col-order', JSON.stringify(order));
+        saveOrder();
       });
       col.addEventListener('dragover', e => {
         e.preventDefault();
@@ -3794,11 +3819,10 @@
         e.preventDefault();
         col.classList.remove('col-drag-over');
         if (!dragging || dragging === col) return;
-        const cols = Array.from(dash.querySelectorAll(':scope > .col'));
-        const dragIdx = cols.indexOf(dragging);
-        const dropIdx = cols.indexOf(col);
-        if (dragIdx < dropIdx) dash.insertBefore(dragging, col.nextSibling);
-        else dash.insertBefore(dragging, col);
+        const dragOrder = dragging.style.order || getComputedStyle(dragging).order;
+        const dropOrder = col.style.order     || getComputedStyle(col).order;
+        dragging.style.order = dropOrder;
+        col.style.order      = dragOrder;
       });
     });
   })();
