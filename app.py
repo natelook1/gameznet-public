@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.8.4"
+VERSION = "1.8.5"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -186,7 +186,8 @@ _telemetry = {
     "sent": "0 B",
     "handshake": "Never",
     "motd": "",
-    "alert": None
+    "alert": None,
+    "session": None
 }
 
 def update_telemetry():
@@ -196,6 +197,8 @@ def update_telemetry():
 
     motd_timer = 0
     alert_timer = 0
+    session_timer = 0
+    last_session_id = None
     version_timer = 0
 
     while True:
@@ -223,7 +226,19 @@ def update_telemetry():
             alert_timer = 5
         alert_timer -= 1
 
-        # 1c. Check Version every ~60 seconds
+        # 1c. Poll session every ~30 seconds
+        if session_timer <= 0:
+            try:
+                req = urllib.request.Request(f"{WORKER_URL}/api/session", headers={'User-Agent': 'GamezNET'})
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode())
+                    _telemetry["session"] = data.get("session", None)
+            except Exception:
+                pass
+            session_timer = 15
+        session_timer -= 1
+
+        # 1d. Check Version every ~60 seconds
         if version_timer <= 0:
             check_version()
             version_timer = 30
@@ -1013,6 +1028,35 @@ def run_tray(flask_thread):
             except Exception:
                 pass
     threading.Thread(target=alert_watcher, daemon=True).start()
+
+    # Notify when a session is scheduled
+    def session_watcher():
+        import urllib.request as _ur
+        last_id = None
+        while True:
+            time.sleep(20)
+            try:
+                req = _ur.Request(f"{WORKER_URL}/api/session", headers={"User-Agent": "GamezNET"})
+                with _ur.urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode())
+                session = data.get("session")
+                if session and session.get("id") != last_id:
+                    last_id = session["id"]
+                    t = session.get("scheduled_time", "")
+                    try:
+                        dt = __import__("datetime").datetime.fromisoformat(t.replace("Z",""))
+                        time_str = dt.strftime("%b %d at %I:%M %p")
+                    except Exception:
+                        time_str = t
+                    try:
+                        tray.notify(f"{session.get('host','Someone')} scheduled {session.get('game','')} · {time_str}", "GamezNET Session")
+                    except Exception:
+                        pass
+                elif not session:
+                    last_id = None
+            except Exception:
+                pass
+    threading.Thread(target=session_watcher, daemon=True).start()
 
     tray.run()
 

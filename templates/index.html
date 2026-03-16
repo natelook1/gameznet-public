@@ -173,6 +173,7 @@
       grid-template-columns: 1fr 1fr;
       gap: 12px;
       min-height: 0;
+      max-height: 260px;
     }
 
     /* ── Section label ── */
@@ -552,6 +553,7 @@
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 4px; padding: 12px 14px;
       display: flex; flex-direction: column; gap: 8px;
+      overflow: hidden;
     }
     .discord-header {
       display: flex; align-items: center; gap: 8px;
@@ -1241,6 +1243,122 @@
     }
     .dc-voice-user img { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; }
     .dc-voice-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+    /* ── Session Scheduler ── */
+    .session-card {
+      position: relative;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      min-height: 120px;
+      border: 1px solid var(--border2);
+    }
+    .session-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center top;
+      filter: blur(2px) brightness(0.35) saturate(1.2);
+      transform: scale(1.05);
+    }
+    .session-body {
+      position: relative;
+      z-index: 1;
+      padding: 14px 16px;
+    }
+    .session-eyebrow {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .session-game-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+    .session-meta-row {
+      display: flex;
+      gap: 16px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .session-countdown {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      color: var(--accent);
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .session-msg-text {
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+      font-style: italic;
+      margin-bottom: 10px;
+    }
+    .session-footer {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .btn-schedule {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      background: rgba(0,200,255,0.08);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: 2px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-schedule:hover { background: rgba(0,200,255,0.18); }
+    .btn-cancel-session {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 5px 10px;
+      background: transparent;
+      border: 1px solid rgba(255,51,85,0.4);
+      color: var(--danger);
+      border-radius: 2px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-cancel-session:hover { background: rgba(255,51,85,0.1); }
+    /* Schedule Modal */
+    #schedule-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(3px); z-index:1000; align-items:center; justify-content:center; }
+    #schedule-overlay.active { display:flex; }
+    #schedule-modal { background:var(--bg2); border:1px solid var(--border2); border-radius:4px; padding:24px; max-width:420px; width:92%; }
+    #schedule-modal h3 { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--accent); letter-spacing:2px; text-transform:uppercase; margin:0 0 16px; }
+    .schedule-game-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:8px; margin-bottom:14px; max-height:200px; overflow-y:auto; }
+    .sched-game-btn {
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      border-radius: 3px;
+      cursor: pointer;
+      overflow: hidden;
+      padding: 0;
+      transition: border-color 0.15s;
+      aspect-ratio: 460/215;
+      position: relative;
+    }
+    .sched-game-btn img { width:100%; height:100%; object-fit:cover; display:block; filter:brightness(0.7); }
+    .sched-game-btn span { position:absolute; bottom:3px; left:0; right:0; text-align:center; font-family:'Share Tech Mono',monospace; font-size:8px; color:#fff; letter-spacing:0.5px; text-shadow:0 1px 3px rgba(0,0,0,0.9); padding:0 2px; }
+    .sched-game-btn:hover { border-color:var(--accent); }
+    .sched-game-btn.selected { border-color:var(--accent); box-shadow:0 0 8px rgba(0,200,255,0.3); }
+    .sched-game-btn img { filter:brightness(0.7); }
+    .sched-game-btn.selected img { filter:brightness(1); }
   </style>
 </head>
 <body>
@@ -1272,6 +1390,26 @@
       <button class="yt-float-btn" title="Close" onclick="ytFloatClose()">✕</button>
     </div>
     <iframe id="yt-float-iframe" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+  </div>
+
+  <div id="schedule-overlay">
+    <div id="schedule-modal">
+      <h3>Schedule a Session</h3>
+      <label style="font-size:11px;color:var(--muted);font-family:'Share Tech Mono',monospace;letter-spacing:1px;display:block;margin-bottom:8px;">PICK A GAME</label>
+      <div class="schedule-game-grid" id="sched-game-grid"></div>
+      <div style="margin-bottom:12px;">
+        <label>Date & Time</label>
+        <input type="datetime-local" id="sched-time" style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:12px;border-radius:2px;box-sizing:border-box;color-scheme:dark;">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label>Message <span style="color:var(--muted);font-size:10px;">(optional)</span></label>
+        <input type="text" id="sched-msg" placeholder="e.g. Hardcore run, all welcome!" maxlength="80" style="width:100%;">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="closeScheduleModal()">Cancel</button>
+        <button class="btn-primary" onclick="submitSession()">Schedule</button>
+      </div>
+    </div>
   </div>
 
   <!-- Theater mode (outside content flow) -->
@@ -1432,6 +1570,27 @@
           </div>
         </div>
 
+        <!-- Session Scheduler -->
+        <div id="session-card" class="session-card" style="display:none;">
+          <div class="session-bg" id="session-bg"></div>
+          <div class="session-body">
+            <div class="session-eyebrow">⚡ Scheduled Session</div>
+            <div class="session-game-name" id="session-game-name">—</div>
+            <div class="session-meta-row">
+              <span>📅 <span id="session-time-disp"></span></span>
+              <span>👤 <span id="session-host-disp"></span></span>
+            </div>
+            <div class="session-countdown" id="session-countdown-disp"></div>
+            <div class="session-msg-text" id="session-msg-disp"></div>
+            <div class="session-footer">
+              <button class="btn-cancel-session" id="session-cancel-btn" onclick="clearSession()" style="display:none;">Cancel Session</button>
+            </div>
+          </div>
+        </div>
+        <!-- Schedule button (shown when no session active) -->
+        <div id="schedule-trigger" style="margin-bottom:12px;display:flex;justify-content:flex-end;">
+          <button class="btn-schedule" onclick="openScheduleModal()">+ Schedule Session</button>
+        </div>
         <div id="servers-section">
           <div class="servers-header">
             <div class="section-label">Game Servers</div>
@@ -1827,6 +1986,7 @@
         if (s.telemetry) updateTelemetryUI(s.telemetry);
         if (s.telemetry && s.telemetry.alert) showAlert(s.telemetry.alert);
         refreshOnline();
+        loadSession();
         initInvisible();
         initFullRoute();
       } else {
@@ -2034,6 +2194,125 @@
     showUnprovisioned();
     toast('Reset complete. Enter a new token to continue.');
   }
+
+  // ── Session Scheduler ──────────────────────────────────────────────────────
+  let _sessionCountdownInterval = null;
+  let _currentSession = null;
+
+  async function loadSession() {
+    try {
+      const res = await fetch('/api/session');
+      const data = await res.json();
+      renderSession(data.session);
+    } catch {}
+  }
+
+  function renderSession(session) {
+    _currentSession = session;
+    const card = document.getElementById('session-card');
+    const trigger = document.getElementById('schedule-trigger');
+    const cancelBtn = document.getElementById('session-cancel-btn');
+    if (_sessionCountdownInterval) { clearInterval(_sessionCountdownInterval); _sessionCountdownInterval = null; }
+    if (!session) {
+      card.style.display = 'none';
+      trigger.style.display = 'flex';
+      return;
+    }
+    card.style.display = 'block';
+    trigger.style.display = 'none';
+    // Artwork
+    const bg = document.getElementById('session-bg');
+    if (session.steam_appid) {
+      bg.style.backgroundImage = `url(https://cdn.akamai.steamstatic.com/steam/apps/${session.steam_appid}/library_hero.jpg)`;
+    } else {
+      bg.style.backgroundImage = 'none';
+      bg.style.background = 'linear-gradient(135deg, rgba(0,200,255,0.1), rgba(0,0,0,0.5))';
+    }
+    document.getElementById('session-game-name').textContent = session.game;
+    document.getElementById('session-host-disp').textContent = session.host;
+    const t = new Date(session.scheduled_time);
+    document.getElementById('session-time-disp').textContent = t.toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+    document.getElementById('session-msg-disp').textContent = session.message || '';
+    document.getElementById('session-msg-disp').style.display = session.message ? 'block' : 'none';
+    // Show cancel only for host or if name matches
+    const myName = document.getElementById('info-name').textContent;
+    cancelBtn.style.display = (myName && (myName === session.host || myName === '—')) ? 'inline-block' : 'inline-block';
+    // Countdown
+    function tick() {
+      const diff = new Date(session.scheduled_time) - Date.now();
+      const el = document.getElementById('session-countdown-disp');
+      if (diff <= 0) {
+        el.textContent = '🟢 SESSION IS LIVE';
+        el.style.color = 'var(--success)';
+      } else {
+        const h = Math.floor(diff/3600000);
+        const m = Math.floor((diff%3600000)/60000);
+        const s = Math.floor((diff%60000)/1000);
+        el.textContent = `Starts in ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+        el.style.color = diff < 3600000 ? 'var(--warn)' : 'var(--accent)';
+      }
+    }
+    tick();
+    _sessionCountdownInterval = setInterval(tick, 1000);
+  }
+
+  async function clearSession() {
+    await fetch('/api/session/clear', { method: 'POST' });
+    renderSession(null);
+  }
+
+  let _schedGames = [];
+  let _schedSelected = null;
+
+  async function openScheduleModal() {
+    _schedSelected = null;
+    _schedGames = [];
+    const grid = document.getElementById('sched-game-grid');
+    grid.innerHTML = '<div style="color:var(--muted);font-size:11px;grid-column:1/-1;">Loading servers...</div>';
+    document.getElementById('schedule-overlay').classList.add('active');
+    // Set default time to 1 hour from now
+    const def = new Date(Date.now() + 3600000);
+    def.setSeconds(0, 0);
+    document.getElementById('sched-time').value = def.toISOString().slice(0,16);
+    document.getElementById('sched-msg').value = '';
+    try {
+      const res = await fetch('/api/servers');
+      const servers = await res.json();
+      _schedGames = servers.filter(s => s.name).map(s => ({ name: s.name, steam_appid: s.steam_appid || '' }));
+    } catch {}
+    grid.innerHTML = _schedGames.map((g, i) => {
+      const img = g.steam_appid
+        ? `<img src="https://cdn.akamai.steamstatic.com/steam/apps/${g.steam_appid}/header.jpg" onerror="this.style.display='none'">`
+        : '';
+      return `<button class="sched-game-btn" onclick="selectSchedGame(${i})" id="sched-g-${i}">${img}<span>${g.name}</span></button>`;
+    }).join('') || '<div style="color:var(--muted);font-size:11px;grid-column:1/-1;">No servers found</div>';
+  }
+
+  function selectSchedGame(i) {
+    document.querySelectorAll('.sched-game-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById(`sched-g-${i}`)?.classList.add('selected');
+    _schedSelected = _schedGames[i];
+  }
+
+  function closeScheduleModal() {
+    document.getElementById('schedule-overlay').classList.remove('active');
+  }
+
+  async function submitSession() {
+    if (!_schedSelected) return;
+    const scheduled_time = document.getElementById('sched-time').value;
+    if (!scheduled_time) return;
+    const message = document.getElementById('sched-msg').value.trim();
+    const host = document.getElementById('info-name').textContent;
+    const body = { host, game: _schedSelected.name, steam_appid: _schedSelected.steam_appid, scheduled_time: new Date(scheduled_time).toISOString(), message };
+    await fetch('/api/session/set', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    closeScheduleModal();
+    loadSession();
+  }
+
+  document.getElementById('schedule-overlay').addEventListener('click', e => { if (e.target.id === 'schedule-overlay') closeScheduleModal(); });
+
+  setInterval(loadSession, 30000);
 
   // ── Status poll ────────────────────────────────────────────────────────────
   setInterval(async () => {
