@@ -743,6 +743,142 @@ def api_status_set():
         pass
     return jsonify({"success": True})
 
+@app.route("/api/remote/start-host", methods=["POST"])
+def api_remote_start_host():
+    """
+    Download RustDesk (if needed), set session password in config, start RustDesk,
+    extract the machine ID from the get-id log, return it to the UI.
+    Called after the backend has already brokered the session.
+    """
+    data = request.json or {}
+    password = data.get("password", "")
+    if not password:
+        return jsonify({"error": "Missing password"}), 400
+
+    install_dir = os.path.dirname(os.path.abspath(__file__))
+    rustdesk_exe = os.path.join(install_dir, "rustdesk.exe")
+    rustdesk_url = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
+    config_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "RustDesk.toml")
+    id_log_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "log", "get-id", "rustdesk_rCURRENT.log")
+
+    try:
+        # Download RustDesk if not cached
+        if not os.path.exists(rustdesk_exe):
+            log.info("Downloading RustDesk...")
+            import urllib.request as _ur
+            _ur.urlretrieve(rustdesk_url, rustdesk_exe)
+            log.info("RustDesk downloaded.")
+
+        # Write session password into config before starting
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                toml = f.read()
+            import re as _re
+            if _re.search(r"^password\s*=", toml, _re.MULTILINE):
+                toml = _re.sub(r"^password\s*=.*$", f"password = '{password}'", toml, flags=_re.MULTILINE)
+            else:
+                toml += f"\npassword = '{password}'\n"
+            with open(config_path, "w") as f:
+                f.write(toml)
+        else:
+            with open(config_path, "w") as f:
+                f.write(f"enc_id = ''\npassword = '{password}'\nsalt = ''\n")
+
+        # Start RustDesk (hashes the password on startup)
+        subprocess.Popen([rustdesk_exe], close_fds=True)
+        time.sleep(4)
+
+        # Run --get-id to populate the log
+        subprocess.run([rustdesk_exe, "--get-id"], capture_output=True, timeout=5)
+        time.sleep(2)
+
+        # Read ID from log
+        rustdesk_id = None
+        if os.path.exists(id_log_path):
+            with open(id_log_path, "r") as f:
+                for line in reversed(f.readlines()):
+                    m = re.search(r"Generated id (\d+)", line)
+                    if m:
+                        rustdesk_id = m.group(1)
+                        break
+
+        if not rustdesk_id:
+            return jsonify({"error": "Could not read RustDesk ID"}), 500
+
+        log.info("RustDesk host started, ID: %s", rustdesk_id)
+        return jsonify({"success": True, "rustdesk_id": rustdesk_id})
+
+    except Exception as e:
+        log.error("remote start-host failed: %s", repr(e), exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/remote/start-helper", methods=["POST"])
+def api_remote_start_helper():
+    """
+    Download RustDesk (if needed) and attempt to connect to the requester.
+    Falls back gracefully if --connect flag is not supported.
+    """
+    data = request.json or {}
+    target_id = data.get("rustdesk_id", "")
+    password = data.get("password", "")
+    if not target_id or not password:
+        return jsonify({"error": "Missing rustdesk_id or password"}), 400
+
+    install_dir = os.path.dirname(os.path.abspath(__file__))
+    rustdesk_exe = os.path.join(install_dir, "rustdesk.exe")
+    rustdesk_url = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
+
+    try:
+        # Download RustDesk if not cached
+        if not os.path.exists(rustdesk_exe):
+            log.info("Downloading RustDesk...")
+            import urllib.request as _ur
+            _ur.urlretrieve(rustdesk_url, rustdesk_exe)
+            log.info("RustDesk downloaded.")
+
+        # Try CLI connect first
+        proc = subprocess.Popen([rustdesk_exe, "--connect", target_id, "--password", password])
+        time.sleep(5)
+        if proc.poll() is not None:
+            # Process exited — CLI connect not supported, fall back to GUI
+            log.info("RustDesk --connect exited immediately, launching GUI fallback")
+            subprocess.Popen([rustdesk_exe], close_fds=True)
+            return jsonify({"success": True, "mode": "gui", "rustdesk_id": target_id, "password": password})
+
+        return jsonify({"success": True, "mode": "connected"})
+
+    except Exception as e:
+        log.error("remote start-helper failed: %s", repr(e), exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/remote/cleanup", methods=["POST"])
+def api_remote_cleanup():
+    """Kill RustDesk and clear the session password from config."""
+    config_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "RustDesk.toml")
+    try:
+        import psutil
+        for proc in psutil.process_iter(['name']):
+            if (proc.info.get('name') or '').lower() == 'rustdesk.exe':
+                proc.kill()
+    except Exception:
+        pass
+    # Clear password from config
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                toml = f.read()
+            toml = re.sub(r"^password\s*=.*$", "password = ''", toml, flags=re.MULTILINE)
+            with open(config_path, "w") as f:
+                f.write(toml)
+    except Exception:
+        pass
+    log.info("RustDesk session cleaned up.")
+    return jsonify({"success": True})
+
+
 @app.route("/api/update", methods=["POST"])
 def api_update():
     """Download latest code from GitHub as a zip and restart the app."""
