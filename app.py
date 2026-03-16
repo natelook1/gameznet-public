@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.8"
+VERSION = "1.9.10"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -338,7 +338,8 @@ def api_status():
         "telemetry": _telemetry,
         "update_required": _update_required,
         "version": VERSION,
-        "full_route": _full_route
+        "full_route": _full_route,
+        "player_status": _player_status
     })
 
 @app.route("/api/connect", methods=["POST"])
@@ -732,6 +733,14 @@ def api_status_set():
         return jsonify({"error": "Status too long (max 40 characters)"}), 400
     _player_status = new_status
     log.info("Player status set to: %r", _player_status)
+    try:
+        with open(CONFIG_FILE) as f:
+            cfg = json.load(f)
+        cfg["status"] = new_status
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(cfg, f)
+    except Exception:
+        pass
     return jsonify({"success": True})
 
 @app.route("/api/update", methods=["POST"])
@@ -1109,6 +1118,13 @@ if __name__ == "__main__":
     _instance_mutex = ensure_single_instance()   # ← single-instance guard (must be first)
     ensure_admin()
     hide_console()
+
+    # Restore persisted status from config
+    try:
+        with open(CONFIG_FILE) as f:
+            _player_status = json.load(f).get("status", "")
+    except Exception:
+        pass
 
     # Auto-reconnect: if the tunnel is already up (e.g. after an in-place update), resume connected state
     try:

@@ -2383,6 +2383,11 @@
         state.connected = s.connected;
         setStatus(s.connected ? 'connected' : 'disconnected');
       }
+      if (s.player_status !== undefined && !state._statusRestored) {
+        state._statusRestored = true;
+        const inp = document.getElementById('status-input');
+        if (inp && s.player_status) inp.value = s.player_status;
+      }
     } catch {}
   }, 2000);
 
@@ -2398,6 +2403,8 @@
         return;
       }
       document.title = `GamezNET (${online.length} online)`;
+      const lbl = el.closest('.online-card')?.querySelector('.section-label');
+      if (lbl) lbl.textContent = `Who's Online  ·  ${online.length}`;
       el.innerHTML = online.map(p =>
         `<div class="online-player">
            <div class="op-dot"></div>
