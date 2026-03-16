@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.13.4"
+VERSION = "1.13.5"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -673,9 +673,9 @@ def api_online():
 @app.route("/api/fullroute", methods=["GET", "POST"])
 def api_fullroute():
     global _full_route
-    if _connected:
-        return jsonify({"error": "Disconnect first to change routing mode"}), 400
     data = request.get_json(silent=True) or {}
+    if "enabled" in data and _connected:
+        return jsonify({"error": "Disconnect first to change routing mode"}), 400
     if "enabled" in data:
         _full_route = bool(data["enabled"])
     return jsonify({"full_route": _full_route})
