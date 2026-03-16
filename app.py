@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.0"
+VERSION = "1.9.1"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -1083,7 +1083,7 @@ if __name__ == "__main__":
 
     # Start Flask in background thread
     flask_thread = threading.Thread(
-        target=lambda: app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False),
+        target=lambda: app.run(host="127.0.0.1", port=PORT, debug=False, use_reloader=False),
         daemon=True
     )
     flask_thread.start()
