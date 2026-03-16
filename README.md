@@ -66,7 +66,7 @@ That's it. You won't need the token again.
 
 When you're done, click **Disconnect** in the app or right-click the system tray icon. The VPN tunnel closes cleanly.
 
-You'll get a **system tray notification** whenever a friend joins the network while you're connected.
+You'll get a **system tray notification** when a friend joins or leaves the network while you're connected, and when the admin posts a broadcast alert.
 
 ---
 
@@ -77,6 +77,14 @@ The **Home** tab shows live status for all hosted game servers. Running servers 
 - **IP ⧉** — click to copy the IP address alone (for games that ask for IP without a port)
 - **:Port ⧉** — click to copy the full `IP:Port`
 - **▶ STEAM JOIN** — launches Steam and connects directly to the server
+
+---
+
+## 📅 Scheduled Sessions
+
+The **Home** tab shows the next scheduled game session when one is active. It displays the game name, host, scheduled time, message, and a live countdown. Sessions auto-expire 2 hours after the scheduled start time.
+
+The admin can schedule a session from the **+ Schedule Session** button below the session card. Players get a system tray notification when a new session is posted.
 
 ---
 
@@ -131,8 +139,8 @@ Go to `http://gameznet.local:7734` in any browser.
 **Connected but can't reach the game server**
 Wait 10 seconds after connecting and try again. If it keeps failing, let the admin know.
 
-**Update required message on launch**
-Click the **Update Required** button in the app — it will download and apply the update automatically, then restart. If the button doesn't work, run the install command again.
+**Update required / version badge flashing**
+Click the version badge in the top-right corner of the app — it will download and apply the update automatically, then restart. If that doesn't work, run the install command again.
 
 ---
 
@@ -150,7 +158,7 @@ Message the server admin. Running the install command again solves 99% of issues
 | Component | Role |
 |---|---|
 | Node.js/Express backend | Token management, API, install script delivery, YouTube/Discord/Steam proxy |
-| SQLite | Persistent storage for tokens, settings, players |
+| SQLite | Persistent storage for tokens, settings, players, sessions |
 | Docker Swarm | Backend deployment and orchestration |
 | Traefik | Reverse proxy routing all `*.looknet.ca` traffic |
 | Cloudflare Tunnel | Secure public exposure without open ports |
@@ -159,7 +167,7 @@ Message the server admin. Running the install command again solves 99% of issues
 | Pterodactyl + Wings | Game server management and console |
 | YouTube Data API v3 | Server-side video category browsing (30-min cache) |
 | YouTube OAuth2 | Sign in with Google for personalised feed |
-| Discord Bot API v10 | Live member list, online counts, and voice channel activity |
+| Discord Bot API v10 | Live member list, online counts, voice activity, and alert/support notifications |
 | Steam Web API | Game detection via player summaries |
 
 ### Requirements
@@ -190,7 +198,16 @@ The **Configuration** card has two tabs:
 | OAuth Client Secret | Google OAuth 2.0 client secret |
 | Discord Bot Token | Bot token for the gamEZnet Discord server |
 | Alerts Channel ID | Discord channel ID for server start/stop notifications |
+| Support Channel ID | Private Discord channel for player support request notifications |
 | Steam API Key | Steam Web API key — enables game detection via Steam |
+
+### Admin Panel — Messages
+
+The **Messages** card lets the admin post a **Message of the Day** (shown in the banner on every client) and a timed **Broadcast Alert** (shown as a coloured banner and triggers a tray notification on all connected clients).
+
+### Admin Panel — Session Scheduler
+
+Schedule a game session from the **Sessions** card. Pick a game (populated from running servers with Steam artwork), set a date/time and optional message, and post. All clients see the countdown card and receive a tray notification. Sessions auto-expire 2 hours after the scheduled start time.
 
 ### Deploying Updates
 
@@ -199,12 +216,24 @@ The **Configuration** card has two tabs:
 deploy-gameznet
 ```
 
+The deploy script pulls the latest code on gamez-vm, rebuilds the Docker image with `--no-cache`, and rolls out the stack.
+
 ### Environment Variables
+
+All variables are loaded from `/etc/gameznet/.env` at deploy time. Credentials are also stored in the database via the Integrations tab and take precedence over env vars at runtime — env vars serve as the zero-config default for fresh deployments.
 
 | Variable | Description |
 |---|---|
 | `ADMIN_PASSWORD` | Password for the admin panel |
 | `PTERODACTYL_API_KEY` | Pterodactyl client API key for game server status and control |
+| `YOUTUBE_API_KEY` | YouTube Data API v3 key |
+| `YT_CLIENT_ID` | Google OAuth 2.0 client ID |
+| `YT_CLIENT_SECRET` | Google OAuth 2.0 client secret |
+| `DISCORD_BOT_TOKEN` | Discord bot token |
+| `DISCORD_ALERTS_CHANNEL_ID` | Channel ID for server alerts |
+| `DISCORD_SUPPORT_CHANNEL_ID` | Channel ID for support request notifications |
+| `STEAM_API_KEY` | Steam Web API key |
+| `SERVER_ENDPOINT_IP` | Public WireGuard endpoint IP |
 
 ### Backend API Endpoints
 
@@ -218,6 +247,10 @@ deploy-gameznet
 | `/api/online` | GET | List of online players |
 | `/api/status/set` | POST | Set custom player status |
 | `/api/servers` | GET | Game server status from Pterodactyl (30s cache) |
+| `/api/session` | GET | Active scheduled session (auto-expires 2h after start) |
+| `/api/session/set` | POST | Create or replace scheduled session |
+| `/api/session/clear` | POST | Remove active session |
+| `/api/report` | POST | Submit player support request |
 | `/api/youtube/category` | GET | Curated videos by category |
 | `/api/youtube/search` | GET | YouTube search proxy |
 | `/api/youtube/feed` | GET | Personalised feed for authenticated user |
