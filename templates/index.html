@@ -153,8 +153,8 @@
     .dashboard {
       flex: 1;
       display: grid;
-      grid-template-columns: 340px 1fr;
-      gap: 20px;
+      grid-template-columns: 320px 1fr 1.1fr;
+      gap: 16px;
       overflow: hidden;
       min-height: 0;
     }
@@ -173,7 +173,6 @@
       grid-template-columns: 1fr 1fr;
       gap: 12px;
       min-height: 0;
-      max-height: 260px;
     }
 
     /* ── Section label ── */
@@ -553,7 +552,7 @@
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 4px; padding: 12px 14px;
       display: flex; flex-direction: column; gap: 8px;
-      overflow: hidden;
+      min-height: 0; overflow-y: auto;
     }
     .discord-header {
       display: flex; align-items: center; gap: 8px;
@@ -1598,7 +1597,10 @@
           </div>
         </div>
 
-        <!-- Session Scheduler -->
+      </div>
+
+      <!-- SERVERS: dedicated 3rd column -->
+      <div class="col" id="col-servers">
         <div id="servers-section">
           <div class="servers-header">
             <div class="section-label">Game Servers</div>
@@ -1608,7 +1610,6 @@
             <div class="online-empty" style="grid-column:1/-1;">○ Loading...</div>
           </div>
         </div>
-
       </div>
 
     </div>
