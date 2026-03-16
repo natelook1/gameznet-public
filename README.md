@@ -68,7 +68,9 @@ When you're done, click **Disconnect** in the app or right-click the system tray
 
 You'll get a **system tray notification** when a friend joins or leaves the network while you're connected, and when the admin posts a broadcast alert.
 
-The three dashboard panels (**Network**, **Your Session / Who's Online**, **Game Servers**) can be dragged into any order — grab the `· · ·` handle at the top of each column and drop it where you want it. Your layout is saved automatically.
+Once connected, the Network panel collapses and a live **● CONNECTED** pill appears in the tab bar showing your VPN IP and session timer. Click it to open a telemetry dropdown (ping, handshake, data transfer) and disconnect.
+
+The three dashboard panels (**Steam Social**, **Your Session / Who's Online**, **Network**) can be dragged into any order — grab the `· · ·` handle at the top of each column and drop it where you want it. Your layout is saved automatically.
 
 ---
 

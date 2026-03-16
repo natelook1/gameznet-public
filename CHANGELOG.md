@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.14.2 — 2026-03-16
+
+### Added
+- **Network status pill** — when connected, the Network column hides and a live `● CONNECTED` pill appears in the tab bar showing VPN IP and session timer; click it for a telemetry dropdown with ping, handshake, rx/tx, and disconnect button
+- **Steam Friends Online** — new Steam Social column shows which Steam friends are online and what they're playing
+- **Recently Played** — shows your last 5 games with playtime over the past 2 weeks
+- **Game News** — latest Steam news articles for running game servers, updated automatically
+- **Discord unread indicators** — red dot on channels with new messages, cleared when you open them
+- **Discord mention highlights** — messages that @mention your name are highlighted in amber
+- **Discord reactions** — click any emoji reaction to add or remove it via the bot
+- **Browser notifications** — fires when a message @mentions you while you're on a different tab (requests permission on first Discord tab open)
+- **Floating Network Chat** — chat extracted into a draggable floating panel; minimizes to a compact pill with an unread badge; position saved across sessions
+
+### Changed
+- Game servers moved to a compact 1-row horizontal strip above the columns (scrollable, Steam artwork still visible as background)
+- Minecraft servers show dual ports labeled **Java** and **Bedrock** separately
+- Third column replaced with **Steam Social**: Friends Online, Recently Played, Game News
+- Default column order is now: Steam Social → Network → Your Session
+- Server list is now fully dynamic from Pterodactyl — new servers appear automatically without a code change
+
+---
+
 ## v1.13.5 — 2026-03-16
 
 ### Added
