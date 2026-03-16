@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.8.5"
+VERSION = "1.8.6"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -777,7 +777,9 @@ def api_proxy(subpath):
     try:
         qs = request.query_string.decode()
         url = f"{WORKER_URL}/api/{subpath}" + (f"?{qs}" if qs else "")
-        req = _ur.Request(url, headers={"User-Agent": "GamezNET"})
+        body = request.get_data() or None
+        ct = request.content_type or "application/json"
+        req = _ur.Request(url, data=body, headers={"User-Agent": "GamezNET", "Content-Type": ct})
         with _ur.urlopen(req, timeout=10) as resp:
             return resp.read(), resp.status, {"Content-Type": resp.headers.get("Content-Type", "application/json")}
     except Exception as e:
