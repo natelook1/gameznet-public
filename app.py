@@ -803,18 +803,30 @@ def api_remote_start_host():
         # Run --get-id to populate the log
         subprocess.run([rustdesk_exe, "--get-id"], capture_output=True, timeout=8)
 
-        # Poll for the log file — up to 10s
+        # Poll for any log file in the get-id dir — up to 10s
+        # RustDesk may name it rustdesk_rCURRENT.log or a timestamp variant
+        id_log_dir = os.path.dirname(id_log_path)
         rustdesk_id = None
         for _ in range(20):
             time.sleep(0.5)
-            if not os.path.exists(id_log_path):
+            if not os.path.exists(id_log_dir):
                 continue
-            with open(id_log_path, "r") as f:
-                for line in reversed(f.readlines()):
-                    m = re.search(r"Generated id (\d+)", line)
-                    if m:
-                        rustdesk_id = m.group(1)
-                        break
+            log_files = sorted(
+                [os.path.join(id_log_dir, f) for f in os.listdir(id_log_dir) if f.endswith(".log")],
+                key=os.path.getmtime, reverse=True
+            )
+            for lf in log_files:
+                try:
+                    with open(lf, "r", errors="ignore") as f:
+                        for line in reversed(f.readlines()):
+                            m = re.search(r"Generated id (\d+)", line)
+                            if m:
+                                rustdesk_id = m.group(1)
+                                break
+                except Exception:
+                    pass
+                if rustdesk_id:
+                    break
             if rustdesk_id:
                 break
 
