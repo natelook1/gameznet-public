@@ -122,6 +122,20 @@ Click the **✎** icon next to your name in the **Your Session** card to open th
 
 ---
 
+## 🛟 Remote Assistance *(in development)*
+
+Players can request remote help directly from other online players — no admin involvement needed.
+
+When you need help, click **Get Help from a Player** in the Your Session card. Select who you want help from, add an optional message describing the issue, and send the request. The other player gets a notification and can accept or decline.
+
+If they accept, a secure remote desktop session is established automatically over the WireGuard VPN using **RustDesk** — a free, open-source remote desktop tool. RustDesk is downloaded on first use and cached locally. The connection is direct and peer-to-peer; no traffic passes through a relay server.
+
+Either player can end the session at any time. RustDesk is left installed for future use and is removed cleanly if you uninstall GamezNET.
+
+> **Note:** This feature is currently in development. End-to-end testing is in progress.
+
+---
+
 ## 🗑️ Uninstalling
 
 Double-click the **"Uninstall GamezNET"** shortcut on your desktop. It will:
@@ -286,6 +300,12 @@ All variables are loaded from `/etc/gameznet/.env` at deploy time. Credentials a
 | `/api/redeem` | POST | Redeem an invite token |
 | `/install` | GET | PowerShell installer script |
 | `/admin` | GET | Admin console UI |
+| `/api/remote/request` | POST | Request remote help from another player |
+| `/api/remote/pending` | GET | Poll for an incoming help request (helper side) |
+| `/api/remote/accept` | POST | Accept an incoming request |
+| `/api/remote/ready` | POST | Host posts RustDesk ID once started |
+| `/api/remote/status` | GET | Poll session status and credentials |
+| `/api/remote/end` | POST | End the remote session |
 
 </details>
 
