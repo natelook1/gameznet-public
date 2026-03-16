@@ -2397,6 +2397,7 @@
         el.innerHTML = '<div class="online-empty">○ No other players online</div>';
         return;
       }
+      document.title = `GamezNET (${online.length} online)`;
       el.innerHTML = online.map(p =>
         `<div class="online-player">
            <div class="op-dot"></div>
