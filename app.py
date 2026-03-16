@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.5"
+VERSION = "1.9.6"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -1103,6 +1103,16 @@ if __name__ == "__main__":
     _instance_mutex = ensure_single_instance()   # ← single-instance guard (must be first)
     ensure_admin()
     hide_console()
+
+    # Auto-reconnect: if the tunnel is already up (e.g. after an in-place update), resume connected state
+    try:
+        wg = wg_cli()
+        if wg:
+            result = subprocess.run([wg, "show", TUNNEL_NAME], capture_output=True, creationflags=0x08000000, timeout=3)
+            if result.returncode == 0 and result.stdout.strip():
+                _connected = True
+    except Exception:
+        pass
 
     # Version check (non-blocking)
     threading.Thread(target=check_version, daemon=True).start()
