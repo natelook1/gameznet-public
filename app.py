@@ -806,6 +806,16 @@ def api_remote_start_host():
         if not rustdesk_id:
             return jsonify({"error": "Could not read RustDesk ID"}), 500
 
+        # Post ID back to backend so helper can poll for it
+        import urllib.request as _ur2
+        import urllib.error as _ue2
+        try:
+            _body = json.dumps({"requester": data.get("requester", ""), "rustdesk_id": rustdesk_id}).encode()
+            _req = _ur2.Request(f"{WORKER_URL}/api/remote/ready", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
+            _ur2.urlopen(_req, timeout=5)
+        except Exception as _e:
+            log.warning("remote/ready post failed: %s", repr(_e))
+
         log.info("RustDesk host started, ID: %s", rustdesk_id)
         return jsonify({"success": True, "rustdesk_id": rustdesk_id})
 

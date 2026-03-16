@@ -1377,7 +1377,8 @@
     }
     #remote-incoming.active { display:block; }
     .remote-incoming-title { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--accent); letter-spacing:1px; margin-bottom:6px; }
-    .remote-incoming-msg { font-size:13px; color:var(--text); margin-bottom:12px; }
+    .remote-incoming-requester { font-size:14px; color:var(--text); font-weight:bold; margin-bottom:4px; }
+    .remote-incoming-msg { font-size:12px; color:var(--text-dim); font-style:italic; margin-bottom:12px; padding:6px 8px; background:var(--bg); border-left:2px solid var(--accent); border-radius:0 3px 3px 0; }
     .remote-incoming-actions { display:flex; gap:8px; }
     .remote-accept-btn { flex:1; padding:6px; background:var(--accent); border:none; border-radius:3px; color:#000; font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:1px; cursor:pointer; }
     .remote-decline-btn { flex:1; padding:6px; background:none; border:1px solid var(--border2); border-radius:3px; color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:1px; cursor:pointer; }
@@ -1491,6 +1492,10 @@
             <option value="">— select a player —</option>
           </select>
         </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;color:var(--text-dim);letter-spacing:1px;">WHAT'S GOING ON? <span style="opacity:0.5;">(optional)</span></label>
+          <input id="remote-msg-input" type="text" maxlength="120" placeholder="e.g. Can't connect to the server..." style="width:100%;margin-top:6px;padding:8px;background:var(--bg);border:1px solid var(--border2);border-radius:3px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;" />
+        </div>
         <div id="remote-modal-error" style="display:none;color:var(--danger);font-size:11px;margin-bottom:10px;"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end;">
           <button class="btn-secondary" onclick="closeRemote()">Cancel</button>
@@ -1513,8 +1518,9 @@
 
   <!-- Remote Assistance — incoming request toast -->
   <div id="remote-incoming">
-    <div class="remote-incoming-title">🛟 HELP REQUEST</div>
-    <div class="remote-incoming-msg" id="remote-incoming-msg">Someone needs help.</div>
+    <div class="remote-incoming-title">🛟 HELP REQUEST · <span id="remote-incoming-timer" style="opacity:0.6;">60s</span></div>
+    <div class="remote-incoming-requester" id="remote-incoming-requester">Someone needs help.</div>
+    <div class="remote-incoming-msg" id="remote-incoming-msg" style="display:none;"></div>
     <div class="remote-incoming-actions">
       <button class="remote-accept-btn" onclick="acceptRemoteRequest()">Accept</button>
       <button class="remote-decline-btn" onclick="declineRemoteRequest()">Decline</button>
@@ -1686,11 +1692,41 @@
               </div>
             </div>
             <button class="remote-help-btn" id="remote-help-btn" onclick="openRemote()" disabled>🛟 GET HELP FROM A PLAYER</button>
-            <div class="remote-status-card" id="remote-status-card">
-              <div class="remote-status-label" id="remote-status-label">CONNECTING...</div>
-              <div class="remote-status-msg" id="remote-status-msg"></div>
-              <div id="remote-gui-info" class="remote-gui-info" style="display:none;">
-                <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px;">OPEN RUSTDESK AND ENTER THESE CREDENTIALS</div>
+            <!-- host: waiting for helper to accept -->
+            <div class="remote-status-card" id="rsc-pending" style="display:none;">
+              <div class="remote-status-label">⏳ WAITING FOR RESPONSE</div>
+              <div class="remote-status-msg" id="rsc-pending-msg"></div>
+              <div id="rsc-pending-preview" style="display:none;font-size:11px;color:var(--text-dim);font-style:italic;margin-bottom:10px;padding:6px 8px;background:var(--bg2);border-left:2px solid var(--border2);border-radius:0 3px 3px 0;"></div>
+              <button class="remote-end-btn" onclick="cancelRemoteRequest()">Cancel</button>
+            </div>
+            <!-- host: helper accepted, starting rustdesk -->
+            <div class="remote-status-card" id="rsc-accepted" style="display:none;">
+              <div class="remote-status-label">✓ ACCEPTED — STARTING RUSTDESK</div>
+              <div class="remote-status-msg">Getting your RustDesk ID...</div>
+            </div>
+            <!-- host: session active -->
+            <div class="remote-status-card" id="rsc-host-active" style="display:none;">
+              <div class="remote-status-label">SESSION ACTIVE</div>
+              <div class="remote-status-msg" id="rsc-host-active-msg"></div>
+              <button class="remote-end-btn" onclick="endRemoteSession()">END SESSION</button>
+            </div>
+            <!-- helper: waiting for host rustdesk id -->
+            <div class="remote-status-card" id="rsc-helper-waiting" style="display:none;">
+              <div class="remote-status-label">⏳ WAITING FOR HOST</div>
+              <div class="remote-status-msg" id="rsc-helper-waiting-msg"></div>
+              <button class="remote-end-btn" onclick="endRemoteSession()">Cancel</button>
+            </div>
+            <!-- helper: connecting -->
+            <div class="remote-status-card" id="rsc-helper-connecting" style="display:none;">
+              <div class="remote-status-label">🔗 CONNECTING</div>
+              <div class="remote-status-msg">Launching RustDesk...</div>
+            </div>
+            <!-- gui fallback (either side) -->
+            <div class="remote-status-card" id="rsc-gui" style="display:none;">
+              <div class="remote-status-label">SESSION ACTIVE</div>
+              <div class="remote-status-msg">Open RustDesk and connect manually</div>
+              <div class="remote-gui-info">
+                <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px;">RUSTDESK CREDENTIALS — CLICK TO COPY</div>
                 <div class="cred-row"><span class="cred-key">ID</span><span class="cred-val" id="remote-cred-id" onclick="copyText(this.textContent)">—</span></div>
                 <div class="cred-row"><span class="cred-key">Password</span><span class="cred-val" id="remote-cred-pass" onclick="copyText(this.textContent)">—</span></div>
               </div>
@@ -3211,24 +3247,27 @@
   document.getElementById('rename-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') closeRename(); });
 
   // ── Remote Assistance ──────────────────────────────────────────────────────
-  const remoteState = { active: false, role: null, helper: null, requester: null, pollTimer: null };
+  const remoteState = { active: false, role: null, helper: null, requester: null, pollTimer: null, _sessionPass: null, _toastTimer: null };
+
+  function _showRsc(id) {
+    ['rsc-pending','rsc-accepted','rsc-host-active','rsc-helper-waiting','rsc-helper-connecting','rsc-gui'].forEach(i => {
+      document.getElementById(i).style.display = i === id ? '' : 'none';
+    });
+  }
+  function _hideAllRsc() { _showRsc(null); }
 
   function openRemote() {
-    // Populate helper select with online players (excluding self)
     const sel = document.getElementById('remote-helper-select');
     sel.innerHTML = '<option value="">— select a player —</option>';
-    const online = Array.from(document.querySelectorAll('#online-list-ui .op-name'))
+    Array.from(document.querySelectorAll('#online-list-ui .op-name'))
       .map(el => el.firstChild?.textContent?.trim() || el.textContent.trim())
-      .filter(n => n && n !== state.name);
-    online.forEach(n => {
-      const opt = document.createElement('option');
-      opt.value = n; opt.textContent = n;
-      sel.appendChild(opt);
-    });
+      .filter(n => n && n !== state.name)
+      .forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
     document.getElementById('remote-modal-body').style.display = '';
     document.getElementById('remote-modal-waiting').style.display = 'none';
     document.getElementById('remote-modal-connecting').style.display = 'none';
     document.getElementById('remote-modal-error').style.display = 'none';
+    document.getElementById('remote-msg-input').value = '';
     document.getElementById('remote-overlay').classList.add('active');
   }
 
@@ -3238,6 +3277,7 @@
 
   async function submitRemoteRequest() {
     const helper = document.getElementById('remote-helper-select').value;
+    const message = document.getElementById('remote-msg-input').value.trim();
     const errEl = document.getElementById('remote-modal-error');
     if (!helper) { errEl.textContent = 'Please select a player.'; errEl.style.display = ''; return; }
     errEl.style.display = 'none';
@@ -3245,30 +3285,32 @@
     try {
       const res = await fetch('/api/remote/request', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requester: state.name, requester_ip: state.vpn_ip, helper })
+        body: JSON.stringify({ requester: state.name, requester_ip: state.vpn_ip, helper, message })
       });
       const data = await res.json();
       if (!res.ok) { errEl.textContent = data.error || 'Failed to send request.'; errEl.style.display = ''; document.getElementById('remote-send-btn').disabled = false; return; }
-      // Show waiting state
       remoteState.active = true; remoteState.role = 'requester'; remoteState.helper = helper; remoteState._sessionPass = data.password;
-      document.getElementById('remote-modal-body').style.display = 'none';
-      document.getElementById('remote-modal-waiting').style.display = '';
-      document.getElementById('remote-waiting-name').textContent = `Waiting for ${helper} to accept...`;
-      // Poll for acceptance
+      // Close modal, show pending card
+      closeRemote();
+      document.getElementById('rsc-pending-msg').textContent = `Waiting for ${helper} to accept...`;
+      const preview = document.getElementById('rsc-pending-preview');
+      if (message) { preview.textContent = `"${message}"`; preview.style.display = ''; } else { preview.style.display = 'none'; }
+      _showRsc('rsc-pending');
+      updateRemoteHelpBtn(false);
+      // Poll for accepted
       remoteState.pollTimer = setInterval(async () => {
         try {
-          const sr = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`);
-          const sd = await sr.json();
+          const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
           if (sd.status === 'accepted') {
             clearInterval(remoteState.pollTimer);
-            document.getElementById('remote-modal-waiting').style.display = 'none';
-            document.getElementById('remote-modal-connecting').style.display = '';
-            await startRustDeskHost();
+            _showRsc('rsc-accepted');
+            await _startRustDeskHost();
           } else if (sd.status === 'none') {
             clearInterval(remoteState.pollTimer);
-            closeRemote();
-            toast('Help request expired or was declined.', true);
+            _hideAllRsc();
             remoteState.active = false;
+            updateRemoteHelpBtn(true);
+            toast('Help request expired or was declined.', true);
           }
         } catch {}
       }, 3000);
@@ -3278,47 +3320,63 @@
   async function cancelRemoteRequest() {
     clearInterval(remoteState.pollTimer);
     await fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
-    remoteState.active = false;
-    closeRemote();
+    remoteState.active = false; _hideAllRsc(); updateRemoteHelpBtn(true); closeRemote();
   }
 
-  async function startRustDeskHost() {
+  async function _startRustDeskHost() {
     try {
       const res = await fetch('/api/remote/start-host', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: remoteState._sessionPass })
+        body: JSON.stringify({ password: remoteState._sessionPass, requester: state.name })
       });
       const data = await res.json();
-      closeRemote();
-      if (!res.ok || data.error) { toast(data.error || 'Failed to start RustDesk', true); return; }
-      // Show status card
-      setRemoteStatusCard('active', `${remoteState.helper} is connecting...`);
+      if (!res.ok || data.error) { toast(data.error || 'Failed to start RustDesk', true); _hideAllRsc(); remoteState.active = false; updateRemoteHelpBtn(true); return; }
+      // Show active or GUI fallback
       if (data.mode === 'gui') {
-        document.getElementById('remote-gui-info').style.display = '';
         document.getElementById('remote-cred-id').textContent = data.rustdesk_id;
         document.getElementById('remote-cred-pass').textContent = remoteState._sessionPass;
+        _showRsc('rsc-gui');
+      } else {
+        document.getElementById('rsc-host-active-msg').textContent = `${remoteState.helper} is connecting to your machine`;
+        _showRsc('rsc-host-active');
       }
-    } catch (e) { toast('Failed to start remote session', true); }
+    } catch { toast('Failed to start RustDesk', true); _hideAllRsc(); remoteState.active = false; updateRemoteHelpBtn(true); }
   }
 
-  // Incoming request — helper side
+  // ── Helper side ──
   let _pendingRequester = null;
+  let _toastCountdown = 0;
 
   async function pollRemotePending() {
     if (!state.name || remoteState.active) return;
     try {
-      const res = await fetch(`/api/remote/pending?name=${encodeURIComponent(state.name)}`);
-      const data = await res.json();
+      const data = await fetch(`/api/remote/pending?name=${encodeURIComponent(state.name)}`).then(r => r.json());
       if (data.pending && data.requester !== _pendingRequester) {
         _pendingRequester = data.requester;
-        document.getElementById('remote-incoming-msg').textContent = `${data.requester} is asking for your help.`;
+        document.getElementById('remote-incoming-requester').textContent = `${data.requester} needs help`;
+        const msgEl = document.getElementById('remote-incoming-msg');
+        if (data.message) { msgEl.textContent = `"${data.message}"`; msgEl.style.display = ''; } else { msgEl.style.display = 'none'; }
         document.getElementById('remote-incoming').classList.add('active');
         playNotificationSound();
+        // 60s countdown
+        _toastCountdown = 60;
+        clearInterval(remoteState._toastTimer);
+        remoteState._toastTimer = setInterval(() => {
+          _toastCountdown--;
+          const el = document.getElementById('remote-incoming-timer');
+          if (el) el.textContent = `${_toastCountdown}s`;
+          if (_toastCountdown <= 0) {
+            clearInterval(remoteState._toastTimer);
+            document.getElementById('remote-incoming').classList.remove('active');
+            _pendingRequester = null;
+          }
+        }, 1000);
       }
     } catch {}
   }
 
   async function acceptRemoteRequest() {
+    clearInterval(remoteState._toastTimer);
     document.getElementById('remote-incoming').classList.remove('active');
     try {
       const res = await fetch('/api/remote/accept', {
@@ -3326,29 +3384,52 @@
         body: JSON.stringify({ helper: state.name, requester: _pendingRequester })
       });
       const data = await res.json();
-      if (!res.ok) { toast(data.error || 'Failed to accept', true); return; }
+      if (!res.ok) { toast(data.error || 'Failed to accept', true); _pendingRequester = null; return; }
       remoteState.active = true; remoteState.role = 'helper'; remoteState.requester = _pendingRequester;
-      setRemoteStatusCard('active', `Connecting to ${_pendingRequester}...`);
-      // Start helper side
-      const hr = await fetch('/api/remote/start-helper', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rustdesk_id: data.rustdesk_id, password: data.password })
-      });
-      const hd = await hr.json();
-      if (!hr.ok) { toast(hd.error || 'Failed to start RustDesk', true); return; }
-      if (hd.mode === 'gui') {
-        setRemoteStatusCard('active', `Open RustDesk and connect manually`);
-        document.getElementById('remote-gui-info').style.display = '';
-        document.getElementById('remote-cred-id').textContent = hd.rustdesk_id;
-        document.getElementById('remote-cred-pass').textContent = hd.password;
-      } else {
-        setRemoteStatusCard('active', `Connected to ${_pendingRequester}`);
-      }
-    } catch { toast('Failed to start remote session', true); }
+      updateRemoteHelpBtn(false);
+      // Show waiting card while host starts RustDesk
+      document.getElementById('rsc-helper-waiting-msg').textContent = `Waiting for ${_pendingRequester} to start RustDesk...`;
+      _showRsc('rsc-helper-waiting');
+      // Poll for ready
+      remoteState.pollTimer = setInterval(async () => {
+        try {
+          const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+          if (sd.status === 'ready') {
+            clearInterval(remoteState.pollTimer);
+            _showRsc('rsc-helper-connecting');
+            await _startRustDeskHelper(sd.rustdesk_id, sd.password);
+          } else if (sd.status === 'none') {
+            clearInterval(remoteState.pollTimer);
+            _hideAllRsc(); remoteState.active = false; updateRemoteHelpBtn(true);
+            toast('Session ended by host.', true);
+          }
+        } catch {}
+      }, 3000);
+    } catch { toast('Failed to accept', true); }
     _pendingRequester = null;
   }
 
+  async function _startRustDeskHelper(rustdesk_id, password) {
+    try {
+      const res = await fetch('/api/remote/start-helper', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rustdesk_id, password })
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { toast(data.error || 'Failed to start RustDesk', true); _hideAllRsc(); remoteState.active = false; updateRemoteHelpBtn(true); return; }
+      if (data.mode === 'gui') {
+        document.getElementById('remote-cred-id').textContent = data.rustdesk_id;
+        document.getElementById('remote-cred-pass').textContent = data.password;
+        _showRsc('rsc-gui');
+      } else {
+        document.getElementById('rsc-host-active-msg').textContent = `Connected to ${remoteState.requester}`;
+        _showRsc('rsc-host-active');
+      }
+    } catch { toast('Failed to start RustDesk', true); _hideAllRsc(); remoteState.active = false; updateRemoteHelpBtn(true); }
+  }
+
   function declineRemoteRequest() {
+    clearInterval(remoteState._toastTimer);
     document.getElementById('remote-incoming').classList.remove('active');
     fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
     _pendingRequester = null;
@@ -3359,26 +3440,14 @@
     await fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
     await fetch('/api/remote/cleanup', { method: 'POST' }).catch(() => {});
     remoteState.active = false; remoteState.role = null;
-    setRemoteStatusCard('hidden');
-    document.getElementById('remote-help-btn').disabled = false;
+    _hideAllRsc();
+    updateRemoteHelpBtn(true);
     toast('Remote session ended.');
   }
 
-  function setRemoteStatusCard(mode, msg) {
-    const card = document.getElementById('remote-status-card');
-    const label = document.getElementById('remote-status-label');
-    const msgEl = document.getElementById('remote-status-msg');
-    if (mode === 'hidden') { card.classList.remove('active'); return; }
-    card.classList.add('active');
-    label.textContent = mode === 'active' ? 'SESSION ACTIVE' : 'CONNECTING...';
-    msgEl.textContent = msg || '';
-    document.getElementById('remote-help-btn').disabled = true;
-  }
-
-  // Enable the help button when connected, disable when not
-  function updateRemoteHelpBtn(connected) {
+  function updateRemoteHelpBtn(enabled) {
     const btn = document.getElementById('remote-help-btn');
-    if (btn) btn.disabled = !connected || remoteState.active;
+    if (btn) btn.disabled = !enabled;
   }
 
   document.getElementById('remote-overlay').addEventListener('click', e => { if (e.target.id === 'remote-overlay') closeRemote(); });
