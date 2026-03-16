@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.13.5 — 2026-03-16
+
+### Added
+- **Discord full rebuild** — Discord tab is now a 3-pane experience: channel sidebar (categories, text channels, voice channels with live occupants), message feed, and member list
+- **Discord Gateway WebSocket** — real-time presence (online/idle/dnd/offline), voice state updates, and instant message cache invalidation; no more 15–30s REST polling lag
+- **Discord message sending** — type and send messages to any channel directly from the app; messages appear with your player name and Steam avatar (no Discord login required, no BOT tag)
+- **Pinned messages** — 📌 button in the channel header shows all pinned messages for that channel
+- **Channel privacy** — channels restricted to @everyone (e.g. admin channels) are automatically hidden
+- **Dynamic game server list** — servers now pulled live from Pterodactyl; any new server (e.g. Minecraft Java) appears automatically without a code change
+- **Remote assistance** — players can request a peer-to-peer remote desktop session from any online player via RustDesk; no relay server, no admin involvement
+- **Steam account linking** — link your Steam profile once to show avatar, level, game library, and top-played games on your player card
+
+### Fixed
+- `/api/fullroute` no longer returns 400 on GET while connected — only blocks state-change requests
+- Session lock: if a client crashes without cleanly disconnecting, the `active` flag now auto-clears within 12 seconds server-side
+- Update button no longer forces a disconnect before applying the update — stays connected through the process
+- STEAM JOIN button hidden for game servers with no Steam app ID (e.g. Minecraft Java)
+
+---
+
 ## v1.9.0 — 2026-03-15
 
 ### Added

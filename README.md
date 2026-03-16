@@ -92,11 +92,21 @@ The admin can schedule a session from the **+ Schedule Session** button below th
 
 ## 🎙️ Discord
 
-The **Discord** tab shows a live view of the gamEZnet server:
+The **Discord** tab is a full embedded Discord experience — no Discord account or login required.
 
-- Member list with avatars and voice channel activity
-- Online count shown as a badge directly in the tab header — visible at a glance without opening the tab
-- Total member count and **Join Discord** button
+**Channel sidebar** — browse all text and voice channels organised by category. Voice channels show who's currently in them with live avatars.
+
+**Message feed** — click any text channel to read the full message history. Messages render with Discord markdown (bold, italic, code blocks, spoilers, embeds, reactions, attachments, and replies). Consecutive messages from the same person are grouped cleanly.
+
+**Send messages** — type in the input bar at the bottom and press Enter or click Send. Your message appears with your player name and Steam avatar — no BOT tag, no Discord login.
+
+**Pinned messages** — click the 📌 button in the channel header to view all pinned messages for that channel.
+
+**Live presence** — member list shows each person's status (online/idle/dnd/offline) and current activity in real time via Discord Gateway WebSocket.
+
+**Tab badge** — online member count shown directly in the tab header at a glance.
+
+**Join Discord** — button to open the server invite link in your browser.
 
 ---
 
@@ -217,7 +227,7 @@ Message the server admin. Running the install command again solves 99% of issues
 | Pterodactyl + Wings | Game server management and console |
 | YouTube Data API v3 | Server-side video category browsing (30-min cache) |
 | YouTube OAuth2 | Sign in with Google for personalised feed |
-| Discord Bot API v10 | Live member list, online counts, voice activity, and alert/support notifications |
+| Discord Bot API v10 + Gateway WS | Channel/message/member/presence/voice — real-time via WebSocket; alert and support notifications |
 | Steam Web API | Steam OpenID auth, player profile linking, avatar, level, game library |
 
 ### Requirements
@@ -309,8 +319,12 @@ All variables are loaded from `/etc/gameznet/.env` at deploy time. Credentials a
 | `/api/youtube/category` | GET | Curated videos by category |
 | `/api/youtube/search` | GET | YouTube search proxy |
 | `/api/youtube/feed` | GET | Personalised feed for authenticated user |
-| `/api/discord/presence` | GET | Discord guild member list and online counts |
-| `/api/discord/voice` | GET | Discord voice channel activity (15s cache) |
+| `/api/discord/presence` | GET | Discord guild member list with live presence and online counts |
+| `/api/discord/voice` | GET | Discord voice channel activity |
+| `/api/discord/channels` | GET | Full channel tree (categories, text, voice) with member presence (30s cache) |
+| `/api/discord/messages` | GET | Last 50 messages for a channel (10s per-channel cache) |
+| `/api/discord/pins` | GET | Pinned messages for a channel |
+| `/api/discord/send` | POST | Send a message via webhook (player name + Steam avatar) |
 | `/api/steam/game` | GET | Steam player game detection (30s cache) |
 | `/auth/youtube` | GET | Start YouTube OAuth flow |
 | `/auth/youtube/callback` | GET | OAuth callback handler |
