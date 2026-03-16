@@ -3285,7 +3285,7 @@
     try {
       const res = await fetch('/api/remote/request', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requester: state.name, requester_ip: state.vpn_ip, helper, message })
+        body: JSON.stringify({ requester: state.name, requester_ip: state.clientIp, helper, message })
       });
       const data = await res.json();
       if (!res.ok) { errEl.textContent = data.error || 'Failed to send request.'; errEl.style.display = ''; document.getElementById('remote-send-btn').disabled = false; return; }
