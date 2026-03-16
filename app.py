@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.11.0"
+VERSION = "1.12.0"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -800,35 +800,39 @@ def api_remote_start_host():
         subprocess.Popen([rustdesk_exe])
         time.sleep(3)
 
-        # Run --get-id to populate the log
-        subprocess.run([rustdesk_exe, "--get-id"], capture_output=True, timeout=8)
-
-        # Poll for any log file in the get-id dir — up to 10s
-        # RustDesk may name it rustdesk_rCURRENT.log or a timestamp variant
-        id_log_dir = os.path.dirname(id_log_path)
+        # Run --get-id — on some machines the ID prints directly to stdout
+        get_id_result = subprocess.run([rustdesk_exe, "--get-id"], capture_output=True, text=True, errors="ignore", timeout=15)
         rustdesk_id = None
-        for _ in range(20):
-            time.sleep(0.5)
-            if not os.path.exists(id_log_dir):
-                continue
-            log_files = sorted(
-                [os.path.join(id_log_dir, f) for f in os.listdir(id_log_dir) if f.endswith(".log")],
-                key=os.path.getmtime, reverse=True
-            )
-            for lf in log_files:
-                try:
-                    with open(lf, "r", errors="ignore") as f:
-                        for line in reversed(f.readlines()):
-                            m = re.search(r"Generated id (\d+)", line)
-                            if m:
-                                rustdesk_id = m.group(1)
-                                break
-                except Exception:
-                    pass
+        for line in reversed((get_id_result.stdout + get_id_result.stderr).splitlines()):
+            if re.match(r'^\d{6,12}$', line.strip()):
+                rustdesk_id = line.strip()
+                break
+
+        # Fallback: poll for any log file in the get-id dir — up to 10s
+        if not rustdesk_id:
+            id_log_dir = os.path.dirname(id_log_path)
+            for _ in range(20):
+                time.sleep(0.5)
+                if not os.path.exists(id_log_dir):
+                    continue
+                log_files = sorted(
+                    [os.path.join(id_log_dir, f) for f in os.listdir(id_log_dir) if f.endswith(".log")],
+                    key=os.path.getmtime, reverse=True
+                )
+                for lf in log_files:
+                    try:
+                        with open(lf, "r", errors="ignore") as f:
+                            for line in reversed(f.readlines()):
+                                m = re.search(r"Generated id (\d+)", line)
+                                if m:
+                                    rustdesk_id = m.group(1)
+                                    break
+                    except Exception:
+                        pass
+                    if rustdesk_id:
+                        break
                 if rustdesk_id:
                     break
-            if rustdesk_id:
-                break
 
         if not rustdesk_id:
             return jsonify({"error": "Could not read RustDesk ID — try again"}), 500
