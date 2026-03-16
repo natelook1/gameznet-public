@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.2"
+VERSION = "1.9.3"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -1051,7 +1051,9 @@ def run_tray(flask_thread):
                     last_id = session["id"]
                     t = session.get("scheduled_time", "")
                     try:
-                        dt = __import__("datetime").datetime.fromisoformat(t.replace("Z",""))
+                        import datetime as _dt
+                        dt = _dt.datetime.fromisoformat(t.replace("Z", "+00:00"))
+                        dt = dt.astimezone()  # convert UTC → local
                         time_str = dt.strftime("%b %d at %I:%M %p")
                     except Exception:
                         time_str = t
