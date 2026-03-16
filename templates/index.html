@@ -1452,6 +1452,31 @@
         <span id="motd-text"></span>
       </div>
 
+      <!-- Session Card -->
+      <div id="session-card" class="session-card" style="display:none;">
+        <div class="session-bg" id="session-bg"></div>
+        <div class="session-body" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div class="session-eyebrow">⚡ Scheduled Session</div>
+            <div class="session-game-name" id="session-game-name">—</div>
+            <div class="session-meta-row">
+              <span>📅 <span id="session-time-disp"></span></span>
+              <span>👤 <span id="session-host-disp"></span></span>
+            </div>
+            <div class="session-msg-text" id="session-msg-disp"></div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div class="session-countdown" id="session-countdown-disp" style="font-size:16px;margin-bottom:8px;"></div>
+            <button class="btn-cancel-session" id="session-cancel-btn" onclick="clearSession()" style="display:none;">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Schedule trigger (always visible when no session active, provisioned) -->
+    <div id="schedule-trigger" style="display:none;justify-content:flex-end;padding:0 0 6px;">
+      <button class="btn-schedule" onclick="openScheduleModal()">+ Schedule Session</button>
     </div>
 
     <!-- ── DASHBOARD (shown when provisioned) ── -->
@@ -1571,26 +1596,6 @@
         </div>
 
         <!-- Session Scheduler -->
-        <div id="session-card" class="session-card" style="display:none;">
-          <div class="session-bg" id="session-bg"></div>
-          <div class="session-body">
-            <div class="session-eyebrow">⚡ Scheduled Session</div>
-            <div class="session-game-name" id="session-game-name">—</div>
-            <div class="session-meta-row">
-              <span>📅 <span id="session-time-disp"></span></span>
-              <span>👤 <span id="session-host-disp"></span></span>
-            </div>
-            <div class="session-countdown" id="session-countdown-disp"></div>
-            <div class="session-msg-text" id="session-msg-disp"></div>
-            <div class="session-footer">
-              <button class="btn-cancel-session" id="session-cancel-btn" onclick="clearSession()" style="display:none;">Cancel Session</button>
-            </div>
-          </div>
-        </div>
-        <!-- Schedule button (shown when no session active) -->
-        <div id="schedule-trigger" style="margin-bottom:12px;display:flex;justify-content:flex-end;">
-          <button class="btn-schedule" onclick="openScheduleModal()">+ Schedule Session</button>
-        </div>
         <div id="servers-section">
           <div class="servers-header">
             <div class="section-label">Game Servers</div>
@@ -2215,7 +2220,7 @@
     if (_sessionCountdownInterval) { clearInterval(_sessionCountdownInterval); _sessionCountdownInterval = null; }
     if (!session) {
       card.style.display = 'none';
-      trigger.style.display = 'flex';
+      trigger.style.display = state.provisioned ? 'flex' : 'none';
       return;
     }
     card.style.display = 'block';
@@ -2299,15 +2304,20 @@
   }
 
   async function submitSession() {
-    if (!_schedSelected) return;
+    if (!_schedSelected) { toast('Pick a game first'); return; }
     const scheduled_time = document.getElementById('sched-time').value;
-    if (!scheduled_time) return;
+    if (!scheduled_time) { toast('Pick a date and time'); return; }
     const message = document.getElementById('sched-msg').value.trim();
     const host = document.getElementById('info-name').textContent;
     const body = { host, game: _schedSelected.name, steam_appid: _schedSelected.steam_appid, scheduled_time: new Date(scheduled_time).toISOString(), message };
-    await fetch('/api/session/set', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    closeScheduleModal();
-    loadSession();
+    const res = await fetch('/api/session/set', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (res.ok) {
+      closeScheduleModal();
+      toast(`Session scheduled — ${_schedSelected.name}`);
+      loadSession();
+    } else {
+      toast('Failed to schedule session', true);
+    }
   }
 
   document.getElementById('schedule-overlay').addEventListener('click', e => { if (e.target.id === 'schedule-overlay') closeScheduleModal(); });
