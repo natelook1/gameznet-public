@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.4"
+VERSION = "1.9.5"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -551,6 +551,35 @@ def api_save_config():
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/api/rename", methods=["POST"])
+def api_rename():
+    """Change display name — validated server-side by vpn_ip + old_name."""
+    data = request.json or {}
+    new_name = (data.get("new_name") or "").strip()
+    if not new_name:
+        return jsonify({"error": "Name is required"}), 400
+    try:
+        with open(CONFIG_FILE) as f:
+            config = json.load(f)
+    except Exception:
+        return jsonify({"error": "Not provisioned"}), 400
+    old_name = config.get("name", "")
+    vpn_ip   = config.get("vpn_ip", "")
+    import urllib.request as _ur2
+    body = json.dumps({"old_name": old_name, "new_name": new_name, "vpn_ip": vpn_ip}).encode()
+    req = _ur2.Request(f"{WORKER_URL}/api/rename", data=body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
+    try:
+        with _ur2.urlopen(req, timeout=5) as r:
+            resp = json.loads(r.read().decode())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+    if not resp.get("success"):
+        return jsonify(resp), 400
+    config["name"] = resp["name"]
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(config, f)
+    return jsonify({"success": True, "name": resp["name"]})
 
 @app.route("/api/reset", methods=["POST"])
 def api_reset():

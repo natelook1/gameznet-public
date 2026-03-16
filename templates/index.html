@@ -1338,6 +1338,10 @@
     /* Schedule Modal */
     #schedule-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(3px); z-index:1000; align-items:center; justify-content:center; }
     #schedule-overlay.active { display:flex; }
+    #rename-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(3px); z-index:1000; align-items:center; justify-content:center; }
+    #rename-overlay.active { display:flex; }
+    .rename-btn { background:none; border:none; color:var(--text-dim); font-size:16px; cursor:pointer; padding:0 2px; line-height:1; opacity:0.5; transition:opacity 0.15s; }
+    .rename-btn:hover { opacity:1; color:var(--accent); }
     #schedule-modal { background:var(--bg2); border:1px solid var(--border2); border-radius:4px; padding:24px; max-width:420px; width:92%; }
     #schedule-modal h3 { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--accent); letter-spacing:2px; text-transform:uppercase; margin:0 0 16px; }
     .schedule-game-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:8px; margin-bottom:14px; max-height:200px; overflow-y:auto; }
@@ -1412,6 +1416,21 @@
   </div>
 
   <!-- Theater mode (outside content flow) -->
+  <!-- Rename Modal -->
+  <div id="rename-overlay">
+    <div class="sched-modal" style="max-width:360px;">
+      <div class="sched-modal-title">CHANGE NAME</div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:11px;color:var(--text-dim);letter-spacing:1px;">NEW NAME</label>
+        <input id="rename-input" class="sched-msg-input" type="text" maxlength="24" placeholder="Enter new name..." style="margin-top:6px;" />
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="closeRename()">Cancel</button>
+        <button class="btn-primary" onclick="submitRename()">Save</button>
+      </div>
+    </div>
+  </div>
+
   <div class="theater-overlay" id="theater-overlay">
     <div class="theater-hud">
       <div class="theater-logo">GAMEZNET</div>
@@ -1552,7 +1571,10 @@
         <div>
           <div class="section-label">Your Session</div>
           <div class="player-card">
-            <div class="player-name-large" id="info-name">—</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="player-name-large" id="info-name">—</div>
+              <button class="rename-btn" onclick="openRename()" title="Change name">✎</button>
+            </div>
             <div class="info-row">
               <span class="info-key">VPN IP</span>
               <span class="info-val copyable" id="info-ip" title="Click to copy">—</span>
@@ -3046,6 +3068,35 @@
     const input = document.getElementById('status-input');
     if (input) setPlayerStatus(input.value.trim());
   }
+
+  // ── Rename ─────────────────────────────────────────────────────────────────
+  function openRename() {
+    const input = document.getElementById('rename-input');
+    input.value = state.name || '';
+    document.getElementById('rename-overlay').classList.add('active');
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+  }
+  function closeRename() {
+    document.getElementById('rename-overlay').classList.remove('active');
+  }
+  async function submitRename() {
+    const newName = document.getElementById('rename-input').value.trim();
+    if (!newName) return;
+    try {
+      const res = await fetch('/api/rename', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ new_name: newName }) });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        state.name = data.name;
+        document.getElementById('info-name').textContent = data.name;
+        closeRename();
+        toast(`Name changed to ${data.name}`);
+      } else {
+        toast(data.error || 'Rename failed', true);
+      }
+    } catch { toast('Rename failed', true); }
+  }
+  document.getElementById('rename-overlay').addEventListener('click', e => { if (e.target.id === 'rename-overlay') closeRename(); });
+  document.getElementById('rename-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') closeRename(); });
 
   // ── YouTube OAuth ──────────────────────────────────────────────────────────
   let _ytSession = null, _ytSubs = [];
