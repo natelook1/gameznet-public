@@ -796,8 +796,11 @@ def api_remote_start_host():
             except Exception:
                 pass
 
-        # Start RustDesk (hashes the password on startup)
-        subprocess.Popen([rustdesk_exe])
+        # Start RustDesk minimized (hashes the password on startup — window not needed)
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        si.wShowWindow = 6  # SW_MINIMIZE
+        subprocess.Popen([rustdesk_exe], startupinfo=si)
         time.sleep(3)
 
         # Run --get-id — on some machines the ID prints directly to stdout
@@ -855,6 +858,19 @@ def api_remote_start_host():
         return jsonify({"error": str(e)}), 500
 
 
+def _notify_connected(helper):
+    """Tell the backend the helper has launched RustDesk so the host modal can advance."""
+    if not helper:
+        return
+    try:
+        import urllib.request as _ur3
+        _body = json.dumps({"helper": helper}).encode()
+        _req = _ur3.Request(f"{WORKER_URL}/api/remote/connected", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
+        _ur3.urlopen(_req, timeout=5)
+    except Exception as _e:
+        log.warning("remote/connected notify failed: %s", repr(_e))
+
+
 @app.route("/api/remote/start-helper", methods=["POST"])
 def api_remote_start_helper():
     """
@@ -864,6 +880,7 @@ def api_remote_start_helper():
     data = request.json or {}
     target_id = data.get("rustdesk_id", "")
     password = data.get("password", "")
+    helper = data.get("helper", "")
     if not target_id or not password:
         return jsonify({"error": "Missing rustdesk_id or password"}), 400
 
@@ -879,15 +896,20 @@ def api_remote_start_helper():
             _ur.urlretrieve(rustdesk_url, rustdesk_exe)
             log.info("RustDesk downloaded.")
 
-        # Try CLI connect first
+        # Try CLI connect first — opens only the connection window, not the full UI
         proc = subprocess.Popen([rustdesk_exe, "--connect", target_id, "--password", password])
         time.sleep(5)
         if proc.poll() is not None:
-            # Process exited — CLI connect not supported, fall back to GUI
+            # Process exited — CLI connect not supported, fall back to minimized GUI
             log.info("RustDesk --connect exited immediately, launching GUI fallback")
-            subprocess.Popen([rustdesk_exe], close_fds=True)
+            si = subprocess.STARTUPINFO()
+            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            si.wShowWindow = 6  # SW_MINIMIZE
+            subprocess.Popen([rustdesk_exe], startupinfo=si, close_fds=True)
+            _notify_connected(helper)
             return jsonify({"success": True, "mode": "gui", "rustdesk_id": target_id, "password": password})
 
+        _notify_connected(helper)
         return jsonify({"success": True, "mode": "connected"})
 
     except Exception as e:

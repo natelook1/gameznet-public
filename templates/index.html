@@ -3369,6 +3369,20 @@
       } else {
         setTimeout(() => _rpStep(6, true), 1000);
       }
+      // Resume polling — wait for helper to connect, or detect cancel from either side
+      remoteState.pollTimer = setInterval(async () => {
+        try {
+          const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+          if (sd.status === 'connected') {
+            clearInterval(remoteState.pollTimer);
+            _rpStep(7, true);
+          } else if (sd.status === 'none') {
+            clearInterval(remoteState.pollTimer);
+            _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true);
+            toast('Session ended.', true);
+          }
+        } catch {}
+      }, 3000);
     } catch { toast('Failed to start RustDesk', true); _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true); }
   }
 
@@ -3440,12 +3454,23 @@
     try {
       const res = await fetch('/api/remote/start-helper', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rustdesk_id, password })
+        body: JSON.stringify({ rustdesk_id, password, helper: state.name })
       });
       const data = await res.json();
       if (!res.ok || data.error) { toast(data.error || 'Failed to start RustDesk', true); _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true); return; }
       if (data.mode === 'gui') { _rpShowCreds(data.rustdesk_id, data.password); }
       _rpStep(4, true);
+      // Keep polling so host-side cancel closes this modal too
+      remoteState.pollTimer = setInterval(async () => {
+        try {
+          const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+          if (sd.status === 'none') {
+            clearInterval(remoteState.pollTimer);
+            _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true);
+            toast('Session ended by host.', true);
+          }
+        } catch {}
+      }, 3000);
     } catch { toast('Failed to start RustDesk', true); _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true); }
   }
 
