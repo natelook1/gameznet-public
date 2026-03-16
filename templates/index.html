@@ -1385,6 +1385,104 @@
     .content   { animation-delay: 0.05s; }
     footer     { animation-delay: 0.1s; }
     /* ── Chat ── */
+    /* ── Network column collapse when connected ── */
+    #col-left {
+      transition: max-width 0.45s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #col-left.net-connected {
+      max-width: 200px;
+      min-width: 0 !important;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    #col-left.net-connected:hover {
+      max-width: 2000px;
+      min-width: 260px;
+      overflow-y: auto;
+      cursor: default;
+    }
+    .net-collapsible {
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+      max-height: 1000px;
+      opacity: 1;
+    }
+    #col-left.net-connected .net-collapsible {
+      max-height: 0;
+      opacity: 0;
+    }
+    #col-left.net-connected:hover .net-collapsible {
+      max-height: 1000px;
+      opacity: 1;
+    }
+    #col-left.net-connected .connect-btn::after {
+      content: ' ···';
+      opacity: 0.5;
+    }
+
+    /* ── Floating Network Chat panel ── */
+    .chat-float {
+      position: fixed;
+      bottom: 40px;
+      right: 24px;
+      width: 320px;
+      background: var(--panel);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      z-index: 800;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s ease, height 0.3s ease, bottom 0.3s ease, right 0.3s ease;
+      user-select: none;
+    }
+    .chat-float.chat-minimized {
+      width: 160px;
+      height: 36px;
+      overflow: hidden;
+      border-radius: 18px;
+      cursor: pointer;
+    }
+    .chat-float-hdr {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+      cursor: grab;
+      flex-shrink: 0;
+    }
+    .chat-float-hdr:active { cursor: grabbing; }
+    .chat-float-title {
+      flex: 1;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .chat-float-badge {
+      background: var(--danger);
+      color: #fff;
+      font-size: 9px;
+      font-family: 'Share Tech Mono', monospace;
+      padding: 1px 5px;
+      border-radius: 8px;
+      display: none;
+    }
+    .chat-float-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+    }
+    .chat-float-btn:hover { color: var(--text); }
+    .chat-float-body { display: flex; flex-direction: column; gap: 8px; padding: 10px; flex: 1; min-height: 0; }
+    .chat-float.chat-minimized .chat-float-hdr { border-bottom: none; cursor: pointer; }
+
     .chat-section { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
     .chat-box {
       background: var(--card);
@@ -1710,6 +1808,25 @@
     </div>
   </div>
 
+  <!-- Floating Network Chat -->
+  <div class="chat-float" id="chat-float" style="display:none;">
+    <div class="chat-float-hdr" id="chat-float-hdr">
+      <span class="chat-float-title">⬡ Network Chat</span>
+      <span class="chat-float-badge" id="chat-float-badge">0</span>
+      <button id="chat-mute-btn" class="chat-float-btn" onclick="toggleChatMute()" title="Toggle sound">🔔</button>
+      <button class="chat-float-btn" onclick="toggleChatFloat()" title="Minimize">—</button>
+    </div>
+    <div class="chat-float-body">
+      <div class="chat-box" id="chat-box">
+        <div class="chat-empty" id="chat-empty">○ No messages yet</div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" type="text" placeholder="Type a message..." maxlength="500" disabled />
+        <button class="chat-send-btn" id="chat-send-btn" onclick="sendChat()" disabled>SEND</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Remote Assistance — request modal -->
   <div id="remote-overlay">
     <div class="sched-modal" id="remote-request-modal" style="max-width:380px;">
@@ -1872,7 +1989,7 @@
           Initializing...
         </button>
 
-        <div>
+        <div class="net-collapsible">
           <div class="section-label">Telemetry</div>
           <div class="telemetry-grid">
             <div class="tel-card">
@@ -1891,20 +2008,6 @@
               <span class="tel-label">Sent</span>
               <span class="tel-val" id="tel-tx">0 B</span>
             </div>
-          </div>
-        </div>
-
-        <div class="chat-section">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <div class="section-label" style="margin-bottom:0;">Network Chat</div>
-            <button id="chat-mute-btn" class="invisible-btn" onclick="toggleChatMute()" style="font-size:10px;padding:2px 8px;" title="Toggle message sound">🔔 SOUND</button>
-          </div>
-          <div class="chat-box" id="chat-box">
-            <div class="chat-empty" id="chat-empty">○ No messages yet</div>
-          </div>
-          <div class="chat-input-row">
-            <input class="chat-input" id="chat-input" type="text" placeholder="Type a message..." maxlength="500" disabled />
-            <button class="chat-send-btn" id="chat-send-btn" onclick="sendChat()" disabled>SEND</button>
           </div>
         </div>
 
@@ -2334,6 +2437,8 @@
       btn.disabled     = false;
       footer.textContent = `ACTIVE · ${state.name.toUpperCase()}`;
       startSessionTimer();
+      document.getElementById('col-left').classList.add('net-connected');
+      document.getElementById('chat-float').style.display = '';
       setChatEnabled(true);
       updateFullRouteBtn();
       updateRemoteHelpBtn(true);
@@ -2373,6 +2478,8 @@
       }
       
       footer.textContent = state.provisioned ? `READY · ${state.name.toUpperCase()}` : 'AWAITING SETUP';
+      document.getElementById('col-left').classList.remove('net-connected');
+      document.getElementById('chat-float').style.display = 'none';
       stopSessionTimer();
       setChatEnabled(false);
       updateFullRouteBtn();
@@ -2907,6 +3014,7 @@
       box.appendChild(el);
     });
     chatBeep();
+    if (window._chatMarkUnread) window._chatMarkUnread();
     if (atBottom) box.scrollTop = box.scrollHeight;
   }
 
@@ -4339,12 +4447,85 @@
     }
   }
 
+  // ── Floating chat panel ────────────────────────────────────────────────────
+  (function initChatFloat() {
+    const panel = document.getElementById('chat-float');
+    const hdr   = document.getElementById('chat-float-hdr');
+    const badge = document.getElementById('chat-float-badge');
+    let minimized = JSON.parse(localStorage.getItem('gz-chat-min') || 'false');
+    let pos = JSON.parse(localStorage.getItem('gz-chat-pos') || 'null') || { bottom: 40, right: 24 };
+
+    function applyPos() {
+      panel.style.bottom = pos.bottom + 'px';
+      panel.style.right  = pos.right  + 'px';
+      panel.style.top    = '';
+      panel.style.left   = '';
+    }
+    function applyMin() {
+      panel.classList.toggle('chat-minimized', minimized);
+      localStorage.setItem('gz-chat-min', JSON.stringify(minimized));
+    }
+    applyPos(); applyMin();
+
+    window.toggleChatFloat = function() {
+      minimized = !minimized;
+      applyMin();
+      if (!minimized) badge.style.display = 'none';
+    };
+
+    // Click minimized bar to expand
+    panel.addEventListener('click', e => {
+      if (minimized && !e.target.closest('.chat-float-btn')) toggleChatFloat();
+    });
+
+    // Track unread when minimized
+    const origAddMsg = window._chatAddMsg;
+    window._chatUnreadCount = 0;
+    window._chatMarkUnread = function() {
+      if (!minimized) return;
+      window._chatUnreadCount++;
+      badge.textContent = window._chatUnreadCount;
+      badge.style.display = '';
+    };
+    panel.addEventListener('click', () => { window._chatUnreadCount = 0; badge.style.display = 'none'; });
+
+    // Drag to reposition
+    let dragging = false, ox = 0, oy = 0;
+    hdr.addEventListener('mousedown', e => {
+      if (e.target.closest('.chat-float-btn')) return;
+      if (minimized) return;
+      dragging = true;
+      const r = panel.getBoundingClientRect();
+      ox = e.clientX - r.left;
+      oy = e.clientY - r.top;
+      panel.style.right = panel.style.bottom = '';
+      panel.style.left = r.left + 'px';
+      panel.style.top  = r.top  + 'px';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      panel.style.left = (e.clientX - ox) + 'px';
+      panel.style.top  = (e.clientY - oy) + 'px';
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      const r = panel.getBoundingClientRect();
+      pos = { bottom: window.innerHeight - r.bottom, right: window.innerWidth - r.right };
+      localStorage.setItem('gz-chat-pos', JSON.stringify(pos));
+      applyPos();
+    });
+  })();
+
   // ── Column drag reorder ────────────────────────────────────────────────────
   (function initColumnDrag() {
     const cols = Array.from(document.querySelectorAll('#dashboard-section > .col'));
-    // Restore saved CSS order values
+    // Default order: Steam Social | Network | Your Session
+    const DEFAULT_ORDER = { 'col-steam': 1, 'col-left': 2, 'col-right': 3 };
     const saved = JSON.parse(localStorage.getItem('gz-col-order2') || 'null');
-    if (saved) cols.forEach(c => { if (saved[c.id] != null) c.style.order = saved[c.id]; });
+    const order = saved || DEFAULT_ORDER;
+    cols.forEach(c => { if (order[c.id] != null) c.style.order = order[c.id]; });
 
     function saveOrder() {
       const map = {};
