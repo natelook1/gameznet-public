@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.6"
+VERSION = "1.9.7"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -572,6 +572,12 @@ def api_rename():
     try:
         with _ur2.urlopen(req, timeout=5) as r:
             resp = json.loads(r.read().decode())
+    except _ur2.HTTPError as e:
+        try:
+            resp = json.loads(e.read().decode())
+        except Exception:
+            resp = {"error": f"Backend error {e.code}"}
+        return jsonify(resp), e.code
     except Exception as e:
         return jsonify({"error": str(e)}), 502
     if not resp.get("success"):
