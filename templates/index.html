@@ -582,27 +582,24 @@
     .op-games-strip { display: flex; gap: 3px; padding-left: 2px; }
     .op-game-cap { height: 16px; width: auto; border-radius: 1px; opacity: 0.65; transition: opacity 0.15s; cursor: default; }
     .op-game-cap:hover { opacity: 1; }
-    /* Steam section in Your Session card */
-    .steam-section {
-      border-top: 1px solid var(--border);
-      padding-top: 10px; margin-top: 6px;
-      display: flex; align-items: center; gap: 8px;
-    }
+    /* Session profile header */
+    .session-profile-row { display: flex; align-items: flex-start; gap: 10px; }
+    .session-avatar-wrap { flex-shrink: 0; width: 46px; height: 46px; }
+    .steam-self-avatar { width: 46px; height: 46px; border-radius: 5px; border: 1px solid rgba(0,200,255,0.25); object-fit: cover; display: none; }
+    .session-avatar-ph { width: 46px; height: 46px; border-radius: 5px; background: var(--border2); display: flex; align-items: center; justify-content: center; font-family: 'Share Tech Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text-dim); }
+    .session-profile-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+    .session-steam-row { display: flex; align-items: center; gap: 8px; }
+    .steam-self-stats { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); flex: 1; }
     .steam-link-btn {
-      flex: 1; background: transparent; border: 1px solid #1b9af7; color: #1b9af7;
-      font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px;
-      padding: 6px 10px; cursor: pointer; border-radius: 2px; transition: all 0.15s;
+      background: transparent; border: 1px solid #1b9af7; color: #1b9af7;
+      font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 1px;
+      padding: 4px 8px; cursor: pointer; border-radius: 2px; transition: all 0.15s; white-space: nowrap;
     }
     .steam-link-btn:hover { background: rgba(27,154,247,0.1); }
-    .steam-linked-info { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
-    .steam-self-avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(0,200,255,0.3); flex-shrink: 0; }
-    .steam-self-text { flex: 1; min-width: 0; }
-    .steam-self-name { font-size: 11px; color: var(--accent); font-family: 'Share Tech Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .steam-self-stats { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; }
     .steam-unlink-btn {
       background: transparent; border: 1px solid var(--border2); color: var(--text-dim);
       font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 1px;
-      padding: 4px 7px; cursor: pointer; border-radius: 2px; flex-shrink: 0;
+      padding: 3px 6px; cursor: pointer; border-radius: 2px; flex-shrink: 0;
     }
     .steam-unlink-btn:hover { border-color: var(--danger); color: var(--danger); }
     .online-empty {
@@ -1462,25 +1459,29 @@
     /* ── Floating Network Chat panel ── */
     .chat-float {
       position: fixed;
-      bottom: 40px;
-      right: 24px;
-      width: 320px;
+      width: 300px;
+      height: 290px;
       background: #0f1623;
       border: 1px solid var(--border2);
-      border-radius: 6px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.75);
+      box-shadow: -4px 0 24px rgba(0,0,0,0.7);
       z-index: 800;
       display: flex;
       flex-direction: column;
-      transition: width 0.3s ease, height 0.3s ease, bottom 0.3s ease, right 0.3s ease;
       user-select: none;
+      transition: top 0.15s ease, height 0.2s ease, border-radius 0.15s ease;
+    }
+    .chat-float.chat-docked-right {
+      right: 0; border-right: none; border-radius: 8px 0 0 8px;
+    }
+    .chat-float.chat-docked-left {
+      left: 0; border-left: none; border-radius: 0 8px 8px 0;
     }
     .chat-float.chat-minimized {
-      width: 160px;
-      height: 36px;
-      overflow: hidden;
-      border-radius: 18px;
-      cursor: pointer;
+      height: 36px; overflow: hidden;
+    }
+    .chat-float.chat-dragging {
+      border-radius: 6px !important; border: 1px solid var(--accent) !important;
+      box-shadow: 0 8px 32px rgba(0,212,255,0.2); transition: none !important;
     }
     .chat-float-hdr {
       display: flex;
@@ -2101,21 +2102,23 @@
         <div>
           <div class="section-label">Your Session</div>
           <div class="player-identity-card">
-            <div class="player-identity-row">
-              <div class="player-name-large" id="info-name">—</div>
-              <button class="rename-btn" onclick="openRename()" title="Change name">✎</button>
-              <span class="player-identity-ip copyable" id="info-ip" title="Click to copy">—</span>
-            </div>
-            <div class="steam-section" id="steam-section">
-              <div class="steam-linked-info" id="steam-linked-view" style="display:none;">
+            <div class="session-profile-row">
+              <div class="session-avatar-wrap">
                 <img class="steam-self-avatar" id="steam-avatar-self" src="" />
-                <div class="steam-self-text">
-                  <div class="steam-self-name" id="steam-name-self"></div>
-                  <div class="steam-self-stats" id="steam-stats-self"></div>
-                </div>
-                <button class="steam-unlink-btn" onclick="unlinkSteam()">UNLINK</button>
+                <div class="session-avatar-ph" id="session-avatar-ph">?</div>
               </div>
-              <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM ACCOUNT</button>
+              <div class="session-profile-body">
+                <div class="player-identity-row">
+                  <div class="player-name-large" id="info-name">—</div>
+                  <button class="rename-btn" onclick="openRename()" title="Change name">✎</button>
+                  <span class="player-identity-ip copyable" id="info-ip" title="Click to copy">—</span>
+                </div>
+                <div id="steam-linked-view" class="session-steam-row" style="display:none;">
+                  <span class="steam-self-stats" id="steam-stats-self"></span>
+                  <button class="steam-unlink-btn" onclick="unlinkSteam()">UNLINK</button>
+                </div>
+                <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM ACCOUNT</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2481,6 +2484,8 @@
     document.getElementById('tab-nav').classList.add('visible');
     document.getElementById('info-name').textContent = state.name;
     document.getElementById('info-ip').textContent   = state.clientIp;
+    const ph = document.getElementById('session-avatar-ph');
+    if (ph) ph.textContent = (state.name || '?')[0].toUpperCase();
     document.getElementById('change-token-link').style.display = 'inline';
     document.getElementById('invisible-btn').style.display = 'inline-block';
     document.getElementById('fullroute-btn').style.display = 'inline-block';
@@ -4230,20 +4235,28 @@
 
   // ── Steam Integration ──────────────────────────────────────────────────────
   function updateSteamUI() {
-    const linked = document.getElementById('steam-linked-view');
-    const btn    = document.getElementById('steam-link-btn');
+    const linked  = document.getElementById('steam-linked-view');
+    const btn     = document.getElementById('steam-link-btn');
+    const avatar  = document.getElementById('steam-avatar-self');
+    const avatarPh = document.getElementById('session-avatar-ph');
     if (!linked || !btn) return;
     if (state.steam_id) {
-      linked.style.display = 'flex';
-      btn.style.display    = 'none';
-      document.getElementById('steam-avatar-self').src = state.steam_avatar || '';
-      document.getElementById('steam-name-self').textContent = state.steam_name || state.steam_id;
+      linked.style.display   = 'flex';
+      btn.style.display      = 'none';
+      avatar.src             = state.steam_avatar || '';
+      avatar.style.display   = 'block';
+      if (avatarPh) avatarPh.style.display = 'none';
       const lvl = state.steam_level ? `Lv.${state.steam_level}` : '';
       const cnt = state.steam_game_count ? `${state.steam_game_count} games` : '';
       document.getElementById('steam-stats-self').textContent = [lvl, cnt].filter(Boolean).join(' · ');
     } else {
-      linked.style.display = 'none';
-      btn.style.display    = '';
+      linked.style.display   = 'none';
+      btn.style.display      = '';
+      avatar.style.display   = 'none';
+      if (avatarPh) {
+        avatarPh.style.display = 'flex';
+        avatarPh.textContent   = (state.name || '?')[0].toUpperCase();
+      }
     }
   }
 
@@ -4621,13 +4634,23 @@
     const hdr   = document.getElementById('chat-float-hdr');
     const badge = document.getElementById('chat-float-badge');
     let minimized = JSON.parse(localStorage.getItem('gz-chat-min') || 'false');
-    let pos = JSON.parse(localStorage.getItem('gz-chat-pos') || 'null') || { bottom: 40, right: 24 };
+    let dock = JSON.parse(localStorage.getItem('gz-chat-dock') || 'null') || { side: 'right', top: 180 };
 
+    function clampTop(t) {
+      return Math.max(44, Math.min(window.innerHeight - (minimized ? 36 : 290) - 44, t));
+    }
     function applyPos() {
-      panel.style.bottom = pos.bottom + 'px';
-      panel.style.right  = pos.right  + 'px';
-      panel.style.top    = '';
-      panel.style.left   = '';
+      panel.style.top    = clampTop(dock.top) + 'px';
+      panel.style.bottom = panel.style.left = panel.style.right = '';
+      if (dock.side === 'left') {
+        panel.style.left = '0';
+        panel.classList.remove('chat-docked-right');
+        panel.classList.add('chat-docked-left');
+      } else {
+        panel.style.right = '0';
+        panel.classList.remove('chat-docked-left');
+        panel.classList.add('chat-docked-right');
+      }
     }
     function applyMin() {
       panel.classList.toggle('chat-minimized', minimized);
@@ -4641,13 +4664,10 @@
       if (!minimized) badge.style.display = 'none';
     };
 
-    // Click minimized bar to expand
     panel.addEventListener('click', e => {
       if (minimized && !e.target.closest('.chat-float-btn')) toggleChatFloat();
     });
 
-    // Track unread when minimized
-    const origAddMsg = window._chatAddMsg;
     window._chatUnreadCount = 0;
     window._chatMarkUnread = function() {
       if (!minimized) return;
@@ -4657,7 +4677,7 @@
     };
     panel.addEventListener('click', () => { window._chatUnreadCount = 0; badge.style.display = 'none'; });
 
-    // Drag to reposition
+    // Edge-snap drag
     let dragging = false, ox = 0, oy = 0;
     hdr.addEventListener('mousedown', e => {
       if (e.target.closest('.chat-float-btn')) return;
@@ -4666,9 +4686,11 @@
       const r = panel.getBoundingClientRect();
       ox = e.clientX - r.left;
       oy = e.clientY - r.top;
-      panel.style.right = panel.style.bottom = '';
-      panel.style.left = r.left + 'px';
+      panel.classList.remove('chat-docked-left', 'chat-docked-right');
+      panel.classList.add('chat-dragging');
+      panel.style.left = panel.style.right = panel.style.bottom = '';
       panel.style.top  = r.top  + 'px';
+      panel.style.left = r.left + 'px';
       e.preventDefault();
     });
     document.addEventListener('mousemove', e => {
@@ -4679,10 +4701,13 @@
     document.addEventListener('mouseup', () => {
       if (!dragging) return;
       dragging = false;
+      panel.classList.remove('chat-dragging');
       const r = panel.getBoundingClientRect();
-      pos = { bottom: window.innerHeight - r.bottom, right: window.innerWidth - r.right };
-      localStorage.setItem('gz-chat-pos', JSON.stringify(pos));
+      dock.side = (r.left + r.width / 2) < window.innerWidth / 2 ? 'left' : 'right';
+      dock.top  = r.top;
+      panel.style.left = '';
       applyPos();
+      localStorage.setItem('gz-chat-dock', JSON.stringify(dock));
     });
   })();
 
