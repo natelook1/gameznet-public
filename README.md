@@ -3,6 +3,8 @@
 **Private game server network — secure, invite-only, one command to join.**
 
 ![GamezNET](static/screenshot.png)
+![GamezNET](static/screenshot2.png)
+![GamezNET](static/screenshot3.png)
 
 ---
 
