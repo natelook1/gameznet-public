@@ -3048,6 +3048,12 @@
   // ── Who's Online ───────────────────────────────────────────────────────────
   const _pingHistory = new Map(); // name -> number[]
 
+  function parsePing(raw) {
+    if (raw == null) return null;
+    const n = parseInt(raw);
+    return isNaN(n) ? null : n;
+  }
+
   function recordPing(name, ping) {
     if (ping == null) return;
     const h = _pingHistory.get(name) || [];
@@ -3110,7 +3116,7 @@
       document.title = `GamezNET (${online.length} online)`;
       const lbl = el.closest('.online-card')?.querySelector('.section-label');
       if (lbl) lbl.textContent = `Who's Online  ·  ${online.length}`;
-      online.forEach(p => recordPing(p.name, p.ping));
+      online.forEach(p => recordPing(p.name, parsePing(p.ping)));
       el.innerHTML = online.map(p => {
         const avatar = p.steam_avatar
           ? `<img class="op-avatar" src="${p.steam_avatar}" loading="lazy" />`
@@ -3132,7 +3138,7 @@
               `<img class="op-game-cap" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_sm_120.jpg" title="${g.name} · ${Math.round(g.playtime / 60)}h" loading="lazy" onerror="this.style.display='none'" />`
             ).join('')}</div>`
           : '';
-        const pingHtml = pingSparkline(p.name, p.ping);
+        const pingHtml = pingSparkline(p.name, parsePing(p.ping));
         return `<div class="online-player">
           ${avatar}
           <div class="op-info">
