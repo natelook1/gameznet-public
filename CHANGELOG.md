@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.0.1 — 2026-03-17
+
+### Changed
+- Session header condensed to single line — name, Steam stats, VPN IP, and Unlink button now all on one row
+
+---
+
 ## v2.0.0 — 2026-03-16
 
 ### Added

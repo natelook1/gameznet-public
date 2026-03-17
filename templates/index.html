@@ -595,7 +595,7 @@
     .session-avatar-ph { width: 46px; height: 46px; border-radius: 5px; background: var(--border2); display: flex; align-items: center; justify-content: center; font-family: 'Share Tech Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text-dim); }
     .session-profile-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
     .session-steam-row { display: flex; align-items: center; gap: 8px; }
-    .steam-self-stats { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); flex: 1; }
+    .steam-self-stats { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); }
     .steam-link-btn {
       background: transparent; border: 1px solid #1b9af7; color: #1b9af7;
       font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 1px;
@@ -2119,11 +2119,11 @@
                 <div class="player-identity-row">
                   <div class="player-name-large" id="info-name">—</div>
                   <button class="rename-btn" onclick="openRename()" title="Change name">✎</button>
+                  <div id="steam-linked-view" class="session-steam-row" style="display:none;">
+                    <span class="steam-self-stats" id="steam-stats-self"></span>
+                  </div>
                   <span class="player-identity-ip copyable" id="info-ip" title="Click to copy">—</span>
-                </div>
-                <div id="steam-linked-view" class="session-steam-row" style="display:none;">
-                  <span class="steam-self-stats" id="steam-stats-self"></span>
-                  <button class="steam-unlink-btn" onclick="unlinkSteam()">UNLINK</button>
+                  <button class="steam-unlink-btn" id="steam-unlink-btn" onclick="unlinkSteam()" style="display:none;">UNLINK</button>
                 </div>
                 <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM ACCOUNT</button>
               </div>
@@ -4293,9 +4293,11 @@
     const avatar  = document.getElementById('steam-avatar-self');
     const avatarPh = document.getElementById('session-avatar-ph');
     if (!linked || !btn) return;
+    const unlinkBtn = document.getElementById('steam-unlink-btn');
     if (state.steam_id) {
       linked.style.display   = 'flex';
       btn.style.display      = 'none';
+      if (unlinkBtn) unlinkBtn.style.display = '';
       avatar.src             = state.steam_avatar || '';
       avatar.style.display   = 'block';
       if (avatarPh) avatarPh.style.display = 'none';
@@ -4305,6 +4307,7 @@
     } else {
       linked.style.display   = 'none';
       btn.style.display      = '';
+      if (unlinkBtn) unlinkBtn.style.display = 'none';
       avatar.style.display   = 'none';
       if (avatarPh) {
         avatarPh.style.display = 'flex';
