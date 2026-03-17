@@ -33,9 +33,6 @@ log = logging.getLogger("gameznet")
 
 GAME_PROCESSES = {
     'FactoryGame-Win64-Shipping.exe': 'Satisfactory',
-    'FactoryGameSteam-Win64-Shipping.exe': 'Satisfactory',
-    'WorldOfSeaBattleClient.exe': 'World of Sea Battle',
-    'League of Legends.exe': 'League of Legends',
     'ProjectZomboid64.exe': 'Project Zomboid',
     'ProjectZomboid.exe': 'Project Zomboid',
     'ConanSandbox.exe': 'Conan Exiles',
@@ -43,37 +40,22 @@ GAME_PROCESSES = {
     'SCUM.exe': 'SCUM',
 }
 
-_GAME_PROCESSES_LOWER = {k.lower(): v for k, v in GAME_PROCESSES.items()}
-
 def detect_game():
     try:
         import psutil
         for proc in psutil.process_iter(['name']):
-            name = proc.info.get('name', '') or ''
-            match = GAME_PROCESSES.get(name) or _GAME_PROCESSES_LOWER.get(name.lower())
-            if match:
-                return match
+            name = proc.info.get('name', '')
+            if name in GAME_PROCESSES:
+                return GAME_PROCESSES[name]
     except Exception:
         pass
     return None
-
-def detect_game_steam(steam_id):
-    """Query /api/steam/game on WORKER_URL for the player's current game."""
-    import urllib.request
-    try:
-        url = f"{WORKER_URL}/api/steam/game?steam_id={urllib.request.quote(steam_id)}"
-        req = urllib.request.Request(url, headers={"User-Agent": "GamezNET"})
-        with urllib.request.urlopen(req, timeout=3) as resp:
-            data = json.loads(resp.read().decode())
-            return data.get("game") or None
-    except Exception:
-        return None
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "2.0.1"
+VERSION = "1.15.1"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -91,7 +73,7 @@ def ensure_single_instance():
     mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "Global\\GamezNET_SingleInstance")
     if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
         log.info("Another instance is already running — opening browser and exiting.")
-        webbrowser.open(f"http://gameznet.local:{PORT}")
+        webbrowser.open(f"http://localhost:{PORT}")
         sys.exit(0)
     return mutex  # Must keep reference alive — GC releasing it would free the mutex
 
@@ -181,13 +163,12 @@ atexit.register(cleanup_tunnel)
 # ─── Telemetry Engine ─────────────────────────────────────────────────────────
 
 _telemetry = {
-    "ping": "---",
+    "ping": None,
     "received": "0 B",
     "sent": "0 B",
     "handshake": "Never",
     "motd": "",
-    "alert": None,
-    "session": None
+    "alert": None
 }
 
 def update_telemetry():
@@ -197,12 +178,10 @@ def update_telemetry():
 
     motd_timer = 0
     alert_timer = 0
-    session_timer = 0
-    last_session_id = None
     version_timer = 0
 
     while True:
-        # 1. Update MOTD every ~30 seconds
+        # 1. Update MOTD every ~5 minutes
         if motd_timer <= 0:
             try:
                 req = urllib.request.Request(f"{WORKER_URL}/api/motd", headers={'User-Agent': 'GamezNET'})
@@ -211,10 +190,10 @@ def update_telemetry():
                     _telemetry["motd"] = data.get("message", "Connected to GamezNET")
             except Exception:
                 pass
-            motd_timer = 15
+            motd_timer = 150
         motd_timer -= 1
 
-        # 1b. Update Alert every ~10 seconds
+        # 1b. Update Alert every ~60 seconds
         if alert_timer <= 0:
             try:
                 req = urllib.request.Request(f"{WORKER_URL}/api/alert", headers={'User-Agent': 'GamezNET'})
@@ -223,22 +202,10 @@ def update_telemetry():
                     _telemetry["alert"] = data.get("alert", None)
             except Exception:
                 pass
-            alert_timer = 5
+            alert_timer = 30
         alert_timer -= 1
 
-        # 1c. Poll session every ~30 seconds
-        if session_timer <= 0:
-            try:
-                req = urllib.request.Request(f"{WORKER_URL}/api/session", headers={'User-Agent': 'GamezNET'})
-                with urllib.request.urlopen(req, timeout=5) as resp:
-                    data = json.loads(resp.read().decode())
-                    _telemetry["session"] = data.get("session", None)
-            except Exception:
-                pass
-            session_timer = 15
-        session_timer -= 1
-
-        # 1d. Check Version every ~60 seconds
+        # 1c. Check Version every ~60 seconds
         if version_timer <= 0:
             check_version()
             version_timer = 30
@@ -253,17 +220,17 @@ def update_telemetry():
 
                 CREATE_NO_WINDOW = 0x08000000
                 output = subprocess.check_output(
-                    f"ping -n 2 -w 1500 {target}",
+                    f"ping -n 1 -w 1000 {target}",
                     shell=True,
                     creationflags=CREATE_NO_WINDOW
                 ).decode()
-
+                
                 all_pings = [int(m) for m in re.findall(r"time[=<](\d+)ms", output)]
-                _telemetry["ping"] = f"{min(all_pings)}ms" if all_pings else "Timed Out"
+                _telemetry["ping"] = min(all_pings) if all_pings else None
             except subprocess.CalledProcessError:
-                _telemetry["ping"] = "Timed Out"
+                _telemetry["ping"] = None
             except Exception:
-                _telemetry["ping"] = "Error"
+                _telemetry["ping"] = None
 
             # 3. WireGuard Stats (wg show via wg.exe, not wireguard.exe)
             try:
@@ -288,7 +255,7 @@ def update_telemetry():
             except Exception:
                 pass
         else:
-            _telemetry["ping"] = "---"
+            _telemetry["ping"] = None
             _telemetry["handshake"] = "Never"
             _telemetry["received"] = "0 B"
             _telemetry["sent"] = "0 B"
@@ -301,11 +268,8 @@ app = Flask(__name__)
 _lock = threading.Lock()
 _connected = False
 _invisible = False
-_player_status = ""
 _full_route = False
 _update_required = False
-_steam_game_cache = None
-_steam_cache_at = 0
 
 def _version_tuple(v):
     try:
@@ -329,7 +293,8 @@ def check_version():
 
 @app.route("/")
 def index():
-    return render_template("index.html", connected=_connected, worker_url=WORKER_URL)
+    # Passing WORKER_URL allows the frontend fetch calls to succeed
+    return render_template("index.html", worker_url=WORKER_URL)
 
 @app.route("/api/status", methods=["GET"])
 def api_status():
@@ -338,9 +303,38 @@ def api_status():
         "telemetry": _telemetry,
         "update_required": _update_required,
         "version": VERSION,
-        "full_route": _full_route,
-        "player_status": _player_status
+        "full_route": _full_route
     })
+
+@app.route("/api/steam/link", methods=["POST"])
+def steam_link():
+    """
+    Handles linking the Steam account.
+    Expects a JSON body with 'steam_id'.
+    """
+    try:
+        data = request.json
+        steam_id = data.get("steam_id")
+        if not steam_id:
+            return jsonify({"error": "Missing Steam ID"}), 400
+
+        # Load existing config to update it
+        config_data = {}
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, "r") as f:
+                config_data = json.load(f)
+
+        config_data["steam_id"] = steam_id
+
+        # Save Steam ID locally
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(config_data, f)
+
+        log.info(f"Steam account linked: {steam_id}")
+        return jsonify({"success": True, "steam_id": steam_id})
+    except Exception as e:
+        log.error(f"Error linking Steam: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/connect", methods=["POST"])
 def api_connect():
@@ -373,6 +367,7 @@ Endpoint = {srv['endpoint']}
 AllowedIPs = {allowed_ips}
 PersistentKeepalive = 25
 """
+        
         conf_path = os.path.join(os.path.expanduser("~"), f"{TUNNEL_NAME}.conf")
         with open(conf_path, "w") as f:
             f.write(conf_content)
@@ -408,9 +403,7 @@ PersistentKeepalive = 25
                       install_result.stdout, install_result.stderr)
             return jsonify({"error": f"WireGuard failed to install tunnel service (code {install_result.returncode}). Try running the GamezNET installer again."}), 503
 
-        # Verify the tunnel interface actually came up (wg show returns valid output).
-        # We do NOT require a handshake here — that needs the server to respond,
-        # which is a server-side concern. The telemetry will show if traffic flows.
+        # Verify the tunnel interface actually came up
         wg_show = wg_cli()
         log.info("wg.exe path: %s", wg_show)
         tunnel_up = False
@@ -428,7 +421,6 @@ PersistentKeepalive = 25
                     log.info("Tunnel interface confirmed on attempt %d", i + 1)
                     break
             else:
-                # wg.exe not found — check Windows service state
                 svc = subprocess.run(
                     ["sc", "query", f"WireGuardTunnel${TUNNEL_NAME}"],
                     capture_output=True, text=True,
@@ -472,7 +464,7 @@ def api_disconnect():
         if os.path.exists(conf_path):
             os.remove(conf_path)
 
-        # Send disconnecting heartbeat before clearing state
+        # Send disconnecting heartbeat
         try:
             import urllib.request
             if os.path.exists(CONFIG_FILE):
@@ -511,7 +503,8 @@ def api_config():
         return jsonify({
             "provisioned": True,
             "name":      data.get("name", "Player"),
-            "client_ip": data.get("vpn_ip", "")
+            "client_ip": data.get("vpn_ip", ""),
+            "steam_id":  data.get("steam_id", None)
         })
     except Exception as e:
         return jsonify({"provisioned": False, "name": "", "client_ip": ""}), 500
@@ -523,15 +516,23 @@ def api_provision():
     if not data or 'private_key' not in data or 'client_ip' not in data:
         return jsonify({"error": "Invalid payload"}), 400
     try:
-        config = {
+        # Merge with existing config to preserve items like steam_id
+        config_data = {}
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, "r") as f:
+                    config_data = json.load(f)
+            except Exception:
+                pass
+        
+        config_data.update({
             "private_key": data["private_key"],
             "vpn_ip":      data["client_ip"],
             "name":        data.get("name", "Player")
-        }
-        if data.get("steam_id"):
-            config["steam_id"] = data["steam_id"]
+        })
+
         with open(CONFIG_FILE, "w") as f:
-            json.dump(config, f)
+            json.dump(config_data, f)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -543,50 +544,26 @@ def api_save_config():
     if not data or 'private_key' not in data or 'vpn_ip' not in data:
         return jsonify({"error": "Invalid payload"}), 400
     try:
+        # Merge with existing config
+        config_data = {}
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, "r") as f:
+                    config_data = json.load(f)
+            except Exception:
+                pass
+
+        config_data.update({
+            "private_key": data["private_key"],
+            "vpn_ip":      data["vpn_ip"],
+            "name":        data.get("name", "Player")
+        })
+
         with open(CONFIG_FILE, "w") as f:
-            json.dump({
-                "private_key": data["private_key"],
-                "vpn_ip":      data["vpn_ip"],
-                "name":        data.get("name", "Player")
-            }, f)
+            json.dump(config_data, f)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@app.route("/api/rename", methods=["POST"])
-def api_rename():
-    """Change display name — validated server-side by vpn_ip + old_name."""
-    data = request.json or {}
-    new_name = (data.get("new_name") or "").strip()
-    if not new_name:
-        return jsonify({"error": "Name is required"}), 400
-    try:
-        with open(CONFIG_FILE) as f:
-            config = json.load(f)
-    except Exception:
-        return jsonify({"error": "Not provisioned"}), 400
-    old_name = config.get("name", "")
-    vpn_ip   = config.get("vpn_ip", "")
-    import urllib.request as _ur2
-    body = json.dumps({"old_name": old_name, "new_name": new_name, "vpn_ip": vpn_ip}).encode()
-    req = _ur2.Request(f"{WORKER_URL}/api/rename", data=body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
-    try:
-        with _ur2.urlopen(req, timeout=5) as r:
-            resp = json.loads(r.read().decode())
-    except _ur2.HTTPError as e:
-        try:
-            resp = json.loads(e.read().decode())
-        except Exception:
-            resp = {"error": f"Backend error {e.code}"}
-        return jsonify(resp), e.code
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
-    if not resp.get("success"):
-        return jsonify(resp), 400
-    config["name"] = resp["name"]
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(config, f)
-    return jsonify({"success": True, "name": resp["name"]})
 
 @app.route("/api/reset", methods=["POST"])
 def api_reset():
@@ -673,9 +650,9 @@ def api_online():
 @app.route("/api/fullroute", methods=["GET", "POST"])
 def api_fullroute():
     global _full_route
-    data = request.get_json(silent=True) or {}
-    if "enabled" in data and _connected:
+    if _connected:
         return jsonify({"error": "Disconnect first to change routing mode"}), 400
+    data = request.get_json(silent=True) or {}
     if "enabled" in data:
         _full_route = bool(data["enabled"])
     return jsonify({"full_route": _full_route})
@@ -724,236 +701,6 @@ def api_invisible():
         return jsonify({"invisible": _invisible})
     return jsonify({"invisible": _invisible})
 
-@app.route("/api/status/set", methods=["POST"])
-def api_status_set():
-    global _player_status
-    data = request.json or {}
-    new_status = str(data.get("status", ""))
-    if len(new_status) > 40:
-        return jsonify({"error": "Status too long (max 40 characters)"}), 400
-    _player_status = new_status
-    log.info("Player status set to: %r", _player_status)
-    try:
-        with open(CONFIG_FILE) as f:
-            cfg = json.load(f)
-        cfg["status"] = new_status
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(cfg, f)
-    except Exception:
-        pass
-    return jsonify({"success": True})
-
-@app.route("/api/remote/start-host", methods=["POST"])
-def api_remote_start_host():
-    """
-    Download RustDesk (if needed), set session password in config, start RustDesk,
-    extract the machine ID from the get-id log, return it to the UI.
-    Called after the backend has already brokered the session.
-    """
-    data = request.json or {}
-    password = data.get("password", "")
-    if not password:
-        return jsonify({"error": "Missing password"}), 400
-
-    install_dir = os.path.dirname(os.path.abspath(__file__))
-    rustdesk_exe = os.path.join(install_dir, "rustdesk.exe")
-    rustdesk_url = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
-    config_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "RustDesk.toml")
-    id_log_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "log", "get-id", "rustdesk_rCURRENT.log")
-
-    try:
-        # Download RustDesk if not cached
-        if not os.path.exists(rustdesk_exe):
-            log.info("Downloading RustDesk...")
-            import urllib.request as _ur
-            _ur.urlretrieve(rustdesk_url, rustdesk_exe)
-            log.info("RustDesk downloaded.")
-
-        # Write session password into config before starting
-        os.makedirs(os.path.dirname(config_path), exist_ok=True)
-        if os.path.exists(config_path):
-            with open(config_path, "r") as f:
-                toml = f.read()
-            import re as _re
-            if _re.search(r"^password\s*=", toml, _re.MULTILINE):
-                toml = _re.sub(r"^password\s*=.*$", f"password = '{password}'", toml, flags=_re.MULTILINE)
-            else:
-                toml += f"\npassword = '{password}'\n"
-            with open(config_path, "w") as f:
-                f.write(toml)
-        else:
-            with open(config_path, "w") as f:
-                f.write(f"enc_id = ''\npassword = '{password}'\nsalt = ''\n")
-
-        # Kill any existing RustDesk so we get a fresh ID log
-        subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True)
-        time.sleep(1)
-
-        # Clear stale ID log so we know any entry we read is fresh
-        if os.path.exists(id_log_path):
-            try:
-                os.remove(id_log_path)
-            except Exception:
-                pass
-
-        # Start RustDesk minimized (hashes the password on startup — window not needed)
-        si = subprocess.STARTUPINFO()
-        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        si.wShowWindow = 6  # SW_MINIMIZE
-        subprocess.Popen([rustdesk_exe], startupinfo=si)
-        time.sleep(3)
-
-        # Run --get-id — on some machines the ID prints directly to stdout
-        get_id_result = subprocess.run([rustdesk_exe, "--get-id"], capture_output=True, text=True, errors="ignore", timeout=15)
-        rustdesk_id = None
-        for line in reversed((get_id_result.stdout + get_id_result.stderr).splitlines()):
-            if re.match(r'^\d{6,12}$', line.strip()):
-                rustdesk_id = line.strip()
-                break
-
-        # Fallback: poll for any log file in the get-id dir — up to 10s
-        if not rustdesk_id:
-            id_log_dir = os.path.dirname(id_log_path)
-            for _ in range(20):
-                time.sleep(0.5)
-                if not os.path.exists(id_log_dir):
-                    continue
-                log_files = sorted(
-                    [os.path.join(id_log_dir, f) for f in os.listdir(id_log_dir) if f.endswith(".log")],
-                    key=os.path.getmtime, reverse=True
-                )
-                for lf in log_files:
-                    try:
-                        with open(lf, "r", errors="ignore") as f:
-                            for line in reversed(f.readlines()):
-                                m = re.search(r"Generated id (\d+)", line)
-                                if m:
-                                    rustdesk_id = m.group(1)
-                                    break
-                    except Exception:
-                        pass
-                    if rustdesk_id:
-                        break
-                if rustdesk_id:
-                    break
-
-        if not rustdesk_id:
-            return jsonify({"error": "Could not read RustDesk ID — try again"}), 500
-
-        # Post ID back to backend so helper can poll for it
-        import urllib.request as _ur2
-        import urllib.error as _ue2
-        try:
-            _body = json.dumps({"requester": data.get("requester", ""), "rustdesk_id": rustdesk_id}).encode()
-            _req = _ur2.Request(f"{WORKER_URL}/api/remote/ready", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
-            _ur2.urlopen(_req, timeout=5)
-        except Exception as _e:
-            log.warning("remote/ready post failed: %s", repr(_e))
-
-        log.info("RustDesk host started, ID: %s", rustdesk_id)
-        return jsonify({"success": True, "rustdesk_id": rustdesk_id})
-
-    except Exception as e:
-        log.error("remote start-host failed: %s", repr(e), exc_info=True)
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/steam/link", methods=["POST"])
-def api_steam_link():
-    """Open Steam OpenID login in the default browser to link the player's Steam account."""
-    data = request.json or {}
-    name = data.get("name", "")
-    if not name:
-        return jsonify({"error": "Missing name"}), 400
-    import webbrowser
-    webbrowser.open(f"{WORKER_URL}/auth/steam?token={name}")
-    return jsonify({"success": True})
-
-
-def _notify_connected(helper):
-    """Tell the backend the helper has launched RustDesk so the host modal can advance."""
-    if not helper:
-        return
-    try:
-        import urllib.request as _ur3
-        _body = json.dumps({"helper": helper}).encode()
-        _req = _ur3.Request(f"{WORKER_URL}/api/remote/connected", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
-        _ur3.urlopen(_req, timeout=5)
-    except Exception as _e:
-        log.warning("remote/connected notify failed: %s", repr(_e))
-
-
-@app.route("/api/remote/start-helper", methods=["POST"])
-def api_remote_start_helper():
-    """
-    Download RustDesk (if needed) and attempt to connect to the requester.
-    Falls back gracefully if --connect flag is not supported.
-    """
-    data = request.json or {}
-    target_id = data.get("rustdesk_id", "")
-    password = data.get("password", "")
-    helper = data.get("helper", "")
-    if not target_id or not password:
-        return jsonify({"error": "Missing rustdesk_id or password"}), 400
-
-    install_dir = os.path.dirname(os.path.abspath(__file__))
-    rustdesk_exe = os.path.join(install_dir, "rustdesk.exe")
-    rustdesk_url = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
-
-    try:
-        # Download RustDesk if not cached
-        if not os.path.exists(rustdesk_exe):
-            log.info("Downloading RustDesk...")
-            import urllib.request as _ur
-            _ur.urlretrieve(rustdesk_url, rustdesk_exe)
-            log.info("RustDesk downloaded.")
-
-        # Try CLI connect first — opens only the connection window, not the full UI
-        proc = subprocess.Popen([rustdesk_exe, "--connect", target_id, "--password", password])
-        time.sleep(5)
-        if proc.poll() is not None:
-            # Process exited — CLI connect not supported, fall back to minimized GUI
-            log.info("RustDesk --connect exited immediately, launching GUI fallback")
-            si = subprocess.STARTUPINFO()
-            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            si.wShowWindow = 6  # SW_MINIMIZE
-            subprocess.Popen([rustdesk_exe], startupinfo=si, close_fds=True)
-            _notify_connected(helper)
-            return jsonify({"success": True, "mode": "gui", "rustdesk_id": target_id, "password": password})
-
-        _notify_connected(helper)
-        return jsonify({"success": True, "mode": "connected"})
-
-    except Exception as e:
-        log.error("remote start-helper failed: %s", repr(e), exc_info=True)
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/remote/cleanup", methods=["POST"])
-def api_remote_cleanup():
-    """Kill RustDesk and clear the session password from config."""
-    config_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "RustDesk.toml")
-    try:
-        import psutil
-        for proc in psutil.process_iter(['name']):
-            if (proc.info.get('name') or '').lower() == 'rustdesk.exe':
-                proc.kill()
-    except Exception:
-        pass
-    # Clear password from config
-    try:
-        if os.path.exists(config_path):
-            with open(config_path, "r") as f:
-                toml = f.read()
-            toml = re.sub(r"^password\s*=.*$", "password = ''", toml, flags=re.MULTILINE)
-            with open(config_path, "w") as f:
-                f.write(toml)
-    except Exception:
-        pass
-    log.info("RustDesk session cleaned up.")
-    return jsonify({"success": True})
-
-
 @app.route("/api/update", methods=["POST"])
 def api_update():
     """Download latest code from GitHub as a zip and restart the app."""
@@ -994,19 +741,13 @@ def api_update():
                         
         log.info("Update downloaded and extracted successfully.")
     except Exception as e:
-        log.error("Update failed: %r", e, exc_info=True)
-        return jsonify({"error": f"Failed to download update: {repr(e)}"}), 500
+        log.error("Update failed: %s", e)
+        return jsonify({"error": f"Failed to download update: {e}"}), 500
 
-    # Restart: release mutex first so new instance can acquire it, then launch and exit
+    # Restart: launch new instance then exit
     def _restart():
         time.sleep(0.8)
         script = os.path.join(install_dir, "app.py")
-        # Release the single-instance mutex before spawning so the new process isn't blocked
-        try:
-            ctypes.windll.kernel32.ReleaseMutex(_instance_mutex)
-            ctypes.windll.kernel32.CloseHandle(_instance_mutex)
-        except Exception:
-            pass
         subprocess.Popen([sys.executable, script, "--no-browser"], cwd=install_dir, creationflags=0x08000000)
         os._exit(0)
     threading.Thread(target=_restart, daemon=True).start()
@@ -1025,66 +766,23 @@ def api_alert():
         log.debug("api_alert proxy failed: %s", e)
         return jsonify({"alert": None})
 
-@app.route("/api/<path:subpath>", methods=["GET", "POST"])
-def api_proxy(subpath):
-    """Catch-all proxy for unhandled /api/* routes — forwards to backend."""
-    import urllib.request as _ur
-    import urllib.error as _ue
-    try:
-        qs = request.query_string.decode()
-        url = f"{WORKER_URL}/api/{subpath}" + (f"?{qs}" if qs else "")
-        body = request.get_data() or None
-        ct = request.content_type or "application/json"
-        req = _ur.Request(url, data=body, headers={"User-Agent": "GamezNET", "Content-Type": ct})
-        with _ur.urlopen(req, timeout=10) as resp:
-            return resp.read(), resp.status, {"Content-Type": resp.headers.get("Content-Type", "application/json")}
-    except _ue.HTTPError as e:
-        body = e.read()
-        log.error("api proxy HTTP %s for %s: %s", e.code, subpath, body)
-        return body, e.code, {"Content-Type": e.headers.get("Content-Type", "application/json")}
-    except Exception as e:
-        log.error("api proxy failed for %s: %s", subpath, e)
-        return jsonify({"error": str(e)}), 502
-
-@app.route("/auth/<path:subpath>", methods=["GET", "POST"])
-def auth_proxy(subpath):
-    """Proxy /auth/* routes to backend (YouTube OAuth)."""
-    import urllib.request as _ur
-    qs = request.query_string.decode()
-    url = f"{WORKER_URL}/auth/{subpath}" + (f"?{qs}" if qs else "")
-    from flask import redirect
-    return redirect(url)
-
 # ─── Heartbeat Thread ─────────────────────────────────────────────────────────
 
 def heartbeat_loop():
     """Send presence heartbeat to the Worker every 3 seconds while connected."""
     import urllib.request
-    _steam_counter = 0
     while True:
         time.sleep(3)
         if _connected and os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
                     cfg = json.load(f)
-                # Game detection: try Steam every 30s (10 heartbeat ticks), fall back to process scan
-                steam_id = cfg.get("steam_id")
-                game = None
-                if steam_id:
-                    _steam_counter += 1
-                    if _steam_counter >= 10:
-                        _steam_counter = 0
-                        game = detect_game_steam(steam_id)
-                if game is None:
-                    game = detect_game()
                 payload = json.dumps({
                     "name": cfg.get("name", ""),
                     "vpn_ip": cfg.get("vpn_ip", ""),
-                    "game": game,
+                    "game": detect_game(),
                     "hidden": _invisible,
-                    "ping": _telemetry.get("ping", None),
-                    "version": VERSION,
-                    "status": _player_status
+                    "ping": _telemetry.get("ping", None)
                 }).encode()
                 req = urllib.request.Request(
                     f"{WORKER_URL}/api/heartbeat",
@@ -1100,7 +798,7 @@ def heartbeat_loop():
 
 def open_browser():
     time.sleep(1.2)
-    webbrowser.open(f"http://gameznet.local:{PORT}")
+    webbrowser.open(f"http://localhost:{PORT}")
 
 def ensure_admin():
     """Re-launch with admin rights if needed."""
@@ -1174,7 +872,7 @@ def run_tray(flask_thread):
             icon_holder["icon"].icon = img
 
     def on_open(icon, item):
-        webbrowser.open(f"http://gameznet.local:{PORT}")
+        webbrowser.open(f"http://localhost:{PORT}")
 
     def on_disconnect(icon, item):
         if _connected:
@@ -1182,7 +880,7 @@ def run_tray(flask_thread):
                 import urllib.request
                 urllib.request.urlopen(
                     urllib.request.Request(
-                        f"http://127.0.0.1:{PORT}/api/disconnect",
+                        f"http://localhost:{PORT}/api/disconnect",
                         method="POST"
                     ), timeout=5
                 )
@@ -1231,121 +929,12 @@ def run_tray(flask_thread):
                 tray.menu = build_menu()
     threading.Thread(target=state_watcher, daemon=True).start()
 
-    # Notify when friends come online
-    def presence_watcher():
-        import urllib.request as _ur
-        known = None  # None = first poll, don't notify yet
-        my_name = None
-        while True:
-            time.sleep(5)
-            if not _connected:
-                known = None
-                continue
-            try:
-                if my_name is None and os.path.exists(CONFIG_FILE):
-                    with open(CONFIG_FILE) as f:
-                        my_name = json.load(f).get("name", "")
-                req = _ur.Request(f"{WORKER_URL}/api/online", headers={"User-Agent": "GamezNET"})
-                with _ur.urlopen(req, timeout=5) as resp:
-                    online = {p["name"] for p in json.loads(resp.read()) if p.get("name") != my_name}
-                if known is None:
-                    known = online
-                else:
-                    for name in online - known:
-                        try:
-                            tray.notify(f"{name} joined GamezNET", "GamezNET")
-                        except Exception:
-                            pass
-                    for name in known - online:
-                        try:
-                            tray.notify(f"{name} left GamezNET", "GamezNET")
-                        except Exception:
-                            pass
-                    known = online
-            except Exception:
-                pass
-    threading.Thread(target=presence_watcher, daemon=True).start()
-
-    # Notify when admin broadcasts an alert
-    def alert_watcher():
-        import urllib.request as _ur
-        last_alert_id = None
-        while True:
-            time.sleep(15)
-            if not _connected:
-                continue
-            try:
-                req = _ur.Request(f"{WORKER_URL}/api/alert", headers={"User-Agent": "GamezNET"})
-                with _ur.urlopen(req, timeout=5) as resp:
-                    data = json.loads(resp.read().decode())
-                alert = data.get("alert")
-                if alert and alert.get("id") != last_alert_id:
-                    last_alert_id = alert["id"]
-                    try:
-                        tray.notify(alert.get("message", "Admin alert"), "GamezNET")
-                    except Exception:
-                        pass
-                elif not alert:
-                    last_alert_id = None
-            except Exception:
-                pass
-    threading.Thread(target=alert_watcher, daemon=True).start()
-
-    # Notify when a session is scheduled
-    def session_watcher():
-        import urllib.request as _ur
-        last_id = None
-        while True:
-            time.sleep(20)
-            try:
-                req = _ur.Request(f"{WORKER_URL}/api/session", headers={"User-Agent": "GamezNET"})
-                with _ur.urlopen(req, timeout=5) as resp:
-                    data = json.loads(resp.read().decode())
-                session = data.get("session")
-                if session and session.get("id") != last_id:
-                    last_id = session["id"]
-                    t = session.get("scheduled_time", "")
-                    try:
-                        import datetime as _dt, re as _re
-                        t_clean = _re.sub(r'\.\d+', '', t.replace("Z", "+00:00"))
-                        dt = _dt.datetime.fromisoformat(t_clean)
-                        dt = dt.astimezone()  # convert UTC → local
-                        time_str = dt.strftime("%b %d at %I:%M %p")
-                    except Exception:
-                        time_str = t
-                    try:
-                        tray.notify(f"{session.get('host','Someone')} scheduled {session.get('game','')} · {time_str}", "GamezNET Session")
-                    except Exception:
-                        pass
-                elif not session:
-                    last_id = None
-            except Exception:
-                pass
-    threading.Thread(target=session_watcher, daemon=True).start()
-
     tray.run()
 
 if __name__ == "__main__":
     _instance_mutex = ensure_single_instance()   # ← single-instance guard (must be first)
     ensure_admin()
     hide_console()
-
-    # Restore persisted status from config
-    try:
-        with open(CONFIG_FILE) as f:
-            _player_status = json.load(f).get("status", "")
-    except Exception:
-        pass
-
-    # Auto-reconnect: if the tunnel is already up (e.g. after an in-place update), resume connected state
-    try:
-        wg = wg_cli()
-        if wg:
-            result = subprocess.run([wg, "show", TUNNEL_NAME], capture_output=True, creationflags=0x08000000, timeout=3)
-            if result.returncode == 0 and result.stdout.strip():
-                _connected = True
-    except Exception:
-        pass
 
     # Version check (non-blocking)
     threading.Thread(target=check_version, daemon=True).start()

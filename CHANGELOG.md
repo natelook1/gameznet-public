@@ -1,26 +1,5 @@
 # Changelog
 
-## v2.0.1 — 2026-03-17
-
-### Changed
-- Session header condensed to single line — name, Steam stats, VPN IP, and Unlink button now all on one row
-
----
-
-## v2.0.0 — 2026-03-16
-
-### Added
-- **Ping sparkline** — live ping history graph in the Who's Online bar, accumulates over polling cycles
-- **Steam link info in session header** — shows Steam game/status in the session header area
-- **Dockable chat panel** — floating chat can be docked to left or right edge, draggable up/down while docked
-
-### Fixed
-- Ping values sent as strings (e.g. `"42ms"`) now correctly parsed to integers before display — eliminates "42msms" doubled suffix
-- Steam API key validation — clears incorrectly stored Google API keys
-- Cross-repo contamination from external AI agent fully reverted; clean baseline restored
-
----
-
 ## v1.14.2 — 2026-03-16
 
 ### Added
