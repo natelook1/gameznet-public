@@ -3064,21 +3064,23 @@
   function pingSparkline(hist) {
     if (!hist || hist.length === 0) return '';
     const current = hist[hist.length - 1];
-    if (current === -1) return `<span class="op-ping-wrap"><span class="op-ping-val bad">err</span></span>`;
     
-    const cls   = current <= 100 ? 'good' : current <= 250 ? 'ok' : 'bad';
-    const color = current <= 100 ? '#00e87a' : current <= 250 ? '#ffaa00' : '#ff3355';
+    const pingStr = current === -1 ? 'err' : current + 'ms';
+    const cls   = current === -1 ? 'bad' : (current <= 100 ? 'good' : current <= 250 ? 'ok' : 'bad');
+    const color = current === -1 ? '#ff3355' : (current <= 100 ? '#00e87a' : current <= 250 ? '#ffaa00' : '#ff3355');
     
     const valid = hist.filter(v => v !== -1);
-    if (valid.length < 2) {
+    if (hist.length < 2) {
       // Not enough history yet — plain badge
-      return `<span class="op-ping-wrap"><span class="op-ping-val ${cls}">${current}ms</span></span>`;
+      return `<span class="op-ping-wrap"><span class="op-ping-val ${cls}">${pingStr}</span></span>`;
     }
     const W = 56, H = 18;
-    const lo = Math.min(...valid), hi = Math.max(...valid, lo + 1);
+    const min = valid.length ? Math.min(...valid) : 0;
+    const max = valid.length ? Math.max(60, ...valid) : 60;
+    const range = max - min || 1;
     const pts = hist.map((v, i) => {
       const x = (i / (hist.length - 1)) * W;
-      const y = v === -1 ? H : H - 2 - ((v - lo) / (hi - lo)) * (H - 4);
+      const y = v === -1 ? H : Math.max(1, H - 2 - ((v - min) / range) * (H - 4));
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
     const lastPt = pts.split(' ').pop().split(',');
@@ -3087,7 +3089,7 @@
         <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
         <circle cx="${lastPt[0]}" cy="${lastPt[1]}" r="2.2" fill="${color}"/>
       </svg>
-      <span class="op-ping-val ${cls}">${current}ms</span>
+      <span class="op-ping-val ${cls}" style="min-width:32px;text-align:right;">${pingStr}</span>
     </span>`;
   }
 
@@ -3147,12 +3149,14 @@
             <div class="op-row1">
               <div class="op-dot"></div>
               <div class="op-name">${p.name}${p.status ? `<span class="op-status">${p.status}</span>` : ''}</div>
-              ${p.game ? `<div style="flex:1;font-size:10px;color:var(--accent);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${p.game}</div>` : '<div style="flex:1;"></div>'}
-              ${pingHtml}
-              <div class="op-ip">${p.vpn_ip}</div>
+              ${p.game ? `<div style="font-size:10px;color:var(--accent);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${p.game}</div>` : ''}
             </div>
             ${steamSub}
             ${gamesStrip}
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;margin-left:auto;">
+            ${pingHtml}
+            <div class="op-ip" style="text-align:right;">${p.vpn_ip}</div>
           </div>
         </div>`;
       }).join('');
