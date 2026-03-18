@@ -1035,7 +1035,7 @@ def api_proxy(subpath):
         url = f"{WORKER_URL}/api/{subpath}" + (f"?{qs}" if qs else "")
         body = request.get_data() or None
         ct = request.content_type or "application/json"
-        req = _ur.Request(url, data=body, headers={"User-Agent": "GamezNET", "Content-Type": ct})
+        req = _ur.Request(url, data=body, headers={"User-Agent": "GamezNET", "Content-Type": ct}, method=request.method)
         with _ur.urlopen(req, timeout=10) as resp:
             return resp.read(), resp.status, {"Content-Type": resp.headers.get("Content-Type", "application/json")}
     except _ue.HTTPError as e:
