@@ -3080,7 +3080,7 @@
     const range = max - min || 1;
     const pts = hist.map((v, i) => {
       const x = (i / (hist.length - 1)) * W;
-      const y = v === -1 ? H : Math.max(1, H - 2 - ((v - min) / range) * (H - 4));
+      const y = v === -1 ? H - 1 : Math.max(1, H - 2 - ((v - min) / range) * (H - 4));
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
     const lastPt = pts.split(' ').pop().split(',');
@@ -3121,10 +3121,11 @@
       document.title = `GamezNET (${online.length} online)`;
       const lbl = el.closest('.online-card')?.querySelector('.section-label');
       if (lbl) lbl.textContent = `Who's Online  ·  ${online.length}`;
+      const esc = s => (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
       el.innerHTML = online.map(p => {
         const avatar = p.steam_avatar
           ? `<img class="op-avatar" src="${p.steam_avatar}" loading="lazy" />`
-          : `<div class="op-avatar-ph">${p.name[0].toUpperCase()}</div>`;
+          : `<div class="op-avatar-ph">${esc(p.name)[0].toUpperCase()}</div>`;
         let lib = null;
         try { lib = p.steam_library ? JSON.parse(p.steam_library) : null; } catch {}
         const steamSub = p.steam_id ? (() => {
@@ -3133,13 +3134,13 @@
           if (p.steam_game_count) parts.push(`<span>${p.steam_game_count} games</span>`);
           if (lib?.top?.length) {
             const top = lib.top[0];
-            parts.push(`<span class="op-steam-hrs">${Math.round(top.playtime / 60)}h ${top.name}</span>`);
+            parts.push(`<span class="op-steam-hrs">${Math.round(top.playtime / 60)}h ${esc(top.name)}</span>`);
           }
           return parts.length ? `<div class="op-steam-sub">${parts.join('')}</div>` : '';
         })() : '';
         const gamesStrip = lib?.top?.length
           ? `<div class="op-games-strip">${lib.top.slice(0, 8).map(g =>
-              `<img class="op-game-cap" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_sm_120.jpg" title="${g.name} · ${Math.round(g.playtime / 60)}h" loading="lazy" onerror="this.style.display='none'" />`
+              `<img class="op-game-cap" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_sm_120.jpg" title="${esc(g.name)} · ${Math.round(g.playtime / 60)}h" loading="lazy" onerror="this.style.display='none'" />`
             ).join('')}</div>`
           : '';
         const pingHtml = pingSparkline(parsePingArray(p.ping));
@@ -3148,8 +3149,8 @@
           <div class="op-info">
             <div class="op-row1">
               <div class="op-dot"></div>
-              <div class="op-name">${p.name}${p.status ? `<span class="op-status">${p.status}</span>` : ''}</div>
-              ${p.game ? `<div style="font-size:10px;color:var(--accent);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${p.game}</div>` : ''}
+              <div class="op-name">${esc(p.name)}${p.status ? `<span class="op-status">${esc(p.status)}</span>` : ''}</div>
+              ${p.game ? `<div style="font-size:10px;color:var(--accent);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${esc(p.game)}</div>` : ''}
             </div>
             ${steamSub}
             ${gamesStrip}
