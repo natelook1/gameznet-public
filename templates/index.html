@@ -3134,13 +3134,13 @@
           if (p.steam_game_count) parts.push(`<span>${p.steam_game_count} games</span>`);
           if (lib?.top?.length) {
             const top = lib.top[0];
-            parts.push(`<span class="op-steam-hrs">${Math.round(top.playtime / 60)}h ${esc(top.name)}</span>`);
+            parts.push(`<span class="op-steam-hrs">${Math.round(top.playtime_forever / 60)}h ${esc(top.name)}</span>`);
           }
           return parts.length ? `<div class="op-steam-sub">${parts.join('')}</div>` : '';
         })() : '';
         const gamesStrip = lib?.top?.length
           ? `<div class="op-games-strip">${lib.top.slice(0, 8).map(g =>
-              `<img class="op-game-cap" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_sm_120.jpg" title="${esc(g.name)} · ${Math.round(g.playtime / 60)}h" loading="lazy" onerror="this.style.display='none'" />`
+              `<img class="op-game-cap" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_sm_120.jpg" title="${esc(g.name)} · ${Math.round(g.playtime_forever / 60)}h" loading="lazy" onerror="this.style.display='none'" />`
             ).join('')}</div>`
           : '';
         const pingHtml = pingSparkline(parsePingArray(p.ping));
