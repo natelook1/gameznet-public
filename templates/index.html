@@ -538,7 +538,6 @@
     }
     .online-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; flex: 1; min-height: 0; }
     .online-player {
-      position: relative;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -549,18 +548,6 @@
       font-family: 'Share Tech Mono', monospace;
       font-size: 12px;
       flex-shrink: 0;
-    }
-    .online-player .op-row1 { padding-right: 140px; }
-    .op-meta {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 2px;
-      pointer-events: none;
     }
     .op-dot {
       width: 6px; height: 6px;
@@ -575,21 +562,11 @@
       50%       { box-shadow: 0 0 2px rgba(0,232,122,0.3); }
     }
     .op-name { color: var(--text); letter-spacing: 1px; }
-    .op-ip {
-      color: var(--text-dim);
-      font-size: 11px;
-      white-space: nowrap;
-    }
+    .op-ip   { color: var(--text-dim); font-size: 11px; flex-shrink: 0; }
     .op-avatar {
       width: 34px; height: 34px; border-radius: 50%;
       object-fit: cover; flex-shrink: 0;
       border: 1px solid rgba(0,200,255,0.2);
-    }
-    .op-ping-wrap {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      flex-shrink: 0;
     }
     .op-avatar-ph {
       width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
@@ -597,7 +574,7 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 14px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace;
     }
-    .op-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; justify-content: center; }
+    .op-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     .op-row1 { display: flex; align-items: center; gap: 8px; }
     .op-steam-sub { display: flex; gap: 10px; font-size: 10px; color: var(--text-dim); padding-left: 2px; }
     .op-steam-level { color: var(--accent); }
@@ -605,6 +582,7 @@
     .op-games-strip { display: flex; gap: 4px; padding-left: 2px; flex-wrap: nowrap; }
     .op-game-cap { height: 20px; width: auto; border-radius: 2px; opacity: 0.65; transition: opacity 0.15s; cursor: default; }
     .op-game-cap:hover { opacity: 1; }
+    .op-ping-wrap { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
     .op-ping-graph { display: block; overflow: visible; }
     .op-ping-val { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 0.5px; flex-shrink: 0; }
     .op-ping-val.good { color: var(--success); }
@@ -1838,7 +1816,7 @@
       <h1>GamezNET</h1>
       <p>Private Game Server Network</p>
     </div>
-    <div class="version-badge" id="version-badge">v...</div>
+    <div class="version-badge" id="version-badge">v0.0.9</div>
     <div class="clock" id="clock"></div>
   </header>
 
@@ -2423,28 +2401,25 @@
     steam_game_count: 0,
     steam_library: null,
   };
-  const LOCAL_VERSION = "2.0.2";
   let pingHistory = [];
 
-  // ── Version comparison ──────────────────────────────────────────────────────
-  function versionTuple(v) {
-    try {
-      return v.split('.').map(x => parseInt(x, 10));
-    } catch {
-      return [0];
-    }
+  // ── Toast ──────────────────────────────────────────────────────────────────
+  function toast(msg, type = 'info') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `show ${type}`;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.className = '', 3500);
   }
-  function isVersionGreater(a, b) {
-    const ta = versionTuple(a), tb = versionTuple(b);
-    for (let i = 0; i < Math.max(ta.length, tb.length); i++) {
-      const va = ta[i] || 0, vb = tb[i] || 0;
-      if (va > vb) return true;
-      if (va < vb) return false;
-    }
-    return false;
+
+  // ── Session Timer ──────────────────────────────────────────────────────────
+  function startSessionTimer() {
+    state.connectedAt = Date.now();
+    document.getElementById('session-timer').classList.add('visible');
   }
 
   function stopSessionTimer() {
+    state.connectedAt = null;
     document.getElementById('session-timer').classList.remove('visible');
     document.getElementById('session-timer').textContent = '00:00:00';
   }
@@ -2569,7 +2544,7 @@
       main.textContent = 'Connected';
       main.className   = 'status-main connected';
       sub.textContent  = state.updateRequired ? '⚠ Update available' : (state.clientIp || 'VPN Active');
-      btn.textContent  = state.updateRequired ? 'Update Client' : 'Disconnect';
+      btn.textContent  = state.updateRequired ? 'Update Required' : 'Disconnect';
       btn.className    = state.updateRequired ? 'connect-btn action-update' : 'connect-btn action-disconnect';
       btn.disabled     = false;
       footer.textContent = `ACTIVE · ${state.name.toUpperCase()}`;
@@ -2608,7 +2583,7 @@
       sub.textContent  = 'Click connect to join the server';
       
       if (state.updateRequired) {
-        btn.textContent  = 'Update Client';
+        btn.textContent  = 'Update Required';
         btn.className    = 'connect-btn action-update';
         btn.disabled     = false;
       } else {
@@ -2690,20 +2665,6 @@
         state.connected = s.connected;
         state.updateRequired = s.update_required;
         if (s.version) setVersionBadge(s.version, s.update_required);
-        
-        // Check remote version for force update
-        try {
-          const vres = await fetch('{{ worker_url }}/api/version');
-          const vdata = await vres.json();
-          const remoteMinVersion = vdata.min_version;
-          if (remoteMinVersion && isVersionGreater(remoteMinVersion, LOCAL_VERSION)) {
-            state.updateRequired = true;
-            setVersionBadge(LOCAL_VERSION, true);
-          }
-        } catch (e) {
-          console.warn('Version check failed:', e);
-        }
-        
         setStatus(s.connected ? 'connected' : 'disconnected');
         if (s.connected) startSessionTimer();
         if (s.telemetry) updateTelemetryUI(s.telemetry);
@@ -2744,7 +2705,7 @@
         btn.textContent = 'Activate Token';
         return;
       }
-      await fetch('{{ worker_url }}/api/provision', {
+      await fetch('/api/provision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ private_key: data.private_key, client_ip: data.client_ip, name: data.name, steam_id: data.steam_id || null })
@@ -2814,7 +2775,7 @@
       return;
     }
     if (state.connected) {
-      await fetch('{{ worker_url }}/api/disconnect', { method: 'POST' });
+      await fetch('/api/disconnect', { method: 'POST' });
       state.connected = false;
     }
     document.getElementById('token-input').value = token;
@@ -2835,7 +2796,7 @@
     if (!state.connected) {
       setStatus('connecting');
       try {
-        const res  = await fetch('{{ worker_url }}/api/connect', { method: 'POST' });
+        const res  = await fetch('/api/connect', { method: 'POST' });
         const data = await res.json();
         if (data.connected || data.success) {
           state.connected = true;
@@ -2852,7 +2813,7 @@
     } else {
       setStatus('disconnecting');
       try {
-        await fetch('{{ worker_url }}/api/disconnect', { method: 'POST' });
+        await fetch('/api/disconnect', { method: 'POST' });
         state.connected = false;
         setStatus('disconnected');
         toast('Disconnected');
@@ -2887,11 +2848,10 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch('/api/force-update', { method: 'POST' });
+      const res = await fetch('/api/update', { method: 'POST' });
       if (res.ok) {
-        toast('Update started! Application will restart...', 'success');
-        // Wait a bit then reload to show progress
-        setTimeout(() => window.location.reload(), 3000);
+        toast('Update applied! Restarting...', 'success');
+        setTimeout(() => window.location.reload(), 5000);
       } else {
         const data = await res.json();
         showError(data.error || 'Update failed');
@@ -2909,10 +2869,10 @@
   async function resetConfig() {
     if (!confirm('This will remove your saved credentials. You will need your invite token again. Continue?')) return;
     if (state.connected) {
-      await fetch('{{ worker_url }}/api/disconnect', { method: 'POST' });
+      await fetch('/api/disconnect', { method: 'POST' });
       state.connected = false;
     }
-    await fetch('{{ worker_url }}/api/reset', { method: 'POST' });
+    await fetch('/api/reset', { method: 'POST' });
     state.provisioned = false;
     state.name = '';
     state.clientIp = '';
@@ -2926,7 +2886,7 @@
 
   async function loadSession() {
     try {
-      const res = await fetch('{{ worker_url }}/api/session');
+      const res = await fetch('/api/session');
       const data = await res.json();
       renderSession(data.session);
     } catch {}
@@ -2985,7 +2945,7 @@
   }
 
   async function clearSession() {
-    const res = await fetch('{{ worker_url }}/api/session/clear', {
+    const res = await fetch('/api/session/clear', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ name: state.name, vpn_ip: state.clientIp })
     });
@@ -3013,7 +2973,7 @@
     document.getElementById('sched-time').value = def.toISOString().slice(0,16);
     document.getElementById('sched-msg').value = prefill?.message || '';
     try {
-      const res = await fetch('{{ worker_url }}/api/servers');
+      const res = await fetch('/api/servers');
       const servers = await res.json();
       _schedGames = servers.filter(s => s.name).map(s => ({ name: s.name, steam_appid: s.steam_appid || '' }));
     } catch {}
@@ -3047,7 +3007,7 @@
     const message = document.getElementById('sched-msg').value.trim();
     const host = state.name;
     const body = { host, vpn_ip: state.clientIp, game: _schedSelected.name, steam_appid: _schedSelected.steam_appid, scheduled_time: new Date(scheduled_time).toISOString(), message };
-    const res = await fetch('{{ worker_url }}/api/session/set', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const res = await fetch('/api/session/set', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
     if (res.ok) {
       closeScheduleModal();
       toast(`Session scheduled — ${_schedSelected.name}`);
@@ -3090,44 +3050,26 @@
 
   function parsePing(raw) {
     if (raw == null) return null;
-    if (typeof raw === 'number') return raw;
-    const s = String(raw).trim();
-    if (s.endsWith('ms')) {
-      const n = parseFloat(s.slice(0, -2));
-      return Number.isFinite(n) ? n : null;
-    }
-    if (s.endsWith('s')) {
-      const n = parseFloat(s.slice(0, -1));
-      return Number.isFinite(n) ? n * 1000 : null;
-    }
-    const n = parseFloat(s);
-    return Number.isFinite(n) ? n : null;
+    const n = parseInt(raw);
+    return isNaN(n) ? null : n;
   }
 
   function recordPing(name, ping) {
-    const ms = parsePing(ping);
-    if (ms == null) return;
+    if (ping == null) return;
     const h = _pingHistory.get(name) || [];
-    h.push(ms);
+    h.push(ping);
     if (h.length > 20) h.shift();
     _pingHistory.set(name, h);
   }
 
-  function formatPing(ms) {
-    if (ms == null) return '—';
-    if (ms >= 1000) return (ms / 1000).toFixed(1) + 's';
-    return Math.round(ms) + 'ms';
-  }
-
   function pingSparkline(name, current) {
-    const ms = parsePing(current);
-    if (ms == null) return '';
-    const cls   = ms < 100 ? 'good' : ms < 250 ? 'ok' : 'bad';
-    const color = ms < 100 ? '#00e87a' : ms < 250 ? '#ffaa00' : '#ff3355';
+    if (current == null) return '';
+    const cls   = current < 50 ? 'good' : current < 100 ? 'ok' : 'bad';
+    const color = current < 50 ? '#00e87a' : current < 100 ? '#ffaa00' : '#ff3355';
     const hist  = _pingHistory.get(name) || [];
     if (hist.length < 3) {
       // Not enough history yet — plain badge
-      return `<span class="op-ping-wrap"><span class="op-ping-val ${cls}">${formatPing(ms)}</span></span>`;
+      return `<span class="op-ping-wrap"><span class="op-ping-val ${cls}">${current}ms</span></span>`;
     }
     const W = 56, H = 18;
     const lo = Math.min(...hist), hi = Math.max(...hist, lo + 1);
@@ -3142,14 +3084,14 @@
         <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
         <circle cx="${lastPt[0]}" cy="${lastPt[1]}" r="2.2" fill="${color}"/>
       </svg>
-      <span class="op-ping-val ${cls}">${formatPing(ms)}</span>
+      <span class="op-ping-val ${cls}">${current}ms</span>
     </span>`;
   }
 
   async function refreshOnline() {
     if (!state.provisioned) return;
     try {
-      const res    = await fetch('{{ worker_url }}/api/online');
+      const res    = await fetch('/api/online');
       const online = res.ok ? await res.json() : [];
       // Fallback: if steam isn't loaded yet, pull our own data from the list
       if (!state.steam_id && state.name) {
@@ -3174,7 +3116,7 @@
       document.title = `GamezNET (${online.length} online)`;
       const lbl = el.closest('.online-card')?.querySelector('.section-label');
       if (lbl) lbl.textContent = `Who's Online  ·  ${online.length}`;
-      online.forEach(p => recordPing(p.name, p.ping));
+      online.forEach(p => recordPing(p.name, parsePing(p.ping)));
       el.innerHTML = online.map(p => {
         const avatar = p.steam_avatar
           ? `<img class="op-avatar" src="${p.steam_avatar}" loading="lazy" />`
@@ -3196,7 +3138,7 @@
               `<img class="op-game-cap" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_sm_120.jpg" title="${g.name} · ${Math.round(g.playtime / 60)}h" loading="lazy" onerror="this.style.display='none'" />`
             ).join('')}</div>`
           : '';
-        const pingHtml = pingSparkline(p.name, p.ping);
+        const pingHtml = pingSparkline(p.name, parsePing(p.ping));
         return `<div class="online-player">
           ${avatar}
           <div class="op-info">
@@ -3204,10 +3146,8 @@
               <div class="op-dot"></div>
               <div class="op-name">${p.name}${p.status ? `<span class="op-status">${p.status}</span>` : ''}</div>
               ${p.game ? `<div style="flex:1;font-size:10px;color:var(--accent);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${p.game}</div>` : '<div style="flex:1;"></div>'}
-              <div class="op-meta">
-                ${pingHtml}
-                <div class="op-ip">${p.vpn_ip}</div>
-              </div>
+              ${pingHtml}
+              <div class="op-ip">${p.vpn_ip}</div>
             </div>
             ${steamSub}
             ${gamesStrip}
@@ -3369,7 +3309,7 @@
     }
     fullRoute = !fullRoute;
     updateFullRouteBtn();
-    await fetch('{{ worker_url }}/api/fullroute', {
+    await fetch('/api/fullroute', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ enabled: fullRoute })
@@ -3464,7 +3404,7 @@
       // (bypasses Python urllib which can fail on admin-elevated processes on Windows)
       let logTail = '';
       try {
-        const logRes = await fetch('{{ worker_url }}/api/logs');
+        const logRes = await fetch('/api/logs');
         if (logRes.ok) { const d = await logRes.json(); logTail = d.log || ''; }
       } catch (_) {}
 
@@ -3720,7 +3660,7 @@
     if (_ytCache[cat]) { ytRenderBrowse(_ytCache[cat]); return; }
     ytRenderSkeleton();
     try {
-      const r = await fetch(`{{ worker_url }}/api/youtube/category?cat=${encodeURIComponent(cat)}`);
+      const r = await fetch(`/api/youtube/category?cat=${encodeURIComponent(cat)}`);
       if (r.status === 503) { ytRenderApiKeyPrompt(); return; }
       if (!r.ok) { ytRenderBrowse([]); return; }
       const data = await r.json();
@@ -3850,7 +3790,7 @@
     ytBackToBrowse(false);
     // Try server-side API proxy first, fall back to local filter
     try {
-      const res = await fetch(`{{ worker_url }}/api/youtube/search?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(q)}`);
       if (res.ok) {
         const data = await res.json();
         ytRenderBrowse(data);
@@ -3968,7 +3908,7 @@
 
   async function loadDiscord() {
     try {
-      const res = await fetch('{{ worker_url }}/api/discord/channels');
+      const res = await fetch('/api/discord/channels');
       if (!res.ok) return;
       const data = await res.json();
       document.getElementById('dc-server-name').textContent = data.guild_name || 'gamEZnet';
@@ -4088,7 +4028,7 @@
   async function dcLoadMessages(channelId) {
     if (!channelId) return;
     try {
-      const res = await fetch(`{{ worker_url }}/api/discord/messages?channel=${channelId}`);
+      const res = await fetch(`/api/discord/messages?channel=${channelId}`);
       const list = document.getElementById('dc-msgs-list');
       const scroll = document.getElementById('dc-msgs-scroll');
       if (!res.ok) {
@@ -4220,7 +4160,7 @@
     input.disabled = true;
     btn.disabled = true;
     try {
-      const res = await fetch('{{ worker_url }}/api/discord/send', {
+      const res = await fetch('/api/discord/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -4246,7 +4186,7 @@
   async function dcAddReaction(msgId, emoji, el) {
     if (!dcState.activeChannel) return;
     try {
-      const res = await fetch('{{ worker_url }}/api/discord/reaction', {
+      const res = await fetch('/api/discord/reaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ channel: dcState.activeChannel, message: msgId, emoji })
@@ -4280,7 +4220,7 @@
     const list = document.getElementById('dc-pins-list');
     list.innerHTML = '<div class="dc-pin-empty">Loading...</div>';
     try {
-      const res = await fetch(`{{ worker_url }}/api/discord/pins?channel=${channelId}`);
+      const res = await fetch(`/api/discord/pins?channel=${channelId}`);
       if (!res.ok) { list.innerHTML = '<div class="dc-pin-empty">Cannot load pins</div>'; return; }
       const pins = await res.json();
       if (!pins.length) { list.innerHTML = '<div class="dc-pin-empty">No pinned messages</div>'; return; }
@@ -4299,7 +4239,7 @@
   // ── Player status ──────────────────────────────────────────────────────────
   async function setPlayerStatus(statusText) {
     try {
-      await fetch('{{ worker_url }}/api/status/set', {
+      await fetch('/api/status/set', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: statusText })
@@ -4331,7 +4271,7 @@
     const newName = document.getElementById('rename-input').value.trim();
     if (!newName) return;
     try {
-      const res = await fetch('{{ worker_url }}/api/rename', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ new_name: newName }) });
+      const res = await fetch('/api/rename', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ new_name: newName }) });
       const data = await res.json();
       if (res.ok && data.success) {
         state.name = data.name;
@@ -4376,7 +4316,7 @@
   async function linkSteam() {
     if (!state.name) return;
     try {
-      await fetch('{{ worker_url }}/api/steam/link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
+      await fetch('/api/steam/link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
       toast('Steam login opened — complete it in your browser', 'info');
       // Poll server until the link appears (up to 5 min)
       const poll = setInterval(async () => {
@@ -4483,7 +4423,7 @@
     errEl.style.display = 'none';
     document.getElementById('remote-send-btn').disabled = true;
     try {
-      const res = await fetch('{{ worker_url }}/api/remote/request', {
+      const res = await fetch('/api/remote/request', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requester: state.name, requester_ip: state.clientIp, helper, message })
       });
@@ -4496,7 +4436,7 @@
       _rpShow();
       remoteState.pollTimer = setInterval(async () => {
         try {
-          const sd = await fetch(`{{ worker_url }}/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+          const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
           if (sd.status === 'accepted') {
             clearInterval(remoteState.pollTimer);
             _rpStep(2); setTimeout(() => _rpStep(3), 500);
@@ -4513,13 +4453,13 @@
 
   async function cancelRemoteRequest() {
     clearInterval(remoteState.pollTimer);
-    await fetch('{{ worker_url }}/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
+    await fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
     remoteState.active = false; _rpHide(); updateRemoteHelpBtn(true);
   }
 
   async function _startRustDeskHost() {
     try {
-      const res = await fetch('{{ worker_url }}/api/remote/start-host', {
+      const res = await fetch('/api/remote/start-host', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: remoteState._sessionPass, requester: state.name })
       });
@@ -4535,7 +4475,7 @@
       // Resume polling — wait for helper to connect, or detect cancel from either side
       remoteState.pollTimer = setInterval(async () => {
         try {
-          const sd = await fetch(`{{ worker_url }}/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+          const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
           if (sd.status === 'connected') {
             clearInterval(remoteState.pollTimer);
             _rpStep(7, true);
@@ -4556,7 +4496,7 @@
   async function pollRemotePending() {
     if (!state.name || remoteState.active) return;
     try {
-      const data = await fetch(`{{ worker_url }}/api/remote/pending?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+      const data = await fetch(`/api/remote/pending?name=${encodeURIComponent(state.name)}`).then(r => r.json());
       if (data.pending && data.requester !== _pendingRequester) {
         _pendingRequester = data.requester;
         document.getElementById('remote-incoming-requester').textContent = `${data.requester} needs help`;
@@ -4584,7 +4524,7 @@
     clearInterval(remoteState._toastTimer);
     document.getElementById('remote-incoming').classList.remove('active');
     try {
-      const res = await fetch('{{ worker_url }}/api/remote/accept', {
+      const res = await fetch('/api/remote/accept', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ helper: state.name, requester: _pendingRequester })
       });
@@ -4597,7 +4537,7 @@
       _rpShow();
       remoteState.pollTimer = setInterval(async () => {
         try {
-          const sd = await fetch(`{{ worker_url }}/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+          const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
           if (sd.status === 'ready') {
             clearInterval(remoteState.pollTimer);
             _rpStep(2); setTimeout(() => _rpStep(3), 500);
@@ -4615,7 +4555,7 @@
 
   async function _startRustDeskHelper(rustdesk_id, password) {
     try {
-      const res = await fetch('{{ worker_url }}/api/remote/start-helper', {
+      const res = await fetch('/api/remote/start-helper', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rustdesk_id, password, helper: state.name })
       });
@@ -4626,7 +4566,7 @@
       // Keep polling so host-side cancel closes this modal too
       remoteState.pollTimer = setInterval(async () => {
         try {
-          const sd = await fetch(`{{ worker_url }}/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+          const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
           if (sd.status === 'none') {
             clearInterval(remoteState.pollTimer);
             _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true);
@@ -4640,14 +4580,14 @@
   function declineRemoteRequest() {
     clearInterval(remoteState._toastTimer);
     document.getElementById('remote-incoming').classList.remove('active');
-    fetch('{{ worker_url }}/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
+    fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
     _pendingRequester = null;
   }
 
   async function endRemoteSession() {
     clearInterval(remoteState.pollTimer);
-    await fetch('{{ worker_url }}/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
-    await fetch('{{ worker_url }}/api/remote/cleanup', { method: 'POST' }).catch(() => {});
+    await fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
+    await fetch('/api/remote/cleanup', { method: 'POST' }).catch(() => {});
     remoteState.active = false; remoteState.role = null;
     _rpHide();
     updateRemoteHelpBtn(true);
@@ -4706,7 +4646,7 @@
       if (!stored) return;
       const { id, name, avatar } = JSON.parse(stored);
       // Verify the session is still alive server-side
-      const r = await fetch(`{{ worker_url }}/api/youtube/session/verify?session=${id}`);
+      const r = await fetch(`/api/youtube/session/verify?session=${id}`);
       if (!r.ok) { localStorage.removeItem('yt_session'); return; }
       const info = await r.json();
       ytApplySession(id, info.name || name, info.avatar || avatar);
@@ -4719,7 +4659,7 @@
     const chip = document.getElementById('yt-subs-chip');
     chip.textContent = '⟳ LOADING...';
     try {
-      const r = await fetch(`{{ worker_url }}/api/youtube/feed?session=${_ytSession}`);
+      const r = await fetch(`/api/youtube/feed?session=${_ytSession}`);
       if (!r.ok) { chip.textContent = '▶ MY FEED'; return; }
       _ytSubs = await r.json();
       chip.textContent = '▶ MY FEED';
