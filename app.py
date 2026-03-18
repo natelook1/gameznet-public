@@ -17,7 +17,6 @@ import re
 import logging
 from io import BytesIO
 from flask import Flask, request, jsonify, render_template, send_from_directory
-from flask_cors import CORS
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 
@@ -74,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "0.0.9"
+VERSION = "1.15.0"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -299,7 +298,6 @@ def update_telemetry():
 # ─── Flask App ────────────────────────────────────────────────────────────────
 
 app = Flask(__name__)
-CORS(app)
 _lock = threading.Lock()
 _connected = False
 _invisible = False
