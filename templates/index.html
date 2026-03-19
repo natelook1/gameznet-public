@@ -3753,7 +3753,7 @@
         btns += `<button class="srv-modal-steam-btn" onclick="launchGame('${s.steam_appid}', '${s.host}', '${s.port}')">▶ STEAM JOIN</button>`;
       }
       if (/eaglercraft|ealgercraft/i.test(s.name)) {
-        btns += `<button class="srv-modal-play-btn" onclick="window.open('/minecraft', '_blank')" style="margin-left: ${btns ? '8px' : '0'};">🌐 PLAY IN BROWSER</button>`;
+        btns += `<button class="srv-modal-play-btn" onclick="launchMinecraft()" style="margin-left: ${btns ? '8px' : '0'};">🌐 PLAY IN BROWSER</button>`;
       }
       actions.innerHTML = btns;
     } else {
@@ -3777,6 +3777,42 @@
       closeSrvModal();
     } catch (e) {
       toast('Failed to launch game', 'error');
+    }
+  }
+
+  async function launchMinecraft() {
+    // Open the window immediately to bypass popup blockers
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write('<html style="background:#0f1623; color:#00c8ff; font-family: monospace; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0;"><head><title>Loading GamezNET Minecraft...</title></head><body><h2 style="margin-bottom: 10px;">Checking Game Files...</h2><p style="color:#6888a8;">If this is your first time playing, the ~20MB client is downloading in the background.</p></body></html>');
+      win.document.close();
+    }
+
+    const btn = document.querySelector('.srv-modal-play-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⟳ PREPARING...';
+    }
+
+    try {
+      const res = await fetch('/api/minecraft/prepare', { method: 'POST' });
+      if (res.ok) {
+        if (win) win.location.href = '/minecraft';
+        else window.location.href = '/minecraft'; // fallback if popup blocked
+        closeSrvModal();
+      } else {
+        const d = await res.json();
+        if (win) win.close();
+        toast(d.error || 'Failed to prepare Minecraft client', 'error');
+      }
+    } catch (e) {
+      if (win) win.close();
+      toast('Network error while preparing client', 'error');
+    }
+    
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '🌐 PLAY IN BROWSER';
     }
   }
 

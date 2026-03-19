@@ -801,6 +801,30 @@ def play_minecraft():
 
     return app.send_static_file("eaglercraft.html")
 
+@app.route("/api/minecraft/prepare", methods=["POST"])
+def api_minecraft_prepare():
+    """Pre-downloads Eaglercraft so the UI can show a loading state."""
+    install_dir = os.path.dirname(os.path.abspath(__file__))
+    static_dir = os.path.join(install_dir, "static")
+    os.makedirs(static_dir, exist_ok=True)
+    mc_file = os.path.join(static_dir, "eaglercraft.html")
+
+    if os.path.exists(mc_file):
+        return jsonify({"success": True})
+
+    try:
+        import urllib.request
+        download_url = f"{WORKER_URL}/public/eaglercraft.html"
+        log.info("Downloading Eaglercraft from %s", download_url)
+        req = urllib.request.Request(download_url, headers={'User-Agent': 'GamezNET'})
+        with urllib.request.urlopen(req, timeout=60) as resp, open(mc_file, 'wb') as out_file:
+            out_file.write(resp.read())
+        log.info("Eaglercraft downloaded successfully.")
+        return jsonify({"success": True})
+    except Exception as e:
+        if os.path.exists(mc_file): os.remove(mc_file)
+        return jsonify({"error": f"Failed to download client: {e}"}), 500
+
 @app.route("/api/remote/start-host", methods=["POST"])
 def api_remote_start_host():
     """
