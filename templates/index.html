@@ -3993,6 +3993,17 @@
     } catch (e) { console.warn('[Discord]', e.message); }
   }
 
+  function getDiscordAvatar(author) {
+    if (!author || !author.id) return 'https://cdn.discordapp.com/embed/avatars/0.png';
+    if (author.avatar) return `https://cdn.discordapp.com/avatars/${author.id}/${author.avatar}.png?size=64`;
+    try {
+      // Accurately calculate Discord default avatars using 64-bit Snowflake IDs
+      return `https://cdn.discordapp.com/embed/avatars/${Number(BigInt(author.id) >> 22n) % 6}.png`;
+    } catch (e) {
+      return 'https://cdn.discordapp.com/embed/avatars/0.png';
+    }
+  }
+
   function dcRoleColor(roleIds) {
     if (!roleIds?.length) return '';
     const sorted = [...roleIds].sort((a, b) => {
@@ -4123,7 +4134,7 @@
           mentions.forEach(m => {
             new Notification(`#${chanName} — ${m.author.username}`, {
               body: m.content.slice(0, 100),
-              icon: m.author.avatar || ''
+            icon: getDiscordAvatar(m.author)
             });
           });
         }
@@ -4139,16 +4150,18 @@
     if (!msgs.length) return '<div class="dc-msg-empty">No messages yet</div>';
     let html = '', lastId = null, lastTs = null;
     for (const m of msgs) {
-      if (m.type === 7) { html += `<div class="dc-sys-msg">👋 ${m.author.username} joined the server</div>`; lastId = null; continue; }
-      if (m.type === 6) { html += `<div class="dc-sys-msg">📌 ${m.author.username} pinned a message</div>`; lastId = null; continue; }
+      if (m.type === 7) { html += `<div class="dc-sys-msg">👋 ${m.author?.username || 'Someone'} joined the server</div>`; lastId = null; continue; }
+      if (m.type === 6) { html += `<div class="dc-sys-msg">📌 ${m.author?.username || 'Someone'} pinned a message</div>`; lastId = null; continue; }
       if (m.type !== 0 && m.type !== 19) { lastId = null; continue; }
       const ts = new Date(m.timestamp);
-      const consec = m.author.id === lastId && lastTs && (ts - lastTs) < 300000 && m.type === 0 && !m.reference;
+      const consec = m.author.id === lastId && lastTs && (ts - lastTs) < 300000 && m.type === 0 && !m.referenced_message;
       lastId = m.author.id; lastTs = ts;
-      const rcs = dcRoleColor(m.author.roles);
+      const rcs = dcRoleColor(m.member?.roles);
       const content = dcMarkdown(m.content);
       let extra = '';
-      if (m.reference) extra += `<div class="dc-reply"><img src="${m.reference.avatar||''}" onerror="this.style.display='none'" loading="lazy"><span class="dc-reply-author">${m.reference.author}</span><span>${dcMarkdown(m.reference.content).slice(0,120)}</span></div>`;
+      if (m.referenced_message) {
+        extra += `<div class="dc-reply"><img src="${getDiscordAvatar(m.referenced_message.author)}" onerror="this.style.display='none'" loading="lazy"><span class="dc-reply-author">${m.referenced_message.author.username}</span><span>${dcMarkdown(m.referenced_message.content).slice(0,120)}</span></div>`;
+      }
       if (m.attachments?.length) {
         extra += '<div class="dc-attachments">';
         for (const a of m.attachments) {
@@ -4164,12 +4177,13 @@
         extra += '<div class="dc-embeds">';
         for (const e of m.embeds) {
           if (!e.title && !e.description && !e.image) continue;
-          extra += `<div class="dc-embed" style="border-color:${e.color||'rgba(255,255,255,0.15)'}">`;
-          if (e.thumbnail) extra += `<img class="dc-embed-thumb" src="${e.thumbnail}" loading="lazy">`;
+          const colorHex = e.color != null ? '#' + e.color.toString(16).padStart(6, '0') : 'rgba(255,255,255,0.15)';
+          extra += `<div class="dc-embed" style="border-color:${colorHex}">`;
+          if (e.thumbnail?.url) extra += `<img class="dc-embed-thumb" src="${e.thumbnail.url}" loading="lazy">`;
           if (e.title) extra += `<div class="dc-embed-title">${e.url?`<a href="${e.url}" target="_blank" rel="noopener">${e.title}</a>`:e.title}</div>`;
           if (e.description) extra += `<div class="dc-embed-desc">${dcMarkdown(e.description)}</div>`;
-          if (e.image) extra += `<img class="dc-embed-img" src="${e.image}" loading="lazy">`;
-          if (e.footer) extra += `<div class="dc-embed-footer">${e.footer}</div>`;
+          if (e.image?.url) extra += `<img class="dc-embed-img" src="${e.image.url}" loading="lazy">`;
+          if (e.footer?.text) extra += `<div class="dc-embed-footer">${e.footer.text}</div>`;
           extra += '</div>';
         }
         extra += '</div>';
@@ -4177,9 +4191,12 @@
       if (m.reactions?.length) {
         extra += '<div class="dc-reactions">';
         for (const r of m.reactions) {
-          const emojiHtml = r.is_custom ? `<img src="${r.emoji}" loading="lazy">` : `<span>${r.emoji}</span>`;
+          const e = r.emoji;
+          const isCustom = !!e.id;
+          const emojiHtml = isCustom ? `<img src="https://cdn.discordapp.com/emojis/${e.id}.${e.animated ? 'gif' : 'webp'}?size=20" loading="lazy" alt=":${e.name}:">` : `<span>${e.name}</span>`;
           const reactedCls = r.me ? ' dc-reacted' : '';
-          extra += `<div class="dc-reaction${reactedCls}" onclick="dcAddReaction('${m.id}','${(r.emoji_raw||r.emoji).replace(/'/g,"\\'")}',this)">${emojiHtml} <span>${r.count}</span></div>`;
+          const emojiRaw = isCustom ? `${e.name}:${e.id}` : e.name;
+          extra += `<div class="dc-reaction${reactedCls}" onclick="dcAddReaction('${m.id}','${emojiRaw.replace(/'/g,"\\'")}',this)">${emojiHtml} <span>${r.count}</span></div>`;
         }
         extra += '</div>';
       }
@@ -4189,7 +4206,7 @@
       if (consec) {
         html += `<div class="dc-msg-group consec${mentionCls}"><div class="dc-msg-body">${extra}<div class="dc-msg-content">${content}</div></div></div>`;
       } else {
-        html += `<div class="dc-msg-group${mentionCls}"><div class="dc-msg-avcol"><img class="dc-msg-av" src="${m.author.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"></div><div class="dc-msg-body">${extra}<div class="dc-msg-hdr"><span class="dc-msg-author" style="${rcs}">${m.author.username}</span>${m.author.bot?'<span class="dc-bot-badge">BOT</span>':''}<span class="dc-msg-ts">${dcTime(ts)}</span></div><div class="dc-msg-content">${content}</div></div></div>`;
+        html += `<div class="dc-msg-group${mentionCls}"><div class="dc-msg-avcol"><img class="dc-msg-av" src="${getDiscordAvatar(m.author)}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"></div><div class="dc-msg-body">${extra}<div class="dc-msg-hdr"><span class="dc-msg-author" style="${rcs}">${m.author.username}</span>${m.author.bot?'<span class="dc-bot-badge">BOT</span>':''}<span class="dc-msg-ts">${dcTime(ts)}</span></div><div class="dc-msg-content">${content}</div></div></div>`;
       }
     }
     return html;
@@ -4292,7 +4309,7 @@
       list.innerHTML = pins.map(m => `
         <div class="dc-pin-item">
           <div class="dc-pin-hdr">
-            <img src="${m.author.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy">
+            <img src="${getDiscordAvatar(m.author)}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy">
             <span class="dc-pin-author">${m.author.username}</span>
             <span class="dc-pin-ts">${dcTime(new Date(m.timestamp))}</span>
           </div>
