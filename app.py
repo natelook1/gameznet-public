@@ -500,6 +500,38 @@ def api_disconnect():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/launch_game", methods=["POST"])
+def api_launch_game():
+    """Launch a Steam game directly via executable to bypass the steam:// arguments warning."""
+    data = request.json or {}
+    appid = data.get("appid")
+    ip = data.get("ip")
+    port = data.get("port")
+    if not appid or not ip or not port:
+        return jsonify({"error": "Missing parameters"}), 400
+
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam") as key:
+            steam_exe = winreg.QueryValueEx(key, "SteamExe")[0]
+    except Exception:
+        steam_exe = r"C:\Program Files (x86)\Steam\steam.exe"
+
+    args = [steam_exe, "-applaunch", str(appid)]
+    
+    if str(appid) == "526870":  # Satisfactory
+        args.extend(["+open", f"{ip}:{port}"])
+    else:
+        args.extend(["+connect", f"{ip}:{port}"])
+
+    try:
+        # CREATE_NO_WINDOW to prevent a brief command prompt flash
+        subprocess.Popen(args, creationflags=0x08000000)
+        return jsonify({"success": True})
+    except Exception as e:
+        log.error("Game launch failed: %s", e)
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/config", methods=["GET"])
 def api_config():
     """Returns current provisioning state to the UI on load."""

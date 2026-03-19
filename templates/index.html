@@ -3534,10 +3534,7 @@
     }
     const actions = document.getElementById('srv-modal-actions');
     if (isRunning && s.steam_appid) {
-      let url = `steam://connect/${s.host}:${s.port}`;
-      if (s.steam_appid == 526870) url = `steam://rungameid/526870//+open ${s.host}:${s.port}`;
-      else if (s.steam_appid == 108600) url = `steam://rungameid/108600//+connect ${s.host}:${s.port}`;
-      actions.innerHTML = `<button class="srv-modal-steam-btn" onclick="location.href='${url}'">▶ STEAM JOIN</button>`;
+      actions.innerHTML = `<button class="srv-modal-steam-btn" onclick="launchGame('${s.steam_appid}', '${s.host}', '${s.port}')">▶ STEAM JOIN</button>`;
     } else {
       actions.innerHTML = '';
     }
@@ -3546,6 +3543,20 @@
 
   function closeSrvModal() {
     document.getElementById('server-modal-overlay').classList.remove('active');
+  }
+
+  async function launchGame(appid, ip, port) {
+    try {
+      await fetch('/api/launch_game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appid, ip, port })
+      });
+      toast('Launching game...', 'success');
+      closeSrvModal();
+    } catch (e) {
+      toast('Failed to launch game', 'error');
+    }
   }
 
   setInterval(loadClientServers, 30000);
