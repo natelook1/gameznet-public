@@ -1115,6 +1115,8 @@
     .srv-modal-port-btn:hover { background:rgba(0,212,255,0.12); border-color:var(--accent); }
     .srv-modal-steam-btn { font-family:'Share Tech Mono',monospace; font-size:11px; color:#1b9af7; border:1px solid #1b9af7; background:transparent; border-radius:3px; padding:7px 16px; cursor:pointer; letter-spacing:1px; transition:all 0.15s; }
     .srv-modal-steam-btn:hover { background:rgba(27,154,247,0.12); }
+    .srv-modal-play-btn { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--success); border:1px solid var(--success); background:transparent; border-radius:3px; padding:7px 16px; cursor:pointer; letter-spacing:1px; transition:all 0.15s; }
+    .srv-modal-play-btn:hover { background:rgba(0,232,122,0.12); box-shadow: 0 0 12px rgba(0,232,122,0.25); }
 
     /* ── Steam Social column ── */
     .steam-friend-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
@@ -3658,7 +3660,7 @@
   }
 
   // Matches "minecraft", "mincraft" typo, "bedrock", and "geyser" server names
-  const _isMinecraft = n => /min.?craft|bedrock|geyser/i.test(n);
+  const _isMinecraft = n => /min.?craft|bedrock|geyser|eaglercraft|ealgercraft/i.test(n);
 
   // Deterministic pastel-ish color from server name for no-art fallback
   function _srvColor(name) {
@@ -3745,8 +3747,15 @@
       ports.innerHTML = '';
     }
     const actions = document.getElementById('srv-modal-actions');
-    if (isRunning && s.steam_appid) {
-      actions.innerHTML = `<button class="srv-modal-steam-btn" onclick="launchGame('${s.steam_appid}', '${s.host}', '${s.port}')">▶ STEAM JOIN</button>`;
+    if (isRunning) {
+      let btns = '';
+      if (s.steam_appid) {
+        btns += `<button class="srv-modal-steam-btn" onclick="launchGame('${s.steam_appid}', '${s.host}', '${s.port}')">▶ STEAM JOIN</button>`;
+      }
+      if (/eaglercraft|ealgercraft/i.test(s.name)) {
+        btns += `<button class="srv-modal-play-btn" onclick="window.open('/minecraft', '_blank')" style="margin-left: ${btns ? '8px' : '0'};">🌐 PLAY IN BROWSER</button>`;
+      }
+      actions.innerHTML = btns;
     } else {
       actions.innerHTML = '';
     }
