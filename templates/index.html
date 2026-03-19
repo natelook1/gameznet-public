@@ -3177,7 +3177,10 @@
             ).join('')}</div>`
           : '';
         const pingHtml = pingSparkline(parsePingArray(p.ping));
-        return `<div class="online-player">
+      const isSelf = p.name === state.name;
+      const targetCls = isSelf ? '' : ' dm-target';
+      const hintHtml = isSelf ? '' : `<div class="dm-hint">💬 RIGHT-CLICK TO DM</div>`;
+      return `<div class="online-player${targetCls}">
           ${avatarWrap}
           <div class="op-info">
             <div class="op-row1">
@@ -3192,6 +3195,7 @@
             ${pingHtml}
             <div class="op-ip" style="text-align:right;">${p.vpn_ip}</div>
           </div>
+        ${hintHtml}
         </div>`;
       }).join('');
     } catch {}
@@ -4256,13 +4260,21 @@
     const rest  = (data.members || []).filter(m => !voiceIds.has(m.id))
       .sort((a, b) => (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3));
     let html = '';
+
+    function makeMItem(m, isVoice) {
+      const targetCls = m.username === state.name ? '' : ' dm-target';
+      const titleAttr = m.username === state.name ? '' : ` title="Right-click to DM ${m.username}"`;
+      const rightSide = isVoice ? `<div class="dc-mitem-voice"></div>` : `<div class="dc-status-dot ${m.status || 'offline'}"></div>`;
+      return `<div class="dc-mitem${targetCls}"${titleAttr}><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">${m.activity}</div>` : ''}</div>${rightSide}</div>`;
+    }
+
     if (voice.length) {
       html += `<div class="dc-msec-hdr">🔊 In Voice — ${voice.length}</div>`;
-      html += voice.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">${m.activity}</div>` : ''}</div><div class="dc-mitem-voice"></div></div>`).join('');
+      html += voice.map(m => makeMItem(m, true)).join('');
     }
     if (rest.length) {
       html += `<div class="dc-msec-hdr">Members — ${rest.length}</div>`;
-      html += rest.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">${m.activity}</div>` : ''}</div><div class="dc-status-dot ${m.status || 'offline'}"></div></div>`).join('');
+      html += rest.map(m => makeMItem(m, false)).join('');
     }
     if (!html) html = '<div style="padding:8px;color:var(--text-dim);font-size:10px;font-family:\'Share Tech Mono\',monospace;">No members</div>';
     el.innerHTML = html;
