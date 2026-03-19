@@ -122,14 +122,24 @@
       padding: 3px 7px;
       border-radius: 2px;
       transition: all 0.3s;
+      cursor: pointer;
+      user-select: none;
     }
     .version-badge.outdated {
       color: var(--warn);
       border-color: var(--warn);
-      cursor: pointer;
       animation: pulse-update 1.5s ease-in-out infinite;
     }
     .version-badge.outdated:hover { background: rgba(255,170,0,0.15); }
+    .version-badge:not(.outdated):hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(0,200,255,0.05);
+    }
+    .v-text { display: inline; }
+    .v-hover { display: none; }
+    .version-badge:not(.outdated):hover .v-text { display: none; }
+    .version-badge:not(.outdated):hover .v-hover { display: inline; }
     @keyframes pulse-update {
       0%, 100% { box-shadow: none; opacity: 1; }
       50% { box-shadow: 0 0 8px rgba(255,170,0,0.5); opacity: 0.7; }
@@ -573,6 +583,17 @@
       background: rgba(0,200,255,0.08); border: 1px solid var(--border2);
       display: flex; align-items: center; justify-content: center;
       font-size: 14px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace;
+    }
+    .op-avatar-wrap { position: relative; flex-shrink: 0; display: inline-flex; }
+    .op-game-badge {
+      position: absolute; bottom: -2px; right: -6px; width: 24px; height: 14px;
+      border-radius: 2px; object-fit: cover; box-shadow: 0 1px 4px rgba(0,0,0,0.8);
+      border: 1px solid rgba(0,200,255,0.4); background: var(--bg);
+    }
+    .op-game-badge.text-badge {
+      width: 16px; height: 16px; right: -4px; bottom: -4px; font-size: 11px;
+      display: flex; align-items: center; justify-content: center; border: none;
+      background: transparent; box-shadow: none; text-shadow: 0 1px 2px rgba(0,0,0,0.8);
     }
     .op-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     .op-row1 { display: flex; align-items: center; gap: 8px; }
@@ -1623,7 +1644,7 @@
     .status-set-btn:hover { background: rgba(0,200,255,0.1); }
 
     /* ── Op status label ── */
-    .op-status { font-size: 9px; color: var(--text-dim); font-style: italic; margin-left: 4px; }
+    .op-status { font-size: 10px; color: var(--text-dim); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
     /* ── Session Scheduler ── */
     .session-card {
@@ -1816,7 +1837,7 @@
       <h1>GamezNET</h1>
       <p>Private Game Server Network</p>
     </div>
-    <div class="version-badge" id="version-badge">v...</div>
+    <div class="version-badge" id="version-badge" onclick="triggerUpdate()"><span class="v-text">v...</span><span class="v-hover">CHECK FOR UPDATES</span></div>
     <div class="clock" id="clock"></div>
   </header>
 
@@ -2814,16 +2835,18 @@
   // ── Version Badge ───────────────────────────────────────────────────────────
   function setVersionBadge(version, outdated) {
     const el = document.getElementById('version-badge');
-    el.textContent = 'v' + version + (outdated ? ' ↑' : '');
+    const vText = el.querySelector('.v-text');
+    if (vText) vText.textContent = 'v' + version + (outdated ? ' ↑' : '');
+    else el.innerHTML = `<span class="v-text">v${version}${outdated ? ' ↑' : ''}</span><span class="v-hover">CHECK FOR UPDATES</span>`;
+
     if (outdated) {
       el.classList.add('outdated');
       el.title = 'Update available — click to update';
-      el.onclick = () => triggerUpdate();
     } else {
       el.classList.remove('outdated');
-      el.title = '';
-      el.onclick = null;
+      el.title = 'Click to force a script update';
     }
+    el.onclick = () => triggerUpdate();
   }
 
   // ── Update Trigger ─────────────────────────────────────────────────────────
@@ -3104,10 +3127,23 @@
       const lbl = el.closest('.online-card')?.querySelector('.section-label');
       if (lbl) lbl.textContent = `Who's Online  ·  ${online.length}`;
       const esc = s => (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      const steamAppMap = { 'Satisfactory': 526870, 'SCUM': 513710, 'Enshrouded': 1203620, 'Conan Exiles': 440900, 'Project Zomboid': 108600, 'World of Sea Battle': 2251500 };
       el.innerHTML = online.map(p => {
         const avatar = p.steam_avatar
           ? `<img class="op-avatar" src="${p.steam_avatar}" loading="lazy" />`
           : `<div class="op-avatar-ph">${esc(p.name)[0].toUpperCase()}</div>`;
+        
+        let gameBadgeHtml = '';
+        if (p.game) {
+          const appid = steamAppMap[p.game];
+          if (appid) {
+            gameBadgeHtml = `<img class="op-game-badge" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/capsule_sm_120.jpg" title="Playing: ${esc(p.game)}" onerror="this.style.display='none'">`;
+          } else {
+            gameBadgeHtml = `<div class="op-game-badge text-badge" title="Playing: ${esc(p.game)}">🎮</div>`;
+          }
+        }
+        const avatarWrap = `<div class="op-avatar-wrap">${avatar}${gameBadgeHtml}</div>`;
+
         let lib = null;
         try { lib = p.steam_library ? JSON.parse(p.steam_library) : null; } catch {}
         const steamSub = p.steam_id ? (() => {
@@ -3127,12 +3163,12 @@
           : '';
         const pingHtml = pingSparkline(parsePingArray(p.ping));
         return `<div class="online-player">
-          ${avatar}
+          ${avatarWrap}
           <div class="op-info">
             <div class="op-row1">
               <div class="op-dot"></div>
-              <div class="op-name">${esc(p.name)}${p.status ? `<span class="op-status">${esc(p.status)}</span>` : ''}</div>
-              ${p.game ? `<div style="font-size:10px;color:var(--accent);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${esc(p.game)}</div>` : ''}
+              <div class="op-name">${esc(p.name)}</div>
+              ${p.status ? `<div class="op-status">${esc(p.status)}</div>` : ''}
             </div>
             ${steamSub}
             ${gamesStrip}
