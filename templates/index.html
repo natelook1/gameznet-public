@@ -122,14 +122,24 @@
       padding: 3px 7px;
       border-radius: 2px;
       transition: all 0.3s;
+      cursor: pointer;
+      user-select: none;
     }
     .version-badge.outdated {
       color: var(--warn);
       border-color: var(--warn);
-      cursor: pointer;
       animation: pulse-update 1.5s ease-in-out infinite;
     }
     .version-badge.outdated:hover { background: rgba(255,170,0,0.15); }
+    .version-badge:not(.outdated):hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(0,200,255,0.05);
+    }
+    .v-text { display: inline; }
+    .v-hover { display: none; }
+    .version-badge:not(.outdated):hover .v-text { display: none; }
+    .version-badge:not(.outdated):hover .v-hover { display: inline; }
     @keyframes pulse-update {
       0%, 100% { box-shadow: none; opacity: 1; }
       50% { box-shadow: 0 0 8px rgba(255,170,0,0.5); opacity: 0.7; }
@@ -549,6 +559,12 @@
       font-size: 12px;
       flex-shrink: 0;
     }
+    .online-player.dm-target, .online-player.dm-target * {
+      cursor: pointer;
+    }
+    .online-player.dm-target {
+      user-select: none; /* Prevents text highlighting when right-clicking */
+    }
     .op-dot {
       width: 6px; height: 6px;
       border-radius: 50%;
@@ -574,13 +590,24 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 14px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace;
     }
+    .op-avatar-wrap { position: relative; flex-shrink: 0; display: inline-flex; }
+    .op-game-badge {
+      position: absolute; bottom: -2px; left: -8px; width: 24px; height: 14px;
+      border-radius: 2px; object-fit: cover; box-shadow: 0 1px 4px rgba(0,0,0,0.8);
+      border: 1px solid rgba(0,200,255,0.4); background: var(--bg);
+    }
+    .op-game-badge.text-badge {
+      width: 16px; height: 16px; left: -4px; bottom: -4px; font-size: 11px;
+      display: flex; align-items: center; justify-content: center; border: none;
+      background: transparent; box-shadow: none; text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
     .op-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     .op-row1 { display: flex; align-items: center; gap: 8px; }
     .op-steam-sub { display: flex; gap: 10px; font-size: 10px; color: var(--text-dim); padding-left: 2px; }
     .op-steam-level { color: var(--accent); }
     .op-steam-hrs { color: rgba(0,200,255,0.6); }
-    .op-games-strip { display: flex; gap: 4px; padding-left: 2px; flex-wrap: nowrap; }
-    .op-game-cap { height: 20px; width: auto; border-radius: 2px; opacity: 0.65; transition: opacity 0.15s; cursor: default; }
+    .op-games-strip { display: flex; gap: 4px; padding-left: 2px; flex-wrap: nowrap; overflow: hidden; max-width: 100%; }
+    .op-game-cap { height: 20px; width: auto; border-radius: 2px; opacity: 0.65; transition: opacity 0.15s; cursor: default; flex-shrink: 0; }
     .op-game-cap:hover { opacity: 1; }
     .op-ping-wrap { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
     .op-ping-graph { display: block; overflow: visible; }
@@ -672,6 +699,19 @@
     .dc-sidebar-footer { padding: 10px 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
     .dc-join-btn { display: block; text-align: center; background: rgba(88,101,242,0.15); color: #8ea1f5; border: 1px solid rgba(88,101,242,0.3); border-radius: 3px; padding: 7px 10px; font-size: 11px; font-family: 'Share Tech Mono',monospace; letter-spacing: 1px; text-decoration: none; transition: background 0.15s; }
     .dc-join-btn:hover { background: rgba(88,101,242,0.3); color: #fff; }
+    
+    #ctx-menu { position:fixed; z-index:10000; background:var(--surface); border:1px solid var(--border); box-shadow:0 8px 16px rgba(0,0,0,0.8); border-radius:4px; padding:4px 0; min-width:140px; display:none; flex-direction:column; }
+    .ctx-item { padding:8px 16px; font-size:12px; font-family:'Share Tech Mono',monospace; cursor:pointer; color:var(--text); transition:background 0.15s; }
+    .ctx-item:hover { background:var(--accent); color:var(--bg); }
+    .chat-tabs { display:flex; gap:4px; padding:6px 10px 4px; background:rgba(0,0,0,0.2); border-bottom:1px solid var(--border); overflow-x:auto; flex-shrink:0; }
+    .chat-tabs::-webkit-scrollbar { height:0; }
+    .chat-tab { font-size:10px; font-family:'Share Tech Mono',monospace; padding:3px 10px; border-radius:12px; background:var(--surface); border:1px solid var(--border2); color:var(--muted); cursor:pointer; white-space:nowrap; flex-shrink:0; position:relative; }
+    .chat-tab:hover { color:var(--text); border-color:var(--text-dim); }
+    .chat-tab.active { background:rgba(0,212,255,0.1); border-color:var(--accent); color:var(--accent); }
+    .chat-tab.unread { color:#fff; border-color:var(--danger); font-weight:bold; }
+    .chat-tab-close { margin-left:6px; opacity:0.5; }
+    .chat-tab-close:hover { opacity:1; color:var(--danger); }
+    .chat-scroll-area { display:flex; flex-direction:column; gap:6px; flex:1; min-height:0; overflow-y:auto; padding:10px 12px; }
     /* Messages pane */
     .dc-messages-pane { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
     .dc-chan-hdr { display: flex; align-items: center; gap: 10px; padding: 12px 20px; flex-shrink: 0; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.1); }
@@ -682,6 +722,7 @@
     .dc-msgs-scroll { flex: 1; overflow-y: auto; padding: 12px 20px 4px; display: flex; flex-direction: column; }
     #dc-msgs-list { display: flex; flex-direction: column; }
     .dc-msg-group { display: flex; gap: 14px; padding: 4px 4px; border-radius: 3px; }
+    .dc-msg-group { transition: opacity 0.2s; }
     .dc-msg-group:hover { background: rgba(255,255,255,0.02); }
     .dc-msg-group.consec { padding: 1px 4px 1px 56px; }
     .dc-msg-avcol { flex-shrink: 0; width: 38px; }
@@ -1532,18 +1573,6 @@
     .chat-float.chat-minimized .chat-float-hdr { border-bottom: none; cursor: pointer; }
 
     .chat-section { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
-    .chat-box {
-      background: var(--card);
-      border: 1px solid var(--border2);
-      border-radius: 6px;
-      height: 180px;
-      overflow-y: auto;
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      scroll-behavior: smooth;
-    }
     .chat-msg { display: flex; gap: 8px; align-items: baseline; font-size: 12px; line-height: 1.4; }
     .chat-msg-name { font-family: 'Share Tech Mono', monospace; color: var(--accent); font-size: 11px; white-space: nowrap; flex-shrink: 0; }
     .chat-msg-name.self { color: var(--accent2); }
@@ -1553,7 +1582,7 @@
     .chat-input-row { display: flex; gap: 8px; }
     .chat-input {
       flex: 1;
-      background: var(--card);
+      background: var(--surface);
       border: 1px solid var(--border2);
       border-radius: 4px;
       color: var(--text);
@@ -1623,7 +1652,7 @@
     .status-set-btn:hover { background: rgba(0,200,255,0.1); }
 
     /* ── Op status label ── */
-    .op-status { font-size: 9px; color: var(--text-dim); font-style: italic; margin-left: 4px; }
+    .op-status { font-size: 10px; color: var(--text-dim); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
     /* ── Session Scheduler ── */
     .session-card {
@@ -1816,7 +1845,7 @@
       <h1>GamezNET</h1>
       <p>Private Game Server Network</p>
     </div>
-    <div class="version-badge" id="version-badge">v...</div>
+    <div class="version-badge" id="version-badge" onclick="triggerUpdate()"><span class="v-text">v...</span><span class="v-hover">CHECK FOR UPDATES</span></div>
     <div class="clock" id="clock"></div>
   </header>
 
@@ -1906,11 +1935,16 @@
       <button id="chat-mute-btn" class="chat-float-btn" onclick="toggleChatMute()" title="Toggle sound">🔔</button>
       <button class="chat-float-btn" onclick="toggleChatFloat()" title="Minimize">—</button>
     </div>
-    <div class="chat-float-body">
-      <div class="chat-box" id="chat-box">
-        <div class="chat-empty" id="chat-empty">○ No messages yet</div>
+    <div class="chat-float-body" style="padding:0; display:flex; flex-direction:column; flex:1; min-height:0;">
+      <div class="chat-tabs" id="chat-tabs-container">
+        <div class="chat-tab active" onclick="setChatTarget('global')"># Global</div>
       </div>
-      <div class="chat-input-row">
+      <div id="chat-boxes-container" style="flex:1; display:flex; min-height:0; background:var(--surface); position:relative;">
+        <div class="chat-scroll-area" id="chat-box-global">
+          <div class="chat-empty" id="chat-empty-global">○ No messages yet</div>
+        </div>
+      </div>
+      <div class="chat-input-row" style="padding:8px 10px; border-top:1px solid var(--border2); background:rgba(0,0,0,0.1);">
         <input class="chat-input" id="chat-input" type="text" placeholder="Type a message..." maxlength="500" disabled />
         <button class="chat-send-btn" id="chat-send-btn" onclick="sendChat()" disabled>SEND</button>
       </div>
@@ -2115,17 +2149,18 @@
                 <img class="steam-self-avatar" id="steam-avatar-self" src="" />
                 <div class="session-avatar-ph" id="session-avatar-ph">?</div>
               </div>
-              <div class="session-profile-body">
+            <div class="session-profile-body" style="justify-content: center;">
                 <div class="player-identity-row">
-                  <div class="player-name-large" id="info-name">—</div>
+                <div class="player-name-large" id="info-name" style="margin-bottom: 0;">—</div>
                   <button class="rename-btn" onclick="openRename()" title="Change name">✎</button>
-                  <span class="player-identity-ip copyable" id="info-ip" title="Click to copy">—</span>
+                <div style="margin-left: auto;">
+                  <div id="steam-linked-view" class="session-steam-row" style="display:none;">
+                    <span class="steam-self-stats" id="steam-stats-self"></span>
+                    <button class="steam-unlink-btn" onclick="unlinkSteam()">UNLINK</button>
+                  </div>
+                  <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM ACCOUNT</button>
                 </div>
-                <div id="steam-linked-view" class="session-steam-row" style="display:none;">
-                  <span class="steam-self-stats" id="steam-stats-self"></span>
-                  <button class="steam-unlink-btn" onclick="unlinkSteam()">UNLINK</button>
-                </div>
-                <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM ACCOUNT</button>
+              </div>
               </div>
             </div>
           </div>
@@ -2237,6 +2272,9 @@
           <div class="dc-guild-header">
             <div class="dc-guild-name" id="dc-server-name">gamEZnet</div>
             <div class="dc-guild-counts"><span id="dc-online">—</span> online · <span id="dc-total">—</span> members</div>
+            <div style="font-size: 9px; color: var(--warn); margin-top: 6px; font-family: 'Share Tech Mono', monospace; line-height: 1.3;">
+              ⚠ NOTE: Direct Messages made via right-click are internal to GamezNET, not linked to your Discord app.
+            </div>
           </div>
           <div class="dc-chan-list" id="dc-chan-list">
             <div style="padding:20px 16px;color:var(--text-dim);font-size:11px;font-family:'Share Tech Mono',monospace;">Loading...</div>
@@ -2261,6 +2299,7 @@
           <div class="dc-msgs-scroll" id="dc-msgs-scroll">
             <div id="dc-msgs-list"><div class="dc-msg-empty">↑ pick a channel to read messages</div></div>
           </div>
+          <div id="dc-typing-indicator" style="display:none; font-size: 10px; color: var(--text-dim); padding: 2px 20px 6px; font-style: italic; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border);"></div>
           <div class="dc-input-area">
             <div class="dc-input-label" id="dc-input-label">select a channel to start chatting</div>
             <div class="dc-input-row">
@@ -2382,6 +2421,10 @@
   </div>
 </div>
 
+<div id="ctx-menu">
+  <div class="ctx-item" onclick="openDMFromCtx()">💬 Direct Message</div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -2441,24 +2484,6 @@
     }
   }, 1000);
 
-  // ── Copy IP ────────────────────────────────────────────────────────────────
-  document.getElementById('info-ip').addEventListener('click', function() {
-    const ip = this.textContent;
-    if (ip && ip !== '—') {
-      navigator.clipboard.writeText(ip).then(() => {
-        toast('IP copied!', 'success');
-      }).catch(() => {
-        const input = document.createElement('input');
-        input.value = ip;
-        document.body.appendChild(input);
-        input.select();
-        document.execCommand('copy');
-        document.body.removeChild(input);
-        toast('IP copied!', 'success');
-      });
-    }
-  });
-
   // ── Token formatter ────────────────────────────────────────────────────────
   function formatToken(input) {
     let val = input.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
@@ -2491,7 +2516,6 @@
     showView('dashboard');
     document.getElementById('tab-nav').classList.add('visible');
     document.getElementById('info-name').textContent = state.name;
-    document.getElementById('info-ip').textContent   = state.clientIp;
     const ph = document.getElementById('session-avatar-ph');
     if (ph) ph.textContent = (state.name || '?')[0].toUpperCase();
     document.getElementById('change-token-link').style.display = 'inline';
@@ -2832,16 +2856,18 @@
   // ── Version Badge ───────────────────────────────────────────────────────────
   function setVersionBadge(version, outdated) {
     const el = document.getElementById('version-badge');
-    el.textContent = 'v' + version + (outdated ? ' ↑' : '');
+    const vText = el.querySelector('.v-text');
+    if (vText) vText.textContent = 'v' + version + (outdated ? ' ↑' : '');
+    else el.innerHTML = `<span class="v-text">v${version}${outdated ? ' ↑' : ''}</span><span class="v-hover">CHECK FOR UPDATES</span>`;
+
     if (outdated) {
       el.classList.add('outdated');
       el.title = 'Update available — click to update';
-      el.onclick = () => triggerUpdate();
     } else {
       el.classList.remove('outdated');
-      el.title = '';
-      el.onclick = null;
+      el.title = 'Click to force a script update';
     }
+    el.onclick = () => triggerUpdate();
   }
 
   // ── Update Trigger ─────────────────────────────────────────────────────────
@@ -3122,10 +3148,23 @@
       const lbl = el.closest('.online-card')?.querySelector('.section-label');
       if (lbl) lbl.textContent = `Who's Online  ·  ${online.length}`;
       const esc = s => (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      const steamAppMap = { 'Satisfactory': 526870, 'SCUM': 513710, 'Enshrouded': 1203620, 'Conan Exiles': 440900, 'Project Zomboid': 108600, 'World of Sea Battle': 2251500 };
       el.innerHTML = online.map(p => {
         const avatar = p.steam_avatar
           ? `<img class="op-avatar" src="${p.steam_avatar}" loading="lazy" />`
           : `<div class="op-avatar-ph">${esc(p.name)[0].toUpperCase()}</div>`;
+        
+        let gameBadgeHtml = '';
+        if (p.game) {
+          const appid = steamAppMap[p.game];
+          if (appid) {
+            gameBadgeHtml = `<img class="op-game-badge" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/capsule_sm_120.jpg" title="Playing: ${esc(p.game)}" onerror="this.style.display='none'">`;
+          } else {
+            gameBadgeHtml = `<div class="op-game-badge text-badge" title="Playing: ${esc(p.game)}">🎮</div>`;
+          }
+        }
+        const avatarWrap = `<div class="op-avatar-wrap">${avatar}${gameBadgeHtml}</div>`;
+
         let lib = null;
         try { lib = p.steam_library ? JSON.parse(p.steam_library) : null; } catch {}
         const steamSub = p.steam_id ? (() => {
@@ -3144,13 +3183,14 @@
             ).join('')}</div>`
           : '';
         const pingHtml = pingSparkline(parsePingArray(p.ping));
-        return `<div class="online-player">
-          ${avatar}
+        const targetCls = p.name !== state.name ? ' dm-target' : '';
+        return `<div class="online-player${targetCls}" title="${p.name !== state.name ? 'Right-click to DM' : ''}">
+          ${avatarWrap}
           <div class="op-info">
             <div class="op-row1">
               <div class="op-dot"></div>
-              <div class="op-name">${esc(p.name)}${p.status ? `<span class="op-status">${esc(p.status)}</span>` : ''}</div>
-              ${p.game ? `<div style="font-size:10px;color:var(--accent);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${esc(p.game)}</div>` : ''}
+              <div class="op-name">${esc(p.name)}</div>
+              ${p.status ? `<div class="op-status">${esc(p.status)}</div>` : ''}
             </div>
             ${steamSub}
             ${gamesStrip}
@@ -3167,6 +3207,11 @@
   setInterval(pollRemotePending, 5000);
 
   // ── Chat ───────────────────────────────────────────────────────────────────
+  let chatActiveTarget = 'global';
+  let chatOpenedTabs = new Set(['global']);
+  let chatUnread = {}; // target -> count
+  let chatHistoryLoaded = new Set();
+
   let chatSince = new Date(Date.now() - 3600000).toISOString(); // load last 1hr on init
 
   function chatTimeStr(iso) {
@@ -3174,10 +3219,87 @@
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
+  function renderChatTabs() {
+    const container = document.getElementById('chat-tabs-container');
+    let html = `<div class="chat-tab ${chatActiveTarget === 'global' ? 'active' : ''} ${chatUnread['global'] ? 'unread' : ''}" onclick="setChatTarget('global')"># Global ${chatUnread['global'] ? `(${chatUnread['global']})` : ''}</div>`;
+    chatOpenedTabs.forEach(target => {
+      if (target === 'global') return;
+      html += `<div class="chat-tab ${chatActiveTarget === target ? 'active' : ''} ${chatUnread[target] ? 'unread' : ''}" onclick="setChatTarget('${target}')">@${target} ${chatUnread[target] ? `(${chatUnread[target]})` : ''} <span class="chat-tab-close" onclick="event.stopPropagation(); closeChatTab('${target}')">✕</span></div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  function getChatBox(target) {
+    let box = document.getElementById(`chat-box-${target}`);
+    if (!box) {
+      box = document.createElement('div');
+      box.id = `chat-box-${target}`;
+      box.className = 'chat-scroll-area';
+      box.style.display = 'none';
+      box.innerHTML = `<div class="chat-empty" id="chat-empty-${target}">○ No messages yet</div>`;
+      document.getElementById('chat-boxes-container').appendChild(box);
+    }
+    return box;
+  }
+
+  window.setChatTarget = function(target) {
+    if (chatActiveTarget) {
+      const oldBox = document.getElementById(`chat-box-${chatActiveTarget}`);
+      if (oldBox) oldBox.style.display = 'none';
+    }
+    chatActiveTarget = target;
+    chatUnread[target] = 0;
+    renderChatTabs();
+    
+    const newBox = getChatBox(target);
+    newBox.style.display = 'flex';
+    newBox.scrollTop = newBox.scrollHeight;
+    
+    const input = document.getElementById('chat-input');
+    input.placeholder = target === 'global' ? 'Type a message...' : `Message @${target}...`;
+    input.focus();
+
+    if (target !== 'global') {
+       fetch(`/api/chat/dm/read?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(target)}`, {method:'POST'}).catch(()=>{});
+       if (!chatHistoryLoaded.has(target)) {
+         loadDMHistory(target);
+         chatHistoryLoaded.add(target);
+       }
+    }
+    updateGlobalChatBadge();
+  }
+
+  async function loadDMHistory(target) {
+    try {
+      const res = await fetch(`/api/chat/dm/history?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(target)}`);
+      const msgs = await res.json();
+      if (msgs.length) appendDMMessages(target, msgs);
+    } catch {}
+  }
+
+  window.openChatTab = function(target) {
+    chatOpenedTabs.add(target);
+    const fl = document.getElementById('chat-float');
+    if (fl.classList.contains('chat-minimized')) toggleChatFloat(); 
+    setChatTarget(target);
+  };
+
+  window.closeChatTab = function(target) {
+    chatOpenedTabs.delete(target);
+    const box = document.getElementById(`chat-box-${target}`);
+    if (box) box.remove();
+    if (chatActiveTarget === target) setChatTarget('global');
+    else renderChatTabs();
+  };
+
   function appendMessages(msgs) {
+    appendDMMessages('global', msgs);
+  }
+
+  function appendDMMessages(target, msgs) {
     if (!msgs.length) return;
-    const box = document.getElementById('chat-box');
-    const empty = document.getElementById('chat-empty');
+    const box = getChatBox(target);
+    const empty = document.getElementById(`chat-empty-${target}`);
     if (empty) empty.remove();
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
     msgs.forEach(m => {
@@ -3187,9 +3309,19 @@
       el.innerHTML = `<span class="chat-msg-name${isSelf ? ' self' : ''}">${m.from_name}</span><span class="chat-msg-body">${m.body.replace(/</g,'&lt;')}</span><span class="chat-msg-time">${chatTimeStr(m.sent_at)}</span>`;
       box.appendChild(el);
     });
-    chatBeep();
-    if (window._chatMarkUnread) window._chatMarkUnread();
     if (atBottom) box.scrollTop = box.scrollHeight;
+  }
+  
+  function updateGlobalChatBadge() {
+    const badge = document.getElementById('chat-float-badge');
+    const minimized = document.getElementById('chat-float').classList.contains('chat-minimized');
+    let totalUnread = Object.values(chatUnread).reduce((a,b) => a+b, 0);
+    if (minimized && totalUnread > 0) {
+      badge.textContent = totalUnread;
+      badge.style.display = '';
+    } else if (!minimized) {
+      badge.style.display = 'none';
+    }
   }
 
   async function pollChat() {
@@ -3210,7 +3342,11 @@
     if (!body || !state.name) return;
     input.value = '';
     try {
-      await fetch('{{ worker_url }}/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name, body }) });
+      if (chatActiveTarget === 'global') {
+        await fetch('{{ worker_url }}/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name, body }) });
+      } else {
+        await fetch('{{ worker_url }}/api/chat/dm/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_name: state.name, to_name: chatActiveTarget, body }) });
+      }
     } catch {}
   }
 
@@ -3275,7 +3411,64 @@
     } catch(e) {}
   }
 
-  setInterval(pollChat, 3000);
+  let _chatStream = null;
+  async function startChat() {
+    if (!state.provisioned) return;
+    if (_chatStream) return;
+    
+    await pollChat(); // Fetch any history missed while disconnected
+    
+    try {
+      const uRes = await fetch(`{{ worker_url }}/api/chat/dm/unread?name=${encodeURIComponent(state.name)}`);
+      if (uRes.ok) {
+         const unreads = await uRes.json();
+         unreads.forEach(u => {
+            chatOpenedTabs.add(u.from_name);
+            chatUnread[u.from_name] = u.count;
+         });
+         renderChatTabs();
+         updateGlobalChatBadge();
+      }
+    } catch {}
+    
+    _chatStream = new EventSource(`{{ worker_url }}/api/chat/stream?name=${encodeURIComponent(state.name)}`);
+    _chatStream.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'discord') { if (typeof handleDiscordSSE === 'function') handleDiscordSSE(msg); return; }
+        
+        if (msg.type === 'dm') {
+          const otherUser = msg.from_name === state.name ? msg.to_name : msg.from_name;
+          chatOpenedTabs.add(otherUser);
+          if (chatActiveTarget === otherUser) {
+            appendDMMessages(otherUser, [msg]);
+            if (msg.to_name === state.name) fetch(`/api/chat/dm/read?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(otherUser)}`, {method:'POST'}).catch(()=>{});
+          } else if (msg.to_name === state.name) {
+            chatUnread[otherUser] = (chatUnread[otherUser] || 0) + 1;
+            chatBeep();
+            updateGlobalChatBadge();
+          }
+          renderChatTabs();
+          return;
+        }
+        
+        if (chatActiveTarget === 'global') {
+          appendMessages([msg]);
+        } else {
+          chatUnread['global'] = (chatUnread['global'] || 0) + 1;
+          appendMessages([msg]); // background append
+          chatBeep();
+          updateGlobalChatBadge();
+          renderChatTabs();
+        }
+        if (msg.sent_at) chatSince = msg.sent_at;
+      } catch(err) {}
+    };
+    // If connection drops, close and let the interval retry it automatically
+    _chatStream.onerror = () => { _chatStream.close(); _chatStream = null; };
+  }
+  
+  setInterval(startChat, 5000);
 
   // ── Full Route (route all traffic through VPN) ─────────────────────────────
   let fullRoute = false;
@@ -3445,8 +3638,9 @@
     return mb >= 1024 ? (mb / 1024).toFixed(1) + ' GiB' : mb + ' MiB';
   }
 
-  function fmtUptime(seconds) {
-    if (!seconds) return '';
+  function fmtUptime(ms) {
+    if (!ms) return '';
+    const seconds = Math.floor(ms / 1000);
     const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60);
     if (h >= 24) return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
     if (h > 0)   return h + 'h ' + m + 'm';
@@ -3482,9 +3676,12 @@
     servers = [...servers].sort((a, b) => (order[a.state] ?? 3) - (order[b.state] ?? 3));
     strip.innerHTML = servers.map(s => {
       const cls = ['running','starting','stopping'].includes(s.state) ? s.state : 'offline';
+      const isMc = _isMinecraft(s.name);
       const iconEl = s.steam_appid
         ? `<img class="srv-chip-img" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/capsule_sm_120.jpg" loading="lazy" onerror="this.style.display='none'" />`
-        : `<div class="srv-chip-icon-text" style="background:${_srvColor(s.name)}">${s.name.substring(0,2)}</div>`;
+        : (isMc 
+          ? `<img class="srv-chip-img" src="/static/tile.png" loading="lazy" onerror="this.style.display='none'" />`
+          : `<div class="srv-chip-icon-text" style="background:${_srvColor(s.name)}">${s.name.substring(0,2)}</div>`);
       return `<div class="srv-chip srv-${cls}" onclick="openSrvModal('${s.id}')">
         <div class="srv-dot ${cls}"></div>
         ${iconEl}
@@ -3504,10 +3701,12 @@
     const cls = ['running','starting','stopping'].includes(s.state) ? s.state : 'offline';
     const isRunning = s.state === 'running';
     const banner = document.getElementById('srv-modal-banner');
+    const isMc = _isMinecraft(s.name);
     banner.style.backgroundImage = s.steam_appid
       ? `url('https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/header.jpg')`
-      : 'none';
-    banner.style.backgroundColor = s.steam_appid ? '' : _srvColor(s.name);
+      : (isMc ? `url('/static/banner.png')` : 'none');
+    banner.style.backgroundColor = (s.steam_appid || isMc) ? '' : _srvColor(s.name);
+    banner.style.backgroundPosition = 'center center';
     document.getElementById('srv-modal-name').textContent = s.name;
     const badge = document.getElementById('srv-modal-badge');
     badge.textContent = s.state;
@@ -3547,10 +3746,7 @@
     }
     const actions = document.getElementById('srv-modal-actions');
     if (isRunning && s.steam_appid) {
-      const url = s.steam_appid == 526870
-        ? `steam://rungameid/${s.steam_appid}//+open ${s.host}:${s.port}`
-        : `steam://connect/${s.host}:${s.port}`;
-      actions.innerHTML = `<button class="srv-modal-steam-btn" onclick="location.href='${url}'">▶ STEAM JOIN</button>`;
+      actions.innerHTML = `<button class="srv-modal-steam-btn" onclick="launchGame('${s.steam_appid}', '${s.host}', '${s.port}')">▶ STEAM JOIN</button>`;
     } else {
       actions.innerHTML = '';
     }
@@ -3559,6 +3755,20 @@
 
   function closeSrvModal() {
     document.getElementById('server-modal-overlay').classList.remove('active');
+  }
+
+  async function launchGame(appid, ip, port) {
+    try {
+      await fetch('/api/launch_game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appid, ip, port })
+      });
+      toast('Launching game...', 'success');
+      closeSrvModal();
+    } catch (e) {
+      toast('Failed to launch game', 'error');
+    }
   }
 
   setInterval(loadClientServers, 30000);
@@ -3911,7 +4121,58 @@
   })();
 
   // ── Discord tab ─────────────────────────────────────────────────────────────
-  const dcState = { activeChannel: null, msgInterval: null, roles: {}, channelNames: {}, unread: {}, lastMsgIds: {} };
+  const dcState = { activeChannel: null, roles: {}, channelNames: {}, unread: {}, lastMsgIds: {} };
+
+  let dcTypingTimers = {};
+  let dcTypingUsers = new Set();
+
+  function renderDcTyping() {
+    const ind = document.getElementById('dc-typing-indicator');
+    if (!ind) return;
+    if (dcTypingUsers.size === 0) { ind.style.display = 'none'; return; }
+    const users = Array.from(dcTypingUsers);
+    const text = users.length === 1 ? `${users[0]} is typing...` :
+                 users.length === 2 ? `${users[0]} and ${users[1]} are typing...` :
+                 'Several people are typing...';
+    ind.textContent = text;
+    ind.style.display = 'block';
+    const scroll = document.getElementById('dc-msgs-scroll');
+    if (scroll && scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 40) {
+      scroll.scrollTop = scroll.scrollHeight;
+    }
+  }
+
+  function handleDiscordSSE(msg) {
+    const { event, data } = msg;
+    if (data.channel_id !== dcState.activeChannel) {
+      if (event === 'MESSAGE_CREATE' && data.channel_id && dcState.channelNames[data.channel_id]) {
+        dcState.unread[data.channel_id] = (dcState.unread[data.channel_id] || 0) + 1;
+        const item = document.querySelector(`.dc-chan-item[data-chan-id="${data.channel_id}"]`);
+        if (item && !item.querySelector('.dc-unread-dot')) item.insertAdjacentHTML('beforeend', '<span class="dc-unread-dot"></span>');
+      }
+      return;
+    }
+    if (event === 'TYPING_START') {
+      const member = data.member;
+      if (member?.user?.bot) return;
+      const name = member?.nick || member?.user?.global_name || member?.user?.username;
+      if (!name) return;
+      dcTypingUsers.add(name); renderDcTyping();
+      if (dcTypingTimers[name]) clearTimeout(dcTypingTimers[name]);
+      dcTypingTimers[name] = setTimeout(() => { dcTypingUsers.delete(name); renderDcTyping(); }, 8000);
+    } else if (event === 'MESSAGE_DELETE') {
+      const el = document.getElementById(`dc-msg-${data.id}`);
+      if (el) el.remove();
+    } else if (event === 'MESSAGE_UPDATE' || event === 'MESSAGE_CREATE') {
+      dcLoadMessages(dcState.activeChannel);
+      if (event === 'MESSAGE_CREATE') {
+        const name = data.member?.nick || data.member?.user?.global_name || data.member?.user?.username;
+        if (name && dcTypingUsers.has(name)) {
+          dcTypingUsers.delete(name); clearTimeout(dcTypingTimers[name]); renderDcTyping();
+        }
+      }
+    }
+  }
 
   async function loadDiscord() {
     try {
@@ -3938,6 +4199,17 @@
       renderDcChannels(data);
       renderDcMembers(data);
     } catch (e) { console.warn('[Discord]', e.message); }
+  }
+
+  function getDiscordAvatar(author) {
+    if (!author || !author.id) return 'https://cdn.discordapp.com/embed/avatars/0.png';
+    if (author.avatar) return `https://cdn.discordapp.com/avatars/${author.id}/${author.avatar}.png?size=64`;
+    try {
+      // Accurately calculate Discord default avatars using 64-bit Snowflake IDs
+      return `https://cdn.discordapp.com/embed/avatars/${Number(BigInt(author.id) >> 22n) % 6}.png`;
+    } catch (e) {
+      return 'https://cdn.discordapp.com/embed/avatars/0.png';
+    }
   }
 
   function dcRoleColor(roleIds) {
@@ -3998,11 +4270,11 @@
     let html = '';
     if (voice.length) {
       html += `<div class="dc-msec-hdr">🔊 In Voice — ${voice.length}</div>`;
-      html += voice.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">🎮 ${m.activity}</div>` : ''}</div><div class="dc-mitem-voice"></div></div>`).join('');
+      html += voice.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">${m.activity}</div>` : ''}</div><div class="dc-mitem-voice"></div></div>`).join('');
     }
     if (rest.length) {
       html += `<div class="dc-msec-hdr">Members — ${rest.length}</div>`;
-      html += rest.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">🎮 ${m.activity}</div>` : ''}</div><div class="dc-status-dot ${m.status || 'offline'}"></div></div>`).join('');
+      html += rest.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">${m.activity}</div>` : ''}</div><div class="dc-status-dot ${m.status || 'offline'}"></div></div>`).join('');
     }
     if (!html) html = '<div style="padding:8px;color:var(--text-dim);font-size:10px;font-family:\'Share Tech Mono\',monospace;">No members</div>';
     el.innerHTML = html;
@@ -4021,9 +4293,8 @@
     if (topic) { topicEl.textContent = topic; sep.style.display = ''; topicEl.style.display = ''; }
     else { sep.style.display = 'none'; topicEl.style.display = 'none'; }
     document.querySelectorAll('.dc-chan-item').forEach(el => el.classList.toggle('active', el.textContent.trim() === name && el.onclick?.toString().includes(`'${id}'`)));
+    if (typeof dcTypingUsers !== 'undefined') { dcTypingUsers.clear(); renderDcTyping(); }
     dcLoadMessages(id);
-    if (dcState.msgInterval) clearInterval(dcState.msgInterval);
-    dcState.msgInterval = setInterval(() => dcLoadMessages(dcState.activeChannel), 10000);
     // Show pins button, reset pins panel
     document.getElementById('dc-pins-btn').style.display = '';
     document.getElementById('dc-pins-panel').classList.remove('open');
@@ -4070,7 +4341,7 @@
           mentions.forEach(m => {
             new Notification(`#${chanName} — ${m.author.username}`, {
               body: m.content.slice(0, 100),
-              icon: m.author.avatar || ''
+            icon: getDiscordAvatar(m.author)
             });
           });
         }
@@ -4086,16 +4357,18 @@
     if (!msgs.length) return '<div class="dc-msg-empty">No messages yet</div>';
     let html = '', lastId = null, lastTs = null;
     for (const m of msgs) {
-      if (m.type === 7) { html += `<div class="dc-sys-msg">👋 ${m.author.username} joined the server</div>`; lastId = null; continue; }
-      if (m.type === 6) { html += `<div class="dc-sys-msg">📌 ${m.author.username} pinned a message</div>`; lastId = null; continue; }
+      if (m.type === 7) { html += `<div class="dc-sys-msg">👋 ${m.author?.username || 'Someone'} joined the server</div>`; lastId = null; continue; }
+      if (m.type === 6) { html += `<div class="dc-sys-msg">📌 ${m.author?.username || 'Someone'} pinned a message</div>`; lastId = null; continue; }
       if (m.type !== 0 && m.type !== 19) { lastId = null; continue; }
       const ts = new Date(m.timestamp);
-      const consec = m.author.id === lastId && lastTs && (ts - lastTs) < 300000 && m.type === 0 && !m.reference;
+      const consec = m.author.id === lastId && lastTs && (ts - lastTs) < 300000 && m.type === 0 && !m.referenced_message;
       lastId = m.author.id; lastTs = ts;
-      const rcs = dcRoleColor(m.author.roles);
+      const rcs = dcRoleColor(m.member?.roles);
       const content = dcMarkdown(m.content);
       let extra = '';
-      if (m.reference) extra += `<div class="dc-reply"><img src="${m.reference.avatar||''}" onerror="this.style.display='none'" loading="lazy"><span class="dc-reply-author">${m.reference.author}</span><span>${dcMarkdown(m.reference.content).slice(0,120)}</span></div>`;
+      if (m.referenced_message) {
+        extra += `<div class="dc-reply"><img src="${getDiscordAvatar(m.referenced_message.author)}" onerror="this.style.display='none'" loading="lazy"><span class="dc-reply-author">${m.referenced_message.author.username}</span><span>${dcMarkdown(m.referenced_message.content).slice(0,120)}</span></div>`;
+      }
       if (m.attachments?.length) {
         extra += '<div class="dc-attachments">';
         for (const a of m.attachments) {
@@ -4111,12 +4384,13 @@
         extra += '<div class="dc-embeds">';
         for (const e of m.embeds) {
           if (!e.title && !e.description && !e.image) continue;
-          extra += `<div class="dc-embed" style="border-color:${e.color||'rgba(255,255,255,0.15)'}">`;
-          if (e.thumbnail) extra += `<img class="dc-embed-thumb" src="${e.thumbnail}" loading="lazy">`;
+          const colorHex = e.color != null ? '#' + e.color.toString(16).padStart(6, '0') : 'rgba(255,255,255,0.15)';
+          extra += `<div class="dc-embed" style="border-color:${colorHex}">`;
+          if (e.thumbnail?.url) extra += `<img class="dc-embed-thumb" src="${e.thumbnail.url}" loading="lazy">`;
           if (e.title) extra += `<div class="dc-embed-title">${e.url?`<a href="${e.url}" target="_blank" rel="noopener">${e.title}</a>`:e.title}</div>`;
           if (e.description) extra += `<div class="dc-embed-desc">${dcMarkdown(e.description)}</div>`;
-          if (e.image) extra += `<img class="dc-embed-img" src="${e.image}" loading="lazy">`;
-          if (e.footer) extra += `<div class="dc-embed-footer">${e.footer}</div>`;
+          if (e.image?.url) extra += `<img class="dc-embed-img" src="${e.image.url}" loading="lazy">`;
+          if (e.footer?.text) extra += `<div class="dc-embed-footer">${e.footer.text}</div>`;
           extra += '</div>';
         }
         extra += '</div>';
@@ -4124,9 +4398,12 @@
       if (m.reactions?.length) {
         extra += '<div class="dc-reactions">';
         for (const r of m.reactions) {
-          const emojiHtml = r.is_custom ? `<img src="${r.emoji}" loading="lazy">` : `<span>${r.emoji}</span>`;
+          const e = r.emoji;
+          const isCustom = !!e.id;
+          const emojiHtml = isCustom ? `<img src="https://cdn.discordapp.com/emojis/${e.id}.${e.animated ? 'gif' : 'webp'}?size=20" loading="lazy" alt=":${e.name}:">` : `<span>${e.name}</span>`;
           const reactedCls = r.me ? ' dc-reacted' : '';
-          extra += `<div class="dc-reaction${reactedCls}" onclick="dcAddReaction('${m.id}','${(r.emoji_raw||r.emoji).replace(/'/g,"\\'")}',this)">${emojiHtml} <span>${r.count}</span></div>`;
+          const emojiRaw = isCustom ? `${e.name}:${e.id}` : e.name;
+          extra += `<div class="dc-reaction${reactedCls}" onclick="dcAddReaction('${m.id}','${emojiRaw.replace(/'/g,"\\'")}',this)">${emojiHtml} <span>${r.count}</span></div>`;
         }
         extra += '</div>';
       }
@@ -4134,9 +4411,9 @@
       const isMentioned = myName && m.content && (m.content.toLowerCase().includes(`@${myName}`) || m.content.includes('@everyone') || m.content.includes('@here'));
       const mentionCls = isMentioned ? ' dc-mentioned' : '';
       if (consec) {
-        html += `<div class="dc-msg-group consec${mentionCls}"><div class="dc-msg-body">${extra}<div class="dc-msg-content">${content}</div></div></div>`;
+        html += `<div class="dc-msg-group consec${mentionCls}" id="dc-msg-${m.id}"><div class="dc-msg-body">${extra}<div class="dc-msg-content">${content}</div></div></div>`;
       } else {
-        html += `<div class="dc-msg-group${mentionCls}"><div class="dc-msg-avcol"><img class="dc-msg-av" src="${m.author.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"></div><div class="dc-msg-body">${extra}<div class="dc-msg-hdr"><span class="dc-msg-author" style="${rcs}">${m.author.username}</span>${m.author.bot?'<span class="dc-bot-badge">BOT</span>':''}<span class="dc-msg-ts">${dcTime(ts)}</span></div><div class="dc-msg-content">${content}</div></div></div>`;
+        html += `<div class="dc-msg-group${mentionCls}" id="dc-msg-${m.id}"><div class="dc-msg-avcol"><img class="dc-msg-av" src="${getDiscordAvatar(m.author)}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"></div><div class="dc-msg-body">${extra}<div class="dc-msg-hdr"><span class="dc-msg-author" style="${rcs}">${m.author.username}</span>${m.author.bot?'<span class="dc-bot-badge">BOT</span>':''}<span class="dc-msg-ts">${dcTime(ts)}</span></div><div class="dc-msg-content">${content}</div></div></div>`;
       }
     }
     return html;
@@ -4239,7 +4516,7 @@
       list.innerHTML = pins.map(m => `
         <div class="dc-pin-item">
           <div class="dc-pin-hdr">
-            <img src="${m.author.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy">
+            <img src="${getDiscordAvatar(m.author)}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy">
             <span class="dc-pin-author">${m.author.username}</span>
             <span class="dc-pin-ts">${dcTime(new Date(m.timestamp))}</span>
           </div>
@@ -4727,15 +5004,7 @@
     window.toggleChatFloat = function() {
       minimized = !minimized;
       applyMin();
-      if (!minimized) badge.style.display = 'none';
-    };
-
-    window._chatUnreadCount = 0;
-    window._chatMarkUnread = function() {
-      if (!minimized) return;
-      window._chatUnreadCount++;
-      badge.textContent = window._chatUnreadCount;
-      badge.style.display = '';
+      updateGlobalChatBadge();
     };
 
     // Edge-snap drag — works whether minimized or expanded
@@ -4771,7 +5040,6 @@
       if (!didDrag) {
         // It was a click — toggle expand/collapse if minimized
         if (minimized && !e.target.closest('.chat-float-btn')) toggleChatFloat();
-        window._chatUnreadCount = 0; badge.style.display = 'none';
         return;
       }
       panel.classList.remove('chat-dragging');
@@ -4782,6 +5050,19 @@
       applyPos();
       localStorage.setItem('gz-chat-dock', JSON.stringify(dock));
     });
+  })();
+
+  // ── Horizontal Scroll for Server Strip ─────────────────────────────────────
+  (function initServerStripScroll() {
+    const strip = document.getElementById('server-strip-inner');
+    if (strip) {
+      strip.addEventListener('wheel', e => {
+        if (e.deltaY !== 0) {
+          e.preventDefault();
+          strip.scrollLeft += e.deltaY;
+        }
+      }, { passive: false });
+    }
   })();
 
   // ── Column drag reorder ────────────────────────────────────────────────────
@@ -4834,6 +5115,49 @@
       });
     });
   })();
+  
+  // ── Context Menus (DMs) ────────────────────────────────────────────────────
+  let _ctxUser = null;
+  document.addEventListener('contextmenu', e => {
+    let target = e.target.closest('.online-player');
+    let name = null;
+    if (target) {
+       const nameEl = target.querySelector('.op-name');
+       if (nameEl) name = nameEl.textContent.trim();
+    } else {
+       target = e.target.closest('.dc-mitem');
+       if (target) {
+          const nameEl = target.querySelector('.dc-mitem-name');
+          if (nameEl) name = nameEl.textContent.trim();
+       }
+    }
+    if (name && name !== state.name) {
+       e.preventDefault();
+       _ctxUser = name;
+       const menu = document.getElementById('ctx-menu');
+       menu.style.display = 'flex';
+       let x = e.clientX, y = e.clientY;
+       if (x + 140 > window.innerWidth) x -= 140;
+       if (y + 40 > window.innerHeight) y -= 40;
+       menu.style.left = x + 'px';
+       menu.style.top = y + 'px';
+    } else if (!e.target.closest('.chat-float') && !e.target.closest('.chat-msg-body')) {
+       document.getElementById('ctx-menu').style.display = 'none';
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#ctx-menu')) {
+       const menu = document.getElementById('ctx-menu');
+       if(menu) menu.style.display = 'none';
+    }
+  });
+
+  window.openDMFromCtx = function() {
+    if (!_ctxUser) return;
+    openChatTab(_ctxUser);
+    document.getElementById('ctx-menu').style.display = 'none';
+  };
 
   // ── Boot ───────────────────────────────────────────────────────────────────
   document.addEventListener('click', e => {
