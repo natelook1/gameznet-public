@@ -703,6 +703,7 @@
     .dc-msgs-scroll { flex: 1; overflow-y: auto; padding: 12px 20px 4px; display: flex; flex-direction: column; }
     #dc-msgs-list { display: flex; flex-direction: column; }
     .dc-msg-group { display: flex; gap: 14px; padding: 4px 4px; border-radius: 3px; }
+    .dc-msg-group { transition: opacity 0.2s; }
     .dc-msg-group:hover { background: rgba(255,255,255,0.02); }
     .dc-msg-group.consec { padding: 1px 4px 1px 56px; }
     .dc-msg-avcol { flex-shrink: 0; width: 38px; }
@@ -2283,6 +2284,7 @@
           <div class="dc-msgs-scroll" id="dc-msgs-scroll">
             <div id="dc-msgs-list"><div class="dc-msg-empty">↑ pick a channel to read messages</div></div>
           </div>
+          <div id="dc-typing-indicator" style="display:none; font-size: 10px; color: var(--text-dim); padding: 2px 20px 6px; font-style: italic; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border);"></div>
           <div class="dc-input-area">
             <div class="dc-input-label" id="dc-input-label">select a channel to start chatting</div>
             <div class="dc-input-row">
@@ -3304,6 +3306,7 @@
     _chatStream.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data);
+        if (msg.type === 'discord') { if (typeof handleDiscordSSE === 'function') handleDiscordSSE(msg); return; }
         appendMessages([msg]);
         chatSince = msg.sent_at;
       } catch(err) {}
@@ -3964,7 +3967,58 @@
   })();
 
   // ── Discord tab ─────────────────────────────────────────────────────────────
-  const dcState = { activeChannel: null, msgInterval: null, roles: {}, channelNames: {}, unread: {}, lastMsgIds: {} };
+  const dcState = { activeChannel: null, roles: {}, channelNames: {}, unread: {}, lastMsgIds: {} };
+
+  let dcTypingTimers = {};
+  let dcTypingUsers = new Set();
+
+  function renderDcTyping() {
+    const ind = document.getElementById('dc-typing-indicator');
+    if (!ind) return;
+    if (dcTypingUsers.size === 0) { ind.style.display = 'none'; return; }
+    const users = Array.from(dcTypingUsers);
+    const text = users.length === 1 ? `${users[0]} is typing...` :
+                 users.length === 2 ? `${users[0]} and ${users[1]} are typing...` :
+                 'Several people are typing...';
+    ind.textContent = text;
+    ind.style.display = 'block';
+    const scroll = document.getElementById('dc-msgs-scroll');
+    if (scroll && scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 40) {
+      scroll.scrollTop = scroll.scrollHeight;
+    }
+  }
+
+  function handleDiscordSSE(msg) {
+    const { event, data } = msg;
+    if (data.channel_id !== dcState.activeChannel) {
+      if (event === 'MESSAGE_CREATE' && data.channel_id && dcState.channelNames[data.channel_id]) {
+        dcState.unread[data.channel_id] = (dcState.unread[data.channel_id] || 0) + 1;
+        const item = document.querySelector(`.dc-chan-item[data-chan-id="${data.channel_id}"]`);
+        if (item && !item.querySelector('.dc-unread-dot')) item.insertAdjacentHTML('beforeend', '<span class="dc-unread-dot"></span>');
+      }
+      return;
+    }
+    if (event === 'TYPING_START') {
+      const member = data.member;
+      if (member?.user?.bot) return;
+      const name = member?.nick || member?.user?.global_name || member?.user?.username;
+      if (!name) return;
+      dcTypingUsers.add(name); renderDcTyping();
+      if (dcTypingTimers[name]) clearTimeout(dcTypingTimers[name]);
+      dcTypingTimers[name] = setTimeout(() => { dcTypingUsers.delete(name); renderDcTyping(); }, 8000);
+    } else if (event === 'MESSAGE_DELETE') {
+      const el = document.getElementById(`dc-msg-${data.id}`);
+      if (el) el.remove();
+    } else if (event === 'MESSAGE_UPDATE' || event === 'MESSAGE_CREATE') {
+      dcLoadMessages(dcState.activeChannel);
+      if (event === 'MESSAGE_CREATE') {
+        const name = data.member?.nick || data.member?.user?.global_name || data.member?.user?.username;
+        if (name && dcTypingUsers.has(name)) {
+          dcTypingUsers.delete(name); clearTimeout(dcTypingTimers[name]); renderDcTyping();
+        }
+      }
+    }
+  }
 
   async function loadDiscord() {
     try {
@@ -4085,9 +4139,8 @@
     if (topic) { topicEl.textContent = topic; sep.style.display = ''; topicEl.style.display = ''; }
     else { sep.style.display = 'none'; topicEl.style.display = 'none'; }
     document.querySelectorAll('.dc-chan-item').forEach(el => el.classList.toggle('active', el.textContent.trim() === name && el.onclick?.toString().includes(`'${id}'`)));
+    if (typeof dcTypingUsers !== 'undefined') { dcTypingUsers.clear(); renderDcTyping(); }
     dcLoadMessages(id);
-    if (dcState.msgInterval) clearInterval(dcState.msgInterval);
-    dcState.msgInterval = setInterval(() => dcLoadMessages(dcState.activeChannel), 10000);
     // Show pins button, reset pins panel
     document.getElementById('dc-pins-btn').style.display = '';
     document.getElementById('dc-pins-panel').classList.remove('open');
@@ -4204,9 +4257,9 @@
       const isMentioned = myName && m.content && (m.content.toLowerCase().includes(`@${myName}`) || m.content.includes('@everyone') || m.content.includes('@here'));
       const mentionCls = isMentioned ? ' dc-mentioned' : '';
       if (consec) {
-        html += `<div class="dc-msg-group consec${mentionCls}"><div class="dc-msg-body">${extra}<div class="dc-msg-content">${content}</div></div></div>`;
+        html += `<div class="dc-msg-group consec${mentionCls}" id="dc-msg-${m.id}"><div class="dc-msg-body">${extra}<div class="dc-msg-content">${content}</div></div></div>`;
       } else {
-        html += `<div class="dc-msg-group${mentionCls}"><div class="dc-msg-avcol"><img class="dc-msg-av" src="${getDiscordAvatar(m.author)}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"></div><div class="dc-msg-body">${extra}<div class="dc-msg-hdr"><span class="dc-msg-author" style="${rcs}">${m.author.username}</span>${m.author.bot?'<span class="dc-bot-badge">BOT</span>':''}<span class="dc-msg-ts">${dcTime(ts)}</span></div><div class="dc-msg-content">${content}</div></div></div>`;
+        html += `<div class="dc-msg-group${mentionCls}" id="dc-msg-${m.id}"><div class="dc-msg-avcol"><img class="dc-msg-av" src="${getDiscordAvatar(m.author)}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"></div><div class="dc-msg-body">${extra}<div class="dc-msg-hdr"><span class="dc-msg-author" style="${rcs}">${m.author.username}</span>${m.author.bot?'<span class="dc-bot-badge">BOT</span>':''}<span class="dc-msg-ts">${dcTime(ts)}</span></div><div class="dc-msg-content">${content}</div></div></div>`;
       }
     }
     return html;
