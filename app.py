@@ -775,6 +775,32 @@ def api_status_set():
         pass
     return jsonify({"success": True})
 
+@app.route("/minecraft")
+def play_minecraft():
+    """Serve Eaglercraft, downloading it on-demand first if missing."""
+    install_dir = os.path.dirname(os.path.abspath(__file__))
+    static_dir = os.path.join(install_dir, "static")
+    os.makedirs(static_dir, exist_ok=True)
+    mc_file = os.path.join(static_dir, "eaglercraft.html")
+
+    if not os.path.exists(mc_file):
+        try:
+            import urllib.request
+            download_url = f"{WORKER_URL}/public/eaglercraft.html"
+            log.info("Downloading Eaglercraft from %s", download_url)
+            
+            # Download with a generous timeout (~20MB file)
+            req = urllib.request.Request(download_url, headers={'User-Agent': 'GamezNET'})
+            with urllib.request.urlopen(req, timeout=60) as resp, open(mc_file, 'wb') as out_file:
+                out_file.write(resp.read())
+            log.info("Eaglercraft downloaded successfully.")
+        except Exception as e:
+            log.error("Failed to download Eaglercraft: %s", e)
+            if os.path.exists(mc_file): os.remove(mc_file)
+            return f"<h2 style='font-family:sans-serif;color:#ff3366;'>Download Failed</h2><p style='font-family:sans-serif;'>Could not fetch Minecraft client from the server: {e}</p>", 500
+
+    return app.send_static_file("eaglercraft.html")
+
 @app.route("/api/remote/start-host", methods=["POST"])
 def api_remote_start_host():
     """
