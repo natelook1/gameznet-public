@@ -3210,6 +3210,7 @@
   let chatActiveTarget = 'global';
   let chatOpenedTabs = new Set(['global']);
   let chatUnread = {}; // target -> count
+  let chatHistoryLoaded = new Set();
 
   let chatSince = new Date(Date.now() - 3600000).toISOString(); // load last 1hr on init
 
@@ -3260,7 +3261,10 @@
 
     if (target !== 'global') {
        fetch(`/api/chat/dm/read?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(target)}`, {method:'POST'}).catch(()=>{});
-       if (newBox.children.length <= 1) loadDMHistory(target);
+       if (!chatHistoryLoaded.has(target)) {
+         loadDMHistory(target);
+         chatHistoryLoaded.add(target);
+       }
     }
     updateGlobalChatBadge();
   }
@@ -3282,6 +3286,7 @@
 
   window.closeChatTab = function(target) {
     chatOpenedTabs.delete(target);
+    chatHistoryLoaded.delete(target);
     const box = document.getElementById(`chat-box-${target}`);
     if (box) box.remove();
     if (chatActiveTarget === target) setChatTarget('global');
