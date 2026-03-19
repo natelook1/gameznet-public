@@ -3985,11 +3985,11 @@
     let html = '';
     if (voice.length) {
       html += `<div class="dc-msec-hdr">🔊 In Voice — ${voice.length}</div>`;
-      html += voice.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">🎮 ${m.activity}</div>` : ''}</div><div class="dc-mitem-voice"></div></div>`).join('');
+      html += voice.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">${m.activity}</div>` : ''}</div><div class="dc-mitem-voice"></div></div>`).join('');
     }
     if (rest.length) {
       html += `<div class="dc-msec-hdr">Members — ${rest.length}</div>`;
-      html += rest.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">🎮 ${m.activity}</div>` : ''}</div><div class="dc-status-dot ${m.status || 'offline'}"></div></div>`).join('');
+      html += rest.map(m => `<div class="dc-mitem"><img src="${m.avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" loading="lazy"><div style="flex:1;min-width:0"><span class="dc-mitem-name" style="${dcRoleColor(m.roles)}">${m.username}</span>${m.activity ? `<div class="dc-activity">${m.activity}</div>` : ''}</div><div class="dc-status-dot ${m.status || 'offline'}"></div></div>`).join('');
     }
     if (!html) html = '<div style="padding:8px;color:var(--text-dim);font-size:10px;font-family:\'Share Tech Mono\',monospace;">No members</div>';
     el.innerHTML = html;
@@ -4769,6 +4769,19 @@
       applyPos();
       localStorage.setItem('gz-chat-dock', JSON.stringify(dock));
     });
+  })();
+
+  // ── Horizontal Scroll for Server Strip ─────────────────────────────────────
+  (function initServerStripScroll() {
+    const strip = document.getElementById('server-strip-inner');
+    if (strip) {
+      strip.addEventListener('wheel', e => {
+        if (e.deltaY !== 0) {
+          e.preventDefault();
+          strip.scrollLeft += e.deltaY;
+        }
+      }, { passive: false });
+    }
   })();
 
   // ── Column drag reorder ────────────────────────────────────────────────────
