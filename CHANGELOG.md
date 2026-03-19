@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.0.2 — 2026-03-19
+
+### Added
+- **Internal Direct Messages (DMs)** — right-click any player in the *Who's Online* or *Discord* lists to open a private, tabbed chat session that stays entirely within the GamezNET network
+- **Tabbed Chat UI** — the floating chat panel now supports multiple tabs to seamlessly switch between Global chat and individual DMs
+- Installer script now automatically maps `gameznet.local` in the Windows hosts file to ensure reliable local backend resolution
+
+### Fixed
+- Corrected Discord default avatar generation using 64-bit Snowflake IDs to prevent broken image links
+- Fixed game server uptime calculation rendering incorrectly (milliseconds vs seconds)
+- Fixed an issue where the Admin Panel showed duplicate configuration fields for YouTube API keys
+- Corrected syntax and rendering logic for Admin Panel server action buttons based on live server state
+
 ## v1.0.1 — 2026-03-19
 *Consolidates experimental v1.14.3 – v1.15.1 updates into the first official stable release.*
 

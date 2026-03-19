@@ -72,7 +72,7 @@ Once connected, the Network panel collapses and a live **● CONNECTED** pill ap
 
 The three dashboard panels (**Steam Social**, **Your Session / Who's Online**, **Network**) can be dragged into any order — grab the `· · ·` handle at the top of each column and drop it where you want it. Your layout is saved automatically.
 
-**Network Chat** is available as a floating panel that snaps to the left or right edge of the window. You can minimize it into a compact pill that shows an unread message badge.
+**Network Chat** is available as a floating panel that snaps to the left or right edge of the window. It supports **Tabbed Chat** and **Direct Messages (DMs)** — right-click any player in the "Who's Online" or Discord lists to start a private conversation. You can minimize the panel into a compact pill that shows an active unread message badge.
 
 ---
 
