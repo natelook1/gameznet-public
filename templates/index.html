@@ -2115,17 +2115,18 @@
                 <img class="steam-self-avatar" id="steam-avatar-self" src="" />
                 <div class="session-avatar-ph" id="session-avatar-ph">?</div>
               </div>
-              <div class="session-profile-body">
+            <div class="session-profile-body" style="justify-content: center;">
                 <div class="player-identity-row">
-                  <div class="player-name-large" id="info-name">—</div>
+                <div class="player-name-large" id="info-name" style="margin-bottom: 0;">—</div>
                   <button class="rename-btn" onclick="openRename()" title="Change name">✎</button>
-                  <span class="player-identity-ip copyable" id="info-ip" title="Click to copy">—</span>
+                <div style="margin-left: auto;">
+                  <div id="steam-linked-view" class="session-steam-row" style="display:none;">
+                    <span class="steam-self-stats" id="steam-stats-self"></span>
+                    <button class="steam-unlink-btn" onclick="unlinkSteam()">UNLINK</button>
+                  </div>
+                  <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM ACCOUNT</button>
                 </div>
-                <div id="steam-linked-view" class="session-steam-row" style="display:none;">
-                  <span class="steam-self-stats" id="steam-stats-self"></span>
-                  <button class="steam-unlink-btn" onclick="unlinkSteam()">UNLINK</button>
-                </div>
-                <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM ACCOUNT</button>
+              </div>
               </div>
             </div>
           </div>
@@ -2441,24 +2442,6 @@
     }
   }, 1000);
 
-  // ── Copy IP ────────────────────────────────────────────────────────────────
-  document.getElementById('info-ip').addEventListener('click', function() {
-    const ip = this.textContent;
-    if (ip && ip !== '—') {
-      navigator.clipboard.writeText(ip).then(() => {
-        toast('IP copied!', 'success');
-      }).catch(() => {
-        const input = document.createElement('input');
-        input.value = ip;
-        document.body.appendChild(input);
-        input.select();
-        document.execCommand('copy');
-        document.body.removeChild(input);
-        toast('IP copied!', 'success');
-      });
-    }
-  });
-
   // ── Token formatter ────────────────────────────────────────────────────────
   function formatToken(input) {
     let val = input.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
@@ -2491,7 +2474,6 @@
     showView('dashboard');
     document.getElementById('tab-nav').classList.add('visible');
     document.getElementById('info-name').textContent = state.name;
-    document.getElementById('info-ip').textContent   = state.clientIp;
     const ph = document.getElementById('session-avatar-ph');
     if (ph) ph.textContent = (state.name || '?')[0].toUpperCase();
     document.getElementById('change-token-link').style.display = 'inline';
