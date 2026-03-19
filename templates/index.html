@@ -693,6 +693,19 @@
     .dc-sidebar-footer { padding: 10px 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
     .dc-join-btn { display: block; text-align: center; background: rgba(88,101,242,0.15); color: #8ea1f5; border: 1px solid rgba(88,101,242,0.3); border-radius: 3px; padding: 7px 10px; font-size: 11px; font-family: 'Share Tech Mono',monospace; letter-spacing: 1px; text-decoration: none; transition: background 0.15s; }
     .dc-join-btn:hover { background: rgba(88,101,242,0.3); color: #fff; }
+    
+    #ctx-menu { position:fixed; z-index:10000; background:var(--surface); border:1px solid var(--border); box-shadow:0 8px 16px rgba(0,0,0,0.8); border-radius:4px; padding:4px 0; min-width:140px; display:none; flex-direction:column; }
+    .ctx-item { padding:8px 16px; font-size:12px; font-family:'Share Tech Mono',monospace; cursor:pointer; color:var(--text); transition:background 0.15s; }
+    .ctx-item:hover { background:var(--accent); color:var(--bg); }
+    .chat-tabs { display:flex; gap:4px; padding:6px 10px 4px; background:rgba(0,0,0,0.2); border-bottom:1px solid var(--border); overflow-x:auto; flex-shrink:0; }
+    .chat-tabs::-webkit-scrollbar { height:0; }
+    .chat-tab { font-size:10px; font-family:'Share Tech Mono',monospace; padding:3px 10px; border-radius:12px; background:var(--surface); border:1px solid var(--border2); color:var(--muted); cursor:pointer; white-space:nowrap; flex-shrink:0; position:relative; }
+    .chat-tab:hover { color:var(--text); border-color:var(--text-dim); }
+    .chat-tab.active { background:rgba(0,212,255,0.1); border-color:var(--accent); color:var(--accent); }
+    .chat-tab.unread { color:#fff; border-color:var(--danger); font-weight:bold; }
+    .chat-tab-close { margin-left:6px; opacity:0.5; }
+    .chat-tab-close:hover { opacity:1; color:var(--danger); }
+    .chat-scroll-area { display:flex; flex-direction:column; gap:6px; flex:1; min-height:0; overflow-y:auto; padding:10px 12px; }
     /* Messages pane */
     .dc-messages-pane { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
     .dc-chan-hdr { display: flex; align-items: center; gap: 10px; padding: 12px 20px; flex-shrink: 0; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.1); }
@@ -1554,18 +1567,6 @@
     .chat-float.chat-minimized .chat-float-hdr { border-bottom: none; cursor: pointer; }
 
     .chat-section { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
-    .chat-box {
-      background: var(--card);
-      border: 1px solid var(--border2);
-      border-radius: 6px;
-      height: 180px;
-      overflow-y: auto;
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      scroll-behavior: smooth;
-    }
     .chat-msg { display: flex; gap: 8px; align-items: baseline; font-size: 12px; line-height: 1.4; }
     .chat-msg-name { font-family: 'Share Tech Mono', monospace; color: var(--accent); font-size: 11px; white-space: nowrap; flex-shrink: 0; }
     .chat-msg-name.self { color: var(--accent2); }
@@ -1575,7 +1576,7 @@
     .chat-input-row { display: flex; gap: 8px; }
     .chat-input {
       flex: 1;
-      background: var(--card);
+      background: var(--surface);
       border: 1px solid var(--border2);
       border-radius: 4px;
       color: var(--text);
@@ -1928,11 +1929,16 @@
       <button id="chat-mute-btn" class="chat-float-btn" onclick="toggleChatMute()" title="Toggle sound">🔔</button>
       <button class="chat-float-btn" onclick="toggleChatFloat()" title="Minimize">—</button>
     </div>
-    <div class="chat-float-body">
-      <div class="chat-box" id="chat-box">
-        <div class="chat-empty" id="chat-empty">○ No messages yet</div>
+    <div class="chat-float-body" style="padding:0; display:flex; flex-direction:column; flex:1; min-height:0;">
+      <div class="chat-tabs" id="chat-tabs-container">
+        <div class="chat-tab active" onclick="setChatTarget('global')"># Global</div>
       </div>
-      <div class="chat-input-row">
+      <div id="chat-boxes-container" style="flex:1; display:flex; min-height:0; background:var(--surface); position:relative;">
+        <div class="chat-scroll-area" id="chat-box-global">
+          <div class="chat-empty" id="chat-empty-global">○ No messages yet</div>
+        </div>
+      </div>
+      <div class="chat-input-row" style="padding:8px 10px; border-top:1px solid var(--border2); background:rgba(0,0,0,0.1);">
         <input class="chat-input" id="chat-input" type="text" placeholder="Type a message..." maxlength="500" disabled />
         <button class="chat-send-btn" id="chat-send-btn" onclick="sendChat()" disabled>SEND</button>
       </div>
@@ -2260,6 +2266,9 @@
           <div class="dc-guild-header">
             <div class="dc-guild-name" id="dc-server-name">gamEZnet</div>
             <div class="dc-guild-counts"><span id="dc-online">—</span> online · <span id="dc-total">—</span> members</div>
+            <div style="font-size: 9px; color: var(--warn); margin-top: 6px; font-family: 'Share Tech Mono', monospace; line-height: 1.3;">
+              ⚠ NOTE: Direct Messages made via right-click are internal to GamezNET, not linked to your Discord app.
+            </div>
           </div>
           <div class="dc-chan-list" id="dc-chan-list">
             <div style="padding:20px 16px;color:var(--text-dim);font-size:11px;font-family:'Share Tech Mono',monospace;">Loading...</div>
@@ -2404,6 +2413,10 @@
       <div id="srv-modal-actions"></div>
     </div>
   </div>
+</div>
+
+<div id="ctx-menu">
+  <div class="ctx-item" onclick="openDMFromCtx()">💬 Direct Message</div>
 </div>
 
 <div id="toast"></div>
@@ -3187,6 +3200,10 @@
   setInterval(pollRemotePending, 5000);
 
   // ── Chat ───────────────────────────────────────────────────────────────────
+  let chatActiveTarget = 'global';
+  let chatOpenedTabs = new Set(['global']);
+  let chatUnread = {}; // target -> count
+
   let chatSince = new Date(Date.now() - 3600000).toISOString(); // load last 1hr on init
 
   function chatTimeStr(iso) {
@@ -3194,10 +3211,84 @@
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
+  function renderChatTabs() {
+    const container = document.getElementById('chat-tabs-container');
+    let html = `<div class="chat-tab ${chatActiveTarget === 'global' ? 'active' : ''} ${chatUnread['global'] ? 'unread' : ''}" onclick="setChatTarget('global')"># Global ${chatUnread['global'] ? `(${chatUnread['global']})` : ''}</div>`;
+    chatOpenedTabs.forEach(target => {
+      if (target === 'global') return;
+      html += `<div class="chat-tab ${chatActiveTarget === target ? 'active' : ''} ${chatUnread[target] ? 'unread' : ''}" onclick="setChatTarget('${target}')">@${target} ${chatUnread[target] ? `(${chatUnread[target]})` : ''} <span class="chat-tab-close" onclick="event.stopPropagation(); closeChatTab('${target}')">✕</span></div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  function getChatBox(target) {
+    let box = document.getElementById(`chat-box-${target}`);
+    if (!box) {
+      box = document.createElement('div');
+      box.id = `chat-box-${target}`;
+      box.className = 'chat-scroll-area';
+      box.style.display = 'none';
+      box.innerHTML = `<div class="chat-empty" id="chat-empty-${target}">○ No messages yet</div>`;
+      document.getElementById('chat-boxes-container').appendChild(box);
+    }
+    return box;
+  }
+
+  window.setChatTarget = function(target) {
+    if (chatActiveTarget) {
+      const oldBox = document.getElementById(`chat-box-${chatActiveTarget}`);
+      if (oldBox) oldBox.style.display = 'none';
+    }
+    chatActiveTarget = target;
+    chatUnread[target] = 0;
+    renderChatTabs();
+    
+    const newBox = getChatBox(target);
+    newBox.style.display = 'flex';
+    newBox.scrollTop = newBox.scrollHeight;
+    
+    const input = document.getElementById('chat-input');
+    input.placeholder = target === 'global' ? 'Type a message...' : `Message @${target}...`;
+    input.focus();
+
+    if (target !== 'global') {
+       fetch(`/api/chat/dm/read?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(target)}`, {method:'POST'}).catch(()=>{});
+       if (newBox.children.length <= 1) loadDMHistory(target);
+    }
+    updateGlobalChatBadge();
+  }
+
+  async function loadDMHistory(target) {
+    try {
+      const res = await fetch(`/api/chat/dm/history?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(target)}`);
+      const msgs = await res.json();
+      if (msgs.length) appendDMMessages(target, msgs);
+    } catch {}
+  }
+
+  window.openChatTab = function(target) {
+    chatOpenedTabs.add(target);
+    const fl = document.getElementById('chat-float');
+    if (fl.classList.contains('chat-minimized')) toggleChatFloat(); 
+    setChatTarget(target);
+  };
+
+  window.closeChatTab = function(target) {
+    chatOpenedTabs.delete(target);
+    const box = document.getElementById(`chat-box-${target}`);
+    if (box) box.remove();
+    if (chatActiveTarget === target) setChatTarget('global');
+    else renderChatTabs();
+  };
+
   function appendMessages(msgs) {
+    appendDMMessages('global', msgs);
+  }
+
+  function appendDMMessages(target, msgs) {
     if (!msgs.length) return;
-    const box = document.getElementById('chat-box');
-    const empty = document.getElementById('chat-empty');
+    const box = getChatBox(target);
+    const empty = document.getElementById(`chat-empty-${target}`);
     if (empty) empty.remove();
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
     msgs.forEach(m => {
@@ -3207,9 +3298,19 @@
       el.innerHTML = `<span class="chat-msg-name${isSelf ? ' self' : ''}">${m.from_name}</span><span class="chat-msg-body">${m.body.replace(/</g,'&lt;')}</span><span class="chat-msg-time">${chatTimeStr(m.sent_at)}</span>`;
       box.appendChild(el);
     });
-    chatBeep();
-    if (window._chatMarkUnread) window._chatMarkUnread();
     if (atBottom) box.scrollTop = box.scrollHeight;
+  }
+  
+  function updateGlobalChatBadge() {
+    const badge = document.getElementById('chat-float-badge');
+    const minimized = document.getElementById('chat-float').classList.contains('chat-minimized');
+    let totalUnread = Object.values(chatUnread).reduce((a,b) => a+b, 0);
+    if (minimized && totalUnread > 0) {
+      badge.textContent = totalUnread;
+      badge.style.display = '';
+    } else if (!minimized) {
+      badge.style.display = 'none';
+    }
   }
 
   async function pollChat() {
@@ -3230,7 +3331,11 @@
     if (!body || !state.name) return;
     input.value = '';
     try {
-      await fetch('{{ worker_url }}/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name, body }) });
+      if (chatActiveTarget === 'global') {
+        await fetch('{{ worker_url }}/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name, body }) });
+      } else {
+        await fetch('{{ worker_url }}/api/chat/dm/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_name: state.name, to_name: chatActiveTarget, body }) });
+      }
     } catch {}
   }
 
@@ -3302,13 +3407,50 @@
     
     await pollChat(); // Fetch any history missed while disconnected
     
-    _chatStream = new EventSource(`{{ worker_url }}/api/chat/stream`);
+    try {
+      const uRes = await fetch(`{{ worker_url }}/api/chat/dm/unread?name=${encodeURIComponent(state.name)}`);
+      if (uRes.ok) {
+         const unreads = await uRes.json();
+         unreads.forEach(u => {
+            chatOpenedTabs.add(u.from_name);
+            chatUnread[u.from_name] = u.count;
+         });
+         renderChatTabs();
+         updateGlobalChatBadge();
+      }
+    } catch {}
+    
+    _chatStream = new EventSource(`{{ worker_url }}/api/chat/stream?name=${encodeURIComponent(state.name)}`);
     _chatStream.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data);
         if (msg.type === 'discord') { if (typeof handleDiscordSSE === 'function') handleDiscordSSE(msg); return; }
-        appendMessages([msg]);
-        chatSince = msg.sent_at;
+        
+        if (msg.type === 'dm') {
+          const otherUser = msg.from_name === state.name ? msg.to_name : msg.from_name;
+          chatOpenedTabs.add(otherUser);
+          if (chatActiveTarget === otherUser) {
+            appendDMMessages(otherUser, [msg]);
+            if (msg.to_name === state.name) fetch(`/api/chat/dm/read?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(otherUser)}`, {method:'POST'}).catch(()=>{});
+          } else if (msg.to_name === state.name) {
+            chatUnread[otherUser] = (chatUnread[otherUser] || 0) + 1;
+            chatBeep();
+            updateGlobalChatBadge();
+          }
+          renderChatTabs();
+          return;
+        }
+        
+        if (chatActiveTarget === 'global') {
+          appendMessages([msg]);
+        } else {
+          chatUnread['global'] = (chatUnread['global'] || 0) + 1;
+          appendMessages([msg]); // background append
+          chatBeep();
+          updateGlobalChatBadge();
+          renderChatTabs();
+        }
+        if (msg.sent_at) chatSince = msg.sent_at;
       } catch(err) {}
     };
     // If connection drops, close and let the interval retry it automatically
@@ -4850,15 +4992,7 @@
     window.toggleChatFloat = function() {
       minimized = !minimized;
       applyMin();
-      if (!minimized) badge.style.display = 'none';
-    };
-
-    window._chatUnreadCount = 0;
-    window._chatMarkUnread = function() {
-      if (!minimized) return;
-      window._chatUnreadCount++;
-      badge.textContent = window._chatUnreadCount;
-      badge.style.display = '';
+      updateGlobalChatBadge();
     };
 
     // Edge-snap drag — works whether minimized or expanded
@@ -4894,7 +5028,6 @@
       if (!didDrag) {
         // It was a click — toggle expand/collapse if minimized
         if (minimized && !e.target.closest('.chat-float-btn')) toggleChatFloat();
-        window._chatUnreadCount = 0; badge.style.display = 'none';
         return;
       }
       panel.classList.remove('chat-dragging');
@@ -4970,6 +5103,49 @@
       });
     });
   })();
+  
+  // ── Context Menus (DMs) ────────────────────────────────────────────────────
+  let _ctxUser = null;
+  document.addEventListener('contextmenu', e => {
+    let target = e.target.closest('.online-player');
+    let name = null;
+    if (target) {
+       const nameEl = target.querySelector('.op-name');
+       if (nameEl) name = nameEl.textContent.trim();
+    } else {
+       target = e.target.closest('.dc-mitem');
+       if (target) {
+          const nameEl = target.querySelector('.dc-mitem-name');
+          if (nameEl) name = nameEl.textContent.trim();
+       }
+    }
+    if (name && name !== state.name) {
+       e.preventDefault();
+       _ctxUser = name;
+       const menu = document.getElementById('ctx-menu');
+       menu.style.display = 'flex';
+       let x = e.clientX, y = e.clientY;
+       if (x + 140 > window.innerWidth) x -= 140;
+       if (y + 40 > window.innerHeight) y -= 40;
+       menu.style.left = x + 'px';
+       menu.style.top = y + 'px';
+    } else if (!e.target.closest('.chat-float') && !e.target.closest('.chat-msg-body')) {
+       document.getElementById('ctx-menu').style.display = 'none';
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#ctx-menu')) {
+       const menu = document.getElementById('ctx-menu');
+       if(menu) menu.style.display = 'none';
+    }
+  });
+
+  window.openDMFromCtx = function() {
+    if (!_ctxUser) return;
+    openChatTab(_ctxUser);
+    document.getElementById('ctx-menu').style.display = 'none';
+  };
 
   // ── Boot ───────────────────────────────────────────────────────────────────
   document.addEventListener('click', e => {
