@@ -3552,9 +3552,9 @@
     }
     const actions = document.getElementById('srv-modal-actions');
     if (isRunning && s.steam_appid) {
-      const url = s.steam_appid == 526870
-        ? `steam://rungameid/${s.steam_appid}//+open ${s.host}:${s.port}`
-        : `steam://connect/${s.host}:${s.port}`;
+      let url = `steam://connect/${s.host}:${s.port}`;
+      if (s.steam_appid == 526870) url = `steam://rungameid/526870//+open ${s.host}:${s.port}`;
+      else if (s.steam_appid == 108600) url = `steam://rungameid/108600//+connect ${s.host}:${s.port}`;
       actions.innerHTML = `<button class="srv-modal-steam-btn" onclick="location.href='${url}'">▶ STEAM JOIN</button>`;
     } else {
       actions.innerHTML = '';
