@@ -814,10 +814,24 @@ def api_minecraft_prepare():
     static_dir = os.path.join(install_dir, "static")
     os.makedirs(static_dir, exist_ok=True)
     mc_file = os.path.join(static_dir, "eaglercraft.html")
+    template_mc_file = os.path.join(template_dir, "eaglercraft.html")
 
-    if os.path.exists(mc_file) or os.path.exists(os.path.join(template_dir, "eaglercraft.html")):
+    log.info("--- Minecraft Prepare ---")
+    log.info("Install dir: %s", install_dir)
+    log.info("Template dir: %s", template_dir)
+    log.info("Static dir: %s", static_dir)
+    log.info("Checking for static file: %s", mc_file)
+    static_exists = os.path.exists(mc_file)
+    log.info("Static file exists: %s", static_exists)
+    log.info("Checking for template file: %s", template_mc_file)
+    template_exists = os.path.exists(template_mc_file)
+    log.info("Template file exists: %s", template_exists)
+
+    if static_exists or template_exists:
+        log.info("File already exists, skipping download.")
         return jsonify({"success": True})
 
+    log.info("File not found, proceeding to download.")
     try:
         import urllib.request
         download_url = f"{WORKER_URL}/public/eaglercraft.html"
@@ -828,6 +842,7 @@ def api_minecraft_prepare():
         log.info("Eaglercraft downloaded successfully.")
         return jsonify({"success": True})
     except Exception as e:
+        log.error("Minecraft prepare download failed: %s", e, exc_info=True)
         if os.path.exists(mc_file): os.remove(mc_file)
         return jsonify({"error": f"Failed to download client: {e}"}), 500
 
