@@ -3286,7 +3286,6 @@
 
   window.closeChatTab = function(target) {
     chatOpenedTabs.delete(target);
-    chatHistoryLoaded.delete(target);
     const box = document.getElementById(`chat-box-${target}`);
     if (box) box.remove();
     if (chatActiveTarget === target) setChatTarget('global');
