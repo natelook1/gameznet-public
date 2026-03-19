@@ -2110,23 +2110,19 @@
         <div>
           <div class="section-label">Your Session</div>
           <div class="player-identity-card">
-            <div class="session-profile-row">
-              <div class="session-avatar-wrap">
-                <img class="steam-self-avatar" id="steam-avatar-self" src="" />
-                <div class="session-avatar-ph" id="session-avatar-ph">?</div>
-              </div>
-              <div class="session-profile-body">
+            <div class="session-avatar-wrap">
+              <img class="steam-self-avatar" id="steam-avatar-self" src="" />
+              <div class="session-avatar-ph" id="session-avatar-ph">?</div>
+            </div>
             <div class="player-name-large" id="info-name">—</div>
             <button class="rename-btn" onclick="openRename()" title="Change name">✎</button>
             <div style="width:1px; height:14px; background:var(--border2); margin:0 2px;"></div>
-                <div id="steam-linked-view" class="session-steam-row" style="display:none;">
-                  <span class="steam-self-stats" id="steam-stats-self"></span>
-                  <button class="steam-unlink-btn" onclick="unlinkSteam()">UNLINK</button>
-                </div>
-            <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM</button>
-            <span class="player-identity-ip copyable" id="info-ip" title="Click to copy">—</span>
-              </div>
+            <div id="steam-linked-view" class="session-steam-row" style="display:none;">
+              <span class="steam-self-stats" id="steam-stats-self"></span>
+              <button class="steam-unlink-btn" onclick="unlinkSteam()">UNLINK</button>
             </div>
+            <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()" style="flex-shrink:0;">⊕ LINK STEAM</button>
+            <span class="player-identity-ip copyable" id="info-ip" title="Click to copy">—</span>
           </div>
         </div>
 
