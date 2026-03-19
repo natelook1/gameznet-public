@@ -2241,8 +2241,8 @@
           <div class="dc-chan-list" id="dc-chan-list">
             <div style="padding:20px 16px;color:var(--text-dim);font-size:11px;font-family:'Share Tech Mono',monospace;">Loading...</div>
           </div>
-          <div class="dc-sidebar-footer">
-            <a class="dc-join-btn" href="https://discord.gg/6vrEHuVX93" target="_blank">↗ JOIN DISCORD</a>
+          <div class="dc-sidebar-footer" id="dc-join-wrap" style="display:none;">
+            <a class="dc-join-btn" id="dc-join-btn" href="#" target="_blank">↗ JOIN DISCORD</a>
           </div>
         </div>
         <!-- Center: Messages -->
@@ -3134,13 +3134,13 @@
           if (p.steam_game_count) parts.push(`<span>${p.steam_game_count} games</span>`);
           if (lib?.top?.length) {
             const top = lib.top[0];
-            parts.push(`<span class="op-steam-hrs">${Math.round((top.playtime_forever || top.playtime || 0) / 60)}h ${esc(top.name)}</span>`);
+            parts.push(`<span class="op-steam-hrs">${Math.round((top.playtime_forever || top.playtime || 0) / 60).toLocaleString()}h ${esc(top.name)}</span>`);
           }
           return parts.length ? `<div class="op-steam-sub">${parts.join('')}</div>` : '';
         })() : '';
         const gamesStrip = lib?.top?.length
           ? `<div class="op-games-strip">${lib.top.slice(0, 8).map(g =>
-              `<img class="op-game-cap" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_sm_120.jpg" title="${esc(g.name)} · ${Math.round((g.playtime_forever || g.playtime || 0) / 60)}h" loading="lazy" onerror="this.style.display='none'" />`
+              `<img class="op-game-cap" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_sm_120.jpg" title="${esc(g.name)} · ${Math.round((g.playtime_forever || g.playtime || 0) / 60).toLocaleString()}h" loading="lazy" onerror="this.style.display='none'" />`
             ).join('')}</div>`
           : '';
         const pingHtml = pingSparkline(parsePingArray(p.ping));
@@ -3923,6 +3923,11 @@
       document.getElementById('dc-total').textContent = data.member_count ?? '—';
       const badge = document.getElementById('tab-dc-online');
       if (badge && data.online_count != null) { badge.textContent = data.online_count; badge.style.display = ''; }
+      
+      const joinWrap = document.getElementById('dc-join-wrap');
+      const joinBtn = document.getElementById('dc-join-btn');
+      if (joinWrap && joinBtn) { if (data.invite) { joinBtn.href = data.invite; joinWrap.style.display = 'block'; } else { joinWrap.style.display = 'none'; } }
+
       dcState.roles = data.roles || {};
       // Build channel name map for mention rendering
       dcState.channelNames = {};
