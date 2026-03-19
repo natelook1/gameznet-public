@@ -3293,7 +3293,26 @@
     } catch(e) {}
   }
 
-  setInterval(pollChat, 3000);
+  let _chatStream = null;
+  async function startChat() {
+    if (!state.provisioned) return;
+    if (_chatStream) return;
+    
+    await pollChat(); // Fetch any history missed while disconnected
+    
+    _chatStream = new EventSource(`{{ worker_url }}/api/chat/stream`);
+    _chatStream.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        appendMessages([msg]);
+        chatSince = msg.sent_at;
+      } catch(err) {}
+    };
+    // If connection drops, close and let the interval retry it automatically
+    _chatStream.onerror = () => { _chatStream.close(); _chatStream = null; };
+  }
+  
+  setInterval(startChat, 5000);
 
   // ── Full Route (route all traffic through VPN) ─────────────────────────────
   let fullRoute = false;
