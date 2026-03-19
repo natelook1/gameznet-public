@@ -72,15 +72,17 @@ Once connected, the Network panel collapses and a live **● CONNECTED** pill ap
 
 The three dashboard panels (**Steam Social**, **Your Session / Who's Online**, **Network**) can be dragged into any order — grab the `· · ·` handle at the top of each column and drop it where you want it. Your layout is saved automatically.
 
+**Network Chat** is available as a floating panel that snaps to the left or right edge of the window. You can minimize it into a compact pill that shows an unread message badge.
+
 ---
 
 ## 🖥️ Game Servers
 
-The **Home** tab shows live status for all hosted game servers. Running servers display CPU load, RAM usage, and uptime. Each server card has:
+The **Home** tab shows a compact horizontal strip of **Server Chips** for all hosted game servers. Running servers are highlighted in green. 
 
-- **IP ⧉** — click to copy the IP address alone (for games that ask for IP without a port)
-- **:Port ⧉** — click to copy the full `IP:Port`
-- **▶ STEAM JOIN** — launches Steam and connects directly to the server
+Clicking a server chip opens a **Detail Modal** displaying CPU load, RAM usage, and uptime. From the modal you can:
+- Click the **Server IP** or **Port** buttons to quickly copy them to your clipboard
+- Click **▶ STEAM JOIN** to launch Steam and connect directly to the server (if supported)
 
 ---
 
@@ -126,13 +128,13 @@ The **YouTube** tab lets you browse and watch gaming videos without leaving the 
 
 ## 💬 Player Status
 
-Set a custom status visible to everyone on the network. Use the preset buttons (**AFK**, **BRB**, **Gaming**) or type your own message. Your status appears next to your name in the online player list. Your status is saved locally and restored automatically after an app update or restart.
+Set a custom status visible to everyone on the network using the controls in the **bottom footer**. Use the preset buttons (**AFK**, **BRB**, **Gaming**) or type your own message and click **SET**. Your status appears next to your name in the online player list. Your status is saved locally and restored automatically after an app update or restart.
 
 ---
 
 ## ✏️ Changing Your Name
 
-Click the **✎** icon next to your name in the **Your Session** card to open the rename dialog. Enter a new name (2–24 characters, letters/numbers/spaces/dashes only) and click **Save**. The change is validated against your VPN identity server-side and takes effect immediately.
+Click the **✎** icon next to your name in the profile header of the **Your Session** card to open the rename dialog. Enter a new name (2–24 characters, letters/numbers/spaces/dashes only) and click **Save**. The change is validated against your VPN identity server-side and takes effect immediately.
 
 ---
 

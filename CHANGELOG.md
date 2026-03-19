@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.0.1 — 2026-03-19
+*Consolidates experimental v1.14.3 – v1.15.1 updates into the first official stable release.*
+
+### Added
+- **Per-player Ping Sparkline** — the Who's Online list now shows a live, rolling ping history graph (sparkline) for each connected player
+- **Server Chips & Modals** — game servers are now displayed as a compact row of capsule icon chips; clicking a chip opens a detail modal with a background banner, CPU/RAM/Uptime stats, and quick-copy IP/ports
+- **Edge-docked Chat** — floating network chat now snaps cleanly to the left or right edges of the window; when minimized, it turns into a compact draggable pill
+- **Session Profile Header** — the Your Session card has been redesigned with a unified profile header housing your avatar, name, and Steam stats
+- **Footer Status** — custom player status input and presets have been moved to the footer for persistent, quick access
+
+### Changed
+- **Layout Overhaul** — wider Who's Online list, larger Steam game capsules, and a more compact Scheduled Session card
+
+### Fixed
+- Handled parsing of legacy string ping values (e.g. '42ms') preventing sparkline crashes
+- RustDesk remote assistance: fixed portable launcher ID reading from stdout, improved ID log polling, and properly killed stale RustDesk processes before starting a host session
+- Remote progress modal visibility bug fixed (`display:''` overriding issues)
+- Satisfactory Steam join now uses `rungameid` instead of Source query to fix launch parameters
+
 ## v1.14.2 — 2026-03-16
 
 ### Added
