@@ -1012,6 +1012,10 @@ def api_update():
                     if not relative_path:  # Skip the root folder itself
                         continue
                         
+                    # Exclude image files from manual script updates
+                    if relative_path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico')):
+                        continue
+
                     target_path = os.path.join(install_dir, relative_path)
                     
                     # If it's a directory, create it
