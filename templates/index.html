@@ -2116,16 +2116,15 @@
                 <div class="session-avatar-ph" id="session-avatar-ph">?</div>
               </div>
               <div class="session-profile-body">
-                <div class="player-identity-row">
-                  <div class="player-name-large" id="info-name">—</div>
-                  <button class="rename-btn" onclick="openRename()" title="Change name">✎</button>
-                  <span class="player-identity-ip copyable" id="info-ip" title="Click to copy">—</span>
-                </div>
+            <div class="player-name-large" id="info-name">—</div>
+            <button class="rename-btn" onclick="openRename()" title="Change name">✎</button>
+            <div style="width:1px; height:14px; background:var(--border2); margin:0 2px;"></div>
                 <div id="steam-linked-view" class="session-steam-row" style="display:none;">
                   <span class="steam-self-stats" id="steam-stats-self"></span>
                   <button class="steam-unlink-btn" onclick="unlinkSteam()">UNLINK</button>
                 </div>
-                <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM ACCOUNT</button>
+            <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM</button>
+            <span class="player-identity-ip copyable" id="info-ip" title="Click to copy">—</span>
               </div>
             </div>
           </div>
