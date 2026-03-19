@@ -779,9 +779,14 @@ def api_status_set():
 def play_minecraft():
     """Serve Eaglercraft, downloading it on-demand first if missing."""
     install_dir = os.path.dirname(os.path.abspath(__file__))
+    template_dir = os.path.join(install_dir, "templates")
     static_dir = os.path.join(install_dir, "static")
     os.makedirs(static_dir, exist_ok=True)
     mc_file = os.path.join(static_dir, "eaglercraft.html")
+
+    # Check templates folder first (where you placed it!)
+    if os.path.exists(os.path.join(template_dir, "eaglercraft.html")):
+        return send_from_directory(template_dir, "eaglercraft.html")
 
     if not os.path.exists(mc_file):
         try:
@@ -797,19 +802,20 @@ def play_minecraft():
         except Exception as e:
             log.error("Failed to download Eaglercraft: %s", e)
             if os.path.exists(mc_file): os.remove(mc_file)
-            return f"<h2 style='font-family:sans-serif;color:#ff3366;'>Download Failed</h2><p style='font-family:sans-serif;'>Could not fetch Minecraft client from the server: {e}</p>", 500
+            return f"<h2 style='font-family:sans-serif;color:#ff3366;'>Download Failed</h2><p style='font-family:sans-serif;'>Could not fetch Minecraft client from the central server. Ensure eaglercraft.html is placed in the backend data/public folder! Error: {e}</p>", 500
 
-    return app.send_static_file("eaglercraft.html")
+    return send_from_directory(static_dir, "eaglercraft.html")
 
 @app.route("/api/minecraft/prepare", methods=["POST"])
 def api_minecraft_prepare():
     """Pre-downloads Eaglercraft so the UI can show a loading state."""
     install_dir = os.path.dirname(os.path.abspath(__file__))
+    template_dir = os.path.join(install_dir, "templates")
     static_dir = os.path.join(install_dir, "static")
     os.makedirs(static_dir, exist_ok=True)
     mc_file = os.path.join(static_dir, "eaglercraft.html")
 
-    if os.path.exists(mc_file):
+    if os.path.exists(mc_file) or os.path.exists(os.path.join(template_dir, "eaglercraft.html")):
         return jsonify({"success": True})
 
     try:
