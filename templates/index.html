@@ -3482,9 +3482,12 @@
     servers = [...servers].sort((a, b) => (order[a.state] ?? 3) - (order[b.state] ?? 3));
     strip.innerHTML = servers.map(s => {
       const cls = ['running','starting','stopping'].includes(s.state) ? s.state : 'offline';
+      const isMc = _isMinecraft(s.name);
       const iconEl = s.steam_appid
         ? `<img class="srv-chip-img" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/capsule_sm_120.jpg" loading="lazy" onerror="this.style.display='none'" />`
-        : `<div class="srv-chip-icon-text" style="background:${_srvColor(s.name)}">${s.name.substring(0,2)}</div>`;
+        : (isMc 
+          ? `<img class="srv-chip-img" src="/static/tile.png" loading="lazy" onerror="this.style.display='none'" />`
+          : `<div class="srv-chip-icon-text" style="background:${_srvColor(s.name)}">${s.name.substring(0,2)}</div>`);
       return `<div class="srv-chip srv-${cls}" onclick="openSrvModal('${s.id}')">
         <div class="srv-dot ${cls}"></div>
         ${iconEl}
@@ -3504,10 +3507,12 @@
     const cls = ['running','starting','stopping'].includes(s.state) ? s.state : 'offline';
     const isRunning = s.state === 'running';
     const banner = document.getElementById('srv-modal-banner');
+    const isMc = _isMinecraft(s.name);
     banner.style.backgroundImage = s.steam_appid
       ? `url('https://cdn.cloudflare.steamstatic.com/steam/apps/${s.steam_appid}/header.jpg')`
-      : 'none';
-    banner.style.backgroundColor = s.steam_appid ? '' : _srvColor(s.name);
+      : (isMc ? `url('/static/banner.png')` : 'none');
+    banner.style.backgroundColor = (s.steam_appid || isMc) ? '' : _srvColor(s.name);
+    banner.style.backgroundPosition = 'center center';
     document.getElementById('srv-modal-name').textContent = s.name;
     const badge = document.getElementById('srv-modal-badge');
     badge.textContent = s.state;
