@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -791,14 +791,25 @@ def play_minecraft():
     if not os.path.exists(mc_file):
         try:
             import urllib.request
-            download_url = f"{WORKER_URL}/public/eaglercraft.html"
-            log.info("Downloading Eaglercraft from %s", download_url)
+            import shutil
             
-            # Download with a generous timeout (~20MB file)
-            req = urllib.request.Request(download_url, headers={'User-Agent': 'GamezNET'})
-            with urllib.request.urlopen(req, timeout=60) as resp, open(mc_file, 'wb') as out_file:
-                out_file.write(resp.read())
-            log.info("Eaglercraft downloaded successfully.")
+            # Try central server first, fallback to raw GitHub repo
+            urls = [
+                f"{WORKER_URL}/public/eaglercraft.html",
+                "https://raw.githubusercontent.com/natelook1/gameznet-public/main/static/eaglercraft.html"
+            ]
+            
+            for url in urls:
+                try:
+                    log.info("Downloading Eaglercraft from %s", url)
+                    req = urllib.request.Request(url, headers={'User-Agent': 'GamezNET'})
+                    with urllib.request.urlopen(req, timeout=60) as resp, open(mc_file, 'wb') as out_file:
+                        shutil.copyfileobj(resp, out_file)
+                    log.info("Eaglercraft downloaded successfully.")
+                    return send_from_directory(static_dir, "eaglercraft.html")
+                except Exception as e:
+                    log.warning("Failed to download from %s: %s", url, e)
+            raise Exception("Could not find eaglercraft.html on central server or GitHub fallback.")
         except Exception as e:
             log.error("Failed to download Eaglercraft: %s", e)
             if os.path.exists(mc_file): os.remove(mc_file)
@@ -814,35 +825,28 @@ def api_minecraft_prepare():
     static_dir = os.path.join(install_dir, "static")
     os.makedirs(static_dir, exist_ok=True)
     mc_file = os.path.join(static_dir, "eaglercraft.html")
-    template_mc_file = os.path.join(template_dir, "eaglercraft.html")
 
-    log.info("--- Minecraft Prepare ---")
-    log.info("Install dir: %s", install_dir)
-    log.info("Template dir: %s", template_dir)
-    log.info("Static dir: %s", static_dir)
-    log.info("Checking for static file: %s", mc_file)
-    static_exists = os.path.exists(mc_file)
-    log.info("Static file exists: %s", static_exists)
-    log.info("Checking for template file: %s", template_mc_file)
-    template_exists = os.path.exists(template_mc_file)
-    log.info("Template file exists: %s", template_exists)
-
-    if static_exists or template_exists:
-        log.info("File already exists, skipping download.")
+    if os.path.exists(mc_file) or os.path.exists(os.path.join(template_dir, "eaglercraft.html")):
         return jsonify({"success": True})
 
-    log.info("File not found, proceeding to download.")
     try:
         import urllib.request
-        download_url = f"{WORKER_URL}/public/eaglercraft.html"
-        log.info("Downloading Eaglercraft from %s", download_url)
-        req = urllib.request.Request(download_url, headers={'User-Agent': 'GamezNET'})
-        with urllib.request.urlopen(req, timeout=60) as resp, open(mc_file, 'wb') as out_file:
-            out_file.write(resp.read())
-        log.info("Eaglercraft downloaded successfully.")
-        return jsonify({"success": True})
+        import shutil
+        urls = [
+            f"{WORKER_URL}/public/eaglercraft.html",
+            "https://raw.githubusercontent.com/natelook1/gameznet-public/main/static/eaglercraft.html"
+        ]
+        
+        for url in urls:
+            try:
+                req = urllib.request.Request(url, headers={'User-Agent': 'GamezNET'})
+                with urllib.request.urlopen(req, timeout=60) as resp, open(mc_file, 'wb') as out_file:
+                    shutil.copyfileobj(resp, out_file)
+                return jsonify({"success": True})
+            except Exception as e:
+                pass
+        raise Exception("File not found on central server or GitHub.")
     except Exception as e:
-        log.error("Minecraft prepare download failed: %s", e, exc_info=True)
         if os.path.exists(mc_file): os.remove(mc_file)
         return jsonify({"error": f"Failed to download client: {e}"}), 500
 

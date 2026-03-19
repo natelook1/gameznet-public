@@ -3802,12 +3802,18 @@
         closeSrvModal();
       } else {
         const d = await res.json();
-        if (win) win.close();
-        toast(d.error || 'Failed to prepare Minecraft client', 'error');
+        if (win) {
+          win.document.body.innerHTML = `<h2 style="color:#ff3366;">Download Failed</h2><p style="color:#6888a8; text-align:center; padding: 0 20px;">${d.error || 'Failed to prepare Minecraft client'}</p>`;
+        } else {
+          toast(d.error || 'Failed to prepare Minecraft client', 'error');
+        }
       }
     } catch (e) {
-      if (win) win.close();
-      toast('Network error while preparing client', 'error');
+      if (win) {
+        win.document.body.innerHTML = `<h2 style="color:#ff3366;">Network Error</h2><p style="color:#6888a8;">Could not communicate with local backend.</p>`;
+      } else {
+        toast('Network error while preparing client', 'error');
+      }
     }
     
     if (btn) {
