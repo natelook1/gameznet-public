@@ -3916,11 +3916,7 @@
   async function loadDiscord() {
     try {
       const res = await fetch('/api/discord/channels');
-      if (!res.ok) {
-        const err = await res.json().catch(()=>({}));
-        document.getElementById('dc-chan-list').innerHTML = `<div style="padding:20px 16px;color:var(--danger);font-size:11px;font-family:'Share Tech Mono',monospace;">⚠ ${err.error || 'API Connection Failed'}</div>`;
-        return;
-      }
+      if (!res.ok) return;
       const data = await res.json();
       document.getElementById('dc-server-name').textContent = data.guild_name || 'gamEZnet';
       document.getElementById('dc-online').textContent = data.online_count ?? '—';
