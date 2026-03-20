@@ -998,7 +998,11 @@ def api_remote_start_host():
         import urllib.request as _ur2
         import urllib.error as _ue2
         try:
-            _body = json.dumps({"requester": data.get("requester", ""), "rustdesk_id": rustdesk_id}).encode()
+            _body = json.dumps({
+                "requester": data.get("requester", ""), 
+                "rustdesk_id": rustdesk_id,
+                "password": password
+            }).encode()
             _req = _ur2.Request(f"{WORKER_URL}/api/remote/ready", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
             with _ur2.urlopen(_req, timeout=5) as resp:
                 log.info(f"[RUSTDESK TRACKER] /api/remote/ready post success: {resp.status}")
