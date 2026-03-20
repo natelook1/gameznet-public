@@ -1061,6 +1061,41 @@ def api_remote_cleanup():
     return jsonify({"success": True})
 
 
+@app.route("/api/remote/<path:endpoint>", methods=["GET", "POST"])
+def proxy_remote_api(endpoint):
+    """
+    Proxy missing remote endpoints (status, pending, request, end) to the central server.
+    Specific routes like start-host and start-helper are matched first by Flask.
+    """
+    import urllib.request
+    import urllib.error
+    url = f"{WORKER_URL}/api/remote/{endpoint}"
+    
+    # Forward query parameters (e.g., ?name=User)
+    if request.query_string:
+        url += "?" + request.query_string.decode('utf-8')
+        
+    try:
+        req = urllib.request.Request(url, method=request.method)
+        req.add_header("User-Agent", "GamezNET-Proxy")
+        
+        if request.method == "POST":
+            req.add_header("Content-Type", "application/json")
+            if request.data:
+                req.data = request.data
+                
+        with urllib.request.urlopen(req, timeout=5) as response:
+            content_type = response.headers.get('Content-Type', 'application/json')
+            return response.read(), response.status, {'Content-Type': content_type}
+            
+    except urllib.error.HTTPError as e:
+        content_type = e.headers.get('Content-Type', 'application/json')
+        return e.read(), e.code, {'Content-Type': content_type}
+    except Exception as e:
+        log.error("Proxy error to %s: %s", url, repr(e))
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/update", methods=["POST"])
 def api_update():
     """Download latest code from GitHub as a zip and restart the app."""
