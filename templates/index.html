@@ -4914,11 +4914,19 @@
             _rpStep(2); 
             setTimeout(() => _rpStep(3), 500); 
             
-            await fetch('/api/remote/start-helper', {
+            const helperRes = await fetch('/api/remote/start-helper', {
               method: 'POST', headers: {'Content-Type':'application/json'},
               body: JSON.stringify({ rustdesk_id: sd.rustdesk_id, password: sd.password, helper: state.name })
             });
-            _rpStep(4, true); // Step 4: Active/Connected
+
+            if (helperRes.ok) {
+              // GOLDEN LOGIC: Tell the server we are officially linked
+              await fetch('/api/remote/connected', {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ helper: state.name })
+              });
+              _rpStep(4, true);
+            }
           } else if (sd.status === 'connected') {
             _rpStep(4, true); // Connection confirmed by server
           } else if (sd.status === 'none') { 
