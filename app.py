@@ -938,6 +938,7 @@ def api_remote_start_host():
         time.sleep(1)
 
         # Clear stale ID log so we know any entry we read is fresh
+        os.makedirs(os.path.dirname(id_log_path), exist_ok=True)
         if os.path.exists(id_log_path):
             try:
                 os.remove(id_log_path)
@@ -1001,7 +1002,7 @@ def api_remote_start_host():
             _body = json.dumps({
                 "requester": data.get("requester", ""), 
                 "rustdesk_id": rustdesk_id,
-                "password": password
+                "password": password  # <--- Essential for Helper connection
             }).encode()
             _req = _ur2.Request(f"{WORKER_URL}/api/remote/ready", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
             with _ur2.urlopen(_req, timeout=5) as resp:
