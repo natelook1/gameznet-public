@@ -850,37 +850,24 @@ def api_minecraft_prepare():
         if os.path.exists(mc_file): os.remove(mc_file)
         return jsonify({"error": f"Failed to download client: {e}"}), 500
 
-def _watch_rustdesk_process(name_to_end):
-    """Background thread that polls Task Manager for RustDesk to close."""
+def _watch_rustdesk_process(pid, name_to_end):
+    """Background thread that tracks a specific PID (0% CPU lag)."""
     def watcher():
         import psutil
         import urllib.request
         import json
-        
-        time.sleep(5)  # Give RustDesk time to fully launch into memory
-        
-        while True:
-            time.sleep(2)
-            is_running = False
-            try:
-                # Scan all active processes for rustdesk.exe
-                for p in psutil.process_iter(['name']):
-                    if (p.info.get('name') or '').lower() == 'rustdesk.exe':
-                        is_running = True
-                        break
-            except Exception:
-                pass
+        try:
+            proc = psutil.Process(pid)
+            # Efficiently wait for this specific process to exit
+            while proc.is_running():
+                time.sleep(2)
             
-            # If the process is gone, the user closed the window. Kill the session!
-            if not is_running:
-                log.info(f"[RUSTDESK TRACKER] RustDesk closed by user '{name_to_end}'. Sending /api/remote/end...")
-                try:
-                    _body = json.dumps({"name": name_to_end}).encode()
-                    _req = urllib.request.Request(f"{WORKER_URL}/api/remote/end", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
-                    urllib.request.urlopen(_req, timeout=5)
-                except Exception as e:
-                    log.warning(f"[RUSTDESK TRACKER] Watcher failed to send end command: {e}")
-                break
+            log.info(f"[RUSTDESK TRACKER] Process {pid} exited. Ending session for '{name_to_end}'...")
+            _body = json.dumps({"name": name_to_end}).encode()
+            _req = urllib.request.Request(f"{WORKER_URL}/api/remote/end", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
+            urllib.request.urlopen(_req, timeout=5)
+        except (psutil.NoSuchProcess, Exception) as e:
+            log.debug(f"[RUSTDESK TRACKER] Watcher finished or failed: {e}")
 
     threading.Thread(target=watcher, daemon=True).start()
 
@@ -933,6 +920,8 @@ def api_remote_start_host():
 
         log.info("[RUSTDESK TRACKER] Password injected into config.")
 
+        time.sleep(0.5) # FIX: Give Windows time to flush the file to disk
+
         # Kill any existing RustDesk so we get a fresh ID log
         subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True)
         time.sleep(1)
@@ -950,7 +939,7 @@ def api_remote_start_host():
         si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         si.wShowWindow = 6  # SW_MINIMIZE
         log.info("[RUSTDESK TRACKER] Launching rustdesk.exe minimized...")
-        subprocess.Popen([rustdesk_exe], startupinfo=si)
+        host_proc = subprocess.Popen([rustdesk_exe], startupinfo=si)
         time.sleep(3)
 
         # Run --get-id — on some machines the ID prints directly to stdout
@@ -1010,8 +999,7 @@ def api_remote_start_host():
         except Exception as _e:
             log.warning("[RUSTDESK TRACKER] /api/remote/ready post failed: %s", repr(_e))
 
-        # Launch the watcher without passing the proc variable
-        _watch_rustdesk_process(data.get("requester", ""))
+        _watch_rustdesk_process(host_proc.pid, data.get("requester", "")) # Pass PID
         
         log.info("[RUSTDESK TRACKER] RustDesk host started successfully.")
         return jsonify({"success": True, "rustdesk_id": rustdesk_id})
@@ -1087,18 +1075,16 @@ def api_remote_start_helper():
             si = subprocess.STARTUPINFO()
             si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             si.wShowWindow = 6  # SW_MINIMIZE
-            subprocess.Popen([rustdesk_exe], startupinfo=si, close_fds=True)
+            gui_proc = subprocess.Popen([rustdesk_exe], startupinfo=si, close_fds=True)
             _notify_connected(helper)
             
-            # Launch the watcher without passing the proc variable
-            _watch_rustdesk_process(helper)
+            _watch_rustdesk_process(gui_proc.pid, helper) # Pass PID
             return jsonify({"success": True, "mode": "gui", "rustdesk_id": target_id, "password": password})
 
         log.info("[RUSTDESK TRACKER] CLI Connect successfully initiated connection window.")
         _notify_connected(helper)
         
-        # Launch the watcher without passing the proc variable
-        _watch_rustdesk_process(helper)
+        _watch_rustdesk_process(proc.pid, helper) # Pass PID
         return jsonify({"success": True, "mode": "connected"})
 
     except Exception as e:
