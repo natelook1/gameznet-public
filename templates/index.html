@@ -1834,6 +1834,13 @@
     .sched-game-btn.selected { border-color:var(--accent); box-shadow:0 0 8px rgba(0,200,255,0.3); }
     .sched-game-btn img { filter:brightness(0.7); }
     .sched-game-btn.selected img { filter:brightness(1); }
+    #rp-countdown { 
+      font-family: 'Share Tech Mono', monospace; 
+      color: var(--warn); 
+      font-size: 11px; 
+      margin-top: 4px; 
+      letter-spacing: 1px;
+    }
   </style>
 </head>
 <body>
@@ -2425,6 +2432,7 @@
 
 <div id="ctx-menu">
   <div class="ctx-item" onclick="openDMFromCtx()">💬 Direct Message</div>
+  <div class="ctx-item" id="ctx-remote-btn" onclick="openRemoteFromCtx()">🛟 Remote Help</div>
 </div>
 
 <div id="toast"></div>
@@ -2814,6 +2822,10 @@
 
   // ── Connect / Disconnect ───────────────────────────────────────────────────
   async function toggleConnect() {
+    // Initialize and resume audio context to allow notification sounds
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    
     if (state.busy) return;
     
     if (state.updateRequired) {
@@ -4685,10 +4697,11 @@
   }
 
   // ── Remote Assistance ──────────────────────────────────────────────────────
-  const remoteState = { active: false, role: null, helper: null, requester: null, pollTimer: null, _sessionPass: null, _toastTimer: null, _steps: [] };
-
-  const _hostSteps  = n => [`Request sent to ${n}`, `Waiting for ${n} to accept`, `${n} accepted`, `Starting RustDesk`, `Connection ID ready`, `${n} is connecting`, `Session active`];
-  const _helperSteps = n => [`Accepted ${n}'s request`, `Waiting for ${n} to start RustDesk`, `Host ready — got connection ID`, `Launching RustDesk`, `Connected to ${n}`];
+  const remoteState = { 
+    active: false, role: null, helper: null, requester: null, 
+    pollTimer: null, _sessionPass: null, _toastTimer: null, 
+    _steps: [], _countdown: 60, _countdownTimer: null 
+  };
 
   function _rpInit(role, name) {
     remoteState._steps = role === 'host' ? _hostSteps(name) : _helperSteps(name);
@@ -4696,6 +4709,14 @@
     document.getElementById('rp-steps-list').innerHTML = remoteState._steps.map((s, i) =>
       `<li class="rp-step" id="rp-step-${i}"><span class="rp-icon" id="rp-icon-${i}">○</span><span>${s}</span></li>`
     ).join('');
+    
+    // Add or reset countdown display
+    const header = document.querySelector('.rp-header');
+    let cd = document.getElementById('rp-countdown');
+    if (!cd) { cd = document.createElement('div'); cd.id = 'rp-countdown'; header.appendChild(cd); }
+    cd.style.display = role === 'host' ? 'block' : 'none';
+    cd.textContent = '';
+
     document.getElementById('rp-creds').style.display = 'none';
     const bar = document.getElementById('rp-bar');
     bar.style.width = '0%'; bar.classList.remove('rp-complete');
@@ -4714,147 +4735,153 @@
     const bar = document.getElementById('rp-bar');
     bar.style.width = (isDone ? 100 : Math.round(n / (total - 1) * 100)) + '%';
     if (isDone) bar.classList.add('rp-complete');
-    const btn = document.getElementById('rp-cancel-btn');
-    if (btn) btn.textContent = isDone ? 'END SESSION' : 'CANCEL';
   }
 
-  function _rpShowCreds(id, pass) {
-    document.getElementById('rp-cred-id').textContent = id;
-    document.getElementById('rp-cred-pass').textContent = pass;
-    document.getElementById('rp-creds').style.display = '';
+  function _hostSteps(name) {
+    return ['Request sent', 'Waiting', 'Accepted', 'Starting', 'ID ready', 'Connecting', 'Active'];
+  }
+  
+  function _helperSteps(name) {
+    return ['Accepted request', 'Waiting for Host', 'Host ready', 'Connecting', 'Active'];
   }
 
-  function _rpShow() {
-    document.getElementById('remote-request-modal').style.display = 'none';
-    document.getElementById('remote-progress').style.display = 'block';
-    document.getElementById('remote-overlay').classList.add('active');
-  }
-
-  function _rpHide() {
-    document.getElementById('remote-overlay').classList.remove('active');
-    document.getElementById('remote-request-modal').style.display = '';
-    document.getElementById('remote-progress').style.display = 'none';
+  function updateRemoteHelpBtn(enabled) {
+    const btn = document.getElementById('remote-help-btn');
+    if (btn) btn.disabled = !enabled;
   }
 
   function openRemote() {
     const sel = document.getElementById('remote-helper-select');
     sel.innerHTML = '<option value="">— select a player —</option>';
-    Array.from(document.querySelectorAll('#online-list-ui .op-name'))
-      .map(el => el.firstChild?.textContent?.trim() || el.textContent.trim())
-      .filter(n => n && n !== state.name)
-      .forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
-    document.getElementById('remote-modal-error').style.display = 'none';
+    
+    const names = Array.from(document.querySelectorAll('#online-list-ui .op-name'))
+      .map(el => {
+          // Clone the node to strip out nested buttons (edit icon) and status text
+          const clone = el.cloneNode(true);
+          clone.querySelectorAll('button, .op-status').forEach(n => n.remove());
+          return clone.textContent.trim();
+      });
+
+    names.forEach(n => {
+      if (n && n !== state.name) sel.insertAdjacentHTML('beforeend', `<option value="${n}">${n}</option>`);
+    });
+
     document.getElementById('remote-msg-input').value = '';
-    document.getElementById('remote-send-btn').disabled = false;
-    document.getElementById('remote-request-modal').style.display = '';
+    document.getElementById('remote-modal-error').style.display = 'none';
+    document.getElementById('remote-request-modal').style.display = 'block';
     document.getElementById('remote-progress').style.display = 'none';
     document.getElementById('remote-overlay').classList.add('active');
   }
 
   function closeRemote() {
-    if (!remoteState.active) document.getElementById('remote-overlay').classList.remove('active');
+    document.getElementById('remote-overlay').classList.remove('active');
+  }
+
+  function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard!', 'success'));
   }
 
   async function submitRemoteRequest() {
     const helper = document.getElementById('remote-helper-select').value;
     const message = document.getElementById('remote-msg-input').value.trim();
-    const errEl = document.getElementById('remote-modal-error');
-    if (!helper) { errEl.textContent = 'Please select a player.'; errEl.style.display = ''; return; }
-    errEl.style.display = 'none';
+    if (!helper) return;
     document.getElementById('remote-send-btn').disabled = true;
     try {
       const res = await fetch('/api/remote/request', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requester: state.name, requester_ip: state.clientIp, helper, message })
+        body: JSON.stringify({ requester: state.name, helper, message })
       });
-      const data = await res.json();
-      if (!res.ok) { errEl.textContent = data.error || 'Failed to send request.'; errEl.style.display = ''; document.getElementById('remote-send-btn').disabled = false; return; }
-      remoteState.active = true; remoteState.role = 'host'; remoteState.helper = helper; remoteState._sessionPass = data.password;
-      updateRemoteHelpBtn(false);
+      if (!res.ok) { 
+        const data = await res.json();
+        toast(data.error || 'Failed to send request', 'error');
+        document.getElementById('remote-send-btn').disabled = false;
+        return;
+      }
+      
+      remoteState.active = true; remoteState.role = 'host'; remoteState.helper = helper;
       _rpInit('host', helper);
       _rpStep(1);
-      _rpShow();
+      document.getElementById('remote-request-modal').style.display = 'none';
+      document.getElementById('remote-progress').style.display = 'block';
+
+      // Start 60s Host Countdown
+      remoteState._countdown = 60;
+      const cdEl = document.getElementById('rp-countdown');
+      clearInterval(remoteState._countdownTimer);
+      remoteState._countdownTimer = setInterval(() => {
+        remoteState._countdown--;
+        if (cdEl) cdEl.textContent = `Waiting for acceptance... ${remoteState._countdown}s`;
+        if (remoteState._countdown <= 0) { endRemoteSession(); toast('Request timed out.', 'error'); }
+      }, 1000);
+
       remoteState.pollTimer = setInterval(async () => {
         try {
           const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
           if (sd.status === 'accepted') {
-            clearInterval(remoteState.pollTimer);
-            _rpStep(2); setTimeout(() => _rpStep(3), 500);
+            clearInterval(remoteState._countdownTimer);
+            if (cdEl) cdEl.style.display = 'none';
+            _rpStep(2); 
             await _startRustDeskHost();
           } else if (sd.status === 'none') {
-            clearInterval(remoteState.pollTimer);
-            _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true);
-            toast('Help request expired or was declined.', true);
+            endRemoteSession();
+            toast('Request declined or expired.', 'error');
           }
         } catch {}
       }, 3000);
-    } catch { errEl.textContent = 'Network error.'; errEl.style.display = ''; document.getElementById('remote-send-btn').disabled = false; }
-  }
-
-  async function cancelRemoteRequest() {
-    clearInterval(remoteState.pollTimer);
-    await fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
-    remoteState.active = false; _rpHide(); updateRemoteHelpBtn(true);
+    } catch { document.getElementById('remote-send-btn').disabled = false; }
   }
 
   async function _startRustDeskHost() {
     try {
+      const pass = Math.random().toString(36).slice(-8);
+      remoteState._sessionPass = pass;
       const res = await fetch('/api/remote/start-host', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: remoteState._sessionPass, requester: state.name })
+        body: JSON.stringify({ requester: state.name, password: pass })
       });
       const data = await res.json();
-      if (!res.ok || data.error) { toast(data.error || 'Failed to start RustDesk', true); _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true); return; }
-      _rpStep(4); setTimeout(() => _rpStep(5), 500);
-      if (data.mode === 'gui') {
-        _rpShowCreds(data.rustdesk_id, remoteState._sessionPass);
-        setTimeout(() => _rpStep(6, true), 500);
-      } else {
-        setTimeout(() => _rpStep(6, true), 1000);
-      }
-      // Resume polling — wait for helper to connect, or detect cancel from either side
+      if (!res.ok) { endRemoteSession(); return; }
+      _rpStep(4);
+      
+      // Never stop polling so we can detect when Side B finishes
+      clearInterval(remoteState.pollTimer);
       remoteState.pollTimer = setInterval(async () => {
         try {
           const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
-          if (sd.status === 'connected') {
-            clearInterval(remoteState.pollTimer);
-            _rpStep(7, true);
-          } else if (sd.status === 'none') {
-            clearInterval(remoteState.pollTimer);
-            _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true);
-            toast('Session ended.', true);
+          if (sd.status === 'ready') {
+              _rpStep(4); // "ID ready"
+          } else if (sd.status === 'connected') { 
+              _rpStep(6, true); // "Active" (100% complete)
+          } else if (sd.status === 'none') { 
+              endRemoteSession(); 
+              toast('Session ended by peer.', true); 
           }
         } catch {}
       }, 3000);
-    } catch { toast('Failed to start RustDesk', true); _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true); }
+    } catch { endRemoteSession(); }
   }
-
-  // ── Helper side ──
-  let _pendingRequester = null;
-  let _toastCountdown = 0;
 
   async function pollRemotePending() {
     if (!state.name || remoteState.active) return;
     try {
       const data = await fetch(`/api/remote/pending?name=${encodeURIComponent(state.name)}`).then(r => r.json());
-      if (data.pending && data.requester !== _pendingRequester) {
-        _pendingRequester = data.requester;
-        document.getElementById('remote-incoming-requester').textContent = `${data.requester} needs help`;
+      const req = data[0];
+      if (req && req.requester !== remoteState.requester) {
+        remoteState.requester = req.requester;
+        document.getElementById('remote-incoming-requester').textContent = `${req.requester} needs help`;
         const msgEl = document.getElementById('remote-incoming-msg');
-        if (data.message) { msgEl.textContent = `"${data.message}"`; msgEl.style.display = ''; } else { msgEl.style.display = 'none'; }
+        if (req.message) { msgEl.textContent = `"${req.message}"`; msgEl.style.display = 'block'; } else { msgEl.style.display = 'none'; }
         document.getElementById('remote-incoming').classList.add('active');
         playNotificationSound();
-        _toastCountdown = 60;
+        
+        // Start 60s Helper Countdown
+        remoteState._countdown = 60;
         clearInterval(remoteState._toastTimer);
         remoteState._toastTimer = setInterval(() => {
-          _toastCountdown--;
+          remoteState._countdown--;
           const el = document.getElementById('remote-incoming-timer');
-          if (el) el.textContent = `${_toastCountdown}s`;
-          if (_toastCountdown <= 0) {
-            clearInterval(remoteState._toastTimer);
-            document.getElementById('remote-incoming').classList.remove('active');
-            _pendingRequester = null;
-          }
+          if (el) el.textContent = `${remoteState._countdown}s`;
+          if (remoteState._countdown <= 0) { declineRemoteRequest(); }
         }, 1000);
       }
     } catch {}
@@ -4863,85 +4890,59 @@
   async function acceptRemoteRequest() {
     clearInterval(remoteState._toastTimer);
     document.getElementById('remote-incoming').classList.remove('active');
+    const target = remoteState.requester;
     try {
-      const res = await fetch('/api/remote/accept', {
+      await fetch('/api/remote/accept', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ helper: state.name, requester: _pendingRequester })
+        body: JSON.stringify({ helper: state.name, requester: target })
       });
-      const data = await res.json();
-      if (!res.ok) { toast(data.error || 'Failed to accept', true); _pendingRequester = null; return; }
-      remoteState.active = true; remoteState.role = 'helper'; remoteState.requester = _pendingRequester;
-      updateRemoteHelpBtn(false);
-      _rpInit('helper', _pendingRequester);
-      _rpStep(1);
-      _rpShow();
+      remoteState.active = true; remoteState.role = 'helper';
+      _rpInit('helper', target);
+      document.getElementById('remote-overlay').classList.add('active');
+      document.getElementById('remote-progress').style.display = 'block';
+      document.getElementById('remote-request-modal').style.display = 'none';
+      _rpStep(1); // Set the bar to the first step ("Accepted request") immediately
+
       remoteState.pollTimer = setInterval(async () => {
         try {
           const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
           if (sd.status === 'ready') {
-            clearInterval(remoteState.pollTimer);
-            _rpStep(2); setTimeout(() => _rpStep(3), 500);
-            await _startRustDeskHelper(sd.rustdesk_id, sd.password);
-          } else if (sd.status === 'none') {
-            clearInterval(remoteState.pollTimer);
-            _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true);
-            toast('Session ended by host.', true);
+            // Step 2: Host Ready, Step 3: Connecting (started via start-helper)
+            _rpStep(2); 
+            setTimeout(() => _rpStep(3), 500); 
+            
+            await fetch('/api/remote/start-helper', {
+              method: 'POST', headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({ rustdesk_id: sd.rustdesk_id, password: sd.password, helper: state.name })
+            });
+            
+            _rpStep(4, true); // Step 4: Active/Connected
+          } else if (sd.status === 'none') { 
+            endRemoteSession(); 
+            toast('Session ended by peer.', true);
           }
         } catch {}
       }, 3000);
-    } catch { toast('Failed to accept', true); }
-    _pendingRequester = null;
-  }
-
-  async function _startRustDeskHelper(rustdesk_id, password) {
-    try {
-      const res = await fetch('/api/remote/start-helper', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rustdesk_id, password, helper: state.name })
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) { toast(data.error || 'Failed to start RustDesk', true); _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true); return; }
-      if (data.mode === 'gui') { _rpShowCreds(data.rustdesk_id, data.password); }
-      _rpStep(4, true);
-      // Keep polling so host-side cancel closes this modal too
-      remoteState.pollTimer = setInterval(async () => {
-        try {
-          const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
-          if (sd.status === 'none') {
-            clearInterval(remoteState.pollTimer);
-            _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true);
-            toast('Session ended by host.', true);
-          }
-        } catch {}
-      }, 3000);
-    } catch { toast('Failed to start RustDesk', true); _rpHide(); remoteState.active = false; updateRemoteHelpBtn(true); }
+    } catch { endRemoteSession(); }
   }
 
   function declineRemoteRequest() {
     clearInterval(remoteState._toastTimer);
     document.getElementById('remote-incoming').classList.remove('active');
-    fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
-    _pendingRequester = null;
+    fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
+    remoteState.requester = null;
   }
 
   async function endRemoteSession() {
     clearInterval(remoteState.pollTimer);
-    await fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) }).catch(() => {});
-    await fetch('/api/remote/cleanup', { method: 'POST' }).catch(() => {});
-    remoteState.active = false; remoteState.role = null;
-    _rpHide();
+    clearInterval(remoteState._countdownTimer);
+    clearInterval(remoteState._toastTimer);
+    fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
+    fetch('/api/remote/cleanup', { method: 'POST' });
+    remoteState.active = false; remoteState.requester = null;
+    document.getElementById('remote-overlay').classList.remove('active');
     updateRemoteHelpBtn(true);
-    toast('Remote session ended.');
   }
-
-  function updateRemoteHelpBtn(enabled) {
-    const btn = document.getElementById('remote-help-btn');
-    if (btn) btn.disabled = !enabled;
-  }
-
-  document.getElementById('remote-overlay').addEventListener('click', e => { if (e.target.id === 'remote-overlay' && !remoteState.active) closeRemote(); });
-
-  // ── YouTube OAuth ──────────────────────────────────────────────────────────
   let _ytSession = null, _ytSubs = [];
 
   function ytApplySession(sessionId, name, avatar) {
@@ -5170,29 +5171,25 @@
   // ── Context Menus (DMs) ────────────────────────────────────────────────────
   let _ctxUser = null;
   document.addEventListener('contextmenu', e => {
-    let target = e.target.closest('.online-player');
+    let target = e.target.closest('.online-player') || e.target.closest('.dc-mitem');
     let name = null;
     if (target) {
-       const nameEl = target.querySelector('.op-name');
+       const nameEl = target.querySelector('.op-name') || target.querySelector('.dc-mitem-name');
        if (nameEl) name = nameEl.textContent.trim();
-    } else {
-       target = e.target.closest('.dc-mitem');
-       if (target) {
-          const nameEl = target.querySelector('.dc-mitem-name');
-          if (nameEl) name = nameEl.textContent.trim();
-       }
     }
     if (name && name !== state.name) {
        e.preventDefault();
        _ctxUser = name;
        const menu = document.getElementById('ctx-menu');
+       const remoteBtn = document.getElementById('ctx-remote-btn');
+       // Show Remote Help only if connected to the network
+       if (remoteBtn) remoteBtn.style.display = state.connected ? 'block' : 'none';
        menu.style.display = 'flex';
        let x = e.clientX, y = e.clientY;
        if (x + 140 > window.innerWidth) x -= 140;
        if (y + 40 > window.innerHeight) y -= 40;
-       menu.style.left = x + 'px';
-       menu.style.top = y + 'px';
-    } else if (!e.target.closest('.chat-float') && !e.target.closest('.chat-msg-body')) {
+       menu.style.left = x + 'px'; menu.style.top = y + 'px';
+    } else {
        document.getElementById('ctx-menu').style.display = 'none';
     }
   });
@@ -5207,6 +5204,16 @@
   window.openDMFromCtx = function() {
     if (!_ctxUser) return;
     openChatTab(_ctxUser);
+    document.getElementById('ctx-menu').style.display = 'none';
+  };
+
+  window.openRemoteFromCtx = function() {
+    if (!_ctxUser) return;
+    openRemote();
+    const sel = document.getElementById('remote-helper-select');
+    if (sel.querySelector(`option[value="${_ctxUser}"]`)) {
+      sel.value = _ctxUser;
+    }
     document.getElementById('ctx-menu').style.display = 'none';
   };
 
