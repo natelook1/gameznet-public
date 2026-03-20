@@ -1136,6 +1136,41 @@ def api_alert():
         log.debug("api_alert proxy failed: %s", e)
         return jsonify({"alert": None})
 
+
+@app.route("/api/remote/status", methods=["GET"])
+def api_remote_status():
+    """Proxy to Worker /api/remote/status to poll session state."""
+    import urllib.request
+    import urllib.error
+    try:
+        qs = request.query_string.decode()
+        url = f"{WORKER_URL}/api/remote/status" + (f"?{qs}" if qs else "")
+        req = urllib.request.Request(url, headers={"User-Agent": "GamezNET"}, method="GET")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.read(), resp.status, {"Content-Type": resp.headers.get("Content-Type", "application/json")}
+    except urllib.error.HTTPError as e:
+        return e.read(), e.code, {"Content-Type": e.headers.get("Content-Type", "application/json")}
+    except Exception as e:
+        log.error("api_remote_status proxy failed: %s", e)
+        return jsonify({"error": str(e)}), 502
+
+@app.route("/api/remote/end", methods=["POST"])
+def api_remote_end():
+    """Proxy to Worker /api/remote/end to clean up a session."""
+    import urllib.request
+    import urllib.error
+    try:
+        body = request.get_data() or None
+        req = urllib.request.Request(f"{WORKER_URL}/api/remote/end", data=body, headers={"User-Agent": "GamezNET", "Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.read(), resp.status, {"Content-Type": resp.headers.get("Content-Type", "application/json")}
+    except urllib.error.HTTPError as e:
+        return e.read(), e.code, {"Content-Type": e.headers.get("Content-Type", "application/json")}
+    except Exception as e:
+        log.error("api_remote_end proxy failed: %s", e)
+        return jsonify({"error": str(e)}), 502
+
+
 @app.route("/api/<path:subpath>", methods=["GET", "POST"])
 def api_proxy(subpath):
     """Catch-all proxy for unhandled /api/* routes — forwards to backend."""
