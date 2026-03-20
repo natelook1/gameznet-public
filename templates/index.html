@@ -4891,6 +4891,8 @@
     clearInterval(remoteState._toastTimer);
     document.getElementById('remote-incoming').classList.remove('active');
     const target = remoteState.requester;
+    let helperLaunched = false; // Add this gate flag
+
     try {
       await fetch('/api/remote/accept', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -4906,8 +4908,9 @@
       remoteState.pollTimer = setInterval(async () => {
         try {
           const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
-          if (sd.status === 'ready') {
-            // Step 2: Host Ready, Step 3: Connecting (started via start-helper)
+          
+          if (sd.status === 'ready' && !helperLaunched) {
+            helperLaunched = true; // Block repeated launches
             _rpStep(2); 
             setTimeout(() => _rpStep(3), 500); 
             
@@ -4915,8 +4918,9 @@
               method: 'POST', headers: {'Content-Type':'application/json'},
               body: JSON.stringify({ rustdesk_id: sd.rustdesk_id, password: sd.password, helper: state.name })
             });
-            
             _rpStep(4, true); // Step 4: Active/Connected
+          } else if (sd.status === 'connected') {
+            _rpStep(4, true); // Connection confirmed by server
           } else if (sd.status === 'none') { 
             endRemoteSession(); 
             toast('Session ended by peer.', true);
