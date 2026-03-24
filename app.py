@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.0.4"
+VERSION = "1.0.5"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -1085,9 +1085,25 @@ def api_remote_start_helper():
             si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             si.wShowWindow = 6  # SW_MINIMIZE
             gui_proc = subprocess.Popen([rustdesk_exe], startupinfo=si, close_fds=True)
+            log.info(f"[HELPER] GUI fallback launched PID={gui_proc.pid}")
             _notify_connected(helper)
-            
-            _watch_rustdesk_process(gui_proc.pid, helper) # Pass PID
+
+            # Find actual RustDesk child process rather than watching the launcher
+            time.sleep(2)
+            watch_pid = gui_proc.pid
+            try:
+                import psutil
+                parent = psutil.Process(gui_proc.pid)
+                children = parent.children(recursive=True)
+                if children:
+                    watch_pid = children[-1].pid
+                    log.info(f"[HELPER] Using child PID={watch_pid} instead of launcher PID={gui_proc.pid}")
+                else:
+                    log.info(f"[HELPER] No child processes found, watching launcher PID={watch_pid}")
+            except Exception as e:
+                log.warning(f"[HELPER] Could not find child process: {e}")
+
+            _watch_rustdesk_process(watch_pid, helper)
             return jsonify({"success": True, "mode": "gui", "rustdesk_id": target_id, "password": password})
 
         log.info("[RUSTDESK TRACKER] CLI Connect successfully initiated connection window.")
