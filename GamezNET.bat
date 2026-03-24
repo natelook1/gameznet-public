@@ -42,6 +42,9 @@ if not defined PY_CMD (
     exit /b 1
 )
 
+:: Ensure required Python packages are installed
+%PY_CMD% -m pip install --quiet certifi flask psutil pystray Pillow >nul 2>&1
+
 :: Kill any existing GamezNET server running on our port
 for /f "tokens=5" %%P in ('netstat -aon ^| findstr ":7734 " 2^>nul') do (
     taskkill /F /PID %%P >nul 2>&1
