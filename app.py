@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -1160,7 +1160,6 @@ def proxy_remote_api(endpoint):
         log.error("[RUSTDESK TRACKER] Proxy error to %s: %s", url, repr(e))
         return jsonify({"error": str(e)}), 500
 
-
 @app.route("/api/update", methods=["POST"])
 def api_update():
     """Download latest code from GitHub as a zip and restart the app."""
@@ -1169,36 +1168,28 @@ def api_update():
         import urllib.request
         import zipfile
         import io
+        import ssl
+        import certifi
 
-        # Standard GitHub repo zip download link
         zip_url = "https://github.com/natelook1/gameznet-public/archive/refs/heads/main.zip"
         log.info("Downloading update from %s", zip_url)
         
+        ctx = ssl.create_default_context(cafile=certifi.where())
         req = urllib.request.Request(zip_url, headers={'User-Agent': 'GamezNET'})
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
             with zipfile.ZipFile(io.BytesIO(resp.read())) as z:
                 for member in z.namelist():
-                    # GitHub zips put everything inside a root folder named "gameznet-main/"
-                    # We strip that prefix so files extract directly into the install_dir
                     if not member.startswith("gameznet-public-main/"):
                         continue
-
                     relative_path = member.replace("gameznet-public-main/", "", 1)
-                    if not relative_path:  # Skip the root folder itself
+                    if not relative_path:
                         continue
-                        
-                    # Exclude image files from manual script updates
                     if relative_path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico')):
                         continue
-
                     target_path = os.path.join(install_dir, relative_path)
-                    
-                    # If it's a directory, create it
                     if member.endswith('/'):
                         os.makedirs(target_path, exist_ok=True)
                         continue
-                        
-                    # Write the file, ensuring parent directories exist
                     os.makedirs(os.path.dirname(target_path), exist_ok=True)
                     with open(target_path, "wb") as f:
                         f.write(z.read(member))
@@ -1207,7 +1198,6 @@ def api_update():
     except Exception as e:
         log.error("Update failed: %r", e, exc_info=True)
         return jsonify({"error": f"Failed to download update: {repr(e)}"}), 500
-
     # Restart: release mutex first so new instance can acquire it, then launch and exit
     def _restart():
         time.sleep(0.8)
