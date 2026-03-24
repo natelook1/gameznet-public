@@ -904,21 +904,30 @@ def api_remote_start_host():
 
         # Write session password into config before starting
         os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        
+        # Read existing config to preserve enc_id and other fields
+        enc_id = ''
+        salt = ''
         if os.path.exists(config_path):
             with open(config_path, "r") as f:
-                toml = f.read()
-            import re as _re
-            if _re.search(r"^password\s*=", toml, _re.MULTILINE):
-                toml = _re.sub(r"^password\s*=.*$", f"password = '{password}'", toml, flags=_re.MULTILINE)
-            else:
-                toml += f"\npassword = '{password}'\n"
-            with open(config_path, "w") as f:
-                f.write(toml)
-        else:
-            with open(config_path, "w") as f:
-                f.write(f"enc_id = ''\npassword = '{password}'\nsalt = ''\n")
+                existing = f.read()
+            enc_id_match = re.search(r"^enc_id\s*=\s*'?(.*?)'?\s*$", existing, re.MULTILINE)
+            salt_match = re.search(r"^salt\s*=\s*'?(.*?)'?\s*$", existing, re.MULTILINE)
+            if enc_id_match: enc_id = enc_id_match.group(1)
+            if salt_match: salt = salt_match.group(1)
 
-        log.info("[RUSTDESK TRACKER] Password injected into config.")
+        # Always write a clean config — never patch, avoids stale approve_mode
+        with open(config_path, "w") as f:
+            f.write(f"enc_id = '{enc_id}'\npassword = '{password}'\nsalt = '{salt}'\napprove_mode = 'password'\n")
+        
+        # Verify write succeeded before proceeding
+        with open(config_path, "r") as f:
+            written = f.read()
+        if f"password = '{password}'" not in written or "approve_mode = 'password'" not in written:
+            log.error("[RUSTDESK TRACKER] Config write verification failed!")
+            return jsonify({"error": "Failed to write RustDesk config"}), 500
+            
+        log.info("[RUSTDESK TRACKER] Password and approve_mode injected into config.")
 
         time.sleep(0.5) # FIX: Give Windows time to flush the file to disk
 
