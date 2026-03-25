@@ -102,7 +102,7 @@ def resource_path(relative_path):
     try:
         base = sys._MEIPASS
     except AttributeError:
-        base = os.path.abspath(".")
+        base = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base, relative_path)
 
 def wg_exe():
