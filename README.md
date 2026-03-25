@@ -36,14 +36,14 @@ irm https://gameznet.looknet.ca/install | iex
 
 > Windows will ask for Administrator access — click **Yes**. The VPN needs it to create the secure tunnel.
 
-*The installer handles everything automatically:*
+*The installer handles everything automatically — no Python, Git, or technical setup required:*
 
-- 📥 Downloads the GamezNET app
-- 🐍 Installs Python if missing
-- 🔒 Installs WireGuard VPN if missing
-- 🖥️ Creates a GamezNET shortcut on your desktop and Start Menu
+- 📥 Downloads and runs the GamezNET installer (`GamezNET-Setup.exe`)
+- 🔒 Installs WireGuard VPN silently if not already present
+- 🖥️ Creates a **GamezNET** shortcut on your desktop and Start Menu
+- 🚀 Launches GamezNET automatically when done
 
-When it finishes, the app opens in your browser automatically.
+When it finishes, the app appears in your system tray and opens automatically.
 
 ---
 
@@ -169,24 +169,21 @@ Either player can cancel at any time using the **CANCEL** button in the modal. W
 
 ## 🗑️ Uninstalling
 
-Double-click the **"Uninstall GamezNET"** shortcut on your desktop. It will:
+Open **Settings → Apps** (or **Add/Remove Programs**), find **GamezNET**, and click **Uninstall**. It will:
 
-- Stop the running app
+- Confirm before proceeding
 - Disconnect and remove the WireGuard VPN tunnel
-- Remove the `gameznet.local` hosts entry
-- Delete all shortcuts and the install directory
+- Stop the running app
+- Delete the install directory and all GamezNET data files
 
-WireGuard and Python are left in place — they may be used by other applications.
+WireGuard itself is left in place — it may be used by other applications.
 
 ---
 
 ## 🛠️ Troubleshooting
 
 **App didn't open after installing**
-Run the install command again — it's safe to repeat and will fix most environment problems.
-
-**"Python not found" when launching**
-Run the install command again. It detects what's missing and fixes it automatically.
+Run the install command again — it's safe to repeat and will reinstall cleanly.
 
 **"Invalid token"**
 Make sure the token was copied exactly, dashes included — they look like `XXXX-XXXX-XXXX-XXXX`. Contact the admin if it still won't activate.
@@ -197,14 +194,14 @@ Your token was already used. Contact the admin to get a new one.
 **Need to enter a new token**
 Click **Change Token** in the bottom-right corner of the app.
 
-**Browser didn't open automatically**
-Go to `http://gameznet.local:7734` in any browser.
+**App won't start / tray icon missing**
+Find **GamezNET** in your Start Menu or `%LOCALAPPDATA%\GamezNET\` and launch it from there. If it still won't start, run the install command again.
 
 **Connected but can't reach the game server**
 Wait 10 seconds after connecting and try again. If it keeps failing, let the admin know.
 
 **Update required / version badge flashing**
-Click the version badge in the top-right corner of the app — it will download and apply the update automatically, then restart. If that doesn't work, run the install command again.
+Click the version badge in the top-right corner of the app — it will download the new installer and update silently in the background. The new version launches automatically when done.
 
 ---
 
@@ -277,14 +274,31 @@ The **Messages** card lets the admin post a **Message of the Day** (shown in the
 
 Schedule a game session from the **Sessions** card. Pick a game (populated from running servers with Steam artwork), set a date/time and optional message, and post. All clients see the countdown card and receive a tray notification. Sessions auto-expire 2 hours after the scheduled start time.
 
+### Building the Windows Client
+
+The client is a compiled Windows exe built with PyInstaller + Inno Setup. Run on any Windows dev machine:
+
+```bash
+python build.py
+# Output: dist/GamezNET-Setup.exe
+```
+
+`build.py` handles everything: generates the icon, downloads the WireGuard installer if needed, runs PyInstaller via `gameznet.spec`, and compiles the installer via `gameznet.iss`.
+
+Requires: `pip install pyinstaller pillow flask psutil pystray certifi` and [Inno Setup 6](https://jrsoftware.org/isdl.php).
+
 ### Deploying Updates
 
+**Backend (server.js):**
 ```bash
 # On swarm-mgr-01
 deploy-gameznet
 ```
+Pulls latest code on gamez-vm, rebuilds the Docker image with `--no-cache`, and rolls out the stack.
 
-The deploy script pulls the latest code on gamez-vm, rebuilds the Docker image with `--no-cache`, and rolls out the stack.
+**Client (GamezNET.exe):**
+
+Push to `main` — GitHub Actions builds the exe on a Windows runner and publishes it to the public repo's GitHub Releases automatically. Players receive the update the next time they click the update badge in the app.
 
 ### Environment Variables
 

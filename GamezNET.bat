@@ -2,56 +2,52 @@
 setlocal
 title GamezNET
 
-:: ─────────────────────────────────────────────
-::  GamezNET Launcher
-::  Run this daily to connect to the game server
-:: ─────────────────────────────────────────────
+:: ─────────────────────────────────────────────────────────────────────────────
+::  GamezNET Launcher / Upgrade Bridge
+::  If the new GamezNET.exe is already installed, launch it and exit.
+::  Otherwise download the installer, install silently, then launch the exe.
+:: ─────────────────────────────────────────────────────────────────────────────
 
-set "INSTALL_DIR=%~dp0"
-
-:: Request admin if not already (needed for WireGuard)
+:: Request admin if not already elevated (needed for WireGuard install)
 net session >nul 2>&1
 if %errorLevel% NEQ 0 (
-    powershell -Command "Start-Process '%~f0' -Verb RunAs -WorkingDirectory '%INSTALL_DIR%'"
+    powershell -Command "Start-Process '%~f0' -Verb RunAs -WorkingDirectory '%~dp0'"
     exit /b
 )
 
-:: Verify Python - try multiple methods
-set "PY_CMD="
-if exist "%~dp0python_path.txt" (
-    set /p PY_CMD=<"%~dp0python_path.txt"
-)
-python --version >nul 2>&1
-if %errorLevel% EQU 0 set "PY_CMD=python"
+set "EXE_PATH=%LOCALAPPDATA%\GamezNET\GamezNET.exe"
+set "INSTALLER_URL=https://github.com/natelook1/gameznet-public/releases/latest/download/GamezNET-Setup.exe"
+set "INSTALLER_TMP=%TEMP%\GamezNET-Setup.exe"
 
-if not defined PY_CMD (
-    py -3 --version >nul 2>&1
-    if %errorLevel% EQU 0 set "PY_CMD=py -3"
+:: ── Already installed? Just run it. ──────────────────────────────────────────
+if exist "%EXE_PATH%" (
+    start "" "%EXE_PATH%"
+    exit /b
 )
 
-if not defined PY_CMD (
-    for /d %%D in ("%LOCALAPPDATA%\Programs\Python\Python3*") do (
-        if exist "%%D\python.exe" set "PY_CMD=%%D\python.exe"
-    )
-)
+:: ── Not installed — download and run the installer silently ──────────────────
+echo Upgrading GamezNET — this will only take a moment...
 
-if not defined PY_CMD (
-    echo [!] Python not found. Please re-run the GamezNET installer.
-    echo     irm https://gameznet.looknet.ca/install ^| iex
+powershell -NoProfile -Command ^
+    "Invoke-WebRequest -Uri '%INSTALLER_URL%' -OutFile '%INSTALLER_TMP%' -UseBasicParsing"
+
+if not exist "%INSTALLER_TMP%" (
+    echo [!] Download failed. Visit https://gameznet.looknet.ca to install manually.
     pause
     exit /b 1
 )
 
-:: Ensure required Python packages are installed
-%PY_CMD% -m pip install --quiet certifi flask psutil pystray Pillow >nul 2>&1
+:: Run silently and wait — installer creates the exe and desktop shortcut
+"%INSTALLER_TMP%" /VERYSILENT /NORESTART
+del /f /q "%INSTALLER_TMP%" >nul 2>&1
 
-:: Kill any existing GamezNET server running on our port
-for /f "tokens=5" %%P in ('netstat -aon ^| findstr ":7734 " 2^>nul') do (
-    taskkill /F /PID %%P >nul 2>&1
+:: Launch the freshly installed exe
+if exist "%EXE_PATH%" (
+    start "" "%EXE_PATH%"
+) else (
+    echo [!] Install completed but GamezNET.exe not found at expected location.
+    echo     Check %LOCALAPPDATA%\GamezNET\
+    pause
 )
-
-:: Start the app — Python will hide the console and show a tray icon
-cd /d "%INSTALL_DIR%"
-start "GamezNET" /min %PY_CMD% app.py
 
 exit /b

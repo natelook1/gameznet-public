@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.0.7"
+VERSION = "1.1.0"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -297,7 +297,9 @@ def update_telemetry():
 
 # ─── Flask App ────────────────────────────────────────────────────────────────
 
-app = Flask(__name__)
+app = Flask(__name__,
+            template_folder=resource_path("templates"),
+            static_folder=resource_path("static"))
 _lock = threading.Lock()
 _connected = False
 _invisible = False
@@ -1195,22 +1197,48 @@ def proxy_remote_api(endpoint):
         log.error("[RUSTDESK TRACKER] Proxy error to %s: %s", url, repr(e))
         return jsonify({"error": str(e)}), 500
 
+INSTALLER_URL = "https://github.com/natelook1/gameznet-public/releases/latest/download/GamezNET-Setup.exe"
+
 @app.route("/api/update", methods=["POST"])
 def api_update():
-    """Download latest code from GitHub as a zip and restart the app."""
+    """Update GamezNET. Exe builds download the installer directly; bat/dev builds
+    pull the latest source zip first so the new bat can bootstrap the installer."""
+    import urllib.request
+    import ssl
+    import certifi
+    import tempfile
+
+    ctx = ssl.create_default_context(cafile=certifi.where())
+
+    # ── Path A: running as compiled exe ───────────────────────────────────────
+    if getattr(sys, "frozen", False):
+        try:
+            tmp = os.path.join(tempfile.gettempdir(), "GamezNET-Setup.exe")
+            log.info("Downloading installer from %s", INSTALLER_URL)
+            req = urllib.request.Request(INSTALLER_URL, headers={"User-Agent": "GamezNET"})
+            with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+                with open(tmp, "wb") as f:
+                    f.write(resp.read())
+            log.info("Launching installer silently")
+            subprocess.Popen([tmp, "/VERYSILENT", "/NORESTART"],
+                             creationflags=subprocess.CREATE_NO_WINDOW)
+        except Exception as e:
+            log.error("Installer download failed: %r", e, exc_info=True)
+            return jsonify({"error": f"Failed to download installer: {repr(e)}"}), 500
+        def _exit():
+            time.sleep(2)
+            os._exit(0)
+        threading.Thread(target=_exit, daemon=True).start()
+        return jsonify({"success": True})
+
+    # ── Path B: running as python/bat — pull source zip then relaunch via bat ─
     install_dir = os.path.dirname(os.path.abspath(__file__))
     try:
-        import urllib.request
         import zipfile
         import io
-        import ssl
-        import certifi
-
         zip_url = "https://github.com/natelook1/gameznet-public/archive/refs/heads/main.zip"
-        log.info("Downloading update from %s", zip_url)
-        
-        ctx = ssl.create_default_context(cafile=certifi.where())
-        req = urllib.request.Request(zip_url, headers={'User-Agent': 'GamezNET'})
+        log.info("Downloading source update from %s", zip_url)
+        req = urllib.request.Request(zip_url, headers={"User-Agent": "GamezNET"})
         with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
             with zipfile.ZipFile(io.BytesIO(resp.read())) as z:
                 for member in z.namelist():
@@ -1228,24 +1256,23 @@ def api_update():
                     os.makedirs(os.path.dirname(target_path), exist_ok=True)
                     with open(target_path, "wb") as f:
                         f.write(z.read(member))
-                        
-        log.info("Update downloaded and extracted successfully.")
+        log.info("Source update extracted. Relaunching via GamezNET.bat.")
     except Exception as e:
-        log.error("Update failed: %r", e, exc_info=True)
+        log.error("Source update failed: %r", e, exc_info=True)
         return jsonify({"error": f"Failed to download update: {repr(e)}"}), 500
-    # Restart: release mutex first so new instance can acquire it, then launch and exit
-    def _restart():
+
+    def _relaunch():
         time.sleep(0.8)
-        script = os.path.join(install_dir, "app.py")
-        # Release the single-instance mutex before spawning so the new process isn't blocked
         try:
             ctypes.windll.kernel32.ReleaseMutex(_instance_mutex)
             ctypes.windll.kernel32.CloseHandle(_instance_mutex)
         except Exception:
             pass
-        subprocess.Popen([sys.executable, script, "--no-browser"], cwd=install_dir, creationflags=0x08000000)
+        bat = os.path.join(install_dir, "GamezNET.bat")
+        subprocess.Popen(["cmd", "/c", bat], cwd=install_dir,
+                         creationflags=subprocess.CREATE_NO_WINDOW)
         os._exit(0)
-    threading.Thread(target=_restart, daemon=True).start()
+    threading.Thread(target=_relaunch, daemon=True).start()
     return jsonify({"success": True})
 
 

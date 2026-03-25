@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.1.0 — 2026-03-25
+
+### Changed
+- **Compiled Windows installer** — GamezNET is now distributed as `GamezNET-Setup.exe`. No Python, Git, or pip required. Installs to `%LOCALAPPDATA%\GamezNET\` with a desktop shortcut and runs as a native Windows executable.
+- **WireGuard bundled** — included in the installer and installed silently if not already present.
+- **Silent in-place updates** — clicking the update badge downloads and applies the new version silently in the background. The app relaunches automatically with no user interaction required.
+- **Existing bat users auto-migrate** — users on the old `.bat` setup are upgraded automatically on their next update click. Saved credentials carry over with no re-provisioning needed.
+
+### Added
+- `build.py` — automated build pipeline (icon → WireGuard → PyInstaller → Inno Setup)
+- `gameznet.spec` — PyInstaller one-file spec (UAC admin manifest, no console window, tray)
+- `gameznet.iss` — Inno Setup script (silent install, WireGuard detection, clean uninstaller)
+
+---
+
 ## v1.0.2 — 2026-03-19
 
 ### Added
