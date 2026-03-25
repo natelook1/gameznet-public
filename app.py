@@ -850,23 +850,34 @@ def api_minecraft_prepare():
         if os.path.exists(mc_file): os.remove(mc_file)
         return jsonify({"error": f"Failed to download client: {e}"}), 500
 
-def _watch_rustdesk_process(pid, name_to_end):
-    """Background thread that tracks a specific PID (0% CPU lag)."""
+def _watch_rustdesk_process(name_to_end):
+    """Background thread that tracks RustDesk by executable name instead of a volatile PID."""
     def watcher():
         import psutil
         import urllib.request
         import json
         try:
-            proc = psutil.Process(pid)
-            # Efficiently wait for this specific process to exit
-            while proc.is_running():
-                time.sleep(2)
+            # Give RustDesk time to fully launch and spawn its child processes
+            time.sleep(5)
+
+            # Poll for ANY running rustdesk.exe process
+            while True:
+                is_running = False
+                for proc in psutil.process_iter(['name']):
+                    if (proc.info.get('name') or '').lower() == 'rustdesk.exe':
+                        is_running = True
+                        break
+                
+                if not is_running:
+                    break  # RustDesk has been completely closed
+                
+                time.sleep(3)
             
-            log.info(f"[RUSTDESK TRACKER] Process {pid} exited. Ending session for '{name_to_end}'...")
+            log.info(f"[RUSTDESK TRACKER] RustDesk completely exited. Ending session for '{name_to_end}'...")
             _body = json.dumps({"name": name_to_end}).encode()
             _req = urllib.request.Request(f"{WORKER_URL}/api/remote/end", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
             urllib.request.urlopen(_req, timeout=5)
-        except (psutil.NoSuchProcess, Exception) as e:
+        except Exception as e:
             log.debug(f"[RUSTDESK TRACKER] Watcher finished or failed: {e}")
 
     threading.Thread(target=watcher, daemon=True).start()
@@ -1006,9 +1017,10 @@ def api_remote_start_host():
             with _ur2.urlopen(_req, timeout=5) as resp:
                 log.info(f"[RUSTDESK TRACKER] /api/remote/ready post success: {resp.status}")
         except Exception as _e:
-            log.warning("[RUSTDESK TRACKER] /api/remote/ready post failed: %s", repr(_e))
+            log.error("[RUSTDESK TRACKER] /api/remote/ready post FAILED: %s", repr(_e))
+            return jsonify({"error": f"Failed to notify backend: {repr(_e)}"}), 500
 
-        _watch_rustdesk_process(host_proc.pid, data.get("requester", "")) # Pass PID
+        _watch_rustdesk_process(data.get("requester", ""))
         
         log.info("[RUSTDESK TRACKER] RustDesk host started successfully.")
         return jsonify({"success": True, "rustdesk_id": rustdesk_id})
@@ -1103,13 +1115,13 @@ def api_remote_start_helper():
             except Exception as e:
                 log.warning(f"[HELPER] Could not find child process: {e}")
 
-            _watch_rustdesk_process(watch_pid, helper)
+            _watch_rustdesk_process(helper)
             return jsonify({"success": True, "mode": "gui", "rustdesk_id": target_id, "password": password})
 
         log.info("[RUSTDESK TRACKER] CLI Connect successfully initiated connection window.")
         _notify_connected(helper)
         
-        _watch_rustdesk_process(proc.pid, helper) # Pass PID
+        _watch_rustdesk_process(helper)
         return jsonify({"success": True, "mode": "connected"})
 
     except Exception as e:
