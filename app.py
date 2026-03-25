@@ -7,7 +7,6 @@ Runs as localhost:7734 — opened automatically by GamezNET.bat
 import os
 import sys
 import json
-import tempfile
 import ctypes
 import subprocess
 import threading
@@ -1241,12 +1240,6 @@ def api_update():
                 with open(tmp, "wb") as f:
                     f.write(resp.read())
             log.info("Launching installer silently")
-            # Flag tells the new exe to skip opening a browser — the existing tab will reload itself
-            flag = os.path.join(tempfile.gettempdir(), "gameznet_updating.flag")
-            try:
-                open(flag, "w").close()
-            except Exception:
-                pass
             subprocess.Popen([tmp, "/VERYSILENT", "/NORESTART"],
                              creationflags=subprocess.CREATE_NO_WINDOW)
         except Exception as e:
@@ -1695,15 +1688,8 @@ if __name__ == "__main__":
     )
     flask_thread.start()
 
-    # Open browser after Flask is up — skip if launched by an in-place update
-    # (the existing tab polls and reloads itself, so no second tab needed)
-    _update_flag = os.path.join(tempfile.gettempdir(), "gameznet_updating.flag")
-    _launched_by_update = os.path.exists(_update_flag)
-    try:
-        os.remove(_update_flag)
-    except Exception:
-        pass
-    if "--no-browser" not in sys.argv and not _launched_by_update:
+    # Open browser after Flask is up (skip on silent update — existing tab reloads itself)
+    if "--no-browser" not in sys.argv:
         threading.Thread(target=open_browser, daemon=True).start()
 
     # Run tray icon on main thread (blocks until Exit clicked)
