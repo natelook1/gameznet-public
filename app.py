@@ -79,6 +79,8 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
+RUSTDESK_VERSION = "1.4.6"
+RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
 
@@ -91,7 +93,7 @@ def ensure_single_instance():
     mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "Global\\GamezNET_SingleInstance")
     if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
         log.info("Another instance is already running — opening browser and exiting.")
-        webbrowser.open(f"http://gameznet.local:{PORT}")
+        webbrowser.open(_local_url())
         sys.exit(0)
     return mutex  # Must keep reference alive — GC releasing it would free the mutex
 
@@ -125,6 +127,29 @@ def wg_cli():
     if os.path.exists(system):
         return system
     return None
+
+def _local_url():
+    """Return gameznet.local URL if it resolves, otherwise fall back to 127.0.0.1."""
+    import socket
+    try:
+        socket.getaddrinfo("gameznet.local", PORT)
+        return f"http://gameznet.local:{PORT}"
+    except Exception:
+        return f"http://127.0.0.1:{PORT}"
+
+def ensure_hosts_entry():
+    """Write 127.0.0.1 gameznet.local to the Windows hosts file if missing."""
+    hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
+    try:
+        with open(hosts_path, "r") as f:
+            content = f.read()
+        if "gameznet.local" in content:
+            return
+        with open(hosts_path, "a") as f:
+            f.write("\n127.0.0.1 gameznet.local\n")
+        log.info("Added gameznet.local to hosts file")
+    except Exception as e:
+        log.warning("Could not update hosts file: %s", e)
 
 # ─── Dynamic Server Config ───────────────────────────────────────────────────
 
@@ -306,8 +331,6 @@ _invisible = False
 _player_status = ""
 _full_route = False
 _update_required = False
-_steam_game_cache = None
-_steam_cache_at = 0
 
 def _version_tuple(v):
     try:
@@ -910,14 +933,13 @@ def api_remote_start_host():
 
         install_dir = os.path.dirname(os.path.abspath(__file__))
         rustdesk_exe = os.path.join(install_dir, "rustdesk.exe")
-        rustdesk_url = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
         id_log_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "log", "get-id", "rustdesk_rCURRENT.log")
 
         # Download RustDesk if not cached
         if not os.path.exists(rustdesk_exe):
             log.info("[RUSTDESK TRACKER] Downloading RustDesk...")
             import urllib.request as _ur
-            _ur.urlretrieve(rustdesk_url, rustdesk_exe)
+            _ur.urlretrieve(RUSTDESK_URL, rustdesk_exe)
             log.info("[RUSTDESK TRACKER] RustDesk downloaded.")
 
         # Kill any existing RustDesk so we get a fresh launch
@@ -1084,12 +1106,10 @@ def api_remote_start_helper():
 
         install_dir = os.path.dirname(os.path.abspath(__file__))
         rustdesk_exe = os.path.join(install_dir, "rustdesk.exe")
-        rustdesk_url = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
-
         if not os.path.exists(rustdesk_exe):
             log.info("[RUSTDESK TRACKER] Downloading RustDesk...")
             import urllib.request as _ur
-            _ur.urlretrieve(rustdesk_url, rustdesk_exe)
+            _ur.urlretrieve(RUSTDESK_URL, rustdesk_exe)
             log.info("[RUSTDESK TRACKER] RustDesk downloaded.")
 
         log.info(f"[RUSTDESK TRACKER] Attempting CLI connect to {target_id}")
@@ -1220,12 +1240,11 @@ def api_update():
                 with open(tmp, "wb") as f:
                     f.write(resp.read())
             log.info("Launching installer silently")
-            subprocess.run([tmp, "/VERYSILENT", "/NORESTART"],
-                           creationflags=subprocess.CREATE_NO_WINDOW)
+            subprocess.Popen([tmp, "/VERYSILENT", "/NORESTART"],
+                             creationflags=subprocess.CREATE_NO_WINDOW)
         except Exception as e:
             log.error("Installer download failed: %r", e, exc_info=True)
             return jsonify({"error": f"Failed to download installer: {repr(e)}"}), 500
-        threading.Thread(target=lambda: os._exit(0), daemon=True).start()
         return jsonify({"success": True})
 
     # ── Path B: running as python/bat — pull source zip then relaunch via bat ─
@@ -1361,7 +1380,7 @@ def heartbeat_loop():
 
 def open_browser():
     time.sleep(1.2)
-    webbrowser.open(f"http://gameznet.local:{PORT}")
+    webbrowser.open(_local_url())
 
 def ensure_admin():
     """Re-launch with admin rights if needed."""
@@ -1390,30 +1409,40 @@ def hide_console():
             pass
 
 def make_tray_icon(connected=False):
-    """Draw a simple GZ icon — cyan when connected, dark when not."""
+    """
+    Tray icon using the real gameznet.png:
+      - Disconnected: desaturated + dimmed
+      - Connected:    full colour + small green dot in the bottom-right corner
+    """
     try:
-        from PIL import Image, ImageDraw, ImageFont
+        from PIL import Image, ImageDraw, ImageEnhance
     except ImportError:
         return None
 
     size = 64
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-
-    # Background circle
-    bg_color = (0, 180, 220, 255) if connected else (30, 48, 70, 255)
-    border_color = (0, 200, 255, 255) if connected else (80, 120, 160, 255)
-    draw.ellipse([2, 2, size-2, size-2], fill=bg_color, outline=border_color, width=3)
-
-    # "GZ" text
-    text_color = (255, 255, 255, 255) if connected else (120, 160, 200, 255)
+    icon_path = resource_path(os.path.join("static", "gameznet.png"))
     try:
-        font = ImageFont.truetype("arialbd.ttf", 22)
+        img = Image.open(icon_path).convert("RGBA").resize((size, size), Image.LANCZOS)
     except Exception:
-        font = ImageFont.load_default()
-    bbox = draw.textbbox((0, 0), "GZ", font=font)
-    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    draw.text(((size - tw) / 2, (size - th) / 2 - 2), "GZ", fill=text_color, font=font)
+        return None
+
+    if not connected:
+        # Desaturate then dim while preserving the alpha channel
+        r, g, b, a = img.split()
+        rgb = Image.merge("RGB", (r, g, b))
+        rgb = ImageEnhance.Color(rgb).enhance(0.2)
+        rgb = ImageEnhance.Brightness(rgb).enhance(0.5)
+        r2, g2, b2 = rgb.split()
+        img = Image.merge("RGBA", (r2, g2, b2, a))
+    else:
+        # Green connected dot — dark border ring for contrast against any background
+        draw = ImageDraw.Draw(img)
+        dr = 10
+        cx, cy = size - dr - 2, size - dr - 2
+        draw.ellipse([cx - dr - 2, cy - dr - 2, cx + dr + 2, cy + dr + 2],
+                     fill=(7, 9, 15, 210))
+        draw.ellipse([cx - dr, cy - dr, cx + dr, cy + dr],
+                     fill=(0, 232, 122, 255))
 
     return img
 
@@ -1435,7 +1464,7 @@ def run_tray(flask_thread):
             icon_holder["icon"].icon = img
 
     def on_open(icon, item):
-        webbrowser.open(f"http://gameznet.local:{PORT}")
+        webbrowser.open(_local_url())
 
     def on_disconnect(icon, item):
         if _connected:
@@ -1590,13 +1619,14 @@ if __name__ == "__main__":
     # Tell Windows this is a distinct app, not just "Python", so notifications are branded correctly
     try:
         import ctypes
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("GamezNET.Client.1")
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("GamezNET")
     except Exception:
         pass
 
     _instance_mutex = ensure_single_instance()   # ← single-instance guard (must be first)
     ensure_admin()
     hide_console()
+    ensure_hosts_entry()                          # ← repair hosts entry if missing
 
     # Restore persisted status from config
     try:

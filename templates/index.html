@@ -2447,6 +2447,7 @@
     clientIp: '',
     connectedAt: null,
     updateRequired: false,
+    updating: false,
     steam_id: null,
     steam_name: null,
     steam_avatar: null,
@@ -2894,8 +2895,8 @@
     try {
       const res = await fetch('/api/update', { method: 'POST' });
       if (res.ok) {
-        toast('Update applied! Restarting...', 'success');
-        setTimeout(() => window.location.reload(), 5000);
+        _showUpdatingOverlay();
+        return;
       } else {
         const data = await res.json();
         showError(data.error || 'Update failed');
@@ -2903,10 +2904,29 @@
         setStatus('disconnected');
       }
     } catch (e) {
+      if (state.updating) return; // server was killed mid-install — expected
       showError('Update failed: could not reach local server');
       state.busy = false;
       setStatus('disconnected');
     }
+  }
+
+  function _showUpdatingOverlay() {
+    state.updating = true;
+    document.body.innerHTML = `
+      <div style="height:100vh;display:flex;flex-direction:column;align-items:center;
+                  justify-content:center;gap:16px;background:#07090f;
+                  font-family:'Rajdhani',sans-serif;text-align:center;">
+        <img src="/static/gameznet.png" style="width:56px;opacity:.9;">
+        <div style="font-size:1.6rem;font-weight:700;color:#00c8ff;letter-spacing:.08em;">
+          UPDATING GAMEZNET
+        </div>
+        <div style="color:#6888a8;font-size:1rem;">
+          Installing update in the background.<br>
+          A new window will open automatically — you can close this tab.
+        </div>
+      </div>`;
+    window.close();
   }
 
   // ── Reset ──────────────────────────────────────────────────────────────────
