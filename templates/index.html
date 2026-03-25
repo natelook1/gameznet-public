@@ -2921,12 +2921,20 @@
         <div style="font-size:1.6rem;font-weight:700;color:#00c8ff;letter-spacing:.08em;">
           UPDATING GAMEZNET
         </div>
-        <div style="color:#6888a8;font-size:1rem;">
-          Installing update in the background.<br>
-          A new window will open automatically — you can close this tab.
+        <div style="color:#6888a8;font-size:1rem;" id="_upd_status">
+          Installing — please wait...
         </div>
       </div>`;
-    window.close();
+    // Poll until the new server is up, then reload in place
+    const poll = setInterval(async () => {
+      try {
+        const r = await fetch('/api/status');
+        if (r.ok) {
+          clearInterval(poll);
+          window.location.reload();
+        }
+      } catch (e) { /* server still restarting — keep waiting */ }
+    }, 2000);
   }
 
   // ── Reset ──────────────────────────────────────────────────────────────────
