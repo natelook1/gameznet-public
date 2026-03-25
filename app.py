@@ -1220,15 +1220,12 @@ def api_update():
                 with open(tmp, "wb") as f:
                     f.write(resp.read())
             log.info("Launching installer silently")
-            subprocess.Popen([tmp, "/VERYSILENT", "/NORESTART"],
-                             creationflags=subprocess.CREATE_NO_WINDOW)
+            subprocess.run([tmp, "/VERYSILENT", "/NORESTART"],
+                           creationflags=subprocess.CREATE_NO_WINDOW)
         except Exception as e:
             log.error("Installer download failed: %r", e, exc_info=True)
             return jsonify({"error": f"Failed to download installer: {repr(e)}"}), 500
-        def _exit():
-            time.sleep(2)
-            os._exit(0)
-        threading.Thread(target=_exit, daemon=True).start()
+        threading.Thread(target=lambda: os._exit(0), daemon=True).start()
         return jsonify({"success": True})
 
     # ── Path B: running as python/bat — pull source zip then relaunch via bat ─
@@ -1634,9 +1631,8 @@ if __name__ == "__main__":
                 with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
                     with open(tmp, "wb") as f:
                         f.write(resp.read())
-                subprocess.Popen([tmp, "/VERYSILENT", "/NORESTART"],
-                                 creationflags=subprocess.CREATE_NO_WINDOW)
-                time.sleep(2)
+                subprocess.run([tmp, "/VERYSILENT", "/NORESTART"],
+                               creationflags=subprocess.CREATE_NO_WINDOW)
                 os._exit(0)
             except Exception as e:
                 log.error("Auto-migration failed: %s", e)
