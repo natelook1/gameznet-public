@@ -1061,7 +1061,6 @@ def _notify_connected(helper):
 def api_remote_start_helper():
     """
     Download RustDesk (if needed) and attempt to connect to the requester.
-    Falls back gracefully if --connect flag is not supported.
     """
     data = request.json or {}
     target_id = data.get("rustdesk_id", "")
@@ -1087,36 +1086,17 @@ def api_remote_start_helper():
             log.info("[RUSTDESK TRACKER] RustDesk downloaded.")
 
         log.info(f"[RUSTDESK TRACKER] Attempting CLI connect to {target_id}")
-        # Try CLI connect first — opens only the connection window, not the full UI
-        proc = subprocess.Popen([rustdesk_exe, "--connect", target_id, "--password", password])
-        time.sleep(5)
-        if proc.poll() is not None:
-            # Process exited — CLI connect not supported, fall back to minimized GUI
-            log.info("[RUSTDESK TRACKER] RustDesk --connect exited immediately, launching GUI fallback")
-            si = subprocess.STARTUPINFO()
-            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            si.wShowWindow = 6  # SW_MINIMIZE
-            gui_proc = subprocess.Popen([rustdesk_exe], startupinfo=si, close_fds=True)
-            log.info(f"[HELPER] GUI fallback launched PID={gui_proc.pid}")
-            _notify_connected(helper)
+        
+        # Failsafe: Copy password to clipboard so the user can easily paste it if prompted
+        try:
+            subprocess.run(['clip'], input=password, text=True, creationflags=0x08000000)
+            log.info("[RUSTDESK TRACKER] Session password copied to Windows clipboard.")
+        except Exception:
+            pass
 
-            # Find actual RustDesk child process rather than watching the launcher
-            time.sleep(2)
-            watch_pid = gui_proc.pid
-            try:
-                import psutil
-                parent = psutil.Process(gui_proc.pid)
-                children = parent.children(recursive=True)
-                if children:
-                    watch_pid = children[-1].pid
-                    log.info(f"[HELPER] Using child PID={watch_pid} instead of launcher PID={gui_proc.pid}")
-                else:
-                    log.info(f"[HELPER] No child processes found, watching launcher PID={watch_pid}")
-            except Exception as e:
-                log.warning(f"[HELPER] Could not find child process: {e}")
-
-            _watch_rustdesk_process(helper)
-            return jsonify({"success": True, "mode": "gui", "rustdesk_id": target_id, "password": password})
+        # Launch connection. We do NOT check proc.poll() because RustDesk 
+        # intentionally forks to the background and exits the launcher process.
+        subprocess.Popen([rustdesk_exe, "--connect", target_id, "--password", password])
 
         log.info("[RUSTDESK TRACKER] CLI Connect successfully initiated connection window.")
         _notify_connected(helper)
