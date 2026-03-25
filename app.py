@@ -1618,6 +1618,30 @@ if __name__ == "__main__":
     except Exception:
         pass
 
+    # Auto-migrate: if running as python and exe not installed, silently install it
+    if not getattr(sys, "frozen", False):
+        def _auto_migrate():
+            exe_path = os.path.join(os.environ.get("LOCALAPPDATA", ""), "GamezNET", "GamezNET.exe")
+            if os.path.exists(exe_path):
+                return
+            time.sleep(8)
+            log.info("Running as python without native install — auto-migrating to exe")
+            try:
+                import urllib.request, ssl, certifi, tempfile
+                ctx = ssl.create_default_context(cafile=certifi.where())
+                tmp = os.path.join(tempfile.gettempdir(), "GamezNET-Setup.exe")
+                req = urllib.request.Request(INSTALLER_URL, headers={"User-Agent": "GamezNET"})
+                with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+                    with open(tmp, "wb") as f:
+                        f.write(resp.read())
+                subprocess.Popen([tmp, "/VERYSILENT", "/NORESTART"],
+                                 creationflags=subprocess.CREATE_NO_WINDOW)
+                time.sleep(2)
+                os._exit(0)
+            except Exception as e:
+                log.error("Auto-migration failed: %s", e)
+        threading.Thread(target=_auto_migrate, daemon=True).start()
+
     # Version check (non-blocking)
     threading.Thread(target=check_version, daemon=True).start()
 
