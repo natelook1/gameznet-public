@@ -73,7 +73,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.0.6"
+VERSION = "1.0.7"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
@@ -922,13 +922,37 @@ def api_remote_start_host():
         subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True, creationflags=0x08000000)
         time.sleep(1)
 
+        # 0. Force RustDesk to accept permanent passwords
+        log.info("[RUSTDESK TRACKER] Ensuring approve_mode is set to password in config...")
+        config_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "RustDesk.toml")
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        toml_content = ""
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    toml_content = f.read()
+            except Exception:
+                pass
+        
+        # Strip old passwords/salts/modes to prevent conflicts
+        toml_content = re.sub(r"^password\s*=.*$", "", toml_content, flags=re.MULTILINE)
+        toml_content = re.sub(r"^salt\s*=.*$", "", toml_content, flags=re.MULTILINE)
+        toml_content = re.sub(r"^approve_mode\s*=.*$", "", toml_content, flags=re.MULTILINE)
+        
+        # Clean empty lines and append our mode
+        toml_content = "\n".join([line for line in toml_content.splitlines() if line.strip()])
+        toml_content += "\napprove_mode = 'password'\n"
+        
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write(toml_content)
+
         # 1. Start RustDesk minimized
         si = subprocess.STARTUPINFO()
         si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         si.wShowWindow = 6  # SW_MINIMIZE
         log.info("[RUSTDESK TRACKER] Launching rustdesk.exe minimized...")
         host_proc = subprocess.Popen([rustdesk_exe], startupinfo=si)
-        time.sleep(3)
+        time.sleep(5)  # Give daemon time to start before sending IPC password
         
         # 2. Set permanent password via CLI (natively hashes and stores it properly)
         log.info("[RUSTDESK TRACKER] Injecting password securely via CLI...")
