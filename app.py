@@ -1099,7 +1099,20 @@ def api_remote_start_helper():
         except Exception:
             pass
 
-        subprocess.Popen([rustdesk_exe, "--connect", target_id, "--password", password])
+        # Kill any existing RustDesk instances to clear memory cache
+        subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True, creationflags=0x08000000)
+        time.sleep(1)
+        
+        # Wipe stale peer config so RustDesk doesn't auto-try an old invalid password
+        peer_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "peers", f"{target_id}.toml")
+        if os.path.exists(peer_path):
+            try:
+                os.remove(peer_path)
+            except Exception:
+                pass
+
+        # Launch connection WITHOUT --password (since it only sets local passwords, not remote)
+        subprocess.Popen([rustdesk_exe, "--connect", target_id])
 
         log.info("[RUSTDESK TRACKER] CLI Connect successfully initiated connection window.")
         _notify_connected(helper)
