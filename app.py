@@ -1341,22 +1341,26 @@ def heartbeat_loop():
     """Send presence heartbeat to the Worker every 3 seconds while connected."""
     import urllib.request
     _steam_counter = 0
+    _last_steam_game = None  # cache last Steam result between poll intervals
     while True:
         time.sleep(3)
         if _connected and os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
                     cfg = json.load(f)
-                # Game detection: try Steam every 30s (10 heartbeat ticks), fall back to process scan
+                # Game detection: Steam is authoritative when linked.
+                # Poll Steam every 30s and cache the result — process scan is
+                # only used as a fallback when no Steam account is linked.
                 steam_id = cfg.get("steam_id")
                 game = None
                 if steam_id:
                     _steam_counter += 1
                     if _steam_counter >= 10:
                         _steam_counter = 0
-                        game = detect_game_steam(steam_id)
+                        _last_steam_game = detect_game_steam(steam_id)
+                    game = _last_steam_game  # use cached result between polls
                 if game is None:
-                    game = detect_game()
+                    game = detect_game()  # only runs when no steam_id, or Steam says nothing
                 payload = json.dumps({
                     "name": cfg.get("name", ""),
                     "vpn_ip": cfg.get("vpn_ip", ""),
