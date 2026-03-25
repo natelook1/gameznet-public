@@ -1424,7 +1424,11 @@ def make_tray_icon(connected=False):
     try:
         img = Image.open(icon_path).convert("RGBA").resize((size, size), Image.LANCZOS)
     except Exception:
-        return None
+        # Fallback: plain coloured circle so the tray still works
+        img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        color = (0, 180, 220, 255) if connected else (30, 48, 70, 255)
+        ImageDraw.Draw(img).ellipse([2, 2, size - 2, size - 2], fill=color)
+        return img
 
     if not connected:
         # Desaturate then dim while preserving the alpha channel
