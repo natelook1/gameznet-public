@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>GamezNET</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a21;
+      --surface2: #22222c;
+      --border: #2e2e3a;
+      --accent: #7c6af7;
+      --accent-dim: #3a3470;
+      --green: #22c55e;
+      --red: #ef4444;
+      --text: #e2e2e8;
+      --muted: #6b6b7a;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; overflow: hidden; -webkit-font-smoothing: antialiased; }
+    #root { height: 100%; display: flex; flex-direction: column; }
+
+    /* ── Token screen ── */
+    .token-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; gap: 20px; }
+    .logo { font-size: 30px; font-weight: 800; letter-spacing: -1px; }
+    .logo span { color: var(--accent); }
+    .subtitle { color: var(--muted); font-size: 14px; text-align: center; line-height: 1.5; }
+    .token-form { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 12px; }
+    .token-input { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; color: var(--text); font-size: 15px; font-family: monospace; letter-spacing: 2px; outline: none; width: 100%; }
+    .token-input:focus { border-color: var(--accent); }
+    .token-input::placeholder { font-family: -apple-system, sans-serif; letter-spacing: 0; color: var(--muted); }
+    .btn { background: var(--accent); border: none; border-radius: 10px; padding: 14px; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; transition: opacity 0.15s; }
+    .btn:disabled { opacity: 0.45; cursor: default; }
+    .btn:active:not(:disabled) { opacity: 0.8; }
+    .error { color: var(--red); font-size: 13px; text-align: center; }
+
+    /* ── Layout ── */
+    .app { display: flex; flex-direction: column; height: 100%; }
+    .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .header-logo { font-size: 15px; font-weight: 800; flex: 1; }
+    .header-logo span { color: var(--accent); }
+    .avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+    .avatar-placeholder { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .header-name { font-size: 13px; font-weight: 500; color: var(--muted); }
+    .tab-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .tabbar { background: var(--surface); border-top: 1px solid var(--border); display: flex; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 9px 4px; gap: 3px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 10px; font-weight: 500; position: relative; transition: color 0.15s; }
+    .tab.active { color: var(--accent); }
+    .tab-icon { font-size: 19px; line-height: 1; }
+    .badge { position: absolute; top: 5px; right: calc(50% - 18px); background: var(--red); color: #fff; font-size: 9px; font-weight: 700; border-radius: 99px; padding: 1px 4px; min-width: 15px; text-align: center; }
+
+    /* ── Shared ── */
+    .scroll { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin: 10px 12px; }
+    .card-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 10px; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 48px 24px; color: var(--muted); font-size: 14px; }
+    .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; gap: 10px; color: var(--muted); font-size: 14px; text-align: center; }
+    .empty-icon { font-size: 32px; }
+    .back-bar { display: flex; align-items: center; gap: 6px; padding: 11px 16px; color: var(--accent); font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; user-select: none; }
+
+    /* ── Players ── */
+    .player-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+    .player-row:last-child { border-bottom: none; }
+    .player-av { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .player-av-ph { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .player-info { flex: 1; min-width: 0; }
+    .player-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .player-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ping { font-size: 11px; color: var(--green); font-family: monospace; }
+
+    /* ── Servers ── */
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 11px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot-on { background: var(--green); }
+    .dot-off { background: var(--red); }
+
+    /* ── Session ── */
+    .session-card { background: linear-gradient(135deg, var(--accent-dim), #14142a); border-color: var(--accent); }
+    .session-game { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
+    .session-meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .session-cd { font-size: 24px; font-weight: 700; font-family: monospace; color: var(--accent); }
+
+    /* ── Chat ── */
+    .chat-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .messages { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 1px; -webkit-overflow-scrolling: touch; }
+    .msg { padding: 3px 0; }
+    .msg-head { display: flex; align-items: baseline; gap: 7px; margin-bottom: 1px; }
+    .msg-name { font-size: 13px; font-weight: 600; color: var(--accent); }
+    .msg-name.me { color: var(--green); }
+    .msg-time { font-size: 11px; color: var(--muted); }
+    .msg-body { font-size: 14px; line-height: 1.45; word-break: break-word; }
+    .input-bar { display: flex; gap: 8px; padding: 9px 12px; background: var(--surface); border-top: 1px solid var(--border); padding-bottom: calc(9px + env(safe-area-inset-bottom, 0px)); flex-shrink: 0; }
+    .msg-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 9px 14px; color: var(--text); font-size: 14px; outline: none; }
+    .msg-input:focus { border-color: var(--accent); }
+    .send-btn { background: var(--accent); border: none; border-radius: 50%; width: 38px; height: 38px; color: #fff; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .send-btn:disabled { opacity: 0.4; }
+    .send-btn:active:not(:disabled) { opacity: 0.8; }
+
+    /* ── Discord channels ── */
+    .cat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); padding: 14px 16px 4px; }
+    .ch-row { display: flex; align-items: center; gap: 8px; padding: 9px 16px; cursor: pointer; }
+    .ch-row:active { background: var(--surface2); }
+    .ch-hash { color: var(--muted); font-size: 16px; font-weight: 500; }
+    .ch-name { font-size: 14px; color: var(--muted); }
+
+    /* ── DMs ── */
+    .dm-row { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border); }
+    .dm-row:active { background: var(--surface2); }
+    .dm-unread { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; border-radius: 99px; padding: 2px 7px; flex-shrink: 0; }
+
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+  import { h, render } from 'https://esm.sh/preact@10';
+  import { useState, useEffect, useRef } from 'https://esm.sh/preact@10/hooks';
+  import htm from 'https://esm.sh/htm@3';
+  const html = htm.bind(h);
+
+  const API = 'https://gameznet.looknet.ca';
+
+  function req(path, opts = {}) {
+    const token = localStorage.getItem('gzn_token');
+    return fetch(API + path, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Token': token } : {}), ...(opts.headers || {}) }
+    });
+  }
+
+  function fmtTime(iso) {
+    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function countdown(iso) {
+    const diff = new Date(iso) - Date.now();
+    if (diff <= 0) return 'Starting now';
+    const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  }
+
+  function initials(name) {
+    return (name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  function PlayerAv({ player, size = 36 }) {
+    const style = { width: size, height: size, fontSize: size * 0.38 };
+    if (player?.steam_avatar) return html`<img class="player-av" src=${player.steam_avatar} style=${style} alt="" />`;
+    return html`<div class="player-av-ph" style=${style}>${initials(player?.name || player?.from_name || '?')}</div>`;
+  }
+
+  // ── Token Screen ────────────────────────────────────────────────────────────
+  function TokenScreen({ onAuth }) {
+    const [token, setToken] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    async function submit(e) {
+      e.preventDefault();
+      const t = token.trim();
+      if (!t) return;
+      setLoading(true); setError('');
+      try {
+        const res = await fetch(`${API}/api/mobile/whoami`, { headers: { 'X-Token': t } });
+        if (!res.ok) { setError('Invalid or inactive token.'); return; }
+        localStorage.setItem('gzn_token', t);
+        onAuth(await res.json());
+      } catch { setError('Could not reach server.'); }
+      finally { setLoading(false); }
+    }
+
+    return html`
+      <div class="token-screen">
+        <div class="logo">Gamez<span>NET</span></div>
+        <p class="subtitle">Enter your invite token to access the network.</p>
+        <form class="token-form" onSubmit=${submit}>
+          <input class="token-input" type="text" placeholder="XXXX-XXXX-XXXX-XXXX"
+            value=${token} onInput=${e => setToken(e.target.value)}
+            autocomplete="off" autocapitalize="none" spellcheck="false" />
+          ${error && html`<p class="error">${error}</p>`}
+          <button class="btn" type="submit" disabled=${loading || !token.trim()}>
+            ${loading ? 'Verifying…' : 'Connect'}
+          </button>
+        </form>
+      </div>
+    `;
+  }
+
+  // ── Home Tab ────────────────────────────────────────────────────────────────
+  function HomeTab({ me }) {
+    const [online, setOnline] = useState([]);
+    const [servers, setServers] = useState([]);
+    const [session, setSession] = useState(null);
+    const [tick, setTick] = useState(0);
+
+    useEffect(() => {
+      async function load() {
+        try {
+          const [oR, sR, sessR] = await Promise.all([req('/api/online'), req('/api/servers'), req('/api/session')]);
+          if (oR.ok) setOnline(await oR.json());
+          if (sR.ok) setServers(await sR.json());
+          if (sessR.ok) { const d = await sessR.json(); setSession(d.session || null); }
+        } catch {}
+      }
+      load();
+      const iv = setInterval(load, 15000);
+      return () => clearInterval(iv);
+    }, []);
+
+    useEffect(() => {
+      if (!session) return;
+      const iv = setInterval(() => setTick(t => t + 1), 1000);
+      return () => clearInterval(iv);
+    }, [session]);
+
+    return html`
+      <div class="scroll">
+        ${session && html`
+          <div class="card session-card">
+            <div class="card-label">Scheduled Session</div>
+            <div class="session-game">${session.game}</div>
+            <div class="session-meta">
+              Hosted by ${session.host} · ${new Date(session.scheduled_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </div>
+            ${session.message && html`<div style="font-size:13px;color:var(--muted);margin-bottom:8px;">${session.message}</div>`}
+            <div class="session-cd">${countdown(session.scheduled_at)}</div>
+          </div>
+        `}
+
+        ${servers.length > 0 && html`
+          <div class="card">
+            <div class="card-label">Game Servers</div>
+            <div class="chips">
+              ${servers.map(s => html`
+                <div class="chip" key=${s.id || s.name}>
+                  <span class="dot ${s.running ? 'dot-on' : 'dot-off'}"></span>
+                  ${s.name}
+                </div>
+              `)}
+            </div>
+          </div>
+        `}
+
+        <div class="card">
+          <div class="card-label">Who's Online · ${online.length}</div>
+          ${online.length === 0
+            ? html`<div class="empty" style="padding:16px 0;"><span class="empty-icon">🎮</span><span>No one online yet</span></div>`
+            : online.map(p => html`
+              <div class="player-row" key=${p.name}>
+                <${PlayerAv} player=${p} />
+                <div class="player-info">
+                  <div class="player-name">${p.name}${p.name === me.name ? ' (you)' : ''}</div>
+                  <div class="player-sub">${p.game || p.status || 'Online'}</div>
+                </div>
+                ${p.ping && html`<div class="ping">${p.ping}ms</div>`}
+              </div>
+            `)
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Chat Tab ────────────────────────────────────────────────────────────────
+  function ChatTab({ me }) {
+    const [messages, setMessages] = useState([]);
+    const [input, setInput] = useState('');
+    const [sending, setSending] = useState(false);
+    const bottomRef = useRef(null);
+    const msgsRef = useRef(null);
+    const lastSince = useRef(new Date(0).toISOString());
+    const atBottom = useRef(true);
+
+    useEffect(() => {
+      async function init() {
+        try {
+          const res = await req('/api/chat');
+          if (!res.ok) return;
+          const msgs = await res.json();
+          setMessages(msgs);
+          if (msgs.length) lastSince.current = msgs[msgs.length - 1].sent_at;
+          setTimeout(() => bottomRef.current?.scrollIntoView(), 80);
+        } catch {}
+      }
+      init();
+      const iv = setInterval(async () => {
+        try {
+          const res = await req(`/api/chat?since=${encodeURIComponent(lastSince.current)}`);
+          if (!res.ok) return;
+          const fresh = await res.json();
+          if (!fresh.length) return;
+          lastSince.current = fresh[fresh.length - 1].sent_at;
+          setMessages(prev => {
+            const ids = new Set(prev.map(m => m.id));
+            return [...prev, ...fresh.filter(m => !ids.has(m.id))].slice(-300);
+          });
+        } catch {}
+      }, 3000);
+      return () => clearInterval(iv);
+    }, []);
+
+    useEffect(() => { if (atBottom.current) bottomRef.current?.scrollIntoView(); }, [messages]);
+
+    async function send(e) {
+      e.preventDefault();
+      const body = input.trim();
+      if (!body || sending) return;
+      setSending(true); setInput('');
+      try { await req('/api/chat/send', { method: 'POST', body: JSON.stringify({ name: me.name, body }) }); }
+      catch {} finally { setSending(false); }
+    }
+
+    return html`
+      <div class="chat-wrap">
+        <div class="messages" ref=${msgsRef} onScroll=${() => {
+          const el = msgsRef.current;
+          atBottom.current = el ? el.scrollHeight - el.scrollTop - el.clientHeight < 60 : true;
+        }}>
+          ${messages.length === 0 && html`<div class="loading">Loading…</div>`}
+          ${messages.map((m, i) => {
+            const isMe = m.from_name === me.name;
+            const showHead = i === 0 || messages[i - 1].from_name !== m.from_name;
+            return html`
+              <div class="msg" key=${m.id}>
+                ${showHead && html`
+                  <div class="msg-head">
+                    <span class="msg-name ${isMe ? 'me' : ''}">${m.from_name}</span>
+                    <span class="msg-time">${fmtTime(m.sent_at)}</span>
+                  </div>
+                `}
+                <div class="msg-body">${m.body}</div>
+              </div>
+            `;
+          })}
+          <div ref=${bottomRef} />
+        </div>
+        <form class="input-bar" onSubmit=${send}>
+          <input class="msg-input" placeholder="Message…" value=${input} onInput=${e => setInput(e.target.value)} />
+          <button type="submit" class="send-btn" disabled=${!input.trim() || sending}>➤</button>
+        </form>
+      </div>
+    `;
+  }
+
+  // ── Discord Tab ─────────────────────────────────────────────────────────────
+  function DiscordTab({ me }) {
+    const [channels, setChannels] = useState([]);
+    const [active, setActive] = useState(null);
+    const [messages, setMessages] = useState([]);
+    const [input, setInput] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [loadingMsgs, setLoadingMsgs] = useState(false);
+    const bottomRef = useRef(null);
+    const pollRef = useRef(null);
+
+    useEffect(() => {
+      req('/api/discord/channels').then(r => r.ok ? r.json() : []).then(d => { setChannels(d); setLoading(false); }).catch(() => setLoading(false));
+    }, []);
+
+    async function loadMsgs(id) {
+      try { const r = await req(`/api/discord/messages?channel=${id}`); if (r.ok) setMessages(await r.json()); } catch {}
+    }
+
+    async function openChannel(ch) {
+      if (pollRef.current) clearInterval(pollRef.current);
+      setActive(ch); setMessages([]); setLoadingMsgs(true);
+      await loadMsgs(ch.id);
+      setLoadingMsgs(false);
+      setTimeout(() => bottomRef.current?.scrollIntoView(), 80);
+      pollRef.current = setInterval(() => loadMsgs(ch.id), 8000);
+    }
+
+    function closeChannel() {
+      if (pollRef.current) clearInterval(pollRef.current);
+      setActive(null);
+    }
+
+    useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
+
+    async function send(e) {
+      e.preventDefault();
+      const content = input.trim();
+      if (!content || !active) return;
+      setInput('');
+      try {
+        await req('/api/discord/send', { method: 'POST', body: JSON.stringify({ channel: active.id, content, name: me.name, avatar_url: me.steam_avatar || undefined }) });
+        await loadMsgs(active.id);
+        setTimeout(() => bottomRef.current?.scrollIntoView(), 50);
+      } catch {}
+    }
+
+    if (loading) return html`<div class="loading">Loading channels…</div>`;
+
+    if (!active) return html`
+      <div class="scroll">
+        ${channels.map(cat => html`
+          <div key=${cat.id || cat.name}>
+            ${cat.name && html`<div class="cat-label">${cat.name}</div>`}
+            ${(cat.channels || []).filter(c => c.type === 0).map(ch => html`
+              <div class="ch-row" key=${ch.id} onClick=${() => openChannel(ch)}>
+                <span class="ch-hash">#</span>
+                <span class="ch-name">${ch.name}</span>
+              </div>
+            `)}
+          </div>
+        `)}
+      </div>
+    `;
+
+    return html`
+      <div class="chat-wrap">
+        <div class="back-bar" onClick=${closeChannel}>‹ &nbsp;# ${active.name}</div>
+        <div class="messages">
+          ${loadingMsgs && html`<div class="loading">Loading…</div>`}
+          ${messages.map((m, i) => {
+            const author = m.author?.global_name || m.author?.username || 'Unknown';
+            const isMe = author === me.name || m.author?.username === me.name;
+            const showHead = i === 0 || messages[i - 1].author?.id !== m.author?.id;
+            return html`
+              <div class="msg" key=${m.id}>
+                ${showHead && html`
+                  <div class="msg-head">
+                    <span class="msg-name ${isMe ? 'me' : ''}">${author}</span>
+                    <span class="msg-time">${fmtTime(m.timestamp)}</span>
+                  </div>
+                `}
+                <div class="msg-body">${m.content}</div>
+              </div>
+            `;
+          })}
+          <div ref=${bottomRef} />
+        </div>
+        <form class="input-bar" onSubmit=${send}>
+          <input class="msg-input" placeholder="Message #${active.name}…" value=${input} onInput=${e => setInput(e.target.value)} />
+          <button type="submit" class="send-btn" disabled=${!input.trim()}>➤</button>
+        </form>
+      </div>
+    `;
+  }
+
+  // ── DMs Tab ─────────────────────────────────────────────────────────────────
+  function DMsTab({ me, onUnreadChange }) {
+    const [online, setOnline] = useState([]);
+    const [unread, setUnread] = useState({});
+    const [active, setActive] = useState(null);
+    const [messages, setMessages] = useState([]);
+    const [input, setInput] = useState('');
+    const bottomRef = useRef(null);
+    const pollRef = useRef(null);
+
+    async function loadUnread() {
+      try {
+        const r = await req(`/api/chat/dm/unread?name=${encodeURIComponent(me.name)}`);
+        if (r.ok) {
+          const u = await r.json();
+          const map = Object.fromEntries(u.map(r => [r.from_name, r.count]));
+          setUnread(map);
+          onUnreadChange(Object.values(map).reduce((a, b) => a + b, 0));
+        }
+      } catch {}
+    }
+
+    useEffect(() => {
+      async function load() {
+        try { const r = await req('/api/online'); if (r.ok) setOnline(await r.json()); } catch {}
+        await loadUnread();
+      }
+      load();
+      const iv = setInterval(load, 10000);
+      return () => clearInterval(iv);
+    }, [me.name]);
+
+    async function loadHistory(name) {
+      try {
+        const r = await req(`/api/chat/dm/history?user1=${encodeURIComponent(me.name)}&user2=${encodeURIComponent(name)}`);
+        if (r.ok) setMessages(await r.json());
+      } catch {}
+    }
+
+    async function openConvo(player) {
+      if (pollRef.current) clearInterval(pollRef.current);
+      setActive(player); setMessages([]);
+      await loadHistory(player.name);
+      setTimeout(() => bottomRef.current?.scrollIntoView(), 80);
+      await req(`/api/chat/dm/read?user1=${encodeURIComponent(me.name)}&user2=${encodeURIComponent(player.name)}`, { method: 'POST' });
+      setUnread(prev => { const n = { ...prev }; delete n[player.name]; return n; });
+      onUnreadChange(0);
+      pollRef.current = setInterval(() => loadHistory(player.name), 4000);
+    }
+
+    function closeConvo() {
+      if (pollRef.current) clearInterval(pollRef.current);
+      setActive(null);
+      loadUnread();
+    }
+
+    useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
+
+    async function send(e) {
+      e.preventDefault();
+      const body = input.trim();
+      if (!body || !active) return;
+      setInput('');
+      try {
+        await req('/api/chat/dm/send', { method: 'POST', body: JSON.stringify({ from_name: me.name, to_name: active.name, body }) });
+        await loadHistory(active.name);
+        setTimeout(() => bottomRef.current?.scrollIntoView(), 50);
+      } catch {}
+    }
+
+    if (active) return html`
+      <div class="chat-wrap">
+        <div class="back-bar" onClick=${closeConvo}>‹ &nbsp;${active.name}</div>
+        <div class="messages">
+          ${messages.length === 0 && html`<div class="empty"><span class="empty-icon">💬</span><span>Start the conversation</span></div>`}
+          ${messages.map((m, i) => {
+            const isMe = m.from_name === me.name;
+            const showHead = i === 0 || messages[i - 1].from_name !== m.from_name;
+            return html`
+              <div class="msg" key=${m.id}>
+                ${showHead && html`
+                  <div class="msg-head">
+                    <span class="msg-name ${isMe ? 'me' : ''}">${m.from_name}</span>
+                    <span class="msg-time">${fmtTime(m.sent_at)}</span>
+                  </div>
+                `}
+                <div class="msg-body">${m.body}</div>
+              </div>
+            `;
+          })}
+          <div ref=${bottomRef} />
+        </div>
+        <form class="input-bar" onSubmit=${send}>
+          <input class="msg-input" placeholder="Message ${active.name}…" value=${input} onInput=${e => setInput(e.target.value)} />
+          <button type="submit" class="send-btn" disabled=${!input.trim()}>➤</button>
+        </form>
+      </div>
+    `;
+
+    const others = online.filter(p => p.name !== me.name);
+    return html`
+      <div class="scroll">
+        ${others.length === 0
+          ? html`<div class="empty" style="margin-top:40px;"><span class="empty-icon">👥</span><span>No one else online right now</span></div>`
+          : others.map(p => html`
+            <div class="dm-row" key=${p.name} onClick=${() => openConvo(p)}>
+              <${PlayerAv} player=${p} />
+              <div class="player-info">
+                <div class="player-name">${p.name}</div>
+                <div class="player-sub">${p.game || 'Online'}</div>
+              </div>
+              ${unread[p.name] && html`<span class="dm-unread">${unread[p.name]}</span>`}
+            </div>
+          `)
+        }
+      </div>
+    `;
+  }
+
+  // ── Main App ────────────────────────────────────────────────────────────────
+  function MainApp({ me }) {
+    const [tab, setTab] = useState('home');
+    const [dmUnread, setDmUnread] = useState(0);
+
+    const tabs = [
+      { id: 'home',    icon: '🏠', label: 'Home' },
+      { id: 'chat',    icon: '💬', label: 'Chat' },
+      { id: 'discord', icon: '🎮', label: 'Discord' },
+      { id: 'dms',     icon: '✉️',  label: 'DMs', badge: dmUnread || null },
+    ];
+
+    return html`
+      <div class="app">
+        <div class="header">
+          <div class="header-logo">Gamez<span>NET</span></div>
+          <${PlayerAv} player=${me} size=${28} />
+          <div class="header-name">${me.name}</div>
+        </div>
+        <div class="tab-content">
+          ${tab === 'home'    && html`<${HomeTab}    me=${me} />`}
+          ${tab === 'chat'    && html`<${ChatTab}    me=${me} />`}
+          ${tab === 'discord' && html`<${DiscordTab} me=${me} />`}
+          ${tab === 'dms'     && html`<${DMsTab}     me=${me} onUnreadChange=${setDmUnread} />`}
+        </div>
+        <nav class="tabbar">
+          ${tabs.map(t => html`
+            <button class="tab ${tab === t.id ? 'active' : ''}" key=${t.id} onClick=${() => setTab(t.id)}>
+              ${t.badge && html`<span class="badge">${t.badge}</span>`}
+              <span class="tab-icon">${t.icon}</span>
+              <span>${t.label}</span>
+            </button>
+          `)}
+        </nav>
+      </div>
+    `;
+  }
+
+  // ── App Root ────────────────────────────────────────────────────────────────
+  function App() {
+    const [me, setMe] = useState(null);
+    const [checking, setChecking] = useState(true);
+
+    useEffect(() => {
+      const token = localStorage.getItem('gzn_token');
+      if (!token) { setChecking(false); return; }
+      fetch(`${API}/api/mobile/whoami`, { headers: { 'X-Token': token } })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setMe(d); else localStorage.removeItem('gzn_token'); })
+        .catch(() => {})
+        .finally(() => setChecking(false));
+    }, []);
+
+    if (checking) return html`<div class="loading" style="height:100%;font-size:16px;color:var(--accent);">GamezNET</div>`;
+    if (!me) return html`<${TokenScreen} onAuth=${setMe} />`;
+    return html`<${MainApp} me=${me} />`;
+  }
+
+  render(html`<${App} />`, document.getElementById('root'));
+</script>
+</body>
+</html>
