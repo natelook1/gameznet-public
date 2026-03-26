@@ -2554,6 +2554,7 @@
     document.getElementById('footer-status-setter').style.display = 'flex';
     setStatus('disconnected');
     refreshMobileStatus();
+    setInterval(refreshMobileStatus, 30000);
   }
 
   function showUnprovisioned() {
@@ -5360,6 +5361,11 @@
   }
 
   // ── Mobile QR ──────────────────────────────────────────────────────────────
+  function closeMobileQr() {
+    document.getElementById('mobile-qr-overlay').style.display = 'none';
+    refreshMobileStatus();
+  }
+
   async function openMobileQr() {
     const overlay = document.getElementById('mobile-qr-overlay');
     overlay.style.display = 'flex';
@@ -5414,7 +5420,7 @@
   }
 </script>
 
-<div id="mobile-qr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;" onclick="this.style.display='none'">
+<div id="mobile-qr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;" onclick="closeMobileQr()">
   <div style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:28px 24px;text-align:center;min-width:280px;" onclick="event.stopPropagation()">
 
     <div id="mobile-qr-loading" style="color:var(--text-dim);font-size:13px;padding:40px 0;">Loading...</div>
@@ -5434,7 +5440,7 @@
       <button id="mobile-revoke-btn" onclick="revokeMobileDevice()" style="width:100%;background:var(--danger);border:none;border-radius:3px;color:#fff;font-size:12px;font-family:'Share Tech Mono',monospace;letter-spacing:1px;padding:8px;cursor:pointer;">Revoke Device</button>
     </div>
 
-    <button onclick="document.getElementById('mobile-qr-overlay').style.display='none'" style="margin-top:16px;width:100%;background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text-dim);font-size:11px;padding:6px;cursor:pointer;">CLOSE</button>
+    <button onclick="closeMobileQr()" style="margin-top:16px;width:100%;background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text-dim);font-size:11px;padding:6px;cursor:pointer;">CLOSE</button>
   </div>
 </div>
 </body>
