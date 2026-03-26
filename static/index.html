@@ -353,7 +353,7 @@
                           <div class="chip-stat">
                             <span class="chip-stat-label">RAM</span>
                             <span class="chip-stat-value">${ram}</span>
-                            <div class="chip-bar"><div class="chip-bar-fill" style="width:100%;background:var(--accent);opacity:0.7;"></div></div>
+                            <div class="chip-bar"><div class="chip-bar-fill" style="width:${s.memory_limit_mb > 0 ? Math.min(100, Math.round(s.memory_mb / s.memory_limit_mb * 100)) : 100}%;background:var(--accent);opacity:0.7;"></div></div>
                           </div>
                           ${uptime && html`<div class="chip-stat"><span class="chip-stat-label">Up</span><span class="chip-stat-value">${uptime.replace(' up','')}</span></div>`}
                         </div>
@@ -416,7 +416,7 @@
                 <div class="sheet-stat">
                   <div class="sheet-stat-label">RAM</div>
                   <div class="sheet-stat-value">${ram}</div>
-                  <div class="sheet-bar"><div class="sheet-bar-fill" style="width:100%;background:var(--accent);opacity:0.5;"></div></div>
+                  <div class="sheet-bar"><div class="sheet-bar-fill" style="width:${s.memory_limit_mb > 0 ? Math.min(100, Math.round(s.memory_mb / s.memory_limit_mb * 100)) : 100}%;background:var(--accent);opacity:0.5;"></div></div>
                 </div>
                 <div class="sheet-stat">
                   <div class="sheet-stat-label">Uptime</div>
