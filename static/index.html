@@ -40,6 +40,16 @@
     .btn:disabled { opacity: 0.45; cursor: default; }
     .btn:active:not(:disabled) { opacity: 0.8; }
     .error { color: var(--red); font-size: 13px; text-align: center; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: var(--muted); font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; transition: border-color 0.15s, color 0.15s; }
+    .btn-outline:hover { border-color: var(--accent); color: var(--text); }
+
+    /* ── QR Scanner ── */
+    .qr-scanner-wrap { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; }
+    .qr-video { flex: 1; width: 100%; object-fit: cover; }
+    .qr-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+    .qr-frame { width: 220px; height: 220px; border: 2px solid var(--accent); border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.55); }
+    .qr-hint { color: #fff; font-size: 13px; margin-top: 20px; opacity: 0.8; }
+    .qr-cancel { pointer-events: all; position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 10px; padding: 12px 32px; color: #fff; font-size: 15px; cursor: pointer; }
 
     /* ── Layout ── */
     .app { display: flex; flex-direction: column; height: 100%; }
@@ -233,9 +243,13 @@
     const [token, setToken] = useState(initialToken);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [scanning, setScanning] = useState(false);
+    const videoRef = useRef(null);
+    const streamRef = useRef(null);
+    const rafRef = useRef(null);
 
     async function submit(e) {
-      e.preventDefault();
+      if (e && e.preventDefault) e.preventDefault();
       const t = token.trim();
       if (!t) return;
       setLoading(true); setError('');
@@ -251,6 +265,92 @@
       finally { setLoading(false); }
     }
 
+    async function startScan() {
+      if (!('BarcodeDetector' in window)) {
+        setError('QR scanning not supported in this browser. Try Chrome or Safari 15.4+.');
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+        streamRef.current = stream;
+        setScanning(true);
+        // Attach stream after render
+        setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play();
+          }
+          scanLoop();
+        }, 100);
+      } catch {
+        setError('Camera access denied. Allow camera permission and try again.');
+      }
+    }
+
+    function stopScan() {
+      cancelAnimationFrame(rafRef.current);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+      }
+      setScanning(false);
+    }
+
+    async function scanLoop() {
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      async function tick() {
+        if (!videoRef.current || videoRef.current.readyState < 2) {
+          rafRef.current = requestAnimationFrame(tick);
+          return;
+        }
+        try {
+          const codes = await detector.detect(videoRef.current);
+          if (codes.length > 0) {
+            const raw = codes[0].rawValue;
+            // Accept bare token or URL with ?token= param
+            let found = raw.trim();
+            try {
+              const u = new URL(raw);
+              const p = u.searchParams.get('token');
+              if (p) found = p;
+            } catch {}
+            stopScan();
+            setToken(found);
+            // Auto-submit after state settles
+            setTimeout(async () => {
+              setLoading(true); setError('');
+              try {
+                const res = await fetch(`${API}/api/mobile/whoami`, { headers: { 'X-Token': found } });
+                if (res.status === 409) { setError('This token is already active on another device. Revoke it from the PC app first.'); return; }
+                if (!res.ok) { setError('Invalid token.'); return; }
+                const data = await res.json();
+                localStorage.setItem('gzn_token', found);
+                localStorage.setItem('gzn_session', data.session);
+                onAuth(data);
+              } catch { setError('Could not reach server.'); }
+              finally { setLoading(false); }
+            }, 50);
+            return;
+          }
+        } catch {}
+        rafRef.current = requestAnimationFrame(tick);
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    }
+
+    if (scanning) return html`
+      <div class="qr-scanner-wrap">
+        <video ref=${videoRef} class="qr-video" muted playsinline></video>
+        <div class="qr-overlay">
+          <div class="qr-frame"></div>
+          <div class="qr-hint">Point at the QR code on your PC</div>
+        </div>
+        <button class="qr-cancel" onClick=${stopScan}>Cancel</button>
+      </div>
+    `;
+
     return html`
       <div class="token-screen">
         <div class="logo">Gamez<span>NET</span></div>
@@ -262,6 +362,9 @@
           ${error && html`<p class="error">${error}</p>`}
           <button class="btn" type="submit" disabled=${loading || !token.trim()}>
             ${loading ? 'Verifying…' : 'Connect'}
+          </button>
+          <button class="btn-outline" type="button" onClick=${startScan}>
+            📷 Scan QR Code
           </button>
         </form>
       </div>
