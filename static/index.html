@@ -309,7 +309,7 @@
                 <${PlayerAv} player=${p} />
                 <div class="player-info">
                   <div class="player-name">${p.name}${p.name === me.name ? ' (you)' : ''}</div>
-                  <div class="player-sub">${p.game || p.status || 'Online'}</div>
+                  <div class="player-sub">${p.mobile ? 'Mobile' : (p.game || p.status || 'Online')}</div>
                 </div>
                 ${parsePing(p.ping) !== null && html`<div class="ping">${parsePing(p.ping)}ms</div>`}
               </div>
@@ -792,6 +792,13 @@
       }
       checkUnread();
       const iv = setInterval(checkUnread, 10000);
+      return () => clearInterval(iv);
+    }, [me.name]);
+
+    useEffect(() => {
+      async function heartbeat() { try { await req('/api/mobile/heartbeat', { method: 'POST' }); } catch {} }
+      heartbeat();
+      const iv = setInterval(heartbeat, 15000);
       return () => clearInterval(iv);
     }, [me.name]);
 
