@@ -1225,10 +1225,18 @@ def api_update():
     pull the latest source zip first so the new bat can bootstrap the installer."""
     import urllib.request
     import ssl
-    import certifi
     import tempfile
 
-    ctx = ssl.create_default_context(cafile=certifi.where())
+    # Prefer Windows cert store; fall back to certifi; last resort skip verify
+    try:
+        ctx = ssl.create_default_context()
+        ctx.load_default_certs()
+    except Exception:
+        try:
+            import certifi
+            ctx = ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            ctx = ssl._create_unverified_context()
 
     # ── Path A: running as compiled exe ───────────────────────────────────────
     if getattr(sys, "frozen", False):

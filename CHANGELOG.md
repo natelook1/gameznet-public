@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.2.0 — 2026-03-25
+
+### Added
+- **Mobile Companion App** — a static Preact SPA served via Cloudflare Pages (`m.gameznet.looknet.ca`). Works on any device with a browser — no install required. Features: Who's Online, Game Server status, Network Chat, Discord channel browser, and Direct Messages
+- **Mobile token auth** — `X-Token` header validated against active tokens on the backend; mobile identity is enforced server-side on all write operations (chat send, DM send, Discord send) preventing impersonation
+- **`GET /api/mobile/whoami`** — validates a token and returns player identity for mobile first launch
+- **`mobile_enabled` flag** — per-token toggle to enable or disable mobile access without revoking the token; admin panel shows a 📱/📵 toggle per player
+
+### Fixed
+- Update SSL handling now tries the Windows certificate store first, falls back to certifi, then unverified — fixes update failures on machines with broken Python cert stores (e.g. fresh Python 3.12 installs)
+
+---
+
 ## v1.1.0 — 2026-03-25
 
 ### Changed
