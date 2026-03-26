@@ -1526,9 +1526,13 @@
       left: 0; border-left: none; border-radius: 0 8px 8px 0;
     }
     .chat-float.chat-minimized {
-      height: 36px; width: 164px; overflow: hidden;
+      height: 36px; width: auto; min-width: 110px; max-width: 220px; overflow: hidden;
+      border-radius: 18px !important;
     }
-    .chat-float.chat-minimized .chat-float-hdr { border-bottom: none; cursor: grab; }
+    .chat-float.chat-minimized.chat-docked-right { border-radius: 18px 0 0 18px !important; }
+    .chat-float.chat-minimized.chat-docked-left  { border-radius: 0 18px 18px 0 !important; }
+    .chat-float.chat-minimized .chat-float-hdr { border-bottom: none; cursor: pointer; }
+    .chat-float.chat-minimized .chat-mute-only { display: none; }
     .chat-float.chat-dragging {
       border-radius: 6px !important; border: 1px solid var(--accent) !important;
       box-shadow: 0 8px 32px rgba(0,212,255,0.2); transition: none !important;
@@ -1552,9 +1556,19 @@
       text-transform: uppercase;
       color: var(--text-dim);
     }
-    .chat-float-badge {
+    .chat-float-dm-badge {
       background: var(--danger);
       color: #fff;
+      font-size: 9px;
+      font-weight: bold;
+      padding: 1px 5px;
+      border-radius: 8px;
+      display: none;
+      white-space: nowrap;
+    }
+    .chat-float-badge {
+      background: var(--accent);
+      color: #000;
       font-size: 9px;
       font-family: 'Share Tech Mono', monospace;
       padding: 1px 5px;
@@ -1572,8 +1586,6 @@
     }
     .chat-float-btn:hover { color: var(--text); }
     .chat-float-body { display: flex; flex-direction: column; gap: 8px; padding: 10px; flex: 1; min-height: 0; }
-    .chat-float.chat-minimized .chat-float-hdr { border-bottom: none; cursor: pointer; }
-
     .chat-section { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
     .chat-msg { display: flex; gap: 8px; align-items: baseline; font-size: 12px; line-height: 1.4; }
     .chat-msg-name { font-family: 'Share Tech Mono', monospace; color: var(--accent); font-size: 11px; white-space: nowrap; flex-shrink: 0; }
@@ -1939,10 +1951,11 @@
   <!-- Floating Network Chat -->
   <div class="chat-float" id="chat-float" style="display:none;">
     <div class="chat-float-hdr" id="chat-float-hdr">
-      <span class="chat-float-title">⬡ Network Chat</span>
-      <span class="chat-float-badge" id="chat-float-badge">0</span>
-      <button id="chat-mute-btn" class="chat-float-btn" onclick="toggleChatMute()" title="Toggle sound">🔔</button>
-      <button class="chat-float-btn" onclick="toggleChatFloat()" title="Minimize">—</button>
+      <span class="chat-float-title" id="chat-float-title">⬡ Network Chat</span>
+      <span class="chat-float-badge" id="chat-float-badge"></span>
+      <span class="chat-float-dm-badge" id="chat-float-dm-badge"></span>
+      <button id="chat-mute-btn" class="chat-float-btn chat-mute-only" onclick="toggleChatMute()" title="Toggle sound">🔔</button>
+      <button class="chat-float-btn" id="chat-toggle-btn" onclick="toggleChatFloat()" title="Minimize">—</button>
     </div>
     <div class="chat-float-body" style="padding:0; display:flex; flex-direction:column; flex:1; min-height:0;">
       <div class="chat-tabs" id="chat-tabs-container">
@@ -3372,14 +3385,26 @@
   }
   
   function updateGlobalChatBadge() {
-    const badge = document.getElementById('chat-float-badge');
+    const badge    = document.getElementById('chat-float-badge');
+    const dmBadge  = document.getElementById('chat-float-dm-badge');
+    const titleEl  = document.getElementById('chat-float-title');
+    const toggleBtn = document.getElementById('chat-toggle-btn');
     const minimized = document.getElementById('chat-float').classList.contains('chat-minimized');
-    let totalUnread = Object.values(chatUnread).reduce((a,b) => a+b, 0);
-    if (minimized && totalUnread > 0) {
-      badge.textContent = totalUnread;
-      badge.style.display = '';
-    } else if (!minimized) {
+
+    const globalUnread = chatUnread['global'] || 0;
+    const dmUnread = Object.entries(chatUnread).filter(([k]) => k !== 'global').reduce((a, [, v]) => a + v, 0);
+
+    if (toggleBtn) toggleBtn.textContent = minimized ? '▲' : '—';
+    if (titleEl)   titleEl.textContent   = minimized ? '💬' : '⬡ Network Chat';
+
+    if (minimized) {
+      if (globalUnread > 0) { badge.textContent = globalUnread; badge.style.display = ''; }
+      else badge.style.display = 'none';
+      if (dmUnread > 0) { dmBadge.textContent = `✉ ${dmUnread}`; dmBadge.style.display = ''; }
+      else dmBadge.style.display = 'none';
+    } else {
       badge.style.display = 'none';
+      dmBadge.style.display = 'none';
     }
   }
 
@@ -5107,6 +5132,7 @@
     function applyMin() {
       panel.classList.toggle('chat-minimized', minimized);
       localStorage.setItem('gz-chat-min', JSON.stringify(minimized));
+      updateGlobalChatBadge();
     }
     applyPos(); applyMin();
 
