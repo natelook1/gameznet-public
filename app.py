@@ -15,18 +15,17 @@ import time
 import atexit
 import re
 import logging
+import tempfile
+from logging.handlers import RotatingFileHandler
 from io import BytesIO
 from flask import Flask, request, jsonify, render_template, send_from_directory
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 
 LOG_FILE = os.path.join(os.path.expanduser("~"), "gameznet.log")
-logging.basicConfig(
-    filename=LOG_FILE,
-    level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
+_handler = RotatingFileHandler(LOG_FILE, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8")
+_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
+logging.basicConfig(level=logging.DEBUG, handlers=[_handler])
 log = logging.getLogger("gameznet")
 
 # ─── Game Detection ───────────────────────────────────────────────────────────
@@ -75,6 +74,14 @@ WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
 VERSION = "1.1.0"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
+
+def _write_config(data):
+    """Atomically write data to CONFIG_FILE via a temp file + rename."""
+    dir_ = os.path.dirname(CONFIG_FILE)
+    with tempfile.NamedTemporaryFile("w", dir=dir_, delete=False, suffix=".tmp") as tmp:
+        json.dump(data, tmp)
+        tmp_path = tmp.name
+    os.replace(tmp_path, CONFIG_FILE)
 SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
@@ -587,8 +594,7 @@ def api_provision():
         }
         if data.get("steam_id"):
             config["steam_id"] = data["steam_id"]
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(config, f)
+        _write_config(config)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -600,12 +606,11 @@ def api_save_config():
     if not data or 'private_key' not in data or 'vpn_ip' not in data:
         return jsonify({"error": "Invalid payload"}), 400
     try:
-        with open(CONFIG_FILE, "w") as f:
-            json.dump({
-                "private_key": data["private_key"],
-                "vpn_ip":      data["vpn_ip"],
-                "name":        data.get("name", "Player")
-            }, f)
+        _write_config({
+            "private_key": data["private_key"],
+            "vpn_ip":      data["vpn_ip"],
+            "name":        data.get("name", "Player")
+        })
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -641,8 +646,7 @@ def api_rename():
     if not resp.get("success"):
         return jsonify(resp), 400
     config["name"] = resp["name"]
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(config, f)
+    _write_config(config)
     return jsonify({"success": True, "name": resp["name"]})
 
 @app.route("/api/reset", methods=["POST"])
@@ -794,8 +798,7 @@ def api_status_set():
         with open(CONFIG_FILE) as f:
             cfg = json.load(f)
         cfg["status"] = new_status
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(cfg, f)
+        _write_config(cfg)
     except Exception:
         pass
     return jsonify({"success": True})
