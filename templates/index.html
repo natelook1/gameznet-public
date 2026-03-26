@@ -1532,6 +1532,7 @@
     .chat-float.chat-minimized.chat-docked-right { border-radius: 18px 0 0 18px !important; }
     .chat-float.chat-minimized.chat-docked-left  { border-radius: 0 18px 18px 0 !important; }
     .chat-float.chat-minimized .chat-float-hdr { border-bottom: none; cursor: pointer; }
+    .chat-float.chat-minimized .chat-float-title { flex: 0 0 auto; }
     .chat-float.chat-minimized .chat-mute-only { display: none; }
     .chat-float.chat-dragging {
       border-radius: 6px !important; border: 1px solid var(--accent) !important;
@@ -3394,7 +3395,6 @@
     const globalUnread = chatUnread['global'] || 0;
     const dmUnread = Object.entries(chatUnread).filter(([k]) => k !== 'global').reduce((a, [, v]) => a + v, 0);
 
-    if (toggleBtn) toggleBtn.textContent = minimized ? '▲' : '—';
     if (titleEl)   titleEl.textContent   = minimized ? '💬' : '⬡ Network Chat';
 
     if (minimized) {
@@ -5124,17 +5124,16 @@
     function applyPos() {
       panel.style.top = panel.style.bottom = panel.style.left = panel.style.right = '';
       const inBottomHalf = dock.top > window.innerHeight / 2;
-      console.log('[chat] applyPos dock.top=' + dock.top + ' wh=' + window.innerHeight + ' inBottomHalf=' + inBottomHalf + ' minimized=' + minimized);
       if (inBottomHalf) {
         // Anchor to bottom edge of pill — panel expands upward
         const pillBottom = Math.min(dock.top + 36, window.innerHeight - 48);
         panel.style.bottom = (window.innerHeight - pillBottom) + 'px';
-        console.log('[chat] bottom-anchor pillBottom=' + pillBottom + ' bottom=' + panel.style.bottom);
       } else {
         // Anchor to top — panel expands downward
         panel.style.top = Math.max(44, dock.top) + 'px';
-        console.log('[chat] top-anchor top=' + panel.style.top);
       }
+      const toggleBtn = document.getElementById('chat-toggle-btn');
+      if (toggleBtn) toggleBtn.textContent = minimized ? (inBottomHalf ? '▲' : '▼') : '—';
       if (dock.side === 'left') {
         panel.style.left = '0';
         panel.classList.remove('chat-docked-right');
