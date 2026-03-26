@@ -1517,7 +1517,7 @@
       display: flex;
       flex-direction: column;
       user-select: none;
-      transition: top 0.15s ease, height 0.2s ease, border-radius 0.15s ease;
+      transition: top 0.15s ease, bottom 0.15s ease, height 0.2s ease, border-radius 0.15s ease;
     }
     .chat-float.chat-docked-right {
       right: 0; border-right: none; border-radius: 8px 0 0 8px;
@@ -3446,12 +3446,21 @@
   }
 
   // ── Chat Audio ─────────────────────────────────────────────────────────────
-  let chatMuted = false;
+  let chatMuted = localStorage.getItem('gz-chat-muted') === '1';
 
+  function updateMuteBtn() {
+    const btn = document.getElementById('chat-mute-btn');
+    if (btn) btn.textContent = chatMuted ? '🔕' : '🔔';
+  }
+
+  let _muteLabelTimer = null;
   function toggleChatMute() {
     chatMuted = !chatMuted;
+    localStorage.setItem('gz-chat-muted', chatMuted ? '1' : '0');
     const btn = document.getElementById('chat-mute-btn');
     if (btn) btn.textContent = chatMuted ? '🔕 MUTED' : '🔔 SOUND';
+    clearTimeout(_muteLabelTimer);
+    _muteLabelTimer = setTimeout(updateMuteBtn, 1500);
   }
 
   let _audioCtx = null;
@@ -5112,13 +5121,17 @@
     let minimized = JSON.parse(localStorage.getItem('gz-chat-min') || 'false');
     let dock = JSON.parse(localStorage.getItem('gz-chat-dock') || 'null') || { side: 'right', top: 180 };
 
-    function clampTop(t) {
-      const h = minimized ? 36 : 290;
-      return Math.max(44, Math.min(window.innerHeight - h - 48, t));
-    }
     function applyPos() {
-      panel.style.top    = clampTop(dock.top) + 'px';
-      panel.style.bottom = panel.style.left = panel.style.right = '';
+      panel.style.top = panel.style.bottom = panel.style.left = panel.style.right = '';
+      const inBottomHalf = dock.top > window.innerHeight / 2;
+      if (inBottomHalf) {
+        // Anchor to bottom edge of pill — panel expands upward
+        const pillBottom = Math.min(dock.top + 36, window.innerHeight - 48);
+        panel.style.bottom = (window.innerHeight - pillBottom) + 'px';
+      } else {
+        // Anchor to top — panel expands downward
+        panel.style.top = Math.max(44, dock.top) + 'px';
+      }
       if (dock.side === 'left') {
         panel.style.left = '0';
         panel.classList.remove('chat-docked-right');
@@ -5132,9 +5145,10 @@
     function applyMin() {
       panel.classList.toggle('chat-minimized', minimized);
       localStorage.setItem('gz-chat-min', JSON.stringify(minimized));
+      applyPos();
       updateGlobalChatBadge();
     }
-    applyPos(); applyMin();
+    applyPos(); applyMin(); updateMuteBtn();
 
     window.toggleChatFloat = function() {
       minimized = !minimized;
