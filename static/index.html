@@ -75,11 +75,31 @@
     .ping { font-size: 11px; color: var(--green); font-family: monospace; }
 
     /* ── Servers ── */
-    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-    .chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 11px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .chips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .chip { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; min-height: 100px; display: flex; flex-direction: column; transition: border-color 0.15s; }
+    .chip:active { opacity: 0.85; }
+    .chip-art { position: absolute; inset: 0; background-size: cover; background-position: center top; }
+    .chip-gradient { position: absolute; inset: 0; background: linear-gradient(160deg, rgba(10,10,15,0.55) 0%, rgba(10,10,15,0.97) 70%); }
+    .chip-content { position: relative; z-index: 1; padding: 10px 11px; display: flex; flex-direction: column; justify-content: space-between; flex: 1; }
+    .chip-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+    .chip-name { font-size: 13px; font-weight: 700; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+    .chip-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 2px 6px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+    .chip-badge-on  { background: rgba(34,197,94,0.2);  color: var(--green);  border: 1px solid rgba(34,197,94,0.3); }
+    .chip-badge-off { background: rgba(239,68,68,0.2);  color: var(--red);    border: 1px solid rgba(239,68,68,0.3); }
+    .chip-badge-mid { background: rgba(234,179,8,0.2);  color: var(--yellow); border: 1px solid rgba(234,179,8,0.3); }
+    .chip-stats { display: flex; gap: 10px; margin-top: 6px; }
+    .chip-stat { display: flex; flex-direction: column; gap: 1px; }
+    .chip-stat-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+    .chip-stat-value { font-size: 11px; font-family: monospace; color: var(--text); }
+    .chip-bar { height: 2px; border-radius: 1px; background: rgba(255,255,255,0.1); overflow: hidden; margin-top: 2px; width: 40px; }
+    .chip-bar-fill { height: 100%; border-radius: 1px; transition: width 0.3s; }
+    .chip-offline { opacity: 0.5; }
+    .chip-pulse { animation: pulse-border 2s ease-in-out infinite; }
+    @keyframes pulse-border { 0%,100% { border-color: var(--border); } 50% { border-color: var(--yellow); } }
     .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
     .dot-on { background: var(--green); }
     .dot-off { background: var(--red); }
+    .dot-starting { background: var(--yellow); }
 
     /* ── Session ── */
     .session-card { background: linear-gradient(135deg, var(--accent-dim), #14142a); border-color: var(--accent); }
@@ -115,6 +135,35 @@
     .dm-row:active { background: var(--surface2); }
     .dm-unread { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; border-radius: 99px; padding: 2px 7px; flex-shrink: 0; }
 
+    /* ── Bottom sheet ── */
+    .sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: flex-end; animation: fade-in 0.15s ease; }
+    .sheet { background: var(--surface); border-radius: 18px 18px 0 0; width: 100%; padding: 0 0 calc(24px + env(safe-area-inset-bottom,0px)); max-height: 85vh; overflow-y: auto; animation: slide-up 0.22s cubic-bezier(0.32,0.72,0,1); }
+    .sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 0; }
+    .sheet-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .sheet-title { font-size: 17px; font-weight: 700; flex: 1; }
+    .sheet-state { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; padding: 3px 8px; border-radius: 6px; }
+    .sheet-state-on  { background: rgba(34,197,94,0.15);  color: var(--green); }
+    .sheet-state-off { background: rgba(239,68,68,0.15);  color: var(--red); }
+    .sheet-state-starting { background: rgba(234,179,8,0.15); color: var(--yellow); }
+    .sheet-state-stopping { background: rgba(234,179,8,0.15); color: var(--yellow); }
+    .sheet-art { width: 100%; height: 120px; object-fit: cover; object-position: center top; border-radius: 18px 18px 0 0; display: block; }
+    .sheet-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; }
+    .sheet-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .sheet-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+    .sheet-stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 4px; }
+    .sheet-stat-value { font-size: 20px; font-weight: 700; font-family: monospace; margin-bottom: 8px; }
+    .sheet-bar { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+    .sheet-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+    .sheet-actions { display: flex; flex-direction: column; gap: 8px; }
+    .sheet-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; transition: opacity 0.15s; }
+    .sheet-btn:active { opacity: 0.75; }
+    .sheet-btn-primary { background: var(--accent); color: #fff; }
+    .sheet-btn-secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+    .sheet-btn-ptero { background: rgba(124,106,247,0.12); border: 1px solid var(--accent); color: var(--accent); }
+    .copied { color: var(--green) !important; }
+    @keyframes fade-in  { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
     ::-webkit-scrollbar { width: 3px; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
   </style>
@@ -148,6 +197,18 @@
     if (h > 0) return `${h}h ${m}m`;
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
+  }
+
+  function parsePing(ping) {
+    if (!ping) return null;
+    try {
+      const arr = typeof ping === 'string' ? JSON.parse(ping) : ping;
+      if (Array.isArray(arr)) {
+        const valid = arr.filter(v => v > 0);
+        return valid.length ? Math.round(valid.reduce((a, b) => a + b, 0) / valid.length) : null;
+      }
+      return parseInt(ping) > 0 ? parseInt(ping) : null;
+    } catch { return null; }
   }
 
   function initials(name) {
@@ -203,6 +264,8 @@
     const [servers, setServers] = useState([]);
     const [session, setSession] = useState(null);
     const [tick, setTick] = useState(0);
+    const [selectedServerId, setSelectedServerId] = useState(null);
+    const selectedServer = selectedServerId ? servers.find(s => (s.id || s.name) === selectedServerId) || null : null;
 
     useEffect(() => {
       async function load() {
@@ -226,6 +289,24 @@
 
     return html`
       <div class="scroll">
+
+        <div class="card">
+          <div class="card-label">Who's Online · ${online.length}</div>
+          ${online.length === 0
+            ? html`<div class="empty" style="padding:16px 0;"><span class="empty-icon">🎮</span><span>No one online yet</span></div>`
+            : online.map(p => html`
+              <div class="player-row" key=${p.name}>
+                <${PlayerAv} player=${p} />
+                <div class="player-info">
+                  <div class="player-name">${p.name}${p.name === me.name ? ' (you)' : ''}</div>
+                  <div class="player-sub">${p.game || p.status || 'Online'}</div>
+                </div>
+                ${parsePing(p.ping) !== null && html`<div class="ping">${parsePing(p.ping)}ms</div>`}
+              </div>
+            `)
+          }
+        </div>
+
         ${session && html`
           <div class="card session-card">
             <div class="card-label">Scheduled Session</div>
@@ -242,31 +323,135 @@
           <div class="card">
             <div class="card-label">Game Servers</div>
             <div class="chips">
-              ${servers.map(s => html`
-                <div class="chip" key=${s.id || s.name}>
-                  <span class="dot ${s.running ? 'dot-on' : 'dot-off'}"></span>
-                  ${s.name}
-                </div>
-              `)}
+              ${servers.map(s => {
+                const on = s.state === 'running';
+                const inTransit = s.state === 'starting' || s.state === 'stopping';
+                const badgeClass = on ? 'chip-badge-on' : inTransit ? 'chip-badge-mid' : 'chip-badge-off';
+                const badgeLabel = s.state || 'offline';
+                const ram = s.memory_mb >= 1024 ? `${(s.memory_mb / 1024).toFixed(1)} GiB` : `${s.memory_mb} MiB`;
+                const uptime = s.uptime > 0 ? (s.uptime >= 3600000 ? `${Math.floor(s.uptime/3600000)}h up` : `${Math.floor(s.uptime/60000)}m up`) : null;
+                const isMc = /min.?craft|bedrock|geyser|eaglercraft/i.test(s.name);
+                const artUrl = s.steam_appid ? `https://cdn.akamai.steamstatic.com/steam/apps/${s.steam_appid}/header.jpg` : isMc ? '/banner.png' : null;
+                const cpuColor = s.cpu > 80 ? 'var(--red)' : s.cpu > 50 ? 'var(--yellow)' : 'var(--green)';
+                return html`
+                  <div class="chip ${!on && !inTransit ? 'chip-offline' : ''} ${inTransit ? 'chip-pulse' : ''}"
+                    key=${s.id || s.name} onClick=${() => setSelectedServerId(s.id || s.name)}>
+                    ${artUrl && html`<div class="chip-art" style="background-image:url('${artUrl}');"></div>`}
+                    <div class="chip-gradient"></div>
+                    <div class="chip-content">
+                      <div class="chip-top">
+                        <span class="chip-name">${s.name}</span>
+                        <span class="chip-badge ${badgeClass}">${badgeLabel}</span>
+                      </div>
+                      ${on ? html`
+                        <div class="chip-stats">
+                          <div class="chip-stat">
+                            <span class="chip-stat-label">CPU</span>
+                            <span class="chip-stat-value">${s.cpu}%</span>
+                            <div class="chip-bar"><div class="chip-bar-fill" style="width:${Math.min(s.cpu,100)}%;background:${cpuColor};"></div></div>
+                          </div>
+                          <div class="chip-stat">
+                            <span class="chip-stat-label">RAM</span>
+                            <span class="chip-stat-value">${ram}</span>
+                            <div class="chip-bar"><div class="chip-bar-fill" style="width:100%;background:var(--accent);opacity:0.7;"></div></div>
+                          </div>
+                          ${uptime && html`<div class="chip-stat"><span class="chip-stat-label">Up</span><span class="chip-stat-value">${uptime.replace(' up','')}</span></div>`}
+                        </div>
+                      ` : inTransit ? html`
+                        <div style="font-size:10px;color:var(--yellow);font-family:monospace;">● ${s.state === 'stopping' ? 'Shutting down…' : 'Starting up…'}</div>
+                      ` : null}
+                    </div>
+                  </div>
+                `;
+              })}
             </div>
           </div>
         `}
 
-        <div class="card">
-          <div class="card-label">Who's Online · ${online.length}</div>
-          ${online.length === 0
-            ? html`<div class="empty" style="padding:16px 0;"><span class="empty-icon">🎮</span><span>No one online yet</span></div>`
-            : online.map(p => html`
-              <div class="player-row" key=${p.name}>
-                <${PlayerAv} player=${p} />
-                <div class="player-info">
-                  <div class="player-name">${p.name}${p.name === me.name ? ' (you)' : ''}</div>
-                  <div class="player-sub">${p.game || p.status || 'Online'}</div>
-                </div>
-                ${p.ping && html`<div class="ping">${p.ping}ms</div>`}
-              </div>
-            `)
+      </div>
+      ${selectedServer && html`<${ServerSheet} server=${selectedServer} onClose=${() => setSelectedServerId(null)} />`}
+    `;
+  }
+
+  // ── Server Sheet ────────────────────────────────────────────────────────────
+  function ServerSheet({ server: s, onClose }) {
+    const [copied, setCopied] = useState(false);
+    const on = s.state === 'running';
+    const inTransit = s.state === 'starting' || s.state === 'stopping';
+    const stateClass = on ? 'sheet-state-on' : inTransit ? 'sheet-state-stopping' : 'sheet-state-off';
+    const artUrl = s.steam_appid ? `https://cdn.akamai.steamstatic.com/steam/apps/${s.steam_appid}/header.jpg` : null;
+    const ram = s.memory_mb >= 1024 ? `${(s.memory_mb / 1024).toFixed(1)} GiB` : `${s.memory_mb} MiB`;
+    const uptime = s.uptime > 0
+      ? (s.uptime >= 3600000 ? `${Math.floor(s.uptime/3600000)}h ${Math.floor((s.uptime%3600000)/60000)}m` : `${Math.floor(s.uptime/60000)}m`)
+      : '—';
+    const cpuColor = s.cpu > 80 ? 'var(--red)' : s.cpu > 50 ? 'var(--yellow)' : 'var(--green)';
+
+    const isEagler = /eaglercraft|ealgercraft/i.test(s.name);
+
+    function copyPort() {
+      navigator.clipboard.writeText(String(s.port || ''));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+
+    return html`
+      <div class="sheet-backdrop" onClick=${e => e.target === e.currentTarget && onClose()}>
+        <div class="sheet">
+          ${artUrl
+            ? html`<img class="sheet-art" src=${artUrl} alt=${s.name} />`
+            : html`<div class="sheet-handle"></div>`
           }
+          <div class="sheet-header" style=${artUrl ? 'padding-top:12px;' : ''}>
+            <span class="sheet-title">${s.name}</span>
+            <span class="sheet-state ${stateClass}">${s.state || 'offline'}</span>
+          </div>
+          <div class="sheet-body">
+            ${(on || inTransit) && html`
+              <div class="sheet-stat-row">
+                <div class="sheet-stat">
+                  <div class="sheet-stat-label">CPU</div>
+                  <div class="sheet-stat-value">${s.cpu}%</div>
+                  <div class="sheet-bar"><div class="sheet-bar-fill" style="width:${Math.min(s.cpu,100)}%;background:${cpuColor};"></div></div>
+                </div>
+                <div class="sheet-stat">
+                  <div class="sheet-stat-label">RAM</div>
+                  <div class="sheet-stat-value">${ram}</div>
+                  <div class="sheet-bar"><div class="sheet-bar-fill" style="width:100%;background:var(--accent);opacity:0.5;"></div></div>
+                </div>
+                <div class="sheet-stat">
+                  <div class="sheet-stat-label">Uptime</div>
+                  <div class="sheet-stat-value" style="font-size:16px;">${uptime}</div>
+                </div>
+                ${s.port && html`
+                  <div class="sheet-stat">
+                    <div class="sheet-stat-label">Port</div>
+                    <div class="sheet-stat-value" style="font-size:16px;">${s.port}</div>
+                  </div>
+                `}
+              </div>
+            `}
+            <div class="sheet-actions">
+              ${s.port && html`
+                <button class="sheet-btn sheet-btn-secondary" onClick=${copyPort}>
+                  ${copied ? '✓ Copied' : `Copy Port — ${s.port}`}
+                </button>
+              `}
+              ${s.steam_appid && s.host && html`
+                <a class="sheet-btn sheet-btn-secondary" href="steam://connect/${s.host}:${s.port}" style="text-decoration:none;">
+                  ▶ Steam Join
+                </a>
+              `}
+              ${isEagler ? html`
+                <a class="sheet-btn sheet-btn-secondary" href="https://gameznet.looknet.ca/public/eaglercraft.html" target="_blank" rel="noopener" style="text-decoration:none;">
+                  🌐 Play in Browser
+                </a>
+              ` : html`
+                <a class="sheet-btn sheet-btn-ptero" href="https://gamez.looknet.ca/server/${s.id}" target="_blank" rel="noopener" style="text-decoration:none;">
+                  ⚙ Manage in Pterodactyl
+                </a>
+              `}
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -355,7 +540,7 @@
 
   // ── Discord Tab ─────────────────────────────────────────────────────────────
   function DiscordTab({ me }) {
-    const [channels, setChannels] = useState([]);
+    const [channels, setChannels] = useState([]); // flat list of { catName, id, name }
     const [active, setActive] = useState(null);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
@@ -365,7 +550,18 @@
     const pollRef = useRef(null);
 
     useEffect(() => {
-      req('/api/discord/channels').then(r => r.ok ? r.json() : []).then(d => { setChannels(d); setLoading(false); }).catch(() => setLoading(false));
+      req('/api/discord/channels').then(r => r.ok ? r.json() : null).then(d => {
+        if (!d) { setLoading(false); return; }
+        // Flatten categories + uncategorized into a list of { catName, id, name }
+        const flat = [];
+        const cats = d.categories || [];
+        if (d.uncategorized?.text_channels?.length) cats.push({ name: null, text_channels: d.uncategorized.text_channels });
+        for (const cat of cats) {
+          for (const ch of (cat.text_channels || [])) flat.push({ catName: cat.name, id: ch.id, name: ch.name });
+        }
+        setChannels(flat);
+        setLoading(false);
+      }).catch(() => setLoading(false));
     }, []);
 
     async function loadMsgs(id) {
@@ -404,23 +600,24 @@
 
     if (!active) return html`
       <div class="scroll">
-        ${channels.map(cat => html`
-          <div key=${cat.id || cat.name}>
-            ${cat.name && html`<div class="cat-label">${cat.name}</div>`}
-            ${(cat.channels || []).filter(c => c.type === 0).map(ch => html`
-              <div class="ch-row" key=${ch.id} onClick=${() => openChannel(ch)}>
+        ${channels.map((ch, i) => {
+          const showCat = ch.catName && (i === 0 || channels[i - 1].catName !== ch.catName);
+          return html`
+            <div key=${ch.id}>
+              ${showCat && html`<div class="cat-label">${ch.catName}</div>`}
+              <div class="ch-row" onClick=${() => openChannel(ch)}>
                 <span class="ch-hash">#</span>
                 <span class="ch-name">${ch.name}</span>
               </div>
-            `)}
-          </div>
-        `)}
+            </div>
+          `;
+        })}
       </div>
     `;
 
     return html`
       <div class="chat-wrap">
-        <div class="back-bar" onClick=${closeChannel}>‹ &nbsp;# ${active.name}</div>
+        <div class="back-bar" onClick=${closeChannel}>‹# ${active.name}</div>
         <div class="messages">
           ${loadingMsgs && html`<div class="loading">Loading…</div>`}
           ${messages.map((m, i) => {
@@ -521,7 +718,7 @@
 
     if (active) return html`
       <div class="chat-wrap">
-        <div class="back-bar" onClick=${closeConvo}>‹ &nbsp;${active.name}</div>
+        <div class="back-bar" onClick=${closeConvo}>‹${active.name}</div>
         <div class="messages">
           ${messages.length === 0 && html`<div class="empty"><span class="empty-icon">💬</span><span>Start the conversation</span></div>`}
           ${messages.map((m, i) => {

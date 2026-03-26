@@ -180,6 +180,31 @@ WireGuard itself is left in place — it may be used by other applications.
 
 ---
 
+## 📱 Mobile Companion
+
+GamezNET has a mobile-friendly web app at **[m.gameznet.looknet.ca](https://m.gameznet.looknet.ca)** — no install required, works on any phone or tablet browser.
+
+**What you can do on mobile:**
+- See who's online and what they're playing
+- Check game server status (CPU, RAM, uptime)
+- Read and send Network Chat messages
+- Browse Discord channels and send messages
+- Direct message other players
+
+**What requires the Windows app:**
+- Connecting to the VPN
+- Joining game servers
+- Remote assistance
+
+**First-time setup:**
+1. Open `m.gameznet.looknet.ca` on your phone
+2. Enter the same invite token you use on the desktop app
+3. Done — your token works for both
+
+> Mobile access can be revoked independently from the desktop app. The admin panel shows a 📱 toggle per player under the Tokens section.
+
+---
+
 ## 🛠️ Troubleshooting
 
 **App didn't open after installing**
@@ -224,6 +249,7 @@ Message the server admin. Running the install command again solves 99% of issues
 | Traefik | Reverse proxy routing all `*.looknet.ca` traffic |
 | Cloudflare Tunnel | Secure public exposure without open ports |
 | Flask (gameznet.local:7734) | Local app server running on the user's PC |
+| Cloudflare Pages | Hosts the static mobile companion SPA |
 | WireGuard | The secure VPN tunnel |
 | Pterodactyl + Wings | Game server management and console |
 | YouTube Data API v3 | Server-side video category browsing (30-min cache) |
