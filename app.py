@@ -72,7 +72,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):

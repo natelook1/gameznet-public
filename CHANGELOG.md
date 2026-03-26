@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.1 — 2026-03-25
+
+### Added
+- **Mobile QR sync** — "SYNC MOBILE APP" button in the Your Session card generates a scannable QR code; scanning opens the mobile app with the token pre-filled and auto-logs in
+- **DM unread badge** — red badge on the DMs tab in the mobile app now updates regardless of which tab is active
+- **RAM usage bars** — game server chips and detail sheet now show accurate RAM usage vs allocated limit
+
+### Fixed
+- Log file now rotates at 5 MB with 3 backups, preventing unbounded growth
+
+---
+
 ## v1.2.0 — 2026-03-25
 
 ### Added
