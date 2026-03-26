@@ -1350,9 +1350,14 @@ def api_update():
             log.info("Running installer silently")
             subprocess.run([tmp, "/VERYSILENT", "/NORESTART"],
                            creationflags=subprocess.CREATE_NO_WINDOW)
-            log.info("Installer finished; launching new exe")
+            log.info("Installer finished; scheduling new exe launch after exit")
             if os.path.exists(exe_path):
-                subprocess.Popen([exe_path], creationflags=subprocess.CREATE_NO_WINDOW)
+                # Use a detached cmd process with a short delay so the new exe
+                # starts only after this process (and its _MEI* DLL locks) are gone
+                subprocess.Popen(
+                    ["cmd", "/c", f"ping 127.0.0.1 -n 3 >nul 2>&1 && start \"\" \"{exe_path}\""],
+                    creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
+                )
             os._exit(0)
 
         threading.Thread(target=_install_and_relaunch, daemon=True).start()
