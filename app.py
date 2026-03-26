@@ -580,6 +580,21 @@ def api_config():
     except Exception as e:
         return jsonify({"provisioned": False, "name": "", "client_ip": ""}), 500
 
+@app.route("/api/mobile-token", methods=["GET"])
+def api_mobile_token():
+    """Returns the player's token for mobile QR generation."""
+    if not os.path.exists(CONFIG_FILE):
+        return jsonify({"error": "Not provisioned"}), 404
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+        token = data.get("token")
+        if not token:
+            return jsonify({"error": "Token not stored — re-provision to enable mobile QR"}), 404
+        return jsonify({"token": token})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/provision", methods=["POST"])
 def api_provision():
     """Saves provisioned credentials after a successful token redemption."""
@@ -594,6 +609,8 @@ def api_provision():
         }
         if data.get("steam_id"):
             config["steam_id"] = data["steam_id"]
+        if data.get("token"):
+            config["token"] = data["token"]
         _write_config(config)
         return jsonify({"success": True})
     except Exception as e:

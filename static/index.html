@@ -222,8 +222,8 @@
   }
 
   // ── Token Screen ────────────────────────────────────────────────────────────
-  function TokenScreen({ onAuth }) {
-    const [token, setToken] = useState('');
+  function TokenScreen({ onAuth, initialToken = '' }) {
+    const [token, setToken] = useState(initialToken);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -770,6 +770,21 @@
     const [tab, setTab] = useState('home');
     const [dmUnread, setDmUnread] = useState(0);
 
+    useEffect(() => {
+      async function checkUnread() {
+        try {
+          const r = await req(`/api/chat/dm/unread?name=${encodeURIComponent(me.name)}`);
+          if (r.ok) {
+            const u = await r.json();
+            setDmUnread(u.reduce((a, b) => a + b.count, 0));
+          }
+        } catch {}
+      }
+      checkUnread();
+      const iv = setInterval(checkUnread, 10000);
+      return () => clearInterval(iv);
+    }, [me.name]);
+
     const tabs = [
       { id: 'home',    icon: '🏠', label: 'Home' },
       { id: 'chat',    icon: '💬', label: 'Chat' },
@@ -807,19 +822,27 @@
   function App() {
     const [me, setMe] = useState(null);
     const [checking, setChecking] = useState(true);
+    const [urlToken, setUrlToken] = useState('');
 
     useEffect(() => {
-      const token = localStorage.getItem('gzn_token');
+      const params = new URLSearchParams(window.location.search);
+      const qrToken = params.get('token');
+      const stored = localStorage.getItem('gzn_token');
+      const token = stored || qrToken;
+      if (qrToken && !stored) {
+        setUrlToken(qrToken);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
       if (!token) { setChecking(false); return; }
       fetch(`${API}/api/mobile/whoami`, { headers: { 'X-Token': token } })
         .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d) setMe(d); else localStorage.removeItem('gzn_token'); })
+        .then(d => { if (d) { localStorage.setItem('gzn_token', token); setMe(d); } else localStorage.removeItem('gzn_token'); })
         .catch(() => {})
         .finally(() => setChecking(false));
     }, []);
 
     if (checking) return html`<div class="loading" style="height:100%;font-size:16px;color:var(--accent);">GamezNET</div>`;
-    if (!me) return html`<${TokenScreen} onAuth=${setMe} />`;
+    if (!me) return html`<${TokenScreen} onAuth=${setMe} initialToken=${urlToken} />`;
     return html`<${MainApp} me=${me} />`;
   }
 
