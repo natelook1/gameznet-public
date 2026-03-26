@@ -1334,12 +1334,28 @@ def api_update():
             with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
                 with open(tmp, "wb") as f:
                     f.write(resp.read())
-            log.info("Launching installer silently")
-            subprocess.Popen([tmp, "/VERYSILENT", "/NORESTART"],
-                             creationflags=subprocess.CREATE_NO_WINDOW)
         except Exception as e:
             log.error("Installer download failed: %r", e, exc_info=True)
             return jsonify({"error": f"Failed to download installer: {repr(e)}"}), 500
+
+        exe_path = os.path.join(os.environ.get("LOCALAPPDATA", ""), "GamezNET", "GamezNET.exe")
+
+        def _install_and_relaunch():
+            time.sleep(0.8)
+            try:
+                ctypes.windll.kernel32.ReleaseMutex(_instance_mutex)
+                ctypes.windll.kernel32.CloseHandle(_instance_mutex)
+            except Exception:
+                pass
+            log.info("Running installer silently")
+            subprocess.run([tmp, "/VERYSILENT", "/NORESTART"],
+                           creationflags=subprocess.CREATE_NO_WINDOW)
+            log.info("Installer finished; launching new exe")
+            if os.path.exists(exe_path):
+                subprocess.Popen([exe_path], creationflags=subprocess.CREATE_NO_WINDOW)
+            os._exit(0)
+
+        threading.Thread(target=_install_and_relaunch, daemon=True).start()
         return jsonify({"success": True})
 
     # ── Path B: running as python/bat — pull source zip then relaunch via bat ─
