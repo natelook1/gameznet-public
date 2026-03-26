@@ -3183,22 +3183,33 @@
         }
       }
       const el     = document.getElementById('online-list-ui');
+      const onlinePlayers  = online.filter(p => p.online !== false);
+      const offlinePlayers = online.filter(p => p.online === false);
       if (!online.length) {
         el.innerHTML = '<div class="online-empty">○ No other players online</div>';
         return;
       }
-      document.title = `GamezNET (${online.length} online)`;
+      document.title = `GamezNET (${onlinePlayers.length} online)`;
       const lbl = el.closest('.online-card')?.querySelector('.section-label');
-      if (lbl) lbl.textContent = `Who's Online  ·  ${online.length}`;
+      if (lbl) lbl.textContent = `Who's Online  ·  ${onlinePlayers.length}`;
       const esc = s => (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
       const steamAppMap = { 'Satisfactory': 526870, 'SCUM': 513710, 'Enshrouded': 1203620, 'Conan Exiles': 440900, 'Project Zomboid': 108600, 'World of Sea Battle': 2251500 };
-      el.innerHTML = online.map(p => {
+      function timeAgo(iso) {
+        if (!iso) return 'a while ago';
+        const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+        if (diff < 60) return `${diff}s ago`;
+        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+        return `${Math.floor(diff / 86400)}d ago`;
+      }
+      function renderPlayer(p) {
+        const isOffline = p.online === false;
         const avatar = p.steam_avatar
-          ? `<img class="op-avatar" src="${p.steam_avatar}" loading="lazy" />`
-          : `<div class="op-avatar-ph">${esc(p.name)[0].toUpperCase()}</div>`;
-        
+          ? `<img class="op-avatar" src="${p.steam_avatar}" loading="lazy" style="${isOffline ? 'filter:grayscale(1);opacity:0.5;' : ''}" />`
+          : `<div class="op-avatar-ph" style="${isOffline ? 'opacity:0.4;' : ''}">${esc(p.name)[0].toUpperCase()}</div>`;
+
         let gameBadgeHtml = '';
-        if (p.game) {
+        if (p.game && !isOffline) {
           const appid = steamAppMap[p.game];
           if (appid) {
             gameBadgeHtml = `<img class="op-game-badge" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/capsule_sm_120.jpg" title="Playing: ${esc(p.game)}" onerror="this.style.display='none'">`;
@@ -3210,7 +3221,7 @@
 
         let lib = null;
         try { lib = p.steam_library ? JSON.parse(p.steam_library) : null; } catch {}
-        const steamSub = p.steam_id ? (() => {
+        const steamSub = !isOffline && p.steam_id ? (() => {
           const parts = [];
           if (p.steam_level != null) parts.push(`<span class="op-steam-level">Lv.${p.steam_level}</span>`);
           if (p.steam_game_count) parts.push(`<span>${p.steam_game_count} games</span>`);
@@ -3220,30 +3231,35 @@
           }
           return parts.length ? `<div class="op-steam-sub">${parts.join('')}</div>` : '';
         })() : '';
-        const gamesStrip = lib?.top?.length
+        const gamesStrip = !isOffline && lib?.top?.length
           ? `<div class="op-games-strip">${lib.top.slice(0, 8).map(g =>
               `<img class="op-game-cap" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_sm_120.jpg" title="${esc(g.name)} · ${Math.round((g.playtime_forever || g.playtime || 0) / 60).toLocaleString()}h" loading="lazy" onerror="this.style.display='none'" />`
             ).join('')}</div>`
           : '';
-        const pingHtml = pingSparkline(parsePingArray(p.ping));
+        const pingHtml = !isOffline ? pingSparkline(parsePingArray(p.ping)) : '';
         const targetCls = p.name !== state.name ? ' dm-target' : '';
-        return `<div class="online-player${targetCls}" title="${p.name !== state.name ? 'Right-click to DM' : ''}">
+        const dotStyle = isOffline ? 'background:#555;' : '';
+        const lastSeenHtml = isOffline ? `<div class="op-status" style="color:#666;">last seen ${timeAgo(p.last_active)}</div>` : '';
+        return `<div class="online-player${targetCls}" title="${p.name !== state.name ? 'Right-click to DM' : ''}" style="${isOffline ? 'opacity:0.55;' : ''}">
           ${avatarWrap}
           <div class="op-info">
             <div class="op-row1">
-              <div class="op-dot"></div>
+              <div class="op-dot" style="${dotStyle}"></div>
               <div class="op-name">${esc(p.name)}</div>
-              ${p.status ? `<div class="op-status">${esc(p.status)}</div>` : ''}
+              ${!isOffline && p.status ? `<div class="op-status">${esc(p.status)}</div>` : ''}
+              ${lastSeenHtml}
             </div>
             ${steamSub}
             ${gamesStrip}
           </div>
           <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;margin-left:auto;">
             ${pingHtml}
-            <div class="op-ip" style="text-align:right;">${p.vpn_ip}</div>
+            ${!isOffline ? `<div class="op-ip" style="text-align:right;">${p.vpn_ip}</div>` : ''}
           </div>
         </div>`;
-      }).join('');
+      }
+      const offlineDivider = offlinePlayers.length ? `<div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;padding:4px 2px 2px;margin-top:4px;">Recently Online</div>` : '';
+      el.innerHTML = onlinePlayers.map(renderPlayer).join('') + offlineDivider + offlinePlayers.map(renderPlayer).join('');
     } catch {}
   }
   setInterval(refreshOnline, 30000);

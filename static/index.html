@@ -9,6 +9,7 @@
   <title>GamezNET</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -783,6 +784,30 @@
       checkUnread();
       const iv = setInterval(checkUnread, 10000);
       return () => clearInterval(iv);
+    }, [me.name]);
+
+    useEffect(() => {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      async function setupPush() {
+        try {
+          const reg = await navigator.serviceWorker.register('/sw.js');
+          const keyRes = await req('/api/mobile/push-key');
+          if (!keyRes.ok) return;
+          const { publicKey } = await keyRes.json();
+          const perm = await Notification.requestPermission();
+          if (perm !== 'granted') return;
+          const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: publicKey
+          });
+          await req('/api/mobile/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription: sub })
+          });
+        } catch (e) { console.warn('[push] setup failed:', e.message); }
+      }
+      setupPush();
     }, [me.name]);
 
     const tabs = [
