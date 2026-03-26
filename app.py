@@ -72,7 +72,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -590,7 +590,26 @@ def api_mobile_token():
             data = json.load(f)
         token = data.get("token")
         if not token:
-            return jsonify({"error": "Token not stored — re-provision to enable mobile QR"}), 404
+            # Auto-migrate: look up token from backend using stored private key
+            private_key = data.get("private_key")
+            if not private_key:
+                return jsonify({"error": "Not provisioned"}), 404
+            try:
+                import urllib.request as _ur
+                req_obj = _ur.Request(
+                    f"{WORKER_URL}/api/token-migrate",
+                    data=json.dumps({"private_key": private_key}).encode(),
+                    headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}
+                )
+                with _ur.urlopen(req_obj, timeout=5) as resp:
+                    result = json.loads(resp.read().decode())
+                token = result.get("token")
+                if token:
+                    data["token"] = token
+                    _write_config(data)
+            except Exception as e:
+                log.warning("token-migrate failed: %s", e)
+                return jsonify({"error": "Could not retrieve token automatically. Re-provision to enable mobile QR."}), 404
         return jsonify({"token": token})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

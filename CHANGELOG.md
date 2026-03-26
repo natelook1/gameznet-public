@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.1.2 — 2026-03-25
+
+### Fixed
+- Auto-migrate token into local config on first mobile QR request — existing installs no longer need to re-provision
+
+---
+
 ## v1.1.1 — 2026-03-25
 
 ### Added
