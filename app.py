@@ -1319,7 +1319,7 @@ def api_update():
                     os.makedirs(os.path.dirname(target_path), exist_ok=True)
                     with open(target_path, "wb") as f:
                         f.write(z.read(member))
-        log.info("Source update extracted. Relaunching via GamezNET.bat.")
+        log.info("Source update extracted. Relaunching via Python.")
     except Exception as e:
         log.error("Source update failed: %r", e, exc_info=True)
         return jsonify({"error": f"Failed to download update: {repr(e)}"}), 500
@@ -1331,8 +1331,10 @@ def api_update():
             ctypes.windll.kernel32.CloseHandle(_instance_mutex)
         except Exception:
             pass
-        bat = os.path.join(install_dir, "GamezNET.bat")
-        subprocess.Popen(["cmd", "/c", bat], cwd=install_dir,
+        args = [sys.executable] + sys.argv
+        if "--no-browser" not in args:
+            args.append("--no-browser")
+        subprocess.Popen(args, cwd=install_dir,
                          creationflags=subprocess.CREATE_NO_WINDOW)
         os._exit(0)
     threading.Thread(target=_relaunch, daemon=True).start()
