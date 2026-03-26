@@ -181,9 +181,15 @@
 
   function req(path, opts = {}) {
     const token = localStorage.getItem('gzn_token');
+    const session = localStorage.getItem('gzn_session');
     return fetch(API + path, {
       ...opts,
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Token': token } : {}), ...(opts.headers || {}) }
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'X-Token': token } : {}),
+        ...(session ? { 'X-Session': session } : {}),
+        ...(opts.headers || {})
+      }
     });
   }
 
@@ -235,9 +241,12 @@
       setLoading(true); setError('');
       try {
         const res = await fetch(`${API}/api/mobile/whoami`, { headers: { 'X-Token': t } });
-        if (!res.ok) { setError('Invalid or inactive token.'); return; }
+        if (res.status === 409) { setError('This token is already active on another device. Revoke it from the PC app first.'); return; }
+        if (!res.ok) { setError('Invalid token.'); return; }
+        const data = await res.json();
         localStorage.setItem('gzn_token', t);
-        onAuth(await res.json());
+        localStorage.setItem('gzn_session', data.session);
+        onAuth(data);
       } catch { setError('Could not reach server.'); }
       finally { setLoading(false); }
     }
@@ -853,15 +862,23 @@
       const params = new URLSearchParams(window.location.search);
       const qrToken = params.get('token');
       const stored = localStorage.getItem('gzn_token');
+      const storedSession = localStorage.getItem('gzn_session');
       const token = stored || qrToken;
       if (qrToken && !stored) {
         setUrlToken(qrToken);
         window.history.replaceState({}, '', window.location.pathname);
       }
       if (!token) { setChecking(false); return; }
-      fetch(`${API}/api/mobile/whoami`, { headers: { 'X-Token': token } })
-        .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d) { localStorage.setItem('gzn_token', token); setMe(d); } else localStorage.removeItem('gzn_token'); })
+      const headers = { 'X-Token': token, ...(storedSession ? { 'X-Session': storedSession } : {}) };
+      fetch(`${API}/api/mobile/whoami`, { headers })
+        .then(async r => {
+          if (r.ok) return r.json();
+          // Session was revoked or invalid — clear storage so user hits login screen
+          localStorage.removeItem('gzn_token');
+          localStorage.removeItem('gzn_session');
+          return null;
+        })
+        .then(d => { if (d) { localStorage.setItem('gzn_token', token); localStorage.setItem('gzn_session', d.session); setMe(d); } })
         .catch(() => {})
         .finally(() => setChecking(false));
     }, []);

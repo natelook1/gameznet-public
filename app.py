@@ -72,7 +72,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.1.4"
+VERSION = "1.1.5"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -86,7 +86,7 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
-RUSTDESK_VERSION = "1.1.4"
+RUSTDESK_VERSION = "1.1.5"
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -613,6 +613,54 @@ def api_mobile_token():
         return jsonify({"token": token})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/api/mobile-status", methods=["GET"])
+def api_mobile_status():
+    """Returns whether the player has an active mobile session."""
+    if not os.path.exists(CONFIG_FILE):
+        return jsonify({"error": "Not provisioned"}), 404
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+        private_key = data.get("private_key")
+        if not private_key:
+            return jsonify({"error": "Not provisioned"}), 404
+        import urllib.request as _ur
+        req_obj = _ur.Request(
+            f"{WORKER_URL}/api/mobile/session-status",
+            data=json.dumps({"private_key": private_key}).encode(),
+            headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}
+        )
+        with _ur.urlopen(req_obj, timeout=5) as resp:
+            return jsonify(json.loads(resp.read().decode()))
+    except Exception as e:
+        log.warning("mobile-status failed: %s", e)
+        return jsonify({"active": False, "session_at": None})
+
+
+@app.route("/api/mobile-revoke", methods=["POST"])
+def api_mobile_revoke():
+    """Revokes the player's active mobile session."""
+    if not os.path.exists(CONFIG_FILE):
+        return jsonify({"error": "Not provisioned"}), 404
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+        private_key = data.get("private_key")
+        if not private_key:
+            return jsonify({"error": "Not provisioned"}), 404
+        import urllib.request as _ur
+        req_obj = _ur.Request(
+            f"{WORKER_URL}/api/mobile/revoke",
+            data=json.dumps({"private_key": private_key}).encode(),
+            headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}
+        )
+        with _ur.urlopen(req_obj, timeout=5) as resp:
+            return jsonify(json.loads(resp.read().decode()))
+    except Exception as e:
+        log.warning("mobile-revoke failed: %s", e)
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/provision", methods=["POST"])
 def api_provision():

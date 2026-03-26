@@ -1531,7 +1531,7 @@
     }
     .chat-float.chat-minimized.chat-docked-right { border-radius: 18px 0 0 18px !important; }
     .chat-float.chat-minimized.chat-docked-left  { border-radius: 0 18px 18px 0 !important; }
-    .chat-float.chat-minimized .chat-float-hdr { border-bottom: none; cursor: pointer; }
+    .chat-float.chat-minimized .chat-float-hdr { border-bottom: none; cursor: pointer; justify-content: space-between; }
     .chat-float.chat-minimized .chat-float-title { flex: 0 0 auto; }
     .chat-float.chat-minimized .chat-mute-only { display: none; }
     .chat-float.chat-dragging {
@@ -1579,12 +1579,16 @@
     .chat-float-btn {
       background: transparent;
       border: none;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
       color: var(--text-dim);
       font-size: 14px;
       cursor: pointer;
       padding: 0 2px;
       line-height: 1;
     }
+    .chat-float-btn:focus { outline: none; }
     .chat-float-btn:hover { color: var(--text); }
     .chat-float-body { display: flex; flex-direction: column; gap: 8px; padding: 10px; flex: 1; min-height: 0; }
     .chat-section { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
@@ -5333,32 +5337,77 @@
   // ── Mobile QR ──────────────────────────────────────────────────────────────
   async function openMobileQr() {
     const overlay = document.getElementById('mobile-qr-overlay');
-    const img = document.getElementById('mobile-qr-img');
-    const label = document.getElementById('mobile-qr-label');
     overlay.style.display = 'flex';
-    img.src = '';
-    label.textContent = 'Loading...';
+    document.getElementById('mobile-qr-connect-view').style.display = 'none';
+    document.getElementById('mobile-qr-active-view').style.display = 'none';
+    document.getElementById('mobile-qr-loading').style.display = 'block';
     try {
-      const res = await fetch('/api/mobile-token');
-      if (!res.ok) {
-        label.textContent = 'Token not available. Re-install the app to enable mobile sync.';
+      const [tokenRes, statusRes] = await Promise.all([
+        fetch('/api/mobile-token'),
+        fetch('/api/mobile-status')
+      ]);
+      document.getElementById('mobile-qr-loading').style.display = 'none';
+      if (!tokenRes.ok) {
+        document.getElementById('mobile-qr-connect-view').style.display = 'block';
+        document.getElementById('mobile-qr-img').src = '';
+        document.getElementById('mobile-qr-label').textContent = 'Token not available. Re-install the app to enable mobile sync.';
         return;
       }
-      const { token } = await res.json();
-      const url = `https://m.gameznet.looknet.ca/?token=${token}`;
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(url)}&size=220x220&format=png&margin=10`;
-      label.textContent = token;
+      const { token } = await tokenRes.json();
+      const status = statusRes.ok ? await statusRes.json() : { active: false };
+      if (status.active) {
+        document.getElementById('mobile-qr-active-view').style.display = 'block';
+        const since = status.session_at ? new Date(status.session_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'unknown';
+        document.getElementById('mobile-active-since').textContent = `Connected since ${since}`;
+      } else {
+        document.getElementById('mobile-qr-connect-view').style.display = 'block';
+        const url = `https://m.gameznet.looknet.ca/?token=${token}`;
+        document.getElementById('mobile-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(url)}&size=220x220&format=png&margin=10`;
+        document.getElementById('mobile-qr-label').textContent = token;
+      }
     } catch {
-      label.textContent = 'Could not load token.';
+      document.getElementById('mobile-qr-loading').style.display = 'none';
+      document.getElementById('mobile-qr-connect-view').style.display = 'block';
+      document.getElementById('mobile-qr-label').textContent = 'Could not load token.';
     }
+  }
+
+  async function revokeMobileDevice() {
+    const btn = document.getElementById('mobile-revoke-btn');
+    btn.disabled = true;
+    btn.textContent = 'Revoking...';
+    try {
+      const res = await fetch('/api/mobile-revoke', { method: 'POST' });
+      if (res.ok) {
+        document.getElementById('mobile-qr-active-view').style.display = 'none';
+        document.getElementById('mobile-qr-overlay').style.display = 'none';
+      }
+    } catch {}
+    btn.disabled = false;
+    btn.textContent = 'Revoke Device';
   }
 </script>
 
 <div id="mobile-qr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;" onclick="this.style.display='none'">
   <div style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:28px 24px;text-align:center;min-width:280px;" onclick="event.stopPropagation()">
-    <div style="font-size:11px;letter-spacing:1px;color:var(--text-dim);margin-bottom:16px;">SCAN TO OPEN MOBILE APP</div>
-    <img id="mobile-qr-img" src="" width="220" height="220" style="display:block;margin:0 auto;border-radius:4px;background:#fff;" alt="QR Code" />
-    <div id="mobile-qr-label" style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--accent);margin-top:14px;word-break:break-all;"></div>
+
+    <div id="mobile-qr-loading" style="color:var(--text-dim);font-size:13px;padding:40px 0;">Loading...</div>
+
+    <!-- No active session: show QR to connect -->
+    <div id="mobile-qr-connect-view" style="display:none;">
+      <div style="font-size:11px;letter-spacing:1px;color:var(--text-dim);margin-bottom:16px;">SCAN TO OPEN MOBILE APP</div>
+      <img id="mobile-qr-img" src="" width="220" height="220" style="display:block;margin:0 auto;border-radius:4px;background:#fff;" alt="QR Code" />
+      <div id="mobile-qr-label" style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--accent);margin-top:14px;word-break:break-all;"></div>
+    </div>
+
+    <!-- Active session: show revoke option -->
+    <div id="mobile-qr-active-view" style="display:none;">
+      <div style="font-size:11px;letter-spacing:1px;color:var(--text-dim);margin-bottom:16px;">MOBILE DEVICE CONNECTED</div>
+      <div style="font-size:32px;margin-bottom:12px;">📱</div>
+      <div id="mobile-active-since" style="font-size:12px;color:var(--text-dim);margin-bottom:20px;"></div>
+      <button id="mobile-revoke-btn" onclick="revokeMobileDevice()" style="width:100%;background:var(--danger);border:none;border-radius:3px;color:#fff;font-size:12px;font-family:'Share Tech Mono',monospace;letter-spacing:1px;padding:8px;cursor:pointer;">Revoke Device</button>
+    </div>
+
     <button onclick="document.getElementById('mobile-qr-overlay').style.display='none'" style="margin-top:16px;width:100%;background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text-dim);font-size:11px;padding:6px;cursor:pointer;">CLOSE</button>
   </div>
 </div>
