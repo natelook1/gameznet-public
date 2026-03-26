@@ -1526,14 +1526,20 @@
       left: 0; border-left: none; border-radius: 0 8px 8px 0;
     }
     .chat-float.chat-minimized {
-      height: 36px; width: auto; min-width: 110px; max-width: 220px; overflow: hidden;
+      height: 36px; width: 130px; overflow: hidden;
       border-radius: 18px !important;
+      border-color: var(--border2) !important;
     }
-    .chat-float.chat-minimized.chat-docked-right { border-radius: 18px 0 0 18px !important; }
-    .chat-float.chat-minimized.chat-docked-left  { border-radius: 0 18px 18px 0 !important; }
-    .chat-float.chat-minimized .chat-float-hdr { border-bottom: none; cursor: pointer; justify-content: space-between; }
-    .chat-float.chat-minimized .chat-float-title { flex: 0 0 auto; }
+    .chat-float.chat-minimized.chat-docked-right { border-radius: 18px 0 0 18px !important; border-right: none !important; }
+    .chat-float.chat-minimized.chat-docked-left  { border-radius: 0 18px 18px 0 !important; border-left: none !important; }
+    .chat-float.chat-minimized .chat-float-hdr { border-bottom: none; cursor: pointer; justify-content: space-between; padding: 0 12px 0 14px; height: 36px; }
+    .chat-float.chat-minimized .chat-float-title { flex: 0 0 auto; font-size: 11px; letter-spacing: 2px; color: var(--text); }
     .chat-float.chat-minimized .chat-mute-only { display: none; }
+    .chat-float.chat-minimized .chat-float-body { display: none; }
+    .chat-float.chat-minimized .chat-float-btn { font-size: 11px; color: var(--text-dim); }
+    .chat-float.chat-minimized:hover { border-color: var(--accent) !important; }
+    .chat-float.chat-minimized:hover .chat-float-title { color: var(--accent); }
+    .chat-float.chat-minimized:hover .chat-float-btn { color: var(--accent); }
     .chat-float.chat-dragging {
       border-radius: 6px !important; border: 1px solid var(--accent) !important;
       box-shadow: 0 8px 32px rgba(0,212,255,0.2); transition: none !important;
@@ -3402,7 +3408,7 @@
     const globalUnread = chatUnread['global'] || 0;
     const dmUnread = Object.entries(chatUnread).filter(([k]) => k !== 'global').reduce((a, [, v]) => a + v, 0);
 
-    if (titleEl)   titleEl.textContent   = minimized ? '💬' : '⬡ Network Chat';
+    if (titleEl)   titleEl.textContent   = minimized ? 'CHAT' : '⬡ Network Chat';
 
     if (minimized) {
       if (globalUnread > 0) { badge.textContent = globalUnread; badge.style.display = ''; }
@@ -5140,7 +5146,7 @@
         panel.style.top = Math.max(44, dock.top) + 'px';
       }
       const toggleBtn = document.getElementById('chat-toggle-btn');
-      if (toggleBtn) toggleBtn.textContent = minimized ? (inBottomHalf ? '▲' : '▼') : '—';
+      if (toggleBtn) toggleBtn.textContent = minimized ? (inBottomHalf ? '⌃' : '⌄') : '—';
       if (dock.side === 'left') {
         panel.style.left = '0';
         panel.classList.remove('chat-docked-right');
