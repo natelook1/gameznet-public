@@ -2190,7 +2190,7 @@
               </div>
               </div>
             </div>
-            <button onclick="openMobileQr()" style="margin-top:8px;width:100%;background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text-dim);font-size:11px;padding:5px 10px;cursor:pointer;letter-spacing:0.5px;transition:border-color 0.15s,color 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text-dim)';">SYNC MOBILE APP</button>
+            <button id="mobile-sync-btn" onclick="openMobileQr()" style="margin-top:8px;width:100%;background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text-dim);font-size:11px;padding:5px 10px;cursor:pointer;letter-spacing:0.5px;transition:border-color 0.15s,color 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text-dim)';">SYNC MOBILE APP</button>
           </div>
         </div>
 
@@ -2553,6 +2553,7 @@
     document.getElementById('fullroute-btn').style.display = 'inline-block';
     document.getElementById('footer-status-setter').style.display = 'flex';
     setStatus('disconnected');
+    refreshMobileStatus();
   }
 
   function showUnprovisioned() {
@@ -3264,7 +3265,8 @@
             <div class="op-row1">
               <div class="op-dot" style="${dotStyle}"></div>
               <div class="op-name">${esc(p.name)}</div>
-              ${!isOffline && p.status ? `<div class="op-status">${esc(p.status)}</div>` : ''}
+              ${!isOffline && p.mobile ? `<div class="op-status" style="color:var(--accent);opacity:0.8;">📱 Mobile</div>` : ''}
+              ${!isOffline && !p.mobile && p.status ? `<div class="op-status">${esc(p.status)}</div>` : ''}
               ${lastSeenHtml}
             </div>
             ${steamSub}
@@ -5334,6 +5336,29 @@
   ytRestoreSession();
   setInterval(loadDiscord, 30000);  // refreshes channel list, voice states, member list
 
+  // ── Mobile Status ───────────────────────────────────────────────────────────
+  async function refreshMobileStatus() {
+    const btn = document.getElementById('mobile-sync-btn');
+    if (!btn) return;
+    try {
+      const res = await fetch('/api/mobile-status');
+      const status = res.ok ? await res.json() : { active: false };
+      if (status.active) {
+        btn.textContent = '📱 MOBILE CONNECTED  ·  REVOKE DEVICE';
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.color = 'var(--accent)';
+        btn.onmouseover = () => { btn.style.borderColor = 'var(--danger)'; btn.style.color = 'var(--danger)'; };
+        btn.onmouseout  = () => { btn.style.borderColor = 'var(--accent)'; btn.style.color = 'var(--accent)'; };
+      } else {
+        btn.textContent = 'SYNC MOBILE APP';
+        btn.style.borderColor = 'var(--border2)';
+        btn.style.color = 'var(--text-dim)';
+        btn.onmouseover = () => { btn.style.borderColor = 'var(--accent)'; btn.style.color = 'var(--accent)'; };
+        btn.onmouseout  = () => { btn.style.borderColor = 'var(--border2)'; btn.style.color = 'var(--text-dim)'; };
+      }
+    } catch {}
+  }
+
   // ── Mobile QR ──────────────────────────────────────────────────────────────
   async function openMobileQr() {
     const overlay = document.getElementById('mobile-qr-overlay');
@@ -5381,6 +5406,7 @@
       if (res.ok) {
         document.getElementById('mobile-qr-active-view').style.display = 'none';
         document.getElementById('mobile-qr-overlay').style.display = 'none';
+        refreshMobileStatus();
       }
     } catch {}
     btn.disabled = false;
