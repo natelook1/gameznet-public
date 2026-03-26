@@ -2172,6 +2172,7 @@
               </div>
               </div>
             </div>
+            <button onclick="openMobileQr()" style="margin-top:8px;width:100%;background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text-dim);font-size:11px;padding:5px 10px;cursor:pointer;letter-spacing:0.5px;transition:border-color 0.15s,color 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text-dim)';">SYNC MOBILE APP</button>
           </div>
         </div>
 
@@ -2747,7 +2748,7 @@
       await fetch('/api/provision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ private_key: data.private_key, client_ip: data.client_ip, name: data.name, steam_id: data.steam_id || null })
+        body: JSON.stringify({ private_key: data.private_key, client_ip: data.client_ip, name: data.name, steam_id: data.steam_id || null, token })
       });
       state.provisioned       = true;
       state.name              = data.name;
@@ -5270,6 +5271,38 @@
   loadDiscord();
   ytRestoreSession();
   setInterval(loadDiscord, 30000);  // refreshes channel list, voice states, member list
+
+  // ── Mobile QR ──────────────────────────────────────────────────────────────
+  async function openMobileQr() {
+    const overlay = document.getElementById('mobile-qr-overlay');
+    const img = document.getElementById('mobile-qr-img');
+    const label = document.getElementById('mobile-qr-label');
+    overlay.style.display = 'flex';
+    img.src = '';
+    label.textContent = 'Loading...';
+    try {
+      const res = await fetch('/api/mobile-token');
+      if (!res.ok) {
+        label.textContent = 'Token not available. Re-install the app to enable mobile sync.';
+        return;
+      }
+      const { token } = await res.json();
+      const url = `https://m.gameznet.looknet.ca/?token=${token}`;
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(url)}&size=220x220&format=png&margin=10`;
+      label.textContent = token;
+    } catch {
+      label.textContent = 'Could not load token.';
+    }
+  }
 </script>
+
+<div id="mobile-qr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;" onclick="this.style.display='none'">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:28px 24px;text-align:center;min-width:280px;" onclick="event.stopPropagation()">
+    <div style="font-size:11px;letter-spacing:1px;color:var(--text-dim);margin-bottom:16px;">SCAN TO OPEN MOBILE APP</div>
+    <img id="mobile-qr-img" src="" width="220" height="220" style="display:block;margin:0 auto;border-radius:4px;background:#fff;" alt="QR Code" />
+    <div id="mobile-qr-label" style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--accent);margin-top:14px;word-break:break-all;"></div>
+    <button onclick="document.getElementById('mobile-qr-overlay').style.display='none'" style="margin-top:16px;width:100%;background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text-dim);font-size:11px;padding:6px;cursor:pointer;">CLOSE</button>
+  </div>
+</div>
 </body>
 </html>
