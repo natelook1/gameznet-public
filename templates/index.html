@@ -5339,9 +5339,9 @@
   // ── Mobile Status ───────────────────────────────────────────────────────────
   async function refreshMobileStatus() {
     const btn = document.getElementById('mobile-sync-btn');
-    if (!btn) return;
+    if (!btn || !state.name) return;
     try {
-      const res = await fetch('/api/mobile-status');
+      const res = await fetch(`{{ worker_url }}/api/mobile/status?name=${encodeURIComponent(state.name)}`);
       const status = res.ok ? await res.json() : { active: false };
       if (status.active) {
         btn.textContent = '📱 MOBILE CONNECTED  ·  REVOKE DEVICE';
@@ -5369,7 +5369,7 @@
     try {
       const [tokenRes, statusRes] = await Promise.all([
         fetch('/api/mobile-token'),
-        fetch('/api/mobile-status')
+        fetch(`{{ worker_url }}/api/mobile/status?name=${encodeURIComponent(state.name)}`)
       ]);
       document.getElementById('mobile-qr-loading').style.display = 'none';
       if (!tokenRes.ok) {
