@@ -8,6 +8,9 @@
   <link rel="shortcut icon" href="/static/gameznet.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>var whTooltips = {colorLinks: true, iconizeLinks: false, renameLinks: false};</script>
+  <script src="https://wow.zamimg.com/widgets/power.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg:        #07090f;
@@ -1864,6 +1867,268 @@
       margin-top: 4px; 
       letter-spacing: 1px;
     }
+
+    /* ── WoW Tab Scoped Styles ── */
+    #wow-section {
+      --bg:          #0d0f14;
+      --surface:     #13161e;
+      --surface2:    #1a1e2a;
+      --border:      #252a38;
+      --border2:     #2e3447;
+      --accent:      #00c3ff;
+      --accent-dim:  rgba(0,195,255,0.12);
+      --wow-gold:    #f0b429;
+      --wow-gold-dim:rgba(240,180,41,0.15);
+      --green:       #22c55e;
+      --green-dim:   rgba(34,197,94,0.12);
+      --red:         #ef4444;
+      --red-dim:     rgba(239,68,68,0.12);
+      --orange:      #f97316;
+      --purple:      #a855f7;
+      --dk-red:      #C41E3A;
+      --text:        #e2e8f0;
+      --text-muted:  #64748b;
+      --text-dim:    #94a3b8;
+      --radius:      6px;
+      --mono:        'Share Tech Mono', monospace;
+      --sans:        'Exo 2', sans-serif;
+      --display:     'Rajdhani', sans-serif;
+      
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      margin: -16px -32px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+    }
+    #wow-section.wow-active { display: flex; }
+    #wow-section::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px); pointer-events: none; z-index: 999; }
+    #wow-section .wow-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; align-items: center; gap: 8px; height: 48px; position: sticky; top: 0; z-index: 200; flex-shrink: 0; }
+    #wow-section .header-logo { font-family: var(--display); font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: 2px; }
+    #wow-section .header-sep  { color: var(--border2); font-size: 20px; margin: 0 4px; }
+    #wow-section .header-wow  { font-family: var(--display); font-size: 14px; font-weight: 600; color: var(--wow-gold); letter-spacing: 1px; display: flex; align-items: center; gap: 6px; }
+    #wow-section .header-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+    #wow-section .realm-status { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+    #wow-section .realm-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: wow-pulse 2s infinite; }
+    @keyframes wow-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    #wow-section .refresh-btn { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; padding: 4px 10px; background: var(--accent-dim); border: 1px solid rgba(0,195,255,0.3); color: var(--accent); border-radius: 4px; cursor: pointer; transition: all 0.15s; }
+    #wow-section .refresh-btn:hover { background: rgba(0,195,255,0.2); }
+    #wow-section .refresh-btn.loading { opacity: 0.5; pointer-events: none; }
+    #wow-section .nav-tabs { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 0; position: sticky; top: 48px; z-index: 190; flex-shrink: 0; }
+    #wow-section .nav-tab { font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 12px 18px; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.15s; display: flex; align-items: center; gap: 7px; user-select: none; white-space: nowrap; }
+    #wow-section .nav-tab:hover { color: var(--text-dim); }
+    #wow-section .nav-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+    #wow-section .nav-tab.active.tab-leveling { border-bottom-color: var(--green); color: var(--green); }
+    #wow-section .nav-tab.active.tab-world    { border-bottom-color: var(--green); color: var(--green); }
+    #wow-section .nav-tab.active.tab-pve      { border-bottom-color: var(--accent); color: var(--accent); }
+    #wow-section .nav-tab.active.tab-pvp      { border-bottom-color: var(--purple); color: var(--purple); }
+    #wow-section .nav-tab.active.tab-admin    { border-bottom-color: var(--wow-gold); color: var(--wow-gold); }
+    #wow-section .nav-tab.active.tab-account  { border-bottom-color: var(--wow-gold); color: var(--wow-gold); }
+    #wow-section .tab-icon { font-size: 14px; }
+    #wow-section .char-bar { background: var(--surface2); border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; align-items: stretch; position: sticky; top: 91px; z-index: 180; overflow: hidden; flex-shrink: 0; }
+    #wow-section .char-bar-overview { display: flex; align-items: center; flex-shrink: 0; padding: 0 14px 0 0; margin-right: 4px; border-right: 1px solid var(--border2); }
+    #wow-section .char-bar-scroll { display: flex; align-items: center; gap: 0; overflow-x: auto; flex: 1; scrollbar-width: none; -ms-overflow-style: none; }
+    #wow-section .char-bar-scroll::-webkit-scrollbar { display: none; }
+    #wow-section .char-group { display: flex; align-items: stretch; flex-shrink: 0; border-right: 1px solid var(--border); padding: 0 4px; }
+    #wow-section .char-group:last-child { border-right: none; }
+    #wow-section .char-group-inner { display: flex; flex-direction: column; justify-content: center; gap: 0; }
+    #wow-section .char-group-label { font-family: var(--mono); font-size: 8px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 8px 0; line-height: 1; }
+    #wow-section .char-group-chips { display: flex; align-items: center; gap: 3px; padding: 4px 4px 4px; }
+    #wow-section .char-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 4px; border: 1px solid transparent; background: transparent; cursor: pointer; transition: all 0.15s; font-family: var(--display); font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+    #wow-section .char-chip:hover { border-color: var(--border2); color: var(--text); background: var(--bg); }
+    #wow-section .char-chip.active { border-color: var(--accent); color: var(--text); background: var(--accent-dim); box-shadow: 0 0 8px rgba(0,195,255,0.1); }
+    #wow-section .char-chip.is-main.active { border-color: var(--wow-gold); background: var(--wow-gold-dim); }
+    #wow-section .char-chip.is-alt { font-size: 12px; opacity: 0.75; }
+    #wow-section .char-chip.is-alt:hover, #wow-section .char-chip.is-alt.active { opacity: 1; }
+    #wow-section .char-chip .chip-avatar { width: 20px; height: 20px; border-radius: 3px; object-fit: cover; background: var(--border2); flex-shrink: 0; }
+    #wow-section .char-chip.is-main .chip-avatar { width: 24px; height: 24px; border-radius: 4px; }
+    #wow-section .char-chip .chip-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    #wow-section .char-chip .chip-dot.online { background: var(--green); box-shadow: 0 0 4px var(--green); }
+    #wow-section .char-chip .chip-dot.offline { background: var(--border2); }
+    #wow-section .overview-chip { display: flex; align-items: center; gap: 7px; padding: 8px 12px; font-family: var(--display); font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-radius: 4px; transition: all 0.15s; white-space: nowrap; border: 1px solid transparent; }
+    #wow-section .overview-chip:hover { color: var(--text); border-color: var(--border2); }
+    #wow-section .overview-chip.active { color: var(--text); border-color: var(--border2); background: var(--bg); }
+    #wow-section .reset-banner { background: linear-gradient(90deg, var(--surface) 0%, rgba(240,180,41,0.06) 50%, var(--surface) 100%); border-bottom: 1px solid rgba(240,180,41,0.2); padding: 7px 20px; display: flex; align-items: center; justify-content: center; gap: 16px; flex-shrink: 0; }
+    #wow-section .reset-label   { font-family: var(--mono); font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; }
+    #wow-section .reset-time    { font-family: var(--mono); font-size: 15px; color: var(--wow-gold); font-weight: 700; letter-spacing: 3px; }
+    #wow-section .reset-divider { color: var(--border2); }
+    #wow-section .tab-panel { display: none; padding: 16px 20px; max-width: 1400px; margin: 0 auto; width: 100%; }
+    #wow-section .tab-panel.active { display: block; }
+    #wow-section .layout { display: grid; grid-template-columns: 1fr 340px; gap: 16px; }
+    #wow-section .layout-full { padding: 0; }
+    #wow-section .col-main { display: flex; flex-direction: column; gap: 14px; }
+    #wow-section .col-side  { display: flex; flex-direction: column; gap: 14px; }
+    #wow-section .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 0; padding: 0; }
+    #wow-section .card-header { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface2); }
+    #wow-section .card-title { font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); display: flex; align-items: center; gap: 8px; }
+    #wow-section .card-title .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+    #wow-section .card-title .dot-green  { background: var(--green);  box-shadow: 0 0 6px var(--green); }
+    #wow-section .card-title .dot-purple { background: var(--purple); box-shadow: 0 0 6px var(--purple); }
+    #wow-section .card-title .dot-gold   { background: var(--wow-gold); box-shadow: 0 0 6px var(--wow-gold); }
+    #wow-section .card-body { padding: 14px; }
+    #wow-section .badge { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 3px; letter-spacing: 1px; }
+    #wow-section .badge-free   { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    #wow-section .badge-gold   { background: var(--wow-gold-dim); color: var(--wow-gold); border: 1px solid rgba(240,180,41,0.3); }
+    #wow-section .badge-purple { background: rgba(168,85,247,0.12); color: var(--purple); border: 1px solid rgba(168,85,247,0.3); }
+    #wow-section .badge-dim    { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border2); }
+    #wow-section .skel { background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 4px; }
+    #wow-section .roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+    #wow-section .player-card { background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); overflow: hidden; transition: border-color 0.15s; }
+    #wow-section .player-card:hover { border-color: var(--border2); }
+    #wow-section .player-card-bar { height: 3px; }
+    #wow-section .player-card-bar.dk      { background: linear-gradient(90deg,#C41E3A,#8B0000); box-shadow: 0 0 8px rgba(196,30,58,0.4); }
+    #wow-section .player-card-bar.mage    { background: linear-gradient(90deg,#3FC7EB,#1a8fa8); }
+    #wow-section .player-card-bar.hunter  { background: linear-gradient(90deg,#AAD372,#6a9a3a); }
+    #wow-section .player-card-bar.paladin { background: linear-gradient(90deg,#F48CBA,#c45a8a); }
+    #wow-section .player-card-bar.warrior { background: linear-gradient(90deg,#C69B3A,#8a6a1a); }
+    #wow-section .player-card-bar.priest  { background: linear-gradient(90deg,#FFFFFF,#aaaaaa); }
+    #wow-section .player-card-bar.druid   { background: linear-gradient(90deg,#FF7C0A,#c04a00); }
+    #wow-section .player-card-bar.rogue   { background: linear-gradient(90deg,#FFF468,#c0b030); }
+    #wow-section .player-card-bar.shaman  { background: linear-gradient(90deg,#0070DD,#004a99); }
+    #wow-section .player-card-bar.warlock { background: linear-gradient(90deg,#8788EE,#5555bb); }
+    #wow-section .player-card-bar.monk    { background: linear-gradient(90deg,#00FF98,#009955); }
+    #wow-section .player-card-bar.dh      { background: linear-gradient(90deg,#A330C9,#6a0099); }
+    #wow-section .player-card-bar.evoker  { background: linear-gradient(90deg,#33937F,#1a6055); }
+    #wow-section .player-card-bar.default { background: var(--border2); }
+    #wow-section .player-main { padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.15s; }
+    #wow-section .player-main:hover { background: rgba(255,255,255,0.03); }
+    #wow-section .player-main-avatar { width: 52px; height: 52px; border-radius: 5px; object-fit: cover; flex-shrink: 0; background: var(--bg); border: 1px solid var(--border2); }
+    #wow-section .player-main-info { flex: 1; min-width: 0; }
+    #wow-section .player-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 1px; }
+    #wow-section .player-name { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
+    #wow-section .player-online-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 4px var(--green); flex-shrink: 0; }
+    #wow-section .player-online-dot.offline { background: var(--border2); box-shadow: none; }
+    #wow-section .char-name { font-family: var(--display); font-size: 18px; font-weight: 700; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #wow-section .char-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    #wow-section .char-stats { display: flex; gap: 5px; margin-top: 7px; flex-wrap: wrap; }
+    #wow-section .cs { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 3px; }
+    #wow-section .cs-ilvl  { background: var(--wow-gold-dim); color: var(--wow-gold);  border: 1px solid rgba(240,180,41,0.3); }
+    #wow-section .cs-score { background: var(--accent-dim);   color: var(--accent);    border: 1px solid rgba(0,195,255,0.3); }
+    #wow-section .cs-raid  { background: var(--green-dim);    color: var(--green);     border: 1px solid rgba(34,197,94,0.3); }
+    #wow-section .cs-pvp   { background: rgba(168,85,247,0.1);color: var(--purple);    border: 1px solid rgba(168,85,247,0.3); }
+    #wow-section .main-nav-btn { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+    #wow-section .nav-btn { font-family: var(--mono); font-size: 9px; letter-spacing: 1px; padding: 4px 8px; border-radius: 3px; border: 1px solid var(--border2); color: var(--text-muted); cursor: pointer; transition: all 0.15s; text-align: center; white-space: nowrap; }
+    #wow-section .nav-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+    #wow-section .nav-btn.pve:hover  { border-color: var(--accent); color: var(--accent); }
+    #wow-section .nav-btn.pvp:hover  { border-color: var(--purple); color: var(--purple); background: rgba(168,85,247,0.08); }
+    #wow-section .nav-btn.lvl:hover  { border-color: var(--green);  color: var(--green);  background: var(--green-dim); }
+    #wow-section .player-alts { border-top: 1px solid var(--border); padding: 8px 14px; display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.15); flex-wrap: wrap; }
+    #wow-section .alts-label { font-family: var(--mono); font-size: 9px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; flex-shrink: 0; margin-right: 2px; }
+    #wow-section .alt-chip { display: flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 3px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; font-family: var(--display); font-size: 11px; font-weight: 600; color: var(--text-muted); transition: all 0.15s; }
+    #wow-section .alt-chip:hover { border-color: var(--border2); color: var(--text); }
+    #wow-section .alt-chip img { width: 16px; height: 16px; border-radius: 2px; object-fit: cover; }
+    #wow-section .affix-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    #wow-section .affix-pill { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 4px; padding: 8px 12px; flex: 1; min-width: 160px; }
+    #wow-section .affix-icon { width: 34px; height: 34px; border-radius: 4px; border: 1px solid var(--border2); object-fit: cover; flex-shrink: 0; background: var(--bg); }
+    #wow-section .affix-name { font-family: var(--display); font-size: 14px; font-weight: 600; }
+    #wow-section .affix-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+    #wow-section .level-hero { background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 20px; display: flex; align-items: center; gap: 20px; }
+    #wow-section .level-big { font-family: var(--mono); font-size: 64px; font-weight: 700; color: var(--green); line-height: 1; text-shadow: 0 0 30px rgba(34,197,94,0.3); flex-shrink: 0; }
+    #wow-section .level-info { flex: 1; }
+    #wow-section .level-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px; }
+    #wow-section .level-bar-wrap { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; height: 10px; overflow: hidden; margin-bottom: 6px; }
+    #wow-section .level-bar-fill { height: 100%; background: linear-gradient(90deg, var(--green), #16a34a); border-radius: 4px; transition: width 0.8s ease; }
+    #wow-section .level-xp { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+    #wow-section .level-max-note { font-size: 11px; color: var(--green); margin-top: 4px; }
+    #wow-section .dungeon-list { display: flex; flex-direction: column; gap: 5px; }
+    #wow-section .dungeon-row { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 8px 12px; }
+    #wow-section .dungeon-icon { font-size: 16px; flex-shrink: 0; }
+    #wow-section .dungeon-name { flex: 1; font-family: var(--display); font-size: 13px; font-weight: 600; }
+    #wow-section .dungeon-status { font-family: var(--mono); font-size: 10px; padding: 2px 6px; border-radius: 3px; }
+    #wow-section .ds-unlocked { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    #wow-section .ds-locked   { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+    #wow-section .ds-current  { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(0,195,255,0.3); }
+    #wow-section .score-display { text-align: center; padding: 14px 0 6px; }
+    #wow-section .score-big { font-family: var(--mono); font-size: 52px; font-weight: 700; color: var(--accent); line-height: 1; text-shadow: 0 0 30px rgba(0,195,255,0.3); }
+    #wow-section .score-lbl { font-size: 10px; color: var(--text-muted); letter-spacing: 3px; margin-top: 4px; }
+    #wow-section .score-season { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+    #wow-section .score-roles { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 14px; }
+    #wow-section .role-box { background: var(--surface2); border: 1px solid var(--border2); border-radius: 4px; padding: 8px; text-align: center; }
+    #wow-section .role-val { font-family: var(--mono); font-size: 16px; font-weight: 700; }
+    #wow-section .role-lbl { font-size: 9px; color: var(--text-muted); letter-spacing: 1.5px; margin-top: 2px; }
+    #wow-section .run-list { display: flex; flex-direction: column; gap: 5px; }
+    #wow-section .run-row { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 8px 12px; transition: border-color 0.15s; }
+    #wow-section .run-row:hover { border-color: var(--border2); }
+    #wow-section .run-key { font-family: var(--mono); font-size: 14px; font-weight: 700; width: 30px; text-align: center; flex-shrink: 0; }
+    #wow-section .run-key.high { color: var(--purple); }
+    #wow-section .run-key.mid  { color: var(--accent); }
+    #wow-section .run-key.low  { color: var(--text-dim); }
+    #wow-section .run-dungeon  { flex: 1; }
+    #wow-section .run-dname    { font-family: var(--display); font-size: 13px; font-weight: 600; }
+    #wow-section .run-dshort   { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    #wow-section .run-time { font-family: var(--mono); font-size: 11px; }
+    #wow-section .run-time.timed    { color: var(--green); }
+    #wow-section .run-time.depleted { color: var(--red); }
+    #wow-section .run-score { font-family: var(--mono); font-size: 12px; color: var(--wow-gold); width: 48px; text-align: right; }
+    #wow-section .boss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+    #wow-section .boss-pip { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 7px 10px; display: flex; align-items: center; gap: 7px; }
+    #wow-section .boss-pip.killed-n { border-color: rgba(34,197,94,0.35); }
+    #wow-section .boss-pip.killed-h { border-color: rgba(0,195,255,0.35); }
+    #wow-section .boss-pip.killed-m { border-color: rgba(168,85,247,0.4); }
+    #wow-section .boss-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    #wow-section .boss-dot.n { background: var(--green); box-shadow: 0 0 4px var(--green); }
+    #wow-section .boss-dot.h { background: var(--accent); box-shadow: 0 0 4px var(--accent); }
+    #wow-section .boss-dot.m { background: var(--purple); box-shadow: 0 0 4px var(--purple); }
+    #wow-section .boss-dot.x { background: var(--border2); }
+    #wow-section .boss-name { font-family: var(--display); font-size: 11px; font-weight: 600; color: var(--text-dim); }
+    #wow-section .raid-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    #wow-section .raid-name   { font-family: var(--display); font-size: 16px; font-weight: 700; }
+    #wow-section .diff-pill { font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 3px; letter-spacing: 1px; }
+    #wow-section .diff-n { background: var(--green-dim);            color: var(--green);  border: 1px solid rgba(34,197,94,0.4); }
+    #wow-section .diff-h { background: var(--accent-dim);           color: var(--accent); border: 1px solid rgba(0,195,255,0.4); }
+    #wow-section .diff-m { background: rgba(168,85,247,0.12); color: var(--purple);      border: 1px solid rgba(168,85,247,0.4); }
+    #wow-section .weekly-run { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 5px; }
+    #wow-section .wk-key  { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--wow-gold); width: 28px; text-align: center; flex-shrink: 0; }
+    #wow-section .wk-name { flex: 1; font-family: var(--display); font-size: 13px; font-weight: 600; }
+    #wow-section .wk-time { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+    #wow-section .pvp-coming { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    #wow-section .pvp-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    #wow-section .pvp-stat-box { background: var(--bg); border: 1px solid var(--border2); border-radius: 5px; padding: 14px; text-align: center; }
+    #wow-section .pvp-stat-val { font-family: var(--mono); font-size: 26px; font-weight: 700; color: var(--purple); line-height: 1; }
+    #wow-section .pvp-stat-lbl { font-size: 9px; color: var(--text-muted); letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
+    #wow-section .pvp-note { font-family: var(--mono); font-size: 10px; color: var(--text-muted); text-align: center; letter-spacing: 1px; padding: 12px; border: 1px dashed var(--border2); border-radius: 4px; }
+    #wow-section .conquest-bar-wrap { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; height: 12px; overflow: hidden; margin: 8px 0 4px; }
+    #wow-section .conquest-bar-fill { height: 100%; background: linear-gradient(90deg, var(--purple), #7c3aed); border-radius: 4px; transition: width 0.8s ease; }
+    #wow-section .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    #wow-section .admin-field { margin-bottom: 12px; }
+    #wow-section .admin-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px; display: block; }
+    #wow-section .admin-input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 4px; padding: 7px 10px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; transition: border-color 0.15s; }
+    #wow-section .admin-input:focus { border-color: var(--accent); }
+    #wow-section .admin-input::placeholder { color: var(--text-muted); }
+    #wow-section .admin-hint { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+    #wow-section .admin-section { font-family: var(--display); font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    #wow-section .admin-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+    #wow-section .char-list { display: flex; flex-direction: column; gap: 6px; }
+    #wow-section .char-list-row { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 4px; padding: 8px 12px; }
+    #wow-section .char-list-avatar { width: 32px; height: 32px; border-radius: 3px; object-fit: cover; background: var(--bg); border: 1px solid var(--border2); flex-shrink: 0; }
+    #wow-section .char-list-name { flex: 1; font-family: var(--display); font-size: 13px; font-weight: 600; }
+    #wow-section .char-list-realm { font-size: 10px; color: var(--text-muted); }
+    #wow-section .char-list-del { font-family: var(--mono); font-size: 10px; color: var(--red); cursor: pointer; padding: 2px 6px; border: 1px solid rgba(239,68,68,0.3); border-radius: 3px; }
+    #wow-section .char-list-del:hover { background: var(--red-dim); }
+    #wow-section .wow-btn { padding: 7px 14px; border-radius: 4px; border: none; cursor: pointer; font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; transition: all 0.15s; }
+    #wow-section .btn-accent { background: var(--accent); color: #000; }
+    #wow-section .btn-accent:hover { background: #33d1ff; }
+    #wow-section .btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--text-muted); }
+    #wow-section .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    #wow-section .scroll-body { max-height: 340px; overflow-y: auto; padding: 14px; }
+    #wow-section .empty { text-align: center; padding: 24px; color: var(--text-muted); font-family: var(--mono); font-size: 11px; letter-spacing: 1px; }
+    #wow-section .info-box { background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 4px; padding: 10px 12px; font-size: 11px; color: var(--text-muted); line-height: 1.7; margin-bottom: 12px; }
+    #wow-section .info-box strong { color: var(--text); }
+    #wow-section .info-box.purple { border-left-color: var(--purple); }
+    #wow-section .info-box.gold   { border-left-color: var(--wow-gold); }
+    #wow-section .picker-filter { font-family: var(--mono); font-size: 10px; padding: 4px 10px; border-radius: 3px; border: 1px solid var(--border2); color: var(--text-muted); cursor: pointer; letter-spacing: 1px; transition: all 0.15s; }
+    #wow-section .picker-filter.active { background: var(--accent-dim); border-color: rgba(0,195,255,0.4); color: var(--accent); }
+    #wow-section .picker-filter:hover:not(.active) { color: var(--text); border-color: var(--border2); }
+    @media (max-width: 1000px) {
+      #wow-section .layout { grid-template-columns: 1fr; }
+      #wow-section .col-side { order: -1; }
+      #wow-section .admin-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -1886,6 +2151,7 @@
     <button class="tab-btn active" onclick="switchTab('home', this)">HOME</button>
     <button class="tab-btn yt-tab" onclick="switchTab('youtube', this)">YOUTUBE</button>
     <button class="tab-btn dc-tab" onclick="switchTab('discord', this)">DISCORD<span class="dc-tab-badge" id="tab-dc-online" style="display:none;"></span></button>
+    <button class="tab-btn wow-tab" onclick="switchTab('wow', this)">WOW</button>
     <div class="net-pill" id="net-pill" onclick="toggleNetDropdown()">
       <div class="net-pill-dot"></div>
       <span>CONNECTED</span>
@@ -2350,6 +2616,47 @@
       </div>
     </div>
 
+    <!-- ── WOW TAB ── -->
+    <div id="wow-section">
+      <div class="wow-header">
+        <div class="header-logo">GamezNET</div>
+        <div class="header-sep">/</div>
+        <div class="header-wow">⚔️ World of Warcraft</div>
+        <div class="header-right">
+          <div class="realm-status">
+            <div class="realm-dot" style="background:var(--wow-gold);box-shadow:0 0 6px var(--wow-gold);"></div>
+            <span id="wowTokenPrice" style="font-family:var(--mono);color:var(--wow-gold);font-weight:600;letter-spacing:1px;">🪙 Fetching...</span>
+          </div>
+          <div class="header-sep" style="margin:0 4px;font-size:16px;">|</div>
+          <div class="realm-status"><div class="realm-dot"></div><span>Proudmoore — US</span></div>
+          <div class="refresh-btn" id="wowRefreshBtn" onclick="wowLoadAll()">⟳ REFRESH</div>
+        </div>
+      </div>
+
+      <div class="nav-tabs">
+        <div class="nav-tab active" data-wow-tab="overview" onclick="wowSwitchTab('overview')"><span class="tab-icon">🌐</span> Overview</div>
+        <div class="nav-tab tab-world" data-wow-tab="world" onclick="wowSwitchTab('world')"><span class="tab-icon">🌍</span> World &amp; Collections</div>
+        <div class="nav-tab tab-pve" data-wow-tab="pve" onclick="wowSwitchTab('pve')"><span class="tab-icon">⚔️</span> PVE</div>
+        <div class="nav-tab tab-pvp" data-wow-tab="pvp" onclick="wowSwitchTab('pvp')"><span class="tab-icon">🏆</span> PVP</div>
+        <div class="nav-tab tab-account" data-wow-tab="account" onclick="wowSwitchTab('account')"><span class="tab-icon">👤</span> My Account</div>
+      </div>
+
+      <div class="char-bar" id="wowCharBar" style="display:none;"></div>
+
+      <div class="reset-banner">
+        <div class="reset-label">⟳ weekly reset</div>
+        <div class="reset-time" id="wowResetTimer">—</div>
+        <div class="reset-divider">|</div>
+        <div class="reset-label">tue 15:00 utc · na</div>
+      </div>
+
+      <div class="tab-panel active" id="wow-panel-overview"><div class="layout"><div class="col-main"><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> This Week's Affixes</div></div><div class="card-body"><div class="affix-row" id="wowAffixRow"><div class="affix-pill skel" style="height:52px;"></div></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Roster</div></div><div class="card-body"><div class="roster-grid" id="wowRosterGrid"><div class="player-card skel" style="height:130px;"></div></div></div></div></div><div class="col-side"><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Quick Stats</div></div><div class="card-body" id="wowQuickStats"><div class="skel" style="height:40px;margin-bottom:8px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Recent Activity</div></div><div class="scroll-body" id="wowActivityFeed"><div class="skel" style="height:48px;margin-bottom:8px;border-radius:4px;"></div></div></div></div></div></div>
+      <div class="tab-panel" id="wow-panel-world"><div id="wowWorldMainView" class="layout"><div class="col-main"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Character Level</div></div><div class="card-body" id="wowLevelBlock"><div class="skel" style="height:120px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Collections</div></div><div class="card-body" id="wowCollectionsBlock"><div class="skel" style="height:100px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Character Achievements</div></div><div class="card-body" id="wowAchvBlock"><div class="skel" style="height:140px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Professions</div></div><div class="card-body" id="wowProfessionsBlock"><div class="skel" style="height:100px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Player Estate</div></div><div class="card-body" id="wowHousingBlock"><div class="skel" style="height:120px;border-radius:4px;"></div></div></div></div><div class="col-side"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Khaz Algar Renown</div></div><div class="card-body" id="wowRenownBlock"><div class="skel" style="height:200px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Campaign Progress</div></div><div class="card-body" id="wowZoneBlock"><div class="skel" style="height:140px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Dungeon Unlock Status</div></div><div class="card-body" id="wowDungeonBlock"><div class="skel" style="height:180px;border-radius:4px;"></div></div></div></div></div><div id="wowWorldCollectionView" class="layout-full" style="display:none;"></div></div>
+      <div class="tab-panel" id="wow-panel-pve"><div class="layout"><div class="col-main"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Equipped Gear</div></div><div class="card-body" id="wowIlvlBlock"><div class="skel" style="height:200px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Raid Progress</div></div><div class="card-body" id="wowRaidBody"><div class="skel" style="height:160px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Recent M+ Runs</div></div><div class="scroll-body" id="wowRecentRuns"><div class="skel" style="height:44px;border-radius:4px;margin-bottom:5px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Season Best Runs</div></div><div class="scroll-body" id="wowBestRuns"><div class="skel" style="height:44px;border-radius:4px;margin-bottom:5px;"></div></div></div></div><div class="col-side"><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Mythic+ Score</div></div><div class="card-body"><div class="score-display" id="wowScoreDisplay"><div class="skel score-big" style="width:140px;height:52px;margin:0 auto 8px;"></div></div><div class="score-roles" id="wowScoreRoles"><div class="role-box skel" style="height:54px;"></div></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Combat Statistics</div></div><div class="card-body" id="wowStatsBlock"><div class="skel" style="height:160px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Great Vault Tracker</div></div><div class="card-body" id="wowWeeklyRuns"><div class="skel" style="height:40px;border-radius:4px;margin-bottom:5px;"></div></div></div></div></div></div>
+      <div class="tab-panel" id="wow-panel-pvp"><div class="layout"><div class="col-main"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-purple"></div> PVP Rating</div></div><div class="card-body"><div class="pvp-stat-grid" id="wowPvpStats"><div class="pvp-stat-box"><div class="pvp-stat-val" id="wowPvpArena2v2">—</div><div class="pvp-stat-lbl">2v2 Rating</div></div><div class="pvp-stat-box"><div class="pvp-stat-val" id="wowPvpArena3v3">—</div><div class="pvp-stat-lbl">3v3 Rating</div></div><div class="pvp-stat-box"><div class="pvp-stat-val" id="wowPvpRbg">—</div><div class="pvp-stat-lbl">RBG Rating</div></div><div class="pvp-stat-box"><div class="pvp-stat-val" id="wowPvpHonor">—</div><div class="pvp-stat-lbl">Honor Level</div></div></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-purple"></div> Conquest Progress</div></div><div class="card-body" id="wowConquestBlock"><div class="skel" style="height:80px;border-radius:4px;"></div></div></div></div><div class="col-side"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-purple"></div> PVP Gear ilvl</div></div><div class="card-body" id="wowPvpGearBlock"><div class="pvp-note">Data not available.</div></div></div></div></div></div>
+      <div class="tab-panel" id="wow-panel-account"><div class="layout-full" style="max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:16px;"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Battle.net Account</div><span class="badge badge-dim" id="wowBnetLinkBadge">NOT LINKED</span></div><div class="card-body" id="wowBnetLinkBody"><div style="text-align:center;padding:20px 0;"><div style="font-size:36px;margin-bottom:12px;">🔗</div><div style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--text-muted);margin-bottom:16px;">Link your Battle.net account to auto-discover your characters</div><button class="wow-btn btn-accent" style="font-size:14px;padding:10px 24px;" onclick="wowLinkBnet()">⚔️ Link Battle.net Account</button></div></div></div><div class="card" id="wowMyRosterCard"><div class="card-header"><div class="card-title"><div class="dot"></div> My Roster</div></div><div class="card-body scroll-body" id="wowMyRosterList" style="padding:0 14px;"></div></div><div class="card" id="wowMyCharsCard" style="display:none;"><div class="card-header"><div class="card-title"><div class="dot"></div> Battle.net Characters</div><div style="display:flex;align-items:center;gap:10px;"><div class="picker-filter active" data-filter="active" onclick="setPickerFilter('active')">Max Level</div><div class="picker-filter" data-filter="all" onclick="setPickerFilter('all')">All</div></div></div><div class="card-body scroll-body" id="wowMyCharsList" style="max-height:400px;padding:0 14px;"></div><div class="card-body" style="border-top:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;"><div style="font-size:11px;color:var(--text-muted);"><span id="wowPickerCount" style="font-family:var(--mono);color:var(--text);font-weight:700;margin-right:8px;">0 / 5 selected</span>(1 Main, up to 4 Alts)</div><button class="wow-btn btn-accent" id="wowPickerSaveBtn" onclick="savePicker()" disabled>Save to Roster</button></div></div></div></div>
+    </div>
+
     <!-- ── SETUP (shown when not provisioned) ── -->
     <div class="setup-wrap" id="setup-wrap" style="display:none;">
       <div id="setup-panel" class="setup-panel">
@@ -2714,6 +3021,7 @@
       state.provisioned = cfg.provisioned;
       state.name        = cfg.name;
       state.clientIp    = cfg.client_ip;
+      state.token       = cfg.token;
 
       if (state.provisioned) {
         showProvisioned();
@@ -4009,15 +4317,20 @@
     const dash = document.getElementById('dashboard-section');
     const yt   = document.getElementById('youtube-section');
     const dc   = document.getElementById('discord-section');
+    const wow  = document.getElementById('wow-section');
     dash.style.display = 'none';
     yt.classList.remove('yt-active');
     dc.classList.remove('dc-active');
+    wow.style.display = 'none';
     if (name === 'youtube') {
       yt.classList.add('yt-active');
       if (!_ytInitialized) { ytLoadCategory(_ytCat); _ytInitialized = true; }
     } else if (name === 'discord') {
       dc.classList.add('dc-active');
       if (Notification.permission === 'default') Notification.requestPermission();
+    } else if (name === 'wow') {
+      wow.style.display = 'flex';
+      if (!window._wowInitialized) { window._wowInitialized = true; wowLoadAll(); }
     } else {
       dash.style.display = 'flex';
       document.getElementById('server-strip-wrap').style.display = _serverList.length ? '' : 'none';
@@ -5449,5 +5762,917 @@
     <button onclick="closeMobileQr()" style="margin-top:16px;width:100%;background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text-dim);font-size:11px;padding:6px;cursor:pointer;">CLOSE</button>
   </div>
 </div>
+
+<script>
+  /* ── WoW Tab Logic (Direct API Integration) ── */
+  let wowCharacters = [];
+  let wowActiveChar = -1;
+  let wowActiveTab = 'overview';
+  let wowCharCache = {};
+  let wowAffixCache = null;
+  let wowBnetConfigured = false;
+  let wowGlobalCollections = { mounts: null, pets: null };
+  let wowCurrentColView = 'mounts';
+  let wowBnetToken = null;
+  let wowColSearch = '';
+  let wowColCompareIdx = -1;
+  const RIO = 'https://raider.io/api/v1';
+
+  function wowReq(path, opts = {}) {
+    return fetch('{{ worker_url }}' + path, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', 'X-Token': state.token, ...(opts.headers || {}) }
+    });
+  }
+
+  function wowSwitchTab(tab) {
+    document.querySelectorAll('#wow-section .nav-tab').forEach(t => t.classList.remove('active'));
+    const targetTab = document.querySelector(`#wow-section [data-wow-tab="${tab}"]`);
+    if (targetTab) targetTab.classList.add('active');
+    document.querySelectorAll('#wow-section .tab-panel').forEach(p => p.classList.remove('active'));
+    const targetPanel = document.getElementById(`wow-panel-${tab}`);
+    if (targetPanel) targetPanel.classList.add('active');
+    const isCharTab = ['world','pve','pvp'].includes(tab);
+    const charBar = document.getElementById('wowCharBar');
+    if (charBar) charBar.style.display = isCharTab ? 'flex' : 'none';
+    if (isCharTab && wowActiveChar === -1 && wowCharacters.length > 0) wowActiveChar = 0;
+    wowActiveTab = tab;
+    if (isCharTab) wowRenderCharTab();
+    if (tab === 'account') wowRenderAccountTab();
+    if (isCharTab) wowBuildCharBar();
+  }
+
+  function wowBuildCharBar() {
+    const bar = document.getElementById('wowCharBar');
+    if (!bar) return;
+    const isCharTab = ['world','pve','pvp'].includes(wowActiveTab);
+    const rosterChip = isCharTab ? `<div class="char-bar-overview"><div class="overview-chip ${wowActiveChar===-1?'active':''}" onclick="wowSelectAll()">👥 Roster</div></div>` : '';
+    const mains = wowCharacters.map((c,i) => ({...c, globalIdx:i})).filter(c => c.is_main);
+    const alts = wowCharacters.map((c,i) => ({...c, globalIdx:i})).filter(c => !c.is_main);
+    const altGroups = {};
+    alts.forEach(c => { const p = c.player_name || c.display_name; if (!altGroups[p]) altGroups[p] = []; altGroups[p].push(c); });
+    function chip(c, isMain) {
+      const isActive = c.globalIdx === wowActiveChar;
+      return `<div class="char-chip ${isActive?'active':''} ${isMain?'is-main':'is-alt'}" onclick="wowSelectChar(${c.globalIdx})" title="${c.display_name} · ${c.spec||''} ${c.class||''} · ${c.realm}"><img class="chip-avatar" src="${wowCharAvatar(c)}" onerror="this.style.display='none'" /><div class="chip-dot offline"></div>${c.display_name}${isMain ? '<span style="font-size:9px;color:var(--wow-gold);margin-left:1px;">★</span>' : ''}</div>`;
+    }
+    const mainsSection = mains.length ? `<div class="char-group"><div class="char-group-inner"><div class="char-group-label">Mains</div><div class="char-group-chips">${mains.map(c => chip(c, true)).join('')}</div></div></div>` : '';
+    const altsSection = Object.entries(altGroups).map(([player, chars]) => `<div class="char-group"><div class="char-group-inner"><div class="char-group-label">${player}</div><div class="char-group-chips">${chars.map(c => chip(c, false)).join('')}</div></div></div>`).join('');
+    bar.innerHTML = `${rosterChip}<div class="char-bar-scroll">${mainsSection}${altsSection}</div>`;
+  }
+
+  window.wowSelectAll = function() { wowActiveChar = -1; wowBuildCharBar(); wowSwitchTab('overview'); };
+  window.wowSelectChar = function(i) { wowActiveChar = i; wowBuildCharBar(); wowRenderCharTab(); };
+  
+  function wowRenderCharTab() {
+    if (wowActiveChar === -1 || wowCharacters.length === 0) {
+      const html = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;text-align:center;gap:14px;"><div style="font-size:42px;">👤</div><div style="font-family:var(--display);font-size:18px;font-weight:700;color:var(--text-muted);">No Character Selected</div><div style="font-size:12px;color:var(--text-muted);max-width:300px;line-height:1.7;">Select a character from the bar above, or add one in the <span onclick="wowSwitchTab('account')" style="color:var(--accent);cursor:pointer;">My Account</span> tab.</div></div>`;
+      const targetId = { world: 'wowLevelBlock', pve: 'wowRaidBody', pvp: 'wowPvpStats' }[wowActiveTab];
+      if (targetId) document.getElementById(targetId).innerHTML = html;
+      return;
+    }
+    const c = wowCharCache[`${wowCharacters[wowActiveChar].region}-${wowCharacters[wowActiveChar].realm}-${wowCharacters[wowActiveChar].name}`];
+    if (!c) { wowLoadAndRenderBnet(wowActiveChar).then(wowRenderCharTab); return; }
+    if (wowActiveTab === 'world') wowRenderWorld(c);
+    if (wowActiveTab === 'pve') wowRenderPVE(c);
+    if (wowActiveTab === 'pvp') wowRenderPVPFromCache(wowActiveChar);
+  }
+
+  async function wowLoadAll() {
+    const btn = document.getElementById('wowRefreshBtn');
+    if(btn) { btn.classList.add('loading'); btn.textContent = '⟳ LOADING...'; }
+    wowCharCache = {};
+    try {
+      fetch(`${RIO}/mythic-plus/affixes?region=us&locale=en`).then(r=>r.json()).then(d => { wowAffixCache = d; wowRenderAffixes(d); }).catch(()=>{});
+      const bnetRes = await wowReq('/api/wow/bnet-status').catch(() => null);
+      if (bnetRes && bnetRes.ok) {
+        const d = await bnetRes.json();
+        wowBnetConfigured = d.configured;
+        if (wowBnetConfigured) {
+          const tRes = await wowReq('/api/wow/bnet-token', { method: 'POST' }).catch(() => null);
+          if (tRes && tRes.ok) wowBnetToken = (await tRes.json()).access_token;
+        }
+      }
+      const charRes = await wowReq('/api/wow/characters');
+      if (charRes.ok) wowCharacters = await charRes.json();
+      wowReq('/api/wow/token-price').then(r=>r.json()).then(p=>{
+        const price = p?.price ? Math.floor(p.price / 10000).toLocaleString() : '---';
+        const tEl = document.getElementById('wowTokenPrice');
+        if(tEl) tEl.innerHTML = `🪙 ${price}g <span style="font-size:9px;color:var(--text-muted);margin-left:4px;">TOKEN</span>`;
+      }).catch(()=>{});
+      await Promise.all(wowCharacters.map(async (_, i) => { await wowLoadAndRenderBnet(i); }));
+      wowRenderOverview();
+      if (['world','pve','pvp'].includes(wowActiveTab)) wowRenderCharTab();
+      wowRenderAccountTab();
+      wowBuildCharBar();
+      if (window.$WowheadPower) setTimeout(() => window.$WowheadPower.refreshLinks(), 100);
+    } catch(e) {} finally { if(btn) { btn.classList.remove('loading'); btn.textContent = '⟳ REFRESH'; } }
+  }
+
+  async function wowLoadAndRenderBnet(charIdx) {
+    try {
+      const c = wowCharacters[charIdx];
+      const res = await wowReq(`/api/wow/profile?region=${c.region||'us'}&realm=${c.realm}&name=${c.name}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const cacheKey = `${c.region}-${c.realm}-${c.name}`;
+      
+      wowCharCache[cacheKey] = data.raiderIo || {};
+      wowCharCache[cacheKey]._bnet = data;
+
+      if (data.media?.assets) {
+        const avatar = data.media.assets.find(a => a.key === 'avatar');
+        if (avatar?.value) c.thumbnail = avatar.value;
+      } else if (data.raiderIo?.thumbnail_url) {
+        c.thumbnail = data.raiderIo.thumbnail_url;
+      }
+    } catch(e) {}
+  }
+
+  function wowCharAvatar(c) {
+    if (c?.thumbnail) return c.thumbnail;
+    const ck = `${c.region}-${c.realm}-${c.name}`;
+    return wowCharCache[ck]?.thumbnail_url || 'https://render.worldofwarcraft.com/us/icons/56/inv_misc_questionmark.jpg';
+  }
+
+  function wowRenderAffixes(data) {
+    const affixes = data.affix_details || [];
+    const el = document.getElementById('wowAffixRow');
+    if(el) el.innerHTML = affixes.slice(0,4).map(a => `<div class="affix-pill"><img class="affix-icon" src="https://wow.zamimg.com/images/wow/icons/medium/${a.icon}.jpg" onerror="this.style.display='none'" /><div><div class="affix-name">${a.name}</div><div class="affix-desc">${(a.description||'').slice(0,65)}</div></div></div>`).join('');
+  }
+
+  function wowRenderOverview() {
+    const players = {};
+    wowCharacters.forEach((c, i) => {
+      const p = c.player_name || c.display_name;
+      if (!players[p]) players[p] = { main: null, alts: [] };
+      if (c.is_main) players[p].main = { c, i }; else players[p].alts.push({ c, i });
+    });
+    Object.values(players).forEach(p => { if (!p.main && p.alts.length) p.main = p.alts.shift(); });
+    const rosterEl = document.getElementById('wowRosterGrid');
+    if(rosterEl) rosterEl.innerHTML = Object.entries(players).map(([playerName, {main, alts}]) => {
+      if (!main) return '';
+      const { c: cfg, i } = main;
+      const c = wowCharCache[`${cfg.region}-${cfg.realm}-${cfg.name}`];
+      const ilvl = c?._bnet?.profile?.equipped_item_level ?? c?.gear?.item_level_equipped ?? '—';
+      const score = c?.mythic_plus_scores_by_season?.[0]?.scores?.all;
+      let raid = '—';
+      if (c?.raid_progression) {
+        const raids = Object.entries(c.raid_progression);
+        if (raids.length) {
+          const data = raids[raids.length-1][1];
+          raid = data.mythic_bosses_killed > 0 ? `${data.mythic_bosses_killed}/${data.total_bosses}M` : data.heroic_bosses_killed > 0 ? `${data.heroic_bosses_killed}/${data.total_bosses}H` : `${data.normal_bosses_killed}/${data.total_bosses}N`;
+        }
+      }
+      const altChips = alts.map(({c: ac, i: ai}) => `<div class="alt-chip" onclick="wowSelectChar(${ai}); wowSwitchTab('world');"><img src="${wowCharAvatar(ac)}" onerror="this.style.display='none'" />${ac.display_name}</div>`).join('');
+      const barKey = (cfg.class || '').toLowerCase().includes('death knight') ? 'dk' : (cfg.class || '').toLowerCase().includes('demon hunter') ? 'dh' : (cfg.class || '').toLowerCase().split(' ')[0] || 'default';
+      return `<div class="player-card"><div class="player-card-bar ${barKey}"></div><div class="player-main" onclick="wowSelectChar(${i}); wowSwitchTab('world');"><img class="player-main-avatar" src="${wowCharAvatar(cfg)}" onerror="this.style.opacity='0.3'" /><div class="player-main-info"><div class="player-name-row"><div class="player-name">${playerName}</div></div><div class="char-name">${cfg.display_name} ${cfg.is_main ? '<span style="font-size:12px;color:var(--wow-gold);">★</span>' : ''}</div><div class="char-sub">${cfg.spec||''} ${cfg.class||''} · ${cfg.realm}</div><div class="char-stats"><span class="cs cs-ilvl">${ilvl} ilvl</span>${score ? `<span class="cs cs-score">${Math.round(score)} M+</span>` : ''}${raid !== '—' ? `<span class="cs cs-raid">${raid}</span>` : ''}</div></div><div class="main-nav-btn"><div class="nav-btn pve" onclick="event.stopPropagation(); wowSelectChar(${i}); wowSwitchTab('pve');">⚔ PVE</div><div class="nav-btn pvp" onclick="event.stopPropagation(); wowSelectChar(${i}); wowSwitchTab('pvp');">🏆 PVP</div><div class="nav-btn lvl" onclick="event.stopPropagation(); wowSelectChar(${i}); wowSwitchTab('world');">🌍 WRLD</div></div></div>${alts.length ? `<div class="player-alts"><div class="alts-label">Alts</div>${altChips}</div>` : ''}</div>`;
+    }).join('') || '<div class="empty" style="grid-column: 1/-1;">No characters found. Add some in My Account!</div>';
+    
+    const quickStatsEl = document.getElementById('wowQuickStats');
+    if(quickStatsEl) quickStatsEl.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;"><span style="font-family:var(--display);font-size:12px;font-weight:600;">Players</span><span style="font-family:var(--mono);font-size:14px;color:var(--text);">${Object.keys(players).length}</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;margin-top:6px;"><span style="font-family:var(--display);font-size:12px;font-weight:600;">Characters</span><span style="font-family:var(--mono);font-size:14px;color:var(--text);">${wowCharacters.length}</span></div>`;
+
+    const activities = [];
+    wowCharacters.forEach(c => {
+      const cacheKey = `${c.region}-${c.realm}-${c.name}`;
+      const cache = wowCharCache[cacheKey];
+      if (!cache) return;
+      
+      if (cache.mythic_plus_recent_runs) {
+        cache.mythic_plus_recent_runs.forEach(run => {
+          if (run.completed_at) {
+            activities.push({ type: 'mplus', char: c, ts: new Date(run.completed_at).getTime(), run });
+          }
+        });
+      }
+      if (cache._bnet?.achievements?.recent_events) {
+        cache._bnet.achievements.recent_events.forEach(ev => {
+          activities.push({ type: 'achievement', char: c, ts: ev.timestamp, achievement: ev.achievement });
+        });
+      }
+    });
+    
+    activities.sort((a, b) => b.ts - a.ts);
+    const recentActivities = activities.slice(0, 15);
+    
+    const feedEl = document.getElementById('wowActivityFeed');
+    if (feedEl) {
+      if (Object.keys(wowCharCache).length === 0 && wowCharacters.length > 0) {
+        feedEl.innerHTML = '<div class="skel" style="height:48px;margin-bottom:8px;border-radius:4px;"></div><div class="skel" style="height:48px;margin-bottom:8px;border-radius:4px;"></div><div class="skel" style="height:48px;margin-bottom:8px;border-radius:4px;"></div>';
+      } else if (recentActivities.length > 0) {
+        feedEl.innerHTML = recentActivities.map(act => {
+          const diffMs = Date.now() - act.ts;
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMins / 60);
+          const diffDays = Math.floor(diffHours / 24);
+          let timeStr = 'Just now';
+          if (diffDays > 0) timeStr = `${diffDays}d ago`;
+          else if (diffHours > 0) timeStr = `${diffHours}h ago`;
+          else if (diffMins > 0) timeStr = `${diffMins}m ago`;
+          
+          const charIdx = wowCharacters.indexOf(act.char);
+          
+          if (act.type === 'mplus') {
+            const timed = act.run.num_keystone_upgrades > 0;
+            return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;margin-bottom:6px;"><div style="width:24px;height:24px;border-radius:3px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:12px;">🗝️</div><div style="flex:1;min-width:0;"><div style="font-family:var(--display);font-size:12px;font-weight:600;"><span style="color:var(--accent);cursor:pointer;" onclick="wowSelectChar(${charIdx}); wowSwitchTab('pve');">${act.char.display_name}</span> completed +${act.run.mythic_level} ${act.run.dungeon}</div><div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${timeStr}</div></div><div style="font-size:12px;color:${timed ? 'var(--green)' : 'var(--red)'};">${timed ? '✓' : '✗'}</div></div>`;
+          } else {
+            return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;margin-bottom:6px;"><div style="width:24px;height:24px;border-radius:3px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 0 6px rgba(240,180,41,0.2);">🏆</div><div style="flex:1;min-width:0;"><div style="font-family:var(--display);font-size:12px;font-weight:600;"><span style="color:var(--accent);cursor:pointer;" onclick="wowSelectChar(${charIdx}); wowSwitchTab('world');">${act.char.display_name}</span> earned <a href="https://www.wowhead.com/achievement=${act.achievement.id}" target="_blank" style="color:var(--wow-gold);text-decoration:none;" data-wowhead="achievement=${act.achievement.id}">${act.achievement.name}</a></div><div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${timeStr}</div></div></div>`;
+          }
+        }).join('');
+      } else {
+        feedEl.innerHTML = '<div class="empty">No recent activity found.</div>';
+      }
+    }
+  }
+
+  function wowRenderWorld(c) {
+    const bnet = c._bnet || {};
+    const lvl = bnet?.profile?.level || c.level || 80; const pct = lvl >= 80 ? 100 : Math.round((lvl/80)*100);
+    document.getElementById('wowLevelBlock').innerHTML = `<div class="level-hero"><div class="level-big">${lvl}</div><div class="level-info"><div class="level-label">Character Level</div><div class="level-bar-wrap"><div class="level-bar-fill" style="width:${pct}%"></div></div><div class="level-xp">${lvl>=80 ? 'MAX LEVEL' : `${lvl} / 80`}</div></div></div>`;
+    document.getElementById('wowZoneBlock').innerHTML = `<div style="display:flex;flex-direction:column;gap:6px;">${[{name:'Khaz Algar',done:lvl>=70}].map(z => `<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--surface2);border:1px solid ${z.done?'rgba(34,197,94,0.3)':'var(--border)'};border-radius:4px;"><div style="width:8px;height:8px;border-radius:50%;background:${z.done?'var(--green)':'var(--border2)'};flex-shrink:0;"></div><div style="flex:1;font-family:var(--display);font-size:13px;font-weight:600;color:${z.done?'var(--text)':'var(--text-muted)'};">${z.name}</div></div>`).join('')}</div>`;
+    document.getElementById('wowDungeonBlock').innerHTML = `<div class="dungeon-list">${[{name:'Normal Dungeons',icon:'🗡️',status:lvl>=10?'ds-unlocked':'ds-locked',label:lvl>=10?'UNLOCKED':'LOCKED'}].map(d => `<div class="dungeon-row"><div class="dungeon-icon">${d.icon}</div><div class="dungeon-name">${d.name}</div><div class="dungeon-status ${d.status}">${d.label}</div></div>`).join('')}</div>`;
+    
+    const colBlock = document.getElementById('wowCollectionsBlock');
+    if (colBlock) {
+      if (bnet.mounts || bnet.pets) {
+        colBlock.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:12px;text-align:center;position:relative;"><button class="btn btn-ghost" style="position:absolute;top:6px;right:6px;font-size:9px;padding:3px 6px;" onclick="wowOpenCollection('mounts')">Browse</button><div style="font-size:24px;margin-bottom:4px;">🐎</div><div style="font-family:var(--mono);font-size:24px;font-weight:700;color:var(--text);line-height:1;">${(bnet.mounts?.mounts?.length||0).toLocaleString()}</div><div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);letter-spacing:2px;margin-top:4px;">MOUNTS</div></div><div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:12px;text-align:center;position:relative;"><button class="btn btn-ghost" style="position:absolute;top:6px;right:6px;font-size:9px;padding:3px 6px;" onclick="wowOpenCollection('pets')">Browse</button><div style="font-size:24px;margin-bottom:4px;">🐈</div><div style="font-family:var(--mono);font-size:24px;font-weight:700;color:var(--text);line-height:1;">${(bnet.pets?.pets?.length||0).toLocaleString()}</div><div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);letter-spacing:2px;margin-top:4px;">PETS</div></div></div>`;
+      } else {
+        colBlock.innerHTML = wowBnetConfigured ? `<div class="empty" style="padding:16px;">Character collections unavailable. Ensure character is active.</div>` : `<div class="info-box purple" style="margin-bottom:0;"><strong>Blizzard API Required.</strong> Connect your account to view collections.</div>`;
+      }
+    }
+
+    const achvBlock = document.getElementById('wowAchvBlock');
+    if (achvBlock) {
+      const achvPoints = bnet?.profile?.achievement_points || c.achievement_points || 0;
+      let recentAchvHtml = wowBnetConfigured ? `<div class="empty" style="margin-top:10px;">No recent achievements found.</div>` : '<div class="info-box" style="margin-top:10px;margin-bottom:0;">Connect Blizzard API to view achievements.</div>';
+      if (bnet.achievements?.recent_events?.length > 0) {
+        recentAchvHtml = `<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">${bnet.achievements.recent_events.slice(0, 3).map(e => {
+          const diffDays = Math.floor((Date.now() - e.timestamp) / 86400000);
+          return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;"><div style="font-size:14px;flex-shrink:0;">🏅</div><div style="flex:1;min-width:0;"><div style="font-family:var(--display);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><a href="https://www.wowhead.com/achievement=${e.achievement.id}" target="_blank" style="color:var(--wow-gold);text-decoration:none;" data-wowhead="achievement=${e.achievement.id}">${e.achievement.name}</a></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${diffDays > 0 ? diffDays + 'd ago' : 'Today'}</div></div>`;
+        }).join('')}</div>`;
+      }
+      achvBlock.innerHTML = `<div style="display:flex;align-items:center;gap:14px;"><div style="width:48px;height:48px;background:var(--surface2);border:1px solid var(--wow-gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 10px rgba(240,180,41,0.2);">🏆</div><div><div style="font-family:var(--mono);font-size:24px;font-weight:700;color:var(--wow-gold);line-height:1;">${achvPoints.toLocaleString()}</div><div style="font-size:10px;color:var(--text-muted);letter-spacing:2px;margin-top:2px;">ACHIEVEMENT POINTS</div></div></div>${recentAchvHtml}`;
+    }
+
+    const profBlock = document.getElementById('wowProfessionsBlock');
+    if (profBlock) {
+      const allProfs = [...(bnet.professions?.primaries || []), ...(bnet.professions?.secondaries || [])];
+      if (allProfs.length > 0) {
+        profBlock.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${allProfs.slice(0, 4).map(p => {
+          const profName = p.profession?.name || 'Unknown';
+          let tier = p.tiers?.[0] || {};
+          p.tiers?.forEach(t => { if ((t.skill_points||0) > (tier.skill_points||0)) tier = t; });
+          const skill = tier.skill_points || 0, maxSkill = tier.max_skill_points || 100, profPct = maxSkill > 0 ? Math.min(100, Math.round((skill/maxSkill)*100)) : 0;
+          const cleanName = profName.replace(/^(Khaz Algar |Dragon Isles |Shadowlands |Kul Tiran |Zandalari )/i, '');
+          return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:24px;height:24px;background:var(--bg);border:1px solid var(--border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;">🛠️</div><div style="font-family:var(--display);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${profName}">${cleanName}</div></div><div style="display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:4px;"><span>Skill</span><span style="color:${profPct===100?'var(--green)':'var(--wow-gold)'};">${skill} / ${maxSkill}</span></div><div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden;"><div style="height:100%;background:${profPct===100?'var(--green)':'var(--wow-gold)'};width:${profPct}%;"></div></div></div>`;
+        }).join('')}</div>`;
+      } else {
+        profBlock.innerHTML = wowBnetConfigured ? `<div class="empty" style="padding:16px;">Profession data unavailable.</div>` : `<div class="info-box purple" style="margin-bottom:0;"><strong>Blizzard API Required.</strong> Connect your account to view live professions.</div>`;
+      }
+    }
+
+    const housingBlock = document.getElementById('wowHousingBlock');
+    if (housingBlock) {
+      housingBlock.innerHTML = `<div class="info-box purple" style="margin-bottom:8px;">Player Estate data will be fully supported once the Blizzard Midnight API endpoints go live.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:24px;height:24px;background:var(--bg);border:1px solid var(--border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;">🏕️</div><div style="font-family:var(--display);font-size:14px;font-weight:600;">Estate Level</div></div><div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--green);margin-bottom:2px;">Tier 2</div><div style="font-size:10px;color:var(--text-muted);">Cozy Cabin</div></div><div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:24px;height:24px;background:var(--bg);border:1px solid var(--border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;">🪵</div><div style="font-family:var(--display);font-size:14px;font-weight:600;">Resources</div></div><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:10px;color:var(--text-muted);">Timber</span><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--wow-gold);">1,250</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;"><span style="font-size:10px;color:var(--text-muted);">Stone</span><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text);">420</span></div></div></div>`;
+    }
+
+    const renownBlock = document.getElementById('wowRenownBlock');
+    if (renownBlock) {
+      const twwReps = (bnet.reputations?.reputations || []).filter(r => ['Council of Dornogal', 'The Assembly of the Deeps', 'Hallowfall Arathi', 'The Severed Threads'].includes(r.faction?.name));
+      if (twwReps.length > 0) {
+        renownBlock.innerHTML = `<div style="display:flex;flex-direction:column;gap:6px;">${twwReps.map(r => {
+          const renownLevel = (r.standing?.name || '').match(/Renown (\d+)/i)?.[1] || r.standing?.tier || 0;
+          const repPct = Math.min(100, Math.round(((r.standing?.value || 0) / (r.standing?.max || 2500)) * 100)) || 100;
+          return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:8px 10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="font-family:var(--display);font-size:13px;font-weight:600;" title="${r.standing?.name || ''}">${r.faction.name}</span><span style="font-family:var(--mono);font-size:11px;color:var(--wow-gold);">Renown ${renownLevel}</span></div><div style="height:4px;background:var(--bg);border-radius:2px;overflow:hidden;"><div style="height:100%;background:var(--wow-gold);width:${repPct}%"></div></div></div>`;
+        }).join('')}</div>`;
+      } else {
+        renownBlock.innerHTML = wowBnetConfigured ? `<div class="empty" style="padding:16px;">Reputation data unavailable.</div>` : `<div class="info-box purple" style="margin-bottom:8px;">Warband reputation is tracked via the Blizzard API. Add your credentials to view.</div>`;
+      }
+    }
+  }
+
+  window.wowOpenCollection = async function(type) {
+    wowCurrentColView = type;
+    wowColSearch = '';
+    wowColCompareIdx = -1;
+
+    const mainView = document.getElementById('wowWorldMainView');
+    const colView  = document.getElementById('wowWorldCollectionView');
+    if (!mainView || !colView) return;
+
+    mainView.style.display = 'none';
+    colView.style.display  = 'block';
+
+    colView.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:300px;flex-direction:column;gap:14px;">
+        <div class="skel" style="width:40px;height:40px;border-radius:50%;"></div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text-muted);letter-spacing:2px;">FETCHING MASTER BLIZZARD DATABASE...</div>
+      </div>`;
+
+    const ch = wowCharacters[wowActiveChar];
+    if (!ch) return;
+
+    if (!wowGlobalCollections[type]) {
+      if (!wowBnetToken) {
+        colView.innerHTML = `
+          <div class="empty" style="margin-top:100px;">Failed to load master database. Check your API key.</div>
+          <div style="text-align:center;"><button class="btn btn-ghost" onclick="wowCloseCollection()">← Back to World</button></div>`;
+        return;
+      }
+      try {
+        const singularType = type === 'mounts' ? 'mount' : 'pet';
+        const region = ch.region || 'us';
+        const res = await fetch(`https://${region}.api.blizzard.com/data/wow/${singularType}/index?namespace=static-${region}&locale=en_US`, {
+          headers: { 'Authorization': `Bearer ${wowBnetToken}` }
+        });
+        const data = await res.json();
+        wowGlobalCollections[type] = data[type] || data[type+'s'] || [];
+      } catch(e) {
+        colView.innerHTML = `
+          <div class="empty" style="margin-top:100px;">Error fetching master database.</div>
+          <div style="text-align:center;"><button class="btn btn-ghost" onclick="wowCloseCollection()">← Back to World</button></div>`;
+        return;
+      }
+    }
+
+    colView.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <button class="btn btn-ghost" onclick="wowCloseCollection()">← Back</button>
+          <div style="font-family:var(--display);font-size:24px;font-weight:700;color:var(--text);letter-spacing:1px;">
+            ${type === 'mounts' ? '🐎 Mounts' : '🐈 Pets'} Database
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <input type="text" id="wowColSearchInput" placeholder="Search..." class="admin-input" style="width:200px;" onkeyup="wowSetColSearch(this.value)" />
+          <select id="wowColCompareSelect" class="admin-input" style="width:220px;cursor:pointer;" onchange="wowSetColCompare(this.value)">
+            <option value="-1">-- Compare With Roster --</option>
+            ${wowCharacters.map((c, i) => i !== wowActiveChar && wowCharCache[`${c.region}-${c.realm}-${c.name}`]?._bnet ? `<option value="${i}">${c.display_name} (${c.realm})</option>` : '').join('')}
+          </select>
+        </div>
+      </div>
+      <div id="wowColStatsBar" style="display:flex;align-items:center;gap:16px;font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);"></div>
+      <div id="wowColGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:8px;max-height:calc(100vh - 240px);overflow-y:auto;padding-right:10px;">
+      </div>
+    `;
+
+    wowRenderColGrid();
+  };
+
+  window.wowSetColSearch = function(val) { wowColSearch = val.toLowerCase(); wowRenderColGrid(); };
+  window.wowSetColCompare = function(val) { wowColCompareIdx = parseInt(val, 10); wowRenderColGrid(); };
+
+  window.wowCloseCollection = function() {
+    const mainView = document.getElementById('wowWorldMainView');
+    const colView  = document.getElementById('wowWorldCollectionView');
+    if (mainView) mainView.style.display = '';
+    if (colView)  colView.style.display  = 'none';
+  };
+
+  window.wowRenderColGrid = function() {
+    const gridEl  = document.getElementById('wowColGrid');
+    const statsEl = document.getElementById('wowColStatsBar');
+    if (!gridEl || !statsEl) return;
+
+    const masterList = wowGlobalCollections[wowCurrentColView] || [];
+    const charA = wowCharacters[wowActiveChar];
+    const charB = wowColCompareIdx >= 0 ? wowCharacters[wowColCompareIdx] : null;
+
+    const getOwnedSet = (char) => {
+      const set = new Set();
+      if (!char) return set;
+      const cKey = `${char.region}-${char.realm}-${char.name}`;
+      const cCache = wowCharCache[cKey];
+      if (!cCache || !cCache._bnet || !cCache._bnet[wowCurrentColView]) return set;
+      const arr = cCache._bnet[wowCurrentColView][wowCurrentColView] || [];
+      arr.forEach(item => {
+        const id = wowCurrentColView === 'mounts' ? item.mount?.id : item.species?.id;
+        if (id) set.add(id);
+      });
+      return set;
+    };
+
+    const ownedA = getOwnedSet(charA);
+    const ownedB = getOwnedSet(charB);
+
+    let html = '';
+    let countA = 0, countB = 0, countBoth = 0, visible = 0;
+
+    masterList.forEach(item => {
+      const hasA = ownedA.has(item.id);
+      const hasB = charB ? ownedB.has(item.id) : false;
+      
+      if (hasA) countA++;
+      if (hasB) countB++;
+      if (hasA && hasB) countBoth++;
+
+      if (wowColSearch && !item.name.toLowerCase().includes(wowColSearch)) return;
+      visible++;
+
+      let boxStyle = 'background:var(--surface2);border:1px solid var(--border);';
+      let textStyle = 'color:var(--text);';
+      let badgeHtml = '';
+
+      if (charB) {
+        if (hasA && hasB) {
+          boxStyle = 'background:var(--surface2);border:1px solid rgba(0,195,255,0.4);';
+          badgeHtml = `<div style="font-family:var(--mono);font-size:9px;background:rgba(0,195,255,0.1);color:var(--accent);padding:2px 6px;border-radius:3px;">Both Have</div>`;
+        } else if (hasA) {
+          boxStyle = 'background:var(--surface2);border:1px solid rgba(34,197,94,0.4);';
+          badgeHtml = `<div style="font-family:var(--mono);font-size:9px;background:rgba(34,197,94,0.1);color:var(--green);padding:2px 6px;border-radius:3px;">${charA.display_name}</div>`;
+        } else if (hasB) {
+          boxStyle = 'background:var(--surface2);border:1px solid rgba(240,180,41,0.5);';
+          badgeHtml = `<div style="font-family:var(--mono);font-size:9px;background:rgba(240,180,41,0.1);color:var(--wow-gold);padding:2px 6px;border-radius:3px;">${charB.display_name}</div>`;
+        } else {
+          boxStyle = 'background:var(--bg);border:1px solid var(--border);opacity:0.4;filter:grayscale(1);';
+          textStyle = 'color:var(--text-muted);';
+        }
+      } else {
+        if (hasA) {
+          boxStyle = 'background:var(--surface2);border:1px solid rgba(34,197,94,0.3);';
+          badgeHtml = `<div style="font-family:var(--mono);font-size:9px;color:var(--green);">✓ Owned</div>`;
+        } else {
+          boxStyle = 'background:var(--bg);border:1px solid var(--border);opacity:0.4;filter:grayscale(1);';
+          textStyle = 'color:var(--text-muted);';
+          badgeHtml = `<div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);">Missing</div>`;
+        }
+      }
+
+      const whType = wowCurrentColView === 'mounts' ? 'mount' : 'npc';
+      const whLink = `https://www.wowhead.com/${whType}=${item.id}`;
+
+      html += `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:4px;transition:all 0.15s;${boxStyle}">
+          <div style="font-family:var(--display);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%;">
+            <a href="${whLink}" target="_blank" style="${textStyle}text-decoration:none;" data-wowhead="${whType}=${item.id}">${item.name}</a>
+          </div>
+          <div style="flex-shrink:0;">${badgeHtml}</div>
+        </div>`;
+    });
+
+    if (visible === 0) {
+      gridEl.innerHTML = `<div class="empty" style="grid-column: 1 / -1;margin-top:40px;">No results match your search.</div>`;
+    } else {
+      gridEl.innerHTML = html;
+    }
+
+    if (charB) {
+      statsEl.innerHTML = `
+        <div style="color:var(--text);">Total in Game: <span style="color:var(--text);font-weight:700;">${masterList.length.toLocaleString()}</span></div>
+        <div>|</div>
+        <div style="color:var(--green);">${charA.display_name}: <span style="font-weight:700;">${countA.toLocaleString()}</span></div>
+        <div>|</div>
+        <div style="color:var(--wow-gold);">${charB.display_name}: <span style="font-weight:700;">${countB.toLocaleString()}</span></div>
+        <div>|</div>
+        <div style="color:var(--accent);">Shared: <span style="font-weight:700;">${countBoth.toLocaleString()}</span></div>
+        <div style="margin-left:auto;">Hover names for 3D models & info</div>
+      `;
+    } else {
+      const pct = masterList.length ? Math.round((countA / masterList.length) * 100) : 0;
+      statsEl.innerHTML = `
+        <div style="color:var(--text);">Total in Game: <span style="color:var(--text);font-weight:700;">${masterList.length.toLocaleString()}</span></div>
+        <div>|</div>
+        <div style="color:var(--green);">Owned: <span style="font-weight:700;">${countA.toLocaleString()}</span> (${pct}%)</div>
+        <div style="margin-left:auto;">Hover names for 3D models & info</div>
+      `;
+    }
+  };
+
+  function wowRenderPVE(c) {
+    const season = c.mythic_plus_scores_by_season?.[0]?.scores || {};
+    document.getElementById('wowScoreDisplay').innerHTML = `<div class="score-big">${season.all ? Math.round(season.all) : '—'}</div><div class="score-lbl">MYTHIC+ SCORE</div>`;
+    document.getElementById('wowScoreRoles').innerHTML = `<div class="role-box"><div class="role-val" style="color:var(--red)">${season.dps?Math.round(season.dps):'—'}</div><div class="role-lbl">DPS</div></div><div class="role-box"><div class="role-val" style="color:var(--accent)">${season.tank?Math.round(season.tank):'—'}</div><div class="role-lbl">TANK</div></div><div class="role-box"><div class="role-val" style="color:var(--green)">${season.healer?Math.round(season.healer):'—'}</div><div class="role-lbl">HEALER</div></div>`;
+    
+    const ilvlBlock = document.getElementById('wowIlvlBlock');
+    const bnet = c._bnet || {};
+    const ilvl = bnet.profile?.equipped_item_level || c?.gear?.item_level_equipped || 0;
+    if (bnet.equipment?.equipped_items?.length) {
+      const slotOrder = ['HEAD','NECK','SHOULDER','BACK','CHEST','WRIST','HANDS','WAIST','LEGS','FEET','FINGER_1','FINGER_2','TRINKET_1','TRINKET_2','MAIN_HAND','OFF_HAND'];
+      const slotIcons = { HEAD:'🪖', NECK:'📿', SHOULDER:'🛡️', BACK:'🧣', CHEST:'👕', WRIST:'⌚', HANDS:'🧤', WAIST:'🪢', LEGS:'👖', FEET:'👢', FINGER_1:'💍', FINGER_2:'💍', TRINKET_1:'🔮', TRINKET_2:'🔮', MAIN_HAND:'⚔️', OFF_HAND:'🗡️' };
+      const slotNames = { HEAD:'Head', NECK:'Neck', SHOULDER:'Shoulders', BACK:'Cloak', CHEST:'Chest', WRIST:'Bracers', HANDS:'Gloves', WAIST:'Belt', LEGS:'Legs', FEET:'Boots', FINGER_1:'Ring 1', FINGER_2:'Ring 2', TRINKET_1:'Trinket 1', TRINKET_2:'Trinket 2', MAIN_HAND:'Weapon', OFF_HAND:'Off Hand' };
+      const qualityColor = { POOR: '#9d9d9d', COMMON: '#ffffff', UNCOMMON: '#1eff00', RARE: '#0070dd', EPIC: '#a335ee', LEGENDARY: '#ff8000', ARTIFACT: '#e6cc80' };
+      const slotMap = {};
+      bnet.equipment.equipped_items.forEach(item => { if (item.slot?.type) slotMap[item.slot.type] = item; });
+      ilvlBlock.innerHTML = `<div style="text-align:center;padding:0 0 14px;"><div style="font-family:var(--mono);font-size:42px;font-weight:700;color:var(--wow-gold);line-height:1;">${ilvl || '—'}</div><div style="font-size:10px;color:var(--text-muted);letter-spacing:3px;margin-top:4px;">EQUIPPED ILVL</div></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;">${slotOrder.map(slot => {
+        const item = slotMap[slot]; const i_ilvl = item?.level?.value; const qColor = qualityColor[item?.quality?.type ?? 'COMMON'] ?? '#ffffff';
+        return `<div style="background:var(--surface2);border:1px solid ${item?'rgba(163,82,238,0.2)':'var(--border)'};border-radius:4px;padding:7px 10px;display:flex;align-items:center;gap:8px;transition:border-color 0.15s;" onmouseover="this.style.borderColor='${qColor}'" onmouseout="this.style.borderColor='${item?'rgba(163,82,238,0.2)':'var(--border)'}'"><div style="font-size:16px;flex-shrink:0;">${slotIcons[slot]}</div><div style="flex:1;min-width:0;"><div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;">${slotNames[slot]?.toUpperCase()}</div><div style="font-family:var(--display);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><a ${item ? `href="https://www.wowhead.com/item=${item.item.id}" data-wowhead="item=${item.item.id}&ilvl=${i_ilvl}" target="_blank"` : ''} style="color:${item ? qColor : 'var(--border2)'};text-decoration:none;">${item?.name ?? 'Empty'}</a></div></div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:${i_ilvl ? 'var(--wow-gold)' : 'var(--border2)'};flex-shrink:0;">${i_ilvl ?? '—'}</div></div>`;
+      }).join('')}</div>`;
+    } else {
+      ilvlBlock.innerHTML = `<div style="text-align:center;padding:16px 0;"><div style="font-family:var(--mono);font-size:42px;font-weight:700;color:var(--wow-gold);line-height:1;">${ilvl || '—'}</div><div style="font-size:10px;color:var(--text-muted);letter-spacing:3px;margin-top:4px;">EQUIPPED ILVL</div></div><div class="info-box gold" style="margin-top:10px;"><strong>Per-slot breakdown</strong> requires the Blizzard API key. Add it in the Admin tab to enable.</div>`;
+    }
+
+    const raidBody = document.getElementById('wowRaidBody');
+    if (raidBody) {
+      const raids = Object.entries(c.raid_progression ?? {}).slice(-2).reverse();
+      if (!raids.length) { raidBody.innerHTML = '<div class="empty">No raid data</div>'; }
+      else {
+        raidBody.innerHTML = raids.map(([key, data]) => {
+          const name = key.replace(/-/g,' ').replace(/\b\w/g, l => l.toUpperCase()), total = data.total_bosses;
+          let diff = 'n', killed = data.normal_bosses_killed, label = `${killed}/${total} Normal`, cls = 'diff-n';
+          if (data.mythic_bosses_killed > 0) { diff = 'm'; killed = data.mythic_bosses_killed; label = `${killed}/${total} Mythic`; cls = 'diff-m'; }
+          else if (data.heroic_bosses_killed > 0) { diff = 'h'; killed = data.heroic_bosses_killed; label = `${killed}/${total} Heroic`; cls = 'diff-h'; }
+          const pips = Array.from({length:total}).map((_,i) => `<div class="boss-pip ${i < killed ? 'killed-'+diff : ''}"><div class="boss-dot ${i < killed ? diff : 'x'}"></div><div class="boss-name">Boss ${i+1}</div></div>`).join('');
+          return `<div style="margin-bottom:14px;"><div class="raid-header"><div class="raid-name">${name}</div><span class="diff-pill ${cls}">${label}</span></div><div class="boss-grid">${pips}</div></div>`;
+        }).join('');
+      }
+    }
+
+    const fmtTime = ms => { const t = Math.floor(ms/1000); const pad = n => String(n).padStart(2,'0'); return `${Math.floor(t/60)}:${pad(t%60)}`; };
+    const keyClass = lvl => lvl >= 15 ? 'high' : lvl >= 10 ? 'mid' : 'low';
+    const runs = c.mythic_plus_recent_runs || [];
+    document.getElementById('wowRecentRuns').innerHTML = runs.length ? `<div class="run-list">${runs.map(r=>{ const timed = r.num_keystone_upgrades > 0; return `<div class="run-row"><div class="run-key ${keyClass(r.mythic_level)}">+${r.mythic_level}</div><div class="run-dungeon"><div class="run-dname">${r.dungeon}</div><div class="run-dshort">par ${fmtTime(r.par_time_ms)}</div></div><div class="run-time ${timed?'timed':'depleted'}">${fmtTime(r.clear_time_ms)} ${timed?'✓':'✗'}</div><div class="run-score">${r.score?'+'+Math.round(r.score):''}</div></div>`; }).join('')}</div>` : '<div class="empty">No recent runs</div>';
+    const bestRuns = c.mythic_plus_best_runs || [];
+    document.getElementById('wowBestRuns').innerHTML = bestRuns.length ? `<div class="run-list">${bestRuns.map(r=>{ const timed = r.num_keystone_upgrades > 0; return `<div class="run-row"><div class="run-key ${keyClass(r.mythic_level)}">+${r.mythic_level}</div><div class="run-dungeon"><div class="run-dname">${r.dungeon}</div></div><div class="run-time ${timed?'timed':'depleted'}">${fmtTime(r.clear_time_ms)}</div><div class="run-score">${r.score?Math.round(r.score):''}</div></div>`; }).join('')}</div>` : '<div class="empty">No best runs found</div>';
+    
+    const statsBlock = document.getElementById('wowStatsBlock');
+    if (statsBlock) {
+      if (bnet.statistics) {
+        const s = bnet.statistics;
+        const primary = Math.max(s.strength?.effective||0, s.agility?.effective||0, s.intellect?.effective||0);
+        const primaryLabel = (s.strength?.effective||0) === primary ? 'Strength' : ((s.agility?.effective||0) === primary ? 'Agility' : 'Intellect');
+        statsBlock.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);"><div><div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--green);">${s.health ? s.health.toLocaleString() : '—'}</div><div style="font-size:9px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;">HEALTH</div></div><div style="text-align:right;"><div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);">${s.power || '—'}</div><div style="font-size:9px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;">${s.power_type?.name?.toUpperCase() || 'POWER'}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:8px 10px;"><div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">${primaryLabel}</div><div style="font-family:var(--mono);font-size:14px;font-weight:700;">${primary.toLocaleString()}</div></div><div style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:8px 10px;"><div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Mastery</div><div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--wow-gold);">${s.mastery?.value ? s.mastery.value.toFixed(1)+'%' : '—'}</div></div><div style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:8px 10px;"><div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Haste</div><div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--wow-gold);">${s.melee_haste?.value ? s.melee_haste.value.toFixed(1)+'%' : '—'}</div></div><div style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:8px 10px;"><div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Critical Strike</div><div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--wow-gold);">${s.melee_crit?.value ? s.melee_crit.value.toFixed(1)+'%' : '—'}</div></div><div style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:8px 10px;grid-column:1/-1;"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;">Versatility</span><span style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--wow-gold);">${s.versatility_damage_done_bonus ? s.versatility_damage_done_bonus.toFixed(1)+'%' : '—'}</span></div></div></div>`;
+      } else {
+        statsBlock.innerHTML = `<div class="empty">Combat stats unavailable. Requires Blizzard API and recent login.</div>`;
+      }
+    }
+
+    const weeklyRuns = c.mythic_plus_weekly_highest_level_runs || [];
+    const vaultEl = document.getElementById('wowWeeklyRuns');
+    if (vaultEl) {
+      vaultEl.innerHTML = `<div style="margin-bottom:12px;"><div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;">Great Vault Slots</div>${[1,4,10].map((n,i) => { const done = weeklyRuns.length >= n; const best = weeklyRuns[n-1]; return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:22px;height:22px;border-radius:3px;border:1px solid ${done?'rgba(34,197,94,0.5)':'var(--border2)'};background:${done?'rgba(34,197,94,0.15)':'var(--bg)'};display:flex;align-items:center;justify-content:center;font-size:12px;">${done?'✓':'·'}</div><div style="flex:1;font-family:var(--display);font-size:12px;font-weight:600;color:${done?'var(--text)':'var(--text-muted)'};">Slot ${i+1} — ${n} key${n>1?'s':''} needed</div><div style="font-family:var(--mono);font-size:11px;color:${done?'var(--wow-gold)':'var(--text-muted)'};">${done?(best?'+'+best.mythic_level:'✓'):weeklyRuns.length+'/'+n}</div></div>`; }).join('')}</div><div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;">Runs This Week (${weeklyRuns.length})</div>${weeklyRuns.length ? weeklyRuns.map(r => `<div class="weekly-run"><div class="wk-key">+${r.mythic_level}</div><div class="wk-name">${r.dungeon}</div><div class="wk-time">${fmtTime(r.clear_time_ms)}</div></div>`).join('') : '<div class="empty">No keys run this week yet</div>'}`;
+    }
+  }
+
+  function wowRenderPVPFromCache(i) {
+    const c = wowCharacters[i];
+    if (!c) return;
+    const bnet = wowCharCache[`${c.region}-${c.realm}-${c.name}`]?._bnet;
+    if (!bnet) return;
+    
+    // Ratings
+    document.getElementById('wowPvpArena2v2').textContent = bnet.b2v2?.rating ?? 'Unranked';
+    document.getElementById('wowPvpArena3v3').textContent = bnet.b3v3?.rating ?? 'Unranked';
+    document.getElementById('wowPvpRbg').textContent = bnet.bRbg?.rating ?? 'Unranked';
+    document.getElementById('wowPvpHonor').textContent = bnet.pvpSum?.honor_level ?? '—';
+    
+    ['wowPvpArena2v2','wowPvpArena3v3','wowPvpRbg'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        if (el.textContent === 'Unranked') { el.style.fontSize = '14px'; el.style.color = 'var(--text-muted)'; }
+        else { el.style.fontSize = ''; el.style.color = ''; }
+      }
+    });
+
+    const conquestBlock = document.getElementById('wowConquestBlock');
+    if (conquestBlock) {
+      if (!bnet.pvpSum) {
+        conquestBlock.innerHTML = `<div class="empty">Conquest data not available.</div>`;
+      } else {
+        const cObj = bnet.pvpSum.conquest ?? bnet.pvpSum.honor_reward_status?.conquest ?? null;
+        const conquest = cObj?.value ?? cObj?.earned ?? 0;
+        const conquestCap = cObj?.cap ?? cObj?.cap_per_week ?? 1650;
+        const pct = conquestCap > 0 ? Math.min(100, Math.round((conquest / conquestCap) * 100)) : 0;
+        
+        const stats = bnet.pvpSum.pvp_map_statistics ?? [];
+        let won = 0, lost = 0, total = 0, winPct = 0;
+        if (stats.length) {
+          won = stats.reduce((a,s)=>a+(s.match_statistics?.won??0), 0);
+          lost = stats.reduce((a,s)=>a+(s.match_statistics?.lost??0), 0);
+          total = stats.reduce((a,s)=>a+(s.match_statistics?.played??0), 0);
+          winPct = total > 0 ? Math.round((won/total)*100) : 0;
+        }
+
+        conquestBlock.innerHTML = `
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">
+            <div style="background:var(--bg);border:1px solid rgba(34,197,94,0.2);border-radius:4px;padding:10px;text-align:center;">
+              <div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--green);">${won}</div><div style="font-size:9px;color:var(--text-muted);letter-spacing:2px;margin-top:2px;">WINS</div>
+            </div>
+            <div style="background:var(--bg);border:1px solid rgba(239,68,68,0.2);border-radius:4px;padding:10px;text-align:center;">
+              <div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--red);">${lost}</div><div style="font-size:9px;color:var(--text-muted);letter-spacing:2px;margin-top:2px;">LOSSES</div>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:10px;text-align:center;">
+              <div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text-dim);">${total}</div><div style="font-size:9px;color:var(--text-muted);letter-spacing:2px;margin-top:2px;">PLAYED</div>
+            </div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <span style="font-family:var(--display);font-size:12px;font-weight:600;color:var(--text-muted);">Win Rate</span>
+            <span style="font-family:var(--mono);font-size:14px;color:${winPct>=50?'var(--green)':'var(--red)'};">${winPct}%</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">Weekly Conquest</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--purple);">${conquest > 0 ? `${conquest.toLocaleString()} / ${conquestCap.toLocaleString()}` : `0 / ${conquestCap.toLocaleString()}`}</span>
+          </div>
+          <div class="conquest-bar-wrap"><div class="conquest-bar-fill" style="width:${pct}%"></div></div>
+        `;
+      }
+    }
+    
+    // PVP Gear
+    const gearBlock = document.getElementById('wowPvpGearBlock');
+    if (gearBlock) {
+      if (bnet.equipment?.equipped_items?.length) {
+        const pvpSlots = ['HEAD','SHOULDER','CHEST','HANDS','LEGS','FEET','WAIST','WRIST','BACK','NECK','FINGER_1','FINGER_2','TRINKET_1','TRINKET_2','MAIN_HAND','OFF_HAND'];
+        const slotNames = { HEAD:'Head',SHOULDER:'Shoulders',CHEST:'Chest',HANDS:'Gloves',LEGS:'Legs',FEET:'Boots',WAIST:'Belt',WRIST:'Bracers',BACK:'Cloak',NECK:'Neck',FINGER_1:'Ring 1',FINGER_2:'Ring 2',TRINKET_1:'Trinket 1',TRINKET_2:'Trinket 2',MAIN_HAND:'Weapon',OFF_HAND:'Off-Hand' };
+        const slotMap = {};
+        bnet.equipment.equipped_items.forEach(item => { if (item.slot?.type) slotMap[item.slot.type] = item; });
+        
+        const activeSlots = pvpSlots.filter(s=>slotMap[s]);
+        const avgIlvl = (bnet.equipment.character?.equipped_item_level ?? Math.round(activeSlots.reduce((a,s)=>a+(slotMap[s]?.level?.value??0),0) / activeSlots.length)) || '—';
+        const qColors = {POOR:'#9d9d9d',COMMON:'#fff',UNCOMMON:'#1eff00',RARE:'#0070dd',EPIC:'#a335ee',LEGENDARY:'#ff8000'};
+        
+        gearBlock.innerHTML = `
+          <div style="text-align:center;padding:8px 0 14px;">
+            <div style="font-family:var(--mono);font-size:36px;font-weight:700;color:var(--purple);line-height:1;">${avgIlvl}</div>
+            <div style="font-size:9px;color:var(--text-muted);letter-spacing:3px;margin-top:4px;">AVG EQUIPPED ILVL</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            ${activeSlots.map(s => {
+              const item = slotMap[s];
+              const ilvl = item?.level?.value ?? '—';
+              const q    = item?.quality?.type ?? 'COMMON';
+              return `
+                <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;">
+                  <div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;width:72px;flex-shrink:0;">${slotNames[s]?.toUpperCase()}</div>
+                  <div style="flex:1;font-family:var(--display);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                    <a href="https://www.wowhead.com/item=${item.item.id}" data-wowhead="item=${item.item.id}&ilvl=${ilvl}" target="_blank" style="color:${qColors[q]||'#fff'};text-decoration:none;">${item.name}</a>
+                  </div>
+                  <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--purple);flex-shrink:0;">${ilvl}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } else {
+        gearBlock.innerHTML = `<div class="pvp-note">PVP gear data not available.</div>`;
+      }
+    }
+  }
+
+  async function wowRenderAccountTab() {
+    try {
+      const res = await wowReq('/api/wow/account/status');
+      const status = await res.json();
+      const badge = document.getElementById('wowBnetLinkBadge');
+      const body = document.getElementById('wowBnetLinkBody');
+      const myCard = document.getElementById('wowMyCharsCard');
+      if (status.linked) {
+        if (badge) { badge.textContent = 'LINKED'; badge.className = 'badge badge-free'; }
+        if (body) {
+          body.innerHTML = `
+            <div style="display:flex;align-items:center;gap:14px;padding:4px 0;">
+              <div style="font-size:28px;">🔒</div>
+              <div>
+                <div style="font-family:var(--display);font-size:16px;font-weight:700;color:var(--green);">${status.battletag}</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Battle.net account linked</div>
+              </div>
+              <div style="margin-left:auto;">
+                <button class="wow-btn btn-ghost" style="border-color:var(--red);color:var(--red);font-size:11px;" onclick="wowUnlinkBnet()">Unlink Account</button>
+              </div>
+            </div>`;
+        }
+              if (myCard) {
+                myCard.style.display = 'block';
+                wowRenderInlinePicker();
+              }
+      } else {
+        if (badge) { badge.textContent = 'NOT LINKED'; badge.className = 'badge badge-dim'; }
+        if (body) {
+          body.innerHTML = `
+            <div style="text-align:center;padding:20px 0;">
+              <div style="font-size:36px;margin-bottom:12px;">🔗</div>
+              <div style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--text-muted);margin-bottom:16px;">Link your Battle.net account to auto-discover your characters</div>
+              <button class="wow-btn btn-accent" style="font-size:14px;padding:10px 24px;" onclick="wowLinkBnet()">⚔️ Link Battle.net Account</button>
+            </div>`;
+        }
+        if (myCard) myCard.style.display = 'none';
+      }
+      wowRenderMyRoster();
+    } catch(e) {}
+  }
+
+  function wowRenderMyRoster() {
+    const listEl = document.getElementById('wowMyRosterList');
+    if (!listEl) return;
+    const mine = wowCharacters.filter(c => c.player_name === state.name);
+    if (mine.length === 0) {
+      listEl.innerHTML = '<div class="empty" style="padding:16px 0;">No characters in your roster.</div>';
+      return;
+    }
+    listEl.innerHTML = mine.map((c, idx) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);${idx === mine.length - 1 ? 'border-bottom:none;' : ''}">
+        <img src="${wowCharAvatar(c)}" style="width:36px;height:36px;border-radius:3px;object-fit:cover;border:1px solid var(--border2);" onerror="this.style.opacity='0.3'" />
+        <div style="flex:1;">
+          <div style="font-family:var(--display);font-size:14px;font-weight:700;">
+            ${c.display_name}
+            ${c.is_main ? '<span style="font-size:10px;color:var(--wow-gold);margin-left:6px;">★ Main</span>' : ''}
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);">${c.class || 'Unknown Class'} · ${c.realm}</div>
+        </div>
+        <button class="wow-btn btn-ghost" style="font-size:10px;padding:3px 8px;border-color:var(--danger);color:var(--danger);" onclick="wowRemoveMyChar(${c.id})">Remove</button>
+      </div>`).join('');
+  }
+
+  window.wowRemoveMyChar = async function(id) {
+    if (!confirm('Remove this character from your roster?')) return;
+    const mine = wowCharacters.filter(c => c.player_name === state.name && c.id !== id);
+    const selectedChars = mine.map(c => ({ name: c.display_name, realm: c.realm, class: c.class, isMain: c.is_main }));
+    if (selectedChars.length > 0 && !selectedChars.some(c => c.isMain)) selectedChars[0].isMain = true;
+    try {
+      await wowReq('/api/wow/characters/sync', { method: 'POST', body: JSON.stringify({ characters: selectedChars }) });
+      toast('Character removed', 'success');
+      await wowLoadAll();
+    } catch(e) {
+      toast('Failed to remove character', 'error');
+    }
+  };
+
+  window.wowUnlinkBnet = async function() {
+    if (!confirm('Unlink your Battle.net account? Your characters will be removed from the family roster.')) return;
+    wowAvailableChars = [];
+    await wowReq('/api/wow/account/unlink', { method: 'POST' });
+    await wowLoadAll();
+  };
+
+  let wowAvailableChars = [];
+  let wowPickerSelections = new Set();
+  let wowPickerMainChar = '';
+  let wowPickerFilter = 'active';
+  let wowPickerDbState = '';
+
+  async function wowRenderInlinePicker() {
+    const listEl = document.getElementById('wowMyCharsList');
+    if (!listEl) return;
+
+    if (wowAvailableChars.length === 0) {
+      listEl.innerHTML = '<div class="empty">Loading characters from Battle.net...</div>';
+      try {
+        const res = await wowReq('/api/wow/bnet/characters');
+        if (!res.ok) {
+           if (res.status === 401) {
+             listEl.innerHTML = '<div class="empty">Battle.net token expired or not linked. Please link your account again.</div>';
+           } else {
+             listEl.innerHTML = '<div class="empty">Error fetching characters.</div>';
+           }
+           return;
+        }
+        wowAvailableChars = await res.json();
+      } catch(e) {
+        listEl.innerHTML = '<div class="empty">Failed to load characters.</div>';
+        return;
+      }
+    }
+
+    const mine = wowCharacters.filter(c => c.player_name === state.name);
+    wowPickerSelections = new Set(mine.map(c => c.name.toLowerCase() + '-' + (c.realm.slug || c.realm).toLowerCase()));
+    const mainChar = mine.find(c => c.is_main);
+    wowPickerMainChar = mainChar ? (mainChar.name.toLowerCase() + '-' + (mainChar.realm.slug || mainChar.realm).toLowerCase()) : '';
+    wowPickerDbState = [...wowPickerSelections].sort().join(',') + '|' + wowPickerMainChar;
+
+    renderPickerList();
+  }
+
+  window.setPickerFilter = function(f) {
+    wowPickerFilter = f;
+    document.querySelectorAll('.picker-filter').forEach(el => el.classList.toggle('active', el.dataset.filter === f));
+    renderPickerList();
+  };
+
+  window.togglePickerChar = function(idKey, checked) {
+    if (checked && wowPickerSelections.size >= 5) return;
+    if (checked) wowPickerSelections.add(idKey);
+    else {
+      wowPickerSelections.delete(idKey);
+      if (wowPickerMainChar === idKey) wowPickerMainChar = [...wowPickerSelections][0] || '';
+    }
+    if (checked && wowPickerSelections.size === 1) {
+      wowPickerMainChar = idKey;
+    }
+    renderPickerList();
+  };
+
+  window.setPickerMain = function(idKey) {
+    wowPickerMainChar = idKey;
+    renderPickerList();
+  };
+
+  window.savePicker = async function() {
+    const btn = document.getElementById('wowPickerSaveBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+
+    const selectedChars = wowAvailableChars
+      .filter(c => wowPickerSelections.has(c.name.toLowerCase() + '-' + c.realm.slug))
+      .map(c => {
+         const idKey = c.name.toLowerCase() + '-' + c.realm.slug;
+         return {
+           name: c.name,
+           realm: c.realm.slug,
+           class: c.playable_class.name,
+           isMain: idKey === wowPickerMainChar
+         };
+      });
+
+    if (selectedChars.length > 0 && !selectedChars.some(c => c.isMain)) selectedChars[0].isMain = true;
+
+    try {
+      await wowReq('/api/wow/characters/sync', { method: 'POST', body: JSON.stringify({ characters: selectedChars }) });
+      toast('Characters saved to roster!', 'success');
+      wowPickerDbState = [...wowPickerSelections].sort().join(',') + '|' + wowPickerMainChar;
+      await wowLoadAll();
+      if (btn) { btn.textContent = 'Saved'; }
+      setTimeout(() => { if (btn) { btn.textContent = 'Save to Roster'; renderPickerList(); } }, 2000);
+    } catch(e) {
+      toast('Failed to save characters', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = 'Save to Roster'; }
+    }
+  };
+
+  window.renderPickerList = function() {
+    const el = document.getElementById('wowMyCharsList');
+    const count = document.getElementById('wowPickerCount');
+    const saveBtn = document.getElementById('wowPickerSaveBtn');
+    if (!el) return;
+
+    let chars = wowPickerFilter === 'active' ? wowAvailableChars.filter(c => c.level >= 80) : wowAvailableChars;
+    const hidden = wowAvailableChars.filter(c => c.level < 80).length;
+
+    if (count) count.textContent = `${wowPickerSelections.size} / 5 selected`;
+
+    const currentState = [...wowPickerSelections].sort().join(',') + '|' + wowPickerMainChar;
+    if (saveBtn && saveBtn.textContent !== 'Saved' && saveBtn.textContent !== 'Saving...') {
+      saveBtn.disabled = currentState === wowPickerDbState;
+    }
+
+    el.innerHTML = chars.map(c => {
+      const idKey = c.name.toLowerCase() + '-' + c.realm.slug;
+      const selected = wowPickerSelections.has(idKey);
+      const isMain = idKey === wowPickerMainChar;
+      const disabled = !selected && wowPickerSelections.size >= 5;
+      
+      return `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);opacity:${disabled?'0.4':'1'};">
+          <input type="checkbox" ${selected?'checked':''} ${disabled&&!selected?'disabled':''}
+                 onchange="togglePickerChar('${idKey}', this.checked)"
+                 style="width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;" />
+          <div style="flex:1;">
+            <div style="font-family:var(--display);font-size:14px;font-weight:700;color:${selected?'var(--text)':'var(--text-muted)'}">${c.name}</div>
+            <div style="font-size:10px;color:var(--text-muted);">${c.playable_class.name} · ${c.realm.name} · Lvl ${c.level}</div>
+          </div>
+          ${selected ? `
+            <button onclick="setPickerMain('${idKey}')"
+                    style="font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;
+                           background:${isMain?'var(--wow-gold-dim)':'transparent'};
+                           border:1px solid ${isMain?'rgba(240,180,41,0.4)':'var(--border2)'};
+                           color:${isMain?'var(--wow-gold)':'var(--text-muted)'};">
+              ★ ${isMain?'Main':'Set Main'}
+            </button>` : ''}
+        </div>`;
+    }).join('');
+
+    if (wowPickerFilter === 'active' && hidden > 0) {
+      el.innerHTML += `
+        <div style="text-align:center;padding:12px;font-size:11px;color:var(--text-muted);font-family:var(--mono);">
+          ${hidden} character${hidden>1?'s':''} hidden (below level 80)
+          <span onclick="setPickerFilter('all')" style="color:var(--accent);cursor:pointer;margin-left:6px;">Show all</span>
+        </div>`;
+    }
+  };
+
+  window.wowLinkBnet = async function() {
+    // Force a heartbeat so the player row exists before OAuth callback attempts to update it
+    try {
+      await fetch('{{ worker_url }}/api/heartbeat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: state.name, vpn_ip: state.clientIp || '0.0.0.0', version: '1.0.0' })
+      });
+    } catch(e) {}
+
+    const popup = window.open('{{ worker_url }}/auth/battlenet?name=' + encodeURIComponent(state.name), 'bnetauth', 'width=600,height=700');
+    window.addEventListener('message', async function handler(e) {
+      if (e.data === 'bnet_auth_success') {
+        window.removeEventListener('message', handler);
+        if (popup) popup.close();
+        await wowLoadAll();
+      }
+    }, { once: false });
+  };
+
+  (function startWowResetTimer() {
+    function getNextReset() {
+      const now = new Date();
+      let diff = (2 - now.getUTCDay() + 7) % 7;
+      if (diff === 0 && now.getUTCHours() >= 15) diff = 7;
+      const r = new Date(now); r.setUTCDate(now.getUTCDate() + diff); r.setUTCHours(15,0,0,0);
+      return r;
+    }
+    function tickReset() {
+      const el = document.getElementById('wowResetTimer');
+      if (!el) return;
+      const tot = Math.max(0, Math.floor((getNextReset() - Date.now()) / 1000));
+      const pad = n => String(n).padStart(2, '0');
+      el.textContent = `${pad(Math.floor(tot/86400))}d ${pad(Math.floor((tot%86400)/3600))}h ${pad(Math.floor((tot%3600)/60))}m ${pad(tot%60)}s`;
+    }
+    tickReset();
+    setInterval(tickReset, 1000);
+  })();
+</script>
 </body>
 </html>

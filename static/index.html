@@ -185,6 +185,7 @@
   import { h, render } from 'https://esm.sh/preact@10';
   import { useState, useEffect, useRef } from 'https://esm.sh/preact@10/hooks';
   import htm from 'https://esm.sh/htm@3';
+  import { WowTab } from '/wow.js';
   const html = htm.bind(h);
 
   const API = 'https://gameznet.looknet.ca';
@@ -934,6 +935,7 @@
       { id: 'chat',    icon: '💬', label: 'Chat' },
       { id: 'discord', icon: '🎮', label: 'Discord' },
       { id: 'dms',     icon: '✉️',  label: 'DMs', badge: dmUnread || null },
+      { id: 'wow',     icon: '⚔️',  label: 'WoW' },
     ];
 
     return html`
@@ -948,6 +950,7 @@
           ${tab === 'chat'    && html`<${ChatTab}    me=${me} />`}
           ${tab === 'discord' && html`<${DiscordTab} me=${me} />`}
           ${tab === 'dms'     && html`<${DMsTab}     me=${me} onUnreadChange=${setDmUnread} />`}
+          ${tab === 'wow'     && html`<${WowTab}     me=${me} />`}
         </div>
         <nav class="tabbar">
           ${tabs.map(t => html`

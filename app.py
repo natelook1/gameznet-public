@@ -575,7 +575,8 @@ def api_config():
         return jsonify({
             "provisioned": True,
             "name":      data.get("name", "Player"),
-            "client_ip": data.get("vpn_ip", "")
+            "client_ip": data.get("vpn_ip", ""),
+            "token":     data.get("token", "")
         })
     except Exception as e:
         return jsonify({"provisioned": False, "name": "", "client_ip": ""}), 500
@@ -1341,21 +1342,23 @@ def api_update():
         exe_path = os.path.join(os.environ.get("LOCALAPPDATA", ""), "GamezNET", "GamezNET.exe")
 
         def _install_and_relaunch():
-            time.sleep(0.5)
+            time.sleep(0.8)
             try:
                 ctypes.windll.kernel32.ReleaseMutex(_instance_mutex)
                 ctypes.windll.kernel32.CloseHandle(_instance_mutex)
             except Exception:
                 pass
-            log.info("Launching installer via detached trampoline then exiting")
-            # Exit this process first so the installer can overwrite our exe without
-            # file-lock contention. The installer's [Run] section relaunches us with
-            # --no-browser so the existing browser tab reloads itself.
-            subprocess.Popen(
-                ["cmd", "/c",
-                 f"ping 127.0.0.1 -n 3 >nul 2>&1 && \"{tmp}\" /VERYSILENT /NORESTART"],
-                creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
-            )
+            log.info("Running installer silently")
+            subprocess.run([tmp, "/VERYSILENT", "/NORESTART"],
+                           creationflags=subprocess.CREATE_NO_WINDOW)
+            log.info("Installer finished; scheduling new exe launch after exit")
+            if os.path.exists(exe_path):
+                # Use a detached cmd process with a short delay so the new exe
+                # starts only after this process (and its _MEI* DLL locks) are gone
+                subprocess.Popen(
+                    ["cmd", "/c", f"ping 127.0.0.1 -n 3 >nul 2>&1 && start \"\" \"{exe_path}\""],
+                    creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
+                )
             os._exit(0)
 
         threading.Thread(target=_install_and_relaunch, daemon=True).start()
