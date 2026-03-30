@@ -526,7 +526,7 @@ function getZoneProgress(lvl) {
     { name: 'The War Within — Isle of Dorn',      min: 70, max: 72, done: lvl >= 72 },
     { name: 'The War Within — The Ringing Deeps', min: 72, max: 74, done: lvl >= 74 },
     { name: 'The War Within — Hallowfall',        min: 74, max: 76, done: lvl >= 76 },
-    { name: 'The War Within — Azj-Kahet',         min: 76, max: 80, done: lvl >= 80 },
+    { name: 'The War Within — Azj-Kahet',         min: 76, max: 90, done: lvl >= 90 },
   ];
 }
 
@@ -537,10 +537,10 @@ function getDungeonUnlocks(lvl) {
     { name: 'Normal Dungeons',  icon: '🗡️', status: status(10),  label: label(10)  },
     { name: 'Heroic Dungeons',  icon: '⚔️',  status: status(70),  label: label(70)  },
     { name: 'Mythic Dungeons',  icon: '💀',  status: status(70),  label: label(70)  },
-    { name: 'Mythic+ (Season)', icon: '🔑',  status: status(80),  label: label(80)  },
-    { name: 'LFR Raid',         icon: '🏰',  status: status(80),  label: label(80)  },
-    { name: 'Normal Raid',      icon: '🏰',  status: status(80),  label: label(80)  },
-    { name: 'Heroic Raid',      icon: '🏰',  status: status(80),  label: label(80)  },
+    { name: 'Mythic+ (Season)', icon: '🔑',  status: status(90),  label: label(90)  },
+    { name: 'LFR Raid',         icon: '🏰',  status: status(90),  label: label(90)  },
+    { name: 'Normal Raid',      icon: '🏰',  status: status(90),  label: label(90)  },
+    { name: 'Heroic Raid',      icon: '🏰',  status: status(90),  label: label(90)  },
   ];
 }
 
@@ -558,8 +558,8 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
   const c = charCacheRef.current[cacheKey] || {};
   const bnet = c._bnet || {};
 
-  const lvl = bnet?.profile?.level || c.level || 80;
-  const maxLvl = 80;
+  const lvl = bnet?.profile?.level || c.level || 90;
+  const maxLvl = 90;
   const isMax = lvl >= maxLvl;
   const pct = isMax ? 100 : Math.round((lvl / maxLvl) * 100);
 

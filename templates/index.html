@@ -1159,9 +1159,9 @@
     /* ── Animations ── */
     @keyframes fade-in {
       from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
+      to   { opacity: 1; transform: none; }
     }
-    .shell > * { animation: fade-in 0.3s ease both; }
+    .shell > * { animation: fade-in 0.3s ease backwards; }
 
     /* ── Tab nav ── */
     .tab-nav {
@@ -1182,6 +1182,10 @@
     .tab-btn.yt-tab.active { color: #ff4444; border-bottom-color: #ff4444; }
     .tab-btn.dc-tab.active { color: #5865f2; border-bottom-color: #5865f2; }
     .dc-tab-badge { display: inline-block; background: #5865f2; color: #fff; font-size: 9px; padding: 1px 5px; border-radius: 8px; margin-left: 5px; vertical-align: middle; line-height: 1.4; }
+    .tab-btn.wow-tab.active { color: #f0b429; border-bottom-color: #f0b429; }
+    .wow-tab-logo { height: 16px; opacity: 0.5; filter: grayscale(1); transition: all 0.15s; vertical-align: middle; }
+    .tab-btn.wow-tab:hover .wow-tab-logo { opacity: 0.8; filter: grayscale(0.5); }
+    .tab-btn.wow-tab.active .wow-tab-logo { opacity: 1; filter: grayscale(0) drop-shadow(0 2px 6px rgba(240, 180, 41, 0.4)); }
     #discord-section {
       display: none; flex-direction: row;
       flex: 1; overflow: hidden; min-height: 0;
@@ -2124,7 +2128,28 @@
     #wow-section .picker-filter { font-family: var(--mono); font-size: 10px; padding: 4px 10px; border-radius: 3px; border: 1px solid var(--border2); color: var(--text-muted); cursor: pointer; letter-spacing: 1px; transition: all 0.15s; }
     #wow-section .picker-filter.active { background: var(--accent-dim); border-color: rgba(0,195,255,0.4); color: var(--accent); }
     #wow-section .picker-filter:hover:not(.active) { color: var(--text); border-color: var(--border2); }
+
+    #wow-fullscreen-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 9, 15, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      animation: fade-in 0.2s ease;
+    }
+    #wow-section.fullscreen {
+      position: fixed; top: 4vh; left: 4vw; width: 92vw; height: 92vh;
+      z-index: 1001; border: 1px solid var(--border2); border-radius: 8px;
+      box-shadow: 0 16px 60px rgba(0,0,0,0.8);
+      animation: srvModalIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    #wow-section.fullscreen .wow-header { border-top-left-radius: 8px; border-top-right-radius: 8px; }
+    
     @media (max-width: 1000px) {
+      #wow-section.fullscreen {
+        top: 2vh; left: 2vw; width: 96vw; height: 96vh;
+      }
       #wow-section .layout { grid-template-columns: 1fr; }
       #wow-section .col-side { order: -1; }
       #wow-section .admin-grid { grid-template-columns: 1fr; }
@@ -2151,7 +2176,9 @@
     <button class="tab-btn active" onclick="switchTab('home', this)">HOME</button>
     <button class="tab-btn yt-tab" onclick="switchTab('youtube', this)">YOUTUBE</button>
     <button class="tab-btn dc-tab" onclick="switchTab('discord', this)">DISCORD<span class="dc-tab-badge" id="tab-dc-online" style="display:none;"></span></button>
-    <button class="tab-btn wow-tab" onclick="switchTab('wow', this)">WOW</button>
+    <button class="tab-btn wow-tab" onclick="switchTab('wow', this)">
+      <img src="/static/WoW_icon.svg" class="wow-tab-logo" alt="WoW">
+    </button>
     <div class="net-pill" id="net-pill" onclick="toggleNetDropdown()">
       <div class="net-pill-dot"></div>
       <span>CONNECTED</span>
@@ -2616,6 +2643,8 @@
       </div>
     </div>
 
+    <div id="wow-fullscreen-backdrop" onclick="if(event.target===this)toggleWowFullscreen()"></div>
+
     <!-- ── WOW TAB ── -->
     <div id="wow-section">
       <div class="wow-header">
@@ -2625,10 +2654,11 @@
         <div class="header-right">
           <div class="realm-status">
             <div class="realm-dot" style="background:var(--wow-gold);box-shadow:0 0 6px var(--wow-gold);"></div>
-            <span id="wowTokenPrice" style="font-family:var(--mono);color:var(--wow-gold);font-weight:600;letter-spacing:1px;">🪙 Fetching...</span>
+            <span id="wowTokenPrice" style="font-family:var(--mono);color:var(--wow-gold);font-weight:600;letter-spacing:1px;">🪙 ...</span>
           </div>
           <div class="header-sep" style="margin:0 4px;font-size:16px;">|</div>
           <div class="realm-status"><div class="realm-dot"></div><span>Proudmoore — US</span></div>
+          <div class="refresh-btn" id="wow-fullscreen-btn" onclick="toggleWowFullscreen()" style="border-color: var(--purple); color: var(--purple);">⛶ FULLSCREEN</div>
           <div class="refresh-btn" id="wowRefreshBtn" onclick="wowLoadAll()">⟳ REFRESH</div>
         </div>
       </div>
@@ -6591,8 +6621,8 @@
     const saveBtn = document.getElementById('wowPickerSaveBtn');
     if (!el) return;
 
-    let chars = wowPickerFilter === 'active' ? wowAvailableChars.filter(c => c.level >= 80) : wowAvailableChars;
-    const hidden = wowAvailableChars.filter(c => c.level < 80).length;
+    let chars = wowPickerFilter === 'active' ? wowAvailableChars.filter(c => c.level >= 90) : wowAvailableChars;
+    const hidden = wowAvailableChars.filter(c => c.level < 90).length;
 
     if (count) count.textContent = `${wowPickerSelections.size} / 5 selected`;
 
@@ -6630,7 +6660,7 @@
     if (wowPickerFilter === 'active' && hidden > 0) {
       el.innerHTML += `
         <div style="text-align:center;padding:12px;font-size:11px;color:var(--text-muted);font-family:var(--mono);">
-          ${hidden} character${hidden>1?'s':''} hidden (below level 80)
+          ${hidden} character${hidden>1?'s':''} hidden (below level 90)
           <span onclick="setPickerFilter('all')" style="color:var(--accent);cursor:pointer;margin-left:6px;">Show all</span>
         </div>`;
     }
@@ -6653,6 +6683,25 @@
         await wowLoadAll();
       }
     }, { once: false });
+  };
+
+  window.toggleWowFullscreen = function() {
+    const wowSection = document.getElementById('wow-section');
+    const backdrop = document.getElementById('wow-fullscreen-backdrop');
+    const btn = document.getElementById('wow-fullscreen-btn');
+    const isFullscreen = wowSection.classList.toggle('fullscreen');
+    
+    backdrop.style.display = isFullscreen ? 'block' : 'none';
+    
+    if (isFullscreen) {
+      btn.textContent = 'EXIT FULLSCREEN';
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.color = 'var(--accent)';
+    } else {
+      btn.textContent = '⛶ FULLSCREEN';
+      btn.style.borderColor = 'var(--purple)';
+      btn.style.color = 'var(--purple)';
+    }
   };
 
   (function startWowResetTimer() {
