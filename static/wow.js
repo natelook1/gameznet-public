@@ -20,8 +20,12 @@ function req(path, opts = {}) {
   });
 }
 
-function charAvatar(c) {
+function charAvatar(c, charCacheRef) {
   if (c && c.thumbnail) return c.thumbnail;
+  if (c && charCacheRef) {
+    const ck = `${c.region}-${c.realm}-${c.name}`;
+    if (charCacheRef.current[ck]?.thumbnail_url) return charCacheRef.current[ck].thumbnail_url;
+  }
   return 'https://render.worldofwarcraft.com/us/icons/56/inv_misc_questionmark.jpg';
 }
 
@@ -87,7 +91,11 @@ function injectWowAssets() {
       position: sticky;
       top: 0;
       z-index: 190;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
+    .wow-wrap .wow-nav-tabs::-webkit-scrollbar { display: none; }
     .wow-wrap .wow-nav-tab {
       font-family: var(--wow-display);
       font-size: 13px;
@@ -104,6 +112,7 @@ function injectWowAssets() {
       gap: 7px;
       user-select: none;
       white-space: nowrap;
+      flex-shrink: 0;
     }
     .wow-wrap .wow-nav-tab:hover { color: var(--wow-dim); }
     .wow-wrap .wow-nav-tab.active { color: var(--wow-text); border-bottom-color: var(--wow-accent); }
@@ -185,7 +194,7 @@ function injectWowAssets() {
     .wow-wrap .run-time.timed    { color: var(--wow-green); }
     .wow-wrap .run-time.depleted { color: var(--wow-red); }
     .wow-wrap .run-score { font-family: var(--wow-mono); font-size: 12px; color: var(--wow-gold); width: 48px; text-align: right; }
-    .wow-wrap .boss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+    .wow-wrap .boss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 130px), 1fr)); gap: 6px; }
     .wow-wrap .boss-pip { background: var(--wow-surface2); border: 1px solid var(--wow-border); border-radius: 4px; padding: 7px 10px; display: flex; align-items: center; gap: 7px; }
     .wow-wrap .boss-pip.killed-n { border-color: rgba(34,197,94,0.35); }
     .wow-wrap .boss-pip.killed-h { border-color: rgba(0,195,255,0.35); }
@@ -207,7 +216,7 @@ function injectWowAssets() {
     .wow-wrap .wk-name { flex: 1; font-family: var(--wow-display); font-size: 13px; font-weight: 600; }
     .wow-wrap .wk-time { font-family: var(--wow-mono); font-size: 11px; color: var(--wow-muted); }
     .wow-wrap .pvp-coming { background: var(--wow-surface2); border: 1px solid var(--wow-border); border-radius: var(--wow-radius); padding: 20px; }
-    .wow-wrap .pvp-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .wow-wrap .pvp-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); gap: 10px; margin-bottom: 14px; }
     .wow-wrap .pvp-stat-box { background: var(--wow-bg); border: 1px solid var(--wow-border2); border-radius: 5px; padding: 14px; text-align: center; }
     .wow-wrap .pvp-stat-val { font-family: var(--wow-mono); font-size: 26px; font-weight: 700; color: var(--wow-purple); line-height: 1; }
     .wow-wrap .pvp-stat-lbl { font-size: 9px; color: var(--wow-muted); letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
@@ -226,6 +235,14 @@ function injectWowAssets() {
     .wow-wrap .level-bar-fill { height: 100%; background: linear-gradient(90deg, var(--wow-green), #16a34a); border-radius: 4px; transition: width 0.8s ease; }
     .wow-wrap .level-xp { font-family: var(--wow-mono); font-size: 11px; color: var(--wow-muted); }
     .wow-wrap .level-max-note { font-size: 11px; color: var(--wow-muted); margin-top: 4px; }
+
+    @media (max-width: 768px) {
+      .wow-wrap .level-hero { flex-direction: column; text-align: center; padding: 16px; gap: 10px; }
+      .wow-wrap .wow-nav-tabs { padding: 0 10px; }
+      .wow-wrap .wow-nav-tab { padding: 12px 14px; font-size: 12px; }
+      .wow-wrap .wow-layout, .wow-wrap .layout-full { padding: 12px 10px; }
+      .wow-wrap .card-header, .wow-wrap .card-body { padding: 10px; }
+    }
     .wow-wrap .dungeon-list { display: flex; flex-direction: column; gap: 5px; }
     .wow-wrap .dungeon-row { display: flex; align-items: center; gap: 10px; background: var(--wow-surface2); border: 1px solid var(--wow-border); border-radius: 4px; padding: 8px 12px; }
     .wow-wrap .dungeon-icon { font-size: 16px; flex-shrink: 0; }
@@ -271,7 +288,7 @@ function injectWowAssets() {
     .wow-wrap .affix-name { font-family: var(--wow-display); font-size: 14px; font-weight: 600; }
     .wow-wrap .affix-desc { font-size: 10px; color: var(--wow-muted); margin-top: 2px; line-height: 1.4; }
     
-    .wow-wrap .roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+    .wow-wrap .roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
     .wow-wrap .player-card { background: var(--wow-surface2); border: 1px solid var(--wow-border2); border-radius: var(--wow-radius); overflow: hidden; transition: border-color 0.15s; }
     .wow-wrap .player-card:hover { border-color: var(--wow-border); }
     .wow-wrap .player-card-bar { height: 3px; }
@@ -323,7 +340,7 @@ function injectWowAssets() {
 }
 
 // ── Sub-components ───────────────────────────────────────────────────────────
-function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, onSubTab }) {
+function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, onSubTab, dataTick }) {
   const players = {};
   characters.forEach((c, i) => {
     const p = c.player_name || c.display_name;
@@ -371,7 +388,7 @@ function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, on
       <div class="player-card">
         <div class="player-card-bar ${barKey}"></div>
         <div class="player-main" onClick=${() => { onSelectChar(i); onSubTab('world'); }}>
-          <img class="player-main-avatar" src=${charAvatar(c)} onError=${e => e.target.style.opacity='0.3'} />
+          <img class="player-main-avatar" src=${charAvatar(c, charCacheRef)} onError=${e => e.target.style.opacity='0.3'} />
           <div class="player-main-info">
             <div class="player-name-row">
               <div class="player-name">${playerName}</div>
@@ -396,7 +413,7 @@ function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, on
             <div class="alts-label">Alts</div>
             ${alts.map(({ c: ac, i: ai }) => html`
               <div class="alt-chip" onClick=${(e) => { e.stopPropagation(); onSelectChar(ai); onSubTab('world'); }} title="${ac.display_name} · ${ac.spec||''} ${ac.class||''} · ${ac.realm}">
-                <img src=${charAvatar(ac)} onError=${e => e.target.style.display='none'} />
+                <img src=${charAvatar(ac, charCacheRef)} onError=${e => e.target.style.display='none'} />
                 ${ac.display_name}
               </div>
             `)}
@@ -544,7 +561,7 @@ function getDungeonUnlocks(lvl) {
   ];
 }
 
-function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collectionsRef }) {
+function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collectionsRef, dataTick }) {
   const [colView, setColView] = useState(null); // 'mounts' | 'pets' | null
   const [colSearch, setColSearch] = useState('');
   const [colCompareIdx, setColCompareIdx] = useState(-1);
@@ -713,7 +730,7 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
             <div style="margin-left:auto;">Hover names for 3D models & info</div>
           `}
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:8px;max-height:calc(100vh - 240px);overflow-y:auto;padding-right:10px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(min(100%, 280px), 1fr));gap:8px;max-height:calc(100vh - 240px);overflow-y:auto;padding-right:10px;">
           ${gridItems.length > 0 ? gridItems : html`<div class="empty" style="grid-column: 1 / -1;margin-top:40px;">No results match your search.</div>`}
         </div>
       </div>
@@ -727,7 +744,7 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
       const mounts = bnet.mounts?.mounts?.length || 0;
       const pets = bnet.pets?.pets?.length || 0;
       return html`
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 120px), 1fr));gap:10px;">
           <div style="background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;padding:12px;text-align:center;position:relative;">
             <button class="btn btn-ghost" style="position:absolute;top:6px;right:6px;font-size:9px;padding:3px 6px;" onClick=${() => openCollection('mounts')}>Browse</button>
             <div style="font-size:24px;margin-bottom:4px;">🐎</div>
@@ -789,7 +806,7 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
       
       if (allProfs.length > 0) {
         return html`
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 160px), 1fr));gap:10px;">
             ${allProfs.slice(0, 4).map(p => {
               const profName = p.profession?.name || 'Unknown';
               let tier = p.tiers?.[0] || {};
@@ -831,7 +848,7 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
 
   const renderHousing = () => html`
     <div class="info-box purple" style="margin-bottom:8px;">Player Estate data will be fully supported once the Blizzard Midnight API endpoints go live.</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 160px), 1fr));gap:10px;">
       <div style="background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;padding:10px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <div style="width:24px;height:24px;background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;">🏕️</div>
@@ -975,7 +992,7 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
   `;
 }
 
-function WowPVE({ character, charCacheRef }) {
+function WowPVE({ character, charCacheRef, dataTick }) {
   if (!character) return null;
   const cacheKey = `${character.region}-${character.realm}-${character.name}`;
   const c = charCacheRef.current[cacheKey] || {};
@@ -1022,7 +1039,7 @@ function WowPVE({ character, charCacheRef }) {
         <div style="font-family:var(--wow-mono);font-size:42px;font-weight:700;color:var(--wow-gold);line-height:1;">${ilvl || '—'}</div>
         <div style="font-size:10px;color:var(--wow-muted);letter-spacing:3px;margin-top:4px;">EQUIPPED ILVL</div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%, 160px),1fr));gap:6px;">
         ${slotOrder.map(slot => {
           const item = slotMap[slot];
           const i_ilvl = item?.level?.value;
@@ -1061,7 +1078,7 @@ function WowPVE({ character, charCacheRef }) {
           <div style="font-size:9px;color:var(--wow-muted);letter-spacing:2px;text-transform:uppercase;">${s.power_type?.name?.toUpperCase() || 'POWER'}</div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 120px), 1fr));gap:12px;">
         <div style="background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;padding:8px 10px;">
           <div style="font-size:9px;color:var(--wow-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">${primaryLabel}</div>
           <div style="font-family:var(--wow-mono);font-size:14px;font-weight:700;">${primary.toLocaleString()}</div>
@@ -1179,7 +1196,7 @@ function WowPVE({ character, charCacheRef }) {
   `;
 }
 
-function WowPVP({ character, charCacheRef }) {
+function WowPVP({ character, charCacheRef, dataTick }) {
   if (!character) return null;
   const cacheKey = `${character.region}-${character.realm}-${character.name}`;
   const c = charCacheRef.current[cacheKey] || {};
@@ -1256,7 +1273,7 @@ function WowPVP({ character, charCacheRef }) {
           <div class="card-header"><div class="card-title"><div class="dot dot-purple"></div> Conquest Progress</div></div>
           <div class="card-body">
             ${!pvpSum ? html`<div class="empty">Conquest data not available.</div>` : html`
-              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 80px), 1fr));gap:8px;margin-bottom:8px;">
                 <div style="background:var(--wow-bg);border:1px solid rgba(34,197,94,0.2);border-radius:4px;padding:10px;text-align:center;">
                   <div style="font-family:var(--wow-mono);font-size:22px;font-weight:700;color:var(--wow-green);">${won}</div><div style="font-size:9px;color:var(--wow-muted);letter-spacing:2px;margin-top:2px;">WINS</div>
                 </div>
@@ -1322,7 +1339,7 @@ function WowAccount({ me, characters, onRefresh }) {
     onRefresh && onRefresh();
   };
   const doLinkBnet = () => {
-    const popup = window.open(`/auth/battlenet?name=${encodeURIComponent(me.name)}`, 'bnetauth', 'width=600,height=700');
+    const popup = window.open(`${API}/auth/battlenet?name=${encodeURIComponent(me.name)}`, 'bnetauth', 'width=600,height=700');
     const handler = (e) => {
       if (e.data === 'bnet_auth_success') {
         window.removeEventListener('message', handler);
@@ -1346,7 +1363,10 @@ function WowAccount({ me, characters, onRefresh }) {
               ? 'Blizzard API is active. Link your account below to enable personal character data, collections, and PVP ratings.'
               : 'Blizzard API credentials are not configured. Ask an admin to set up API access to enable full character data.'}
           </div>
-          <button class="wow-btn btn-accent" onclick=${doLinkBnet}>⚔️ Link Battle.net Account</button>
+          <button class="wow-btn btn-accent" onclick=${doLinkBnet} style="margin-bottom:12px;">⚔️ Link Battle.net Account</button>
+          <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">
+            Linking the wrong account? <a href="https://account.battle.net/login/logout" target="_blank" style="color:var(--wow-gold);text-decoration:none;">Log out of Battle.net</a> first.
+          </div>
         </div>
       </div>
 
@@ -1387,7 +1407,7 @@ function WowAccount({ me, characters, onRefresh }) {
   `;
 }
 
-function WowCharBar({ characters, activeChar, subTab, onSelect }) {
+function WowCharBar({ characters, activeChar, subTab, onSelect, charCacheRef, dataTick }) {
   if (!['world', 'pve', 'pvp'].includes(subTab)) return null;
 
   const mains = characters.map((c, i) => ({ ...c, globalIdx: i })).filter(c => c.is_main);
@@ -1404,7 +1424,7 @@ function WowCharBar({ characters, activeChar, subTab, onSelect }) {
     <div class="char-chip ${c.globalIdx === activeChar ? 'active' : ''} ${isMain ? 'is-main' : 'is-alt'}"
          onClick=${() => onSelect(c.globalIdx)}
          title="${c.display_name} · ${c.spec || ''} ${c.class || ''} · ${c.realm}">
-      <img class="chip-avatar" src=${charAvatar(c)} onError=${e => e.target.style.display='none'} />
+      <img class="chip-avatar" src=${charAvatar(c, charCacheRef)} onError=${e => e.target.style.display='none'} />
       <div class="chip-dot offline"></div>
       ${c.display_name}
       ${isMain ? html`<span style="font-size:9px;color:var(--wow-gold);margin-left:1px;">★</span>` : ''}
@@ -1486,37 +1506,24 @@ export function WowTab({ me }) {
         } catch(e) {}
       }
 
-      const fetchBnet = async (path, region, namespace) => {
-        if (!bnetToken) return null;
-        const url = `https://${region}.api.blizzard.com${path}?namespace=${namespace}-${region}&locale=en_US`;
-        const r = await fetch(url, { headers: { 'Authorization': `Bearer ${bnetToken}` } });
-        if (r.status === 404 || r.status === 403 || !r.ok) return null;
-        return r.json();
-      };
-
-      await Promise.all(characters.map(async (c, i) => {
+      await Promise.all(characters.map(async (c) => {
         const cacheKey = `${c.region}-${c.realm}-${c.name}`;
         try {
-          const safeRealm = c.realm.toLowerCase().replace(/\\s+/g, '-').replace(/'/g, '');
-          
-          if (!charCacheRef.current[cacheKey]) {
-            const res = await fetch(`${RIO}/characters/profile?region=${c.region}&realm=${safeRealm}&name=${encodeURIComponent(c.name)}&fields=${fields}`);
-            if (res.ok) { const data = await res.json(); if (!data.error) { charCacheRef.current[cacheKey] = data; didUpdate = true; } }
-          }
-
-          if (bnetToken && !charCacheRef.current[cacheKey]?._bnet) {
-            const base = `/profile/wow/character/${safeRealm}/${encodeURIComponent(c.name.toLowerCase())}`;
-            const [profile, media, equipment, pvpSum, b2v2, b3v3, bRbg, achievements, mounts, pets, professions, reputations, statistics] = await Promise.allSettled([
-              fetchBnet(`${base}`, c.region||'us', 'profile'), fetchBnet(`${base}/character-media`, c.region||'us', 'profile'), fetchBnet(`${base}/equipment`, c.region||'us', 'profile'), fetchBnet(`${base}/pvp-summary`, c.region||'us', 'profile'), fetchBnet(`${base}/pvp-bracket/2v2`, c.region||'us', 'profile'), fetchBnet(`${base}/pvp-bracket/3v3`, c.region||'us', 'profile'), fetchBnet(`${base}/pvp-bracket/rbg`, c.region||'us', 'profile'), fetchBnet(`${base}/achievements`, c.region||'us', 'profile'), fetchBnet(`${base}/collections/mounts`, c.region||'us', 'profile'), fetchBnet(`${base}/collections/pets`, c.region||'us', 'profile'), fetchBnet(`${base}/professions`, c.region||'us', 'profile'), fetchBnet(`${base}/reputations`, c.region||'us', 'profile'), fetchBnet(`${base}/statistics`, c.region||'us', 'profile')
-            ]);
-            if (!charCacheRef.current[cacheKey]) charCacheRef.current[cacheKey] = {};
-            charCacheRef.current[cacheKey]._bnet = { profile: profile.value, media: media.value, equipment: equipment.value, pvpSum: pvpSum.value, b2v2: b2v2.value, b3v3: b3v3.value, bRbg: bRbg.value, achievements: achievements.value, mounts: mounts.value, pets: pets.value, professions: professions.value, reputations: reputations.value, statistics: statistics.value };
-            
-            if (media.value?.assets) {
-              const avatar = media.value.assets.find(a => a.key === 'avatar');
-              if (avatar && avatar.value !== c.thumbnail) c.thumbnail = avatar.value; // Runtime UI update
+          if (!charCacheRef.current[cacheKey] || !charCacheRef.current[cacheKey]._bnet) {
+            const res = await req(`/api/wow/profile?region=${c.region||'us'}&realm=${encodeURIComponent(c.realm)}&name=${encodeURIComponent(c.name)}`);
+            if (res.ok) {
+              const data = await res.json();
+              charCacheRef.current[cacheKey] = data.raiderIo || {};
+              charCacheRef.current[cacheKey]._bnet = data;
+              
+              if (data.media?.assets) {
+                const avatar = data.media.assets.find(a => a.key === 'avatar');
+                if (avatar?.value) c.thumbnail = avatar.value;
+              } else if (data.raiderIo?.thumbnail_url) {
+                c.thumbnail = data.raiderIo.thumbnail_url;
+              }
+              didUpdate = true;
             }
-            didUpdate = true;
           }
         } catch(e) {}
       }));
@@ -1586,12 +1593,12 @@ export function WowTab({ me }) {
           </div>
         `)}
       </div>
-      <${WowCharBar} characters=${characters} activeChar=${activeChar} subTab=${subTab} onSelect=${(idx) => { setActiveChar(idx); if (idx === -1) setSubTab('overview'); else if (subTab === 'overview') setSubTab('world'); }} />
+      <${WowCharBar} characters=${characters} activeChar=${activeChar} subTab=${subTab} onSelect=${(idx) => { setActiveChar(idx); if (idx === -1) setSubTab('overview'); else if (subTab === 'overview') setSubTab('world'); }} charCacheRef=${charCacheRef} dataTick=${dataTick} />
       ${loading ? html`<div style="padding: 20px; color: var(--wow-muted);">Loading roster...</div>` : html`
-        ${subTab === 'overview' && html`<${WowOverview} characters=${characters} charCacheRef=${charCacheRef} affixCacheRef=${affixCacheRef} onSelectChar=${setActiveChar} onSubTab=${setSubTab} />`}
-        ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} />`}
-        ${subTab === 'pve'      && html`<${WowPVE}      character=${characters[activeChar]} charCacheRef=${charCacheRef} />`}
-        ${subTab === 'pvp'      && html`<${WowPVP}      character=${characters[activeChar]} charCacheRef=${charCacheRef} />`}
+        ${subTab === 'overview' && html`<${WowOverview} characters=${characters} charCacheRef=${charCacheRef} affixCacheRef=${affixCacheRef} onSelectChar=${setActiveChar} onSubTab=${setSubTab} dataTick=${dataTick} />`}
+        ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} dataTick=${dataTick} />`}
+        ${subTab === 'pve'      && html`<${WowPVE}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
+        ${subTab === 'pvp'      && html`<${WowPVP}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'account' && html`<${WowAccount} me=${me} characters=${characters} onRefresh=${loadCharacters} />`}
       `}
     </div>
