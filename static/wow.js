@@ -339,6 +339,17 @@ function injectWowAssets() {
   document.head.appendChild(style);
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function lastSeenStr(cacheEntry) {
+  const ts = cacheEntry?._bnet?.charStatus?.last_login_timestamp;
+  if (!ts) return null;
+  const mins = Math.floor((Date.now() - ts) / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
 // ── Sub-components ───────────────────────────────────────────────────────────
 function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, onSubTab, dataTick }) {
   const players = {};
@@ -367,10 +378,12 @@ function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, on
     const { c, i } = main;
     const cacheKey = `${c.region}-${c.realm}-${c.name}`;
     const rio = charCacheRef.current[cacheKey];
-    
+
     const ilvl = rio?.gear?.item_level_equipped ?? '—';
     const score = rio?.mythic_plus_scores_by_season?.[0]?.scores?.all;
-    
+    const lastSeen = lastSeenStr(charCacheRef.current[cacheKey]);
+    const title = charCacheRef.current[cacheKey]?._bnet?.profile?.active_title?.display_string;
+
     const raidSummary = (prog) => {
       if (!prog) return '—';
       const raids = Object.entries(prog);
@@ -383,6 +396,9 @@ function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, on
     };
     const raid = raidSummary(rio?.raid_progression);
     const barKey = getClassBarKey(c.class);
+    const achieveMeta = rio?.raid_achievement_meta || {};
+    const latestRaidKey = Object.keys(achieveMeta).pop();
+    const latestMeta = latestRaidKey ? achieveMeta[latestRaidKey] : null;
 
     return html`
       <div class="player-card">
@@ -392,9 +408,14 @@ function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, on
           <div class="player-main-info">
             <div class="player-name-row">
               <div class="player-name">${playerName}</div>
-              <div class="player-online-dot offline"></div>
+              <div class="player-online-dot offline" title=${lastSeen ? `Last online ${lastSeen}` : 'Last login unknown'}></div>
+              ${lastSeen ? html`<span style="font-size:10px;color:var(--wow-muted);margin-left:4px;">${lastSeen}</span>` : ''}
             </div>
-            <div class="char-name">${c.display_name} ${c.is_main ? html`<span style="font-size:12px;color:var(--wow-gold);">★</span>` : ''}</div>
+            <div class="char-name">
+              ${c.display_name} ${c.is_main ? html`<span style="font-size:12px;color:var(--wow-gold);">★</span>` : ''}
+              ${latestMeta?.has_ce ? html`<span title="Cutting Edge" style="font-size:9px;padding:1px 4px;border-radius:2px;background:linear-gradient(135deg,#a335ee,#ff8000);color:#fff;font-weight:700;margin-left:4px;">CE</span>` : (latestMeta?.has_aotc ? html`<span title="Ahead of the Curve" style="font-size:9px;padding:1px 4px;border-radius:2px;background:rgba(0,200,255,0.15);border:1px solid var(--wow-accent);color:var(--wow-accent);font-weight:700;margin-left:4px;">AotC</span>` : '')}
+            </div>
+            ${title ? html`<div style="font-size:10px;color:var(--wow-gold);opacity:0.8;margin-bottom:2px;font-style:italic;">${title.replace('{name}', c.display_name)}</div>` : ''}
             <div class="char-sub">${c.spec||''} ${c.class||''} · ${c.realm}</div>
             <div class="char-stats">
               <span class="cs cs-ilvl">${ilvl} ilvl</span>
@@ -567,6 +588,8 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
   const [colCompareIdx, setColCompareIdx] = useState(-1);
   const [loadingCol, setLoadingCol] = useState(false);
   const [colError, setColError] = useState(false);
+  const [expandedProf, setExpandedProf] = useState(null); // profession name string
+  const [profRecipeSearch, setProfRecipeSearch] = useState('');
 
   const character = characters[activeChar];
   if (!character) return null;
@@ -803,35 +826,50 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
       const primaries = bnet.professions.primaries || [];
       const secondaries = bnet.professions.secondaries || [];
       const allProfs = [...primaries, ...secondaries];
-      
+
       if (allProfs.length > 0) {
+        const iconMap = {
+          'Mining': '⛏️', 'Blacksmithing': '⚒️', 'Herbalism': '🌿', 'Alchemy': '🧪',
+          'Skinning': '🔪', 'Leatherworking': '🧵', 'Tailoring': '🪡', 'Engineering': '⚙️',
+          'Enchanting': '✨', 'Jewelcrafting': '💎', 'Inscription': '📜', 'Cooking': '🍲',
+          'Fishing': '🎣', 'Archaeology': '🏺'
+        };
+
+        const expandedProfData = expandedProf ? allProfs.find(p => p.profession?.name === expandedProf) : null;
+        const filteredRecipes = (() => {
+          if (!expandedProfData) return [];
+          const q = profRecipeSearch.trim().toLowerCase();
+          return (expandedProfData.tiers || []).map(t => ({
+            tierName: t.tier?.name || '',
+            recipes: (t.known_recipes || []).filter(r => !q || r.name.toLowerCase().includes(q))
+          })).filter(t => t.recipes.length > 0);
+        })();
+        const totalKnown = expandedProfData ? (expandedProfData.tiers || []).reduce((n, t) => n + (t.known_recipes?.length || 0), 0) : 0;
+
         return html`
           <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 160px), 1fr));gap:10px;">
-            ${allProfs.slice(0, 4).map(p => {
+            ${allProfs.map(p => {
               const profName = p.profession?.name || 'Unknown';
               let tier = p.tiers?.[0] || {};
               p.tiers?.forEach(t => { if ((t.skill_points||0) > (tier.skill_points||0)) tier = t; });
-              
+
               const skill = tier.skill_points || 0;
               const maxSkill = tier.max_skill_points || 100;
               const profPct = maxSkill > 0 ? Math.min(100, Math.round((skill/maxSkill)*100)) : 0;
-              
-              const iconMap = {
-                'Mining': '⛏️', 'Blacksmithing': '⚒️', 'Herbalism': '🌿', 'Alchemy': '🧪',
-                'Skinning': '🔪', 'Leatherworking': '🧵', 'Tailoring': '🪡', 'Engineering': '⚙️',
-                'Enchanting': '✨', 'Jewelcrafting': '💎', 'Inscription': '📜', 'Cooking': '🍲',
-                'Fishing': '🎣', 'Archaeology': '🏺'
-              };
+              const recipeCount = (p.tiers || []).reduce((n, t) => n + (t.known_recipes?.length || 0), 0);
+              const isExpanded = expandedProf === profName;
+
               let icon = '🛠️';
               for (let key in iconMap) if (profName.includes(key)) icon = iconMap[key];
-
               const cleanName = profName.replace(/^(Khaz Algar |Dragon Isles |Shadowlands |Kul Tiran |Zandalari )/i, '');
 
               return html`
-                <div style="background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;padding:10px;">
+                <div style="background:var(--wow-surface2);border:1px solid ${isExpanded ? 'var(--wow-gold)' : 'var(--wow-border)'};border-radius:4px;padding:10px;cursor:${recipeCount > 0 ? 'pointer' : 'default'};"
+                     onClick=${() => recipeCount > 0 && (isExpanded ? setExpandedProf(null) : (setExpandedProf(profName), setProfRecipeSearch('')))}>
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                     <div style="width:24px;height:24px;background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;">${icon}</div>
-                    <div style="font-family:var(--wow-display);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${profName}">${cleanName}</div>
+                    <div style="font-family:var(--wow-display);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;" title="${profName}">${cleanName}</div>
+                    ${recipeCount > 0 ? html`<span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${recipeCount}</span>` : ''}
                   </div>
                   <div style="display:flex;align-items:center;justify-content:space-between;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);margin-bottom:4px;">
                     <span>Skill</span><span style="color:${profPct===100?'var(--wow-green)':'var(--wow-gold)'};">${skill} / ${maxSkill}</span>
@@ -839,7 +877,39 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
                   <div style="height:6px;background:var(--wow-bg);border-radius:3px;overflow:hidden;"><div style="height:100%;background:${profPct===100?'var(--wow-green)':'var(--wow-gold)'};width:${profPct}%;"></div></div>
                 </div>`;
             })}
-          </div>`;
+          </div>
+          ${expandedProfData ? html`
+            <div style="margin-top:12px;background:var(--wow-surface2);border:1px solid var(--wow-gold);border-radius:4px;padding:12px;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+                <div style="font-family:var(--wow-display);font-size:13px;font-weight:600;flex:1;min-width:120px;">${expandedProf} <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);font-weight:400;">${totalKnown} recipes</span></div>
+                <input
+                  type="text"
+                  placeholder="Search recipes..."
+                  value=${profRecipeSearch}
+                  onInput=${e => setProfRecipeSearch(e.target.value)}
+                  onClick=${e => e.stopPropagation()}
+                  style="background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;padding:4px 8px;font-size:11px;color:var(--wow-text);flex:1;max-width:160px;min-width:80px;font-family:var(--wow-mono);"
+                />
+                <button onClick=${e => { e.stopPropagation(); setExpandedProf(null); }} style="background:none;border:none;color:var(--wow-muted);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>
+              </div>
+              ${filteredRecipes.length === 0
+                ? html`<div style="font-size:12px;color:var(--wow-muted);font-family:var(--wow-mono);">No recipes match.</div>`
+                : filteredRecipes.map(({ tierName, recipes }) => html`
+                  <div style="margin-bottom:10px;">
+                    <div style="font-size:10px;color:var(--wow-muted);letter-spacing:1px;font-family:var(--wow-mono);margin-bottom:6px;text-transform:uppercase;">${tierName}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                      ${recipes.map(r => html`
+                        <a href="https://www.wowhead.com/spell=${r.id}" target="_blank" rel="noopener"
+                           style="font-size:11px;font-family:var(--wow-mono);color:var(--wow-text);background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;padding:2px 6px;text-decoration:none;white-space:nowrap;"
+                           onMouseover=${e => e.target.style.borderColor='var(--wow-gold)'}
+                           onMouseout=${e => e.target.style.borderColor='var(--wow-border2)'}
+                           onClick=${e => e.stopPropagation()}>
+                          ${r.name}
+                        </a>`)}
+                    </div>
+                  </div>`)}
+            </div>
+          ` : ''}`;
       }
       return html`<div class="empty" style="padding:10px;">No professions learned.</div>`;
     } 
@@ -910,6 +980,44 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
     return html`<div class="empty">Reputation data unavailable.</div>`;
   };
 
+  const renderSpec = () => {
+    const specData = bnet.specializations;
+    const activeSpecName = specData?.active_specialization?.name;
+    const heroTalent = specData?.active_hero_talent?.hero_talent_tree?.name;
+    if (!activeSpecName) return html`<div class="empty">Specialization data unavailable.</div>`;
+    const specSpecs = specData.specializations || [];
+    const activeSpecObj = specSpecs.find(s => s.specialization?.id === specData.active_specialization?.id) || specSpecs[0];
+    const glyphs = activeSpecObj?.glyphs?.map(g => g.glyph?.name).filter(Boolean) || [];
+    const specColorMap = { 'Blood':'var(--wow-red)','Frost':'var(--wow-accent)','Unholy':'var(--wow-green)','Havoc':'var(--wow-danger)','Vengeance':'#a335ee','Balance':'var(--wow-gold)','Feral':'var(--wow-warn)','Guardian':'var(--wow-warn)','Restoration':'var(--wow-green)','Beast Mastery':'var(--wow-warn)','Marksmanship':'var(--wow-accent)','Survival':'var(--wow-green)','Arcane':'var(--wow-accent)','Fire':'var(--wow-danger)','Brewmaster':'var(--wow-warn)','Mistweaver':'var(--wow-green)','Windwalker':'var(--wow-red)','Retribution':'var(--wow-gold)','Shadow':'#a335ee','Assassination':'var(--wow-danger)','Outlaw':'var(--wow-warn)','Subtlety':'#a335ee','Elemental':'var(--wow-accent)','Enhancement':'var(--wow-warn)','Affliction':'#a335ee','Demonology':'var(--wow-danger)','Destruction':'var(--wow-danger)','Arms':'var(--wow-danger)','Fury':'var(--wow-danger)','Devastation':'var(--wow-danger)','Preservation':'var(--wow-green)','Augmentation':'var(--wow-warn)' };
+    const specColor = specColorMap[activeSpecName] || 'var(--wow-accent)';
+    return html`
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div style="width:42px;height:42px;background:var(--wow-surface2);border:2px solid ${specColor};border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 10px ${specColor}40;flex-shrink:0;">⚔</div>
+        <div>
+          <div style="font-family:var(--wow-display);font-size:16px;font-weight:700;color:${specColor};">${activeSpecName}</div>
+          <div style="font-size:10px;color:var(--wow-muted);letter-spacing:1px;text-transform:uppercase;">${character.class || ''}</div>
+        </div>
+      </div>
+      ${heroTalent ? html`
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:linear-gradient(135deg,rgba(163,82,238,0.1),rgba(0,200,255,0.05));border:1px solid rgba(163,82,238,0.3);border-radius:4px;margin-bottom:8px;">
+          <span style="font-size:14px;">✨</span>
+          <div>
+            <div style="font-size:9px;color:var(--wow-muted);letter-spacing:2px;text-transform:uppercase;">Hero Talent</div>
+            <div style="font-family:var(--wow-display);font-size:13px;font-weight:600;color:#a335ee;">${heroTalent}</div>
+          </div>
+        </div>
+      ` : ''}
+      ${glyphs.length ? html`
+        <div style="margin-top:6px;">
+          <div style="font-size:9px;color:var(--wow-muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Glyphs</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            ${glyphs.map(g => html`<span style="font-size:10px;padding:2px 6px;background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:3px;color:var(--wow-muted);">${g}</span>`)}
+          </div>
+        </div>
+      ` : ''}
+    `;
+  };
+
   const zones = getZoneProgress(lvl);
   const dungeons = getDungeonUnlocks(lvl);
 
@@ -953,6 +1061,11 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
       </div>
       
       <div class="col-side">
+        <div class="wow-card">
+          <div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Specialization</div></div>
+          <div class="card-body">${renderSpec()}</div>
+        </div>
+
         <div class="wow-card">
           <div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Khaz Algar Renown</div></div>
           <div class="card-body">${renderRenown()}</div>
@@ -1005,6 +1118,10 @@ function WowPVE({ character, charCacheRef, dataTick }) {
   const renderScore = () => {
     const season = c.mythic_plus_scores_by_season?.[0];
     const scores = season?.scores ?? {};
+    const prevScores = c.previous_mythic_plus_scores;
+    const prev = prevScores?.[0];
+    const prevAll = prev?.scores?.all ? Math.round(prev.scores.all) : null;
+    const prevLabel = prev?.season ? prev.season.replace(/^season-/, '').replace(/-/g,' ').toUpperCase() : '';
     return html`
       <div class="score-display">
         <div class="score-big">${scores.all ? Math.round(scores.all).toLocaleString() : '—'}</div>
@@ -1016,6 +1133,7 @@ function WowPVE({ character, charCacheRef, dataTick }) {
         <div class="role-box"><div class="role-val" style="color:var(--wow-accent)">${scores.tank ? Math.round(scores.tank) : '—'}</div><div class="role-lbl">TANK</div></div>
         <div class="role-box"><div class="role-val" style="color:var(--wow-green)">${scores.healer ? Math.round(scores.healer) : '—'}</div><div class="role-lbl">HEALER</div></div>
       </div>
+      ${prevAll ? html`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--wow-border);text-align:center;"><div style="font-family:var(--wow-mono);font-size:13px;color:var(--wow-muted);">${prevAll}</div><div style="font-size:9px;color:var(--wow-muted);letter-spacing:2px;margin-top:2px;">PREV: ${prevLabel}</div></div>` : ''}
     `;
   };
 
@@ -1107,6 +1225,7 @@ function WowPVE({ character, charCacheRef, dataTick }) {
 
   const renderRaid = () => {
     const prog = c.raid_progression ?? {};
+    const achieveMeta = c.raid_achievement_meta || {};
     const raids = Object.entries(prog).slice(-2).reverse();
     if (!raids.length) return html`<div class="empty">No raid data</div>`;
     return raids.map(([key, data]) => {
@@ -1115,10 +1234,16 @@ function WowPVE({ character, charCacheRef, dataTick }) {
       let diff = 'n', killed = data.normal_bosses_killed, label = `${killed}/${total} Normal`, cls = 'diff-n';
       if (data.mythic_bosses_killed > 0) { diff = 'm'; killed = data.mythic_bosses_killed; label = `${killed}/${total} Mythic`; cls = 'diff-m'; }
       else if (data.heroic_bosses_killed > 0) { diff = 'h'; killed = data.heroic_bosses_killed; label = `${killed}/${total} Heroic`; cls = 'diff-h'; }
-      
+      const meta = achieveMeta[key] || {};
+
       return html`
         <div style="margin-bottom:14px;">
-          <div class="raid-header"><div class="raid-name">${name}</div><span class="diff-pill ${cls}">${label}</span></div>
+          <div class="raid-header">
+            <div class="raid-name">${name}</div>
+            <span class="diff-pill ${cls}">${label}</span>
+            ${meta.has_aotc ? html`<span title="Ahead of the Curve" style="font-size:10px;padding:1px 5px;border-radius:3px;background:rgba(0,200,255,0.2);border:1px solid var(--wow-accent);color:var(--wow-accent);font-weight:700;margin-left:4px;">AotC</span>` : ''}
+            ${meta.has_ce ? html`<span title="Cutting Edge" style="font-size:10px;padding:1px 5px;border-radius:3px;background:linear-gradient(135deg,#a335ee,#ff8000);color:#fff;font-weight:700;margin-left:4px;">CE</span>` : ''}
+          </div>
           <div class="boss-grid">
             ${Array.from({length:total}).map((_,i) => html`
               <div class="boss-pip ${i < killed ? 'killed-'+diff : ''}">
@@ -1147,6 +1272,33 @@ function WowPVE({ character, charCacheRef, dataTick }) {
         `;
       })}
     </div>`;
+  };
+
+  const renderKeystone = () => {
+    const kpData = bnet.keystoneProfile;
+    const allRuns = kpData?.seasons?.[0]?.best_runs || kpData?.current_period?.best_runs || [];
+    if (!allRuns.length) return html`<div class="empty">No keystone data available.</div>`;
+    const dungeonBest = {};
+    allRuns.forEach(r => {
+      const dName = r.dungeon?.name || r.dungeon;
+      if (!dungeonBest[dName] || r.keystone_level > dungeonBest[dName].keystone_level) dungeonBest[dName] = r;
+    });
+    return html`
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        ${Object.values(dungeonBest).sort((a,b)=>b.keystone_level-a.keystone_level).map(r => {
+          const dName = r.dungeon?.name || r.dungeon || 'Unknown';
+          const lvl = r.keystone_level;
+          const timed = r.is_completed_within_time;
+          return html`
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;">
+              <div class="run-key ${keyClass(lvl)}" style="flex-shrink:0;min-width:34px;text-align:center;">+${lvl}</div>
+              <div style="flex:1;font-family:var(--wow-display);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dName}</div>
+              <div style="font-size:13px;color:${timed?'var(--wow-green)':'var(--wow-muted)'};">${timed?'✓':'✗'}</div>
+            </div>
+          `;
+        })}
+      </div>
+    `;
   };
 
   const renderWeekly = () => {
@@ -1186,6 +1338,7 @@ function WowPVE({ character, charCacheRef, dataTick }) {
         <div class="wow-card"><div class="card-header"><div class="card-title"><div class="dot"></div> Raid Progress</div></div><div class="card-body">${renderRaid()}</div></div>
         <div class="wow-card"><div class="card-header"><div class="card-title"><div class="dot"></div> Recent M+ Runs</div></div><div class="card-body" style="padding:10px;">${renderRuns(c.mythic_plus_recent_runs)}</div></div>
         <div class="wow-card"><div class="card-header"><div class="card-title"><div class="dot"></div> Season Best Runs</div></div><div class="card-body" style="padding:10px;">${renderRuns(c.mythic_plus_best_runs)}</div></div>
+        <div class="wow-card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Best Key Per Dungeon</div></div><div class="card-body" style="padding:10px;">${renderKeystone()}</div></div>
       </div>
       <div class="col-side">
         <div class="wow-card"><div class="card-header"><div class="card-title"><div class="dot"></div> Mythic+ Score</div></div><div class="card-body">${renderScore()}</div></div>
@@ -1420,16 +1573,20 @@ function WowCharBar({ characters, activeChar, subTab, onSelect, charCacheRef, da
     altGroups[p].push(c);
   });
 
-  const renderChip = (c, isMain) => html`
+  const renderChip = (c, isMain) => {
+    const chipKey = `${c.region}-${c.realm}-${c.name}`;
+    const chipLastSeen = lastSeenStr(charCacheRef.current[chipKey]);
+    return html`
     <div class="char-chip ${c.globalIdx === activeChar ? 'active' : ''} ${isMain ? 'is-main' : 'is-alt'}"
          onClick=${() => onSelect(c.globalIdx)}
-         title="${c.display_name} · ${c.spec || ''} ${c.class || ''} · ${c.realm}">
+         title="${c.display_name} · ${c.spec || ''} ${c.class || ''} · ${c.realm}${chipLastSeen ? ` · Last online ${chipLastSeen}` : ''}">
       <img class="chip-avatar" src=${charAvatar(c, charCacheRef)} onError=${e => e.target.style.display='none'} />
       <div class="chip-dot offline"></div>
       ${c.display_name}
       ${isMain ? html`<span style="font-size:9px;color:var(--wow-gold);margin-left:1px;">★</span>` : ''}
     </div>
   `;
+  };
 
   return html`
     <div class="char-bar">
