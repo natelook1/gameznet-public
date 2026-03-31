@@ -2479,12 +2479,17 @@
                 <div class="player-identity-row">
                 <div class="player-name-large" id="info-name" style="margin-bottom: 0;">—</div>
                   <button class="rename-btn" onclick="openRename()" title="Change name">✎</button>
-                <div style="margin-left: auto;">
+                <div style="margin-left: auto; text-align: right;">
                   <div id="steam-linked-view" class="session-steam-row" style="display:none;">
                     <span class="steam-self-stats" id="steam-stats-self"></span>
                     <button class="steam-unlink-btn" onclick="unlinkSteam()">UNLINK</button>
                   </div>
-                  <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM ACCOUNT</button>
+                  <div id="steam-unlinked-view">
+                    <button class="steam-link-btn" id="steam-link-btn" onclick="linkSteam()">⊕ LINK STEAM ACCOUNT</button>
+                    <div style="font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--text-dim); margin-top:6px;">
+                      Wrong account? <a href="https://store.steampowered.com/logout/" target="_blank" style="color:var(--accent);text-decoration:none;">Log out here</a> first.
+                    </div>
+                  </div>
                 </div>
               </div>
               </div>
@@ -2684,7 +2689,7 @@
       <div class="tab-panel" id="wow-panel-world"><div id="wowWorldMainView" class="layout"><div class="col-main"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Character Level</div></div><div class="card-body" id="wowLevelBlock"><div class="skel" style="height:120px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Collections</div></div><div class="card-body" id="wowCollectionsBlock"><div class="skel" style="height:100px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Character Achievements</div></div><div class="card-body" id="wowAchvBlock"><div class="skel" style="height:140px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Professions</div></div><div class="card-body" id="wowProfessionsBlock"><div class="skel" style="height:100px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Player Estate</div></div><div class="card-body" id="wowHousingBlock"><div class="skel" style="height:120px;border-radius:4px;"></div></div></div></div><div class="col-side"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Khaz Algar Renown</div></div><div class="card-body" id="wowRenownBlock"><div class="skel" style="height:200px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Campaign Progress</div></div><div class="card-body" id="wowZoneBlock"><div class="skel" style="height:140px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Dungeon Unlock Status</div></div><div class="card-body" id="wowDungeonBlock"><div class="skel" style="height:180px;border-radius:4px;"></div></div></div></div></div><div id="wowWorldCollectionView" class="layout-full" style="display:none;"></div></div>
       <div class="tab-panel" id="wow-panel-pve"><div class="layout"><div class="col-main"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Equipped Gear</div></div><div class="card-body" id="wowIlvlBlock"><div class="skel" style="height:200px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Raid Progress</div></div><div class="card-body" id="wowRaidBody"><div class="skel" style="height:160px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Recent M+ Runs</div></div><div class="scroll-body" id="wowRecentRuns"><div class="skel" style="height:44px;border-radius:4px;margin-bottom:5px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Season Best Runs</div></div><div class="scroll-body" id="wowBestRuns"><div class="skel" style="height:44px;border-radius:4px;margin-bottom:5px;"></div></div></div></div><div class="col-side"><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Mythic+ Score</div></div><div class="card-body"><div class="score-display" id="wowScoreDisplay"><div class="skel score-big" style="width:140px;height:52px;margin:0 auto 8px;"></div></div><div class="score-roles" id="wowScoreRoles"><div class="role-box skel" style="height:54px;"></div></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Combat Statistics</div></div><div class="card-body" id="wowStatsBlock"><div class="skel" style="height:160px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Great Vault Tracker</div></div><div class="card-body" id="wowWeeklyRuns"><div class="skel" style="height:40px;border-radius:4px;margin-bottom:5px;"></div></div></div></div></div></div>
       <div class="tab-panel" id="wow-panel-pvp"><div class="layout"><div class="col-main"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-purple"></div> PVP Rating</div></div><div class="card-body"><div class="pvp-stat-grid" id="wowPvpStats"><div class="pvp-stat-box"><div class="pvp-stat-val" id="wowPvpArena2v2">—</div><div class="pvp-stat-lbl">2v2 Rating</div></div><div class="pvp-stat-box"><div class="pvp-stat-val" id="wowPvpArena3v3">—</div><div class="pvp-stat-lbl">3v3 Rating</div></div><div class="pvp-stat-box"><div class="pvp-stat-val" id="wowPvpRbg">—</div><div class="pvp-stat-lbl">RBG Rating</div></div><div class="pvp-stat-box"><div class="pvp-stat-val" id="wowPvpHonor">—</div><div class="pvp-stat-lbl">Honor Level</div></div></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-purple"></div> Conquest Progress</div></div><div class="card-body" id="wowConquestBlock"><div class="skel" style="height:80px;border-radius:4px;"></div></div></div></div><div class="col-side"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-purple"></div> PVP Gear ilvl</div></div><div class="card-body" id="wowPvpGearBlock"><div class="pvp-note">Data not available.</div></div></div></div></div></div>
-      <div class="tab-panel" id="wow-panel-account"><div class="layout-full" style="max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:16px;"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Battle.net Account</div><span class="badge badge-dim" id="wowBnetLinkBadge">NOT LINKED</span></div><div class="card-body" id="wowBnetLinkBody"><div style="text-align:center;padding:20px 0;"><div style="font-size:36px;margin-bottom:12px;">🔗</div><div style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--text-muted);margin-bottom:16px;">Link your Battle.net account to auto-discover your characters</div><button class="wow-btn btn-accent" style="font-size:14px;padding:10px 24px;" onclick="wowLinkBnet()">⚔️ Link Battle.net Account</button></div></div></div><div class="card" id="wowMyRosterCard"><div class="card-header"><div class="card-title"><div class="dot"></div> My Roster</div></div><div class="card-body scroll-body" id="wowMyRosterList" style="padding:0 14px;"></div></div><div class="card" id="wowMyCharsCard" style="display:none;"><div class="card-header"><div class="card-title"><div class="dot"></div> Battle.net Characters</div><div style="display:flex;align-items:center;gap:10px;"><div class="picker-filter active" data-filter="active" onclick="setPickerFilter('active')">Max Level</div><div class="picker-filter" data-filter="all" onclick="setPickerFilter('all')">All</div></div></div><div class="card-body scroll-body" id="wowMyCharsList" style="max-height:400px;padding:0 14px;"></div><div class="card-body" style="border-top:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;"><div style="font-size:11px;color:var(--text-muted);"><span id="wowPickerCount" style="font-family:var(--mono);color:var(--text);font-weight:700;margin-right:8px;">0 / 5 selected</span>(1 Main, up to 4 Alts)</div><button class="wow-btn btn-accent" id="wowPickerSaveBtn" onclick="savePicker()" disabled>Save to Roster</button></div></div></div></div>
+      <div class="tab-panel" id="wow-panel-account"><div class="layout-full" style="max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:16px;"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Battle.net Account</div><span class="badge badge-dim" id="wowBnetLinkBadge">NOT LINKED</span></div><div class="card-body" id="wowBnetLinkBody"><div style="text-align:center;padding:20px 0;"><div style="font-size:36px;margin-bottom:12px;">🔗</div><div style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--text-muted);margin-bottom:16px;">Link your Battle.net account to auto-discover your characters</div><button class="wow-btn btn-accent" style="font-size:14px;padding:10px 24px;margin-bottom:12px;" onclick="wowLinkBnet()">⚔️ Link Battle.net Account</button><div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">Linking the wrong account? <a href="https://account.battle.net/login/logout" target="_blank" style="color:var(--wow-gold);text-decoration:none;">Log out of Battle.net</a> first.</div></div></div></div><div class="card" id="wowMyRosterCard"><div class="card-header"><div class="card-title"><div class="dot"></div> My Roster</div></div><div class="card-body scroll-body" id="wowMyRosterList" style="padding:0 14px;"></div></div><div class="card" id="wowMyCharsCard" style="display:none;"><div class="card-header"><div class="card-title"><div class="dot"></div> Battle.net Characters</div><div style="display:flex;align-items:center;gap:10px;"><div class="picker-filter active" data-filter="active" onclick="setPickerFilter('active')">Max Level</div><div class="picker-filter" data-filter="all" onclick="setPickerFilter('all')">All</div></div></div><div class="card-body scroll-body" id="wowMyCharsList" style="max-height:400px;padding:0 14px;"></div><div class="card-body" style="border-top:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;"><div style="font-size:11px;color:var(--text-muted);"><span id="wowPickerCount" style="font-family:var(--mono);color:var(--text);font-weight:700;margin-right:8px;">0 / 5 selected</span>(1 Main, up to 4 Alts)</div><button class="wow-btn btn-accent" id="wowPickerSaveBtn" onclick="savePicker()" disabled>Save to Roster</button></div></div></div></div>
     </div>
 
     <!-- ── SETUP (shown when not provisioned) ── -->
@@ -5075,14 +5080,14 @@
 
   // ── Steam Integration ──────────────────────────────────────────────────────
   function updateSteamUI() {
-    const linked  = document.getElementById('steam-linked-view');
-    const btn     = document.getElementById('steam-link-btn');
-    const avatar  = document.getElementById('steam-avatar-self');
+    const linked   = document.getElementById('steam-linked-view');
+    const unlinked = document.getElementById('steam-unlinked-view');
+    const avatar   = document.getElementById('steam-avatar-self');
     const avatarPh = document.getElementById('session-avatar-ph');
-    if (!linked || !btn) return;
+    if (!linked || !unlinked) return;
     if (state.steam_id) {
       linked.style.display   = 'flex';
-      btn.style.display      = 'none';
+      unlinked.style.display = 'none';
       avatar.src             = state.steam_avatar || '';
       avatar.style.display   = 'block';
       if (avatarPh) avatarPh.style.display = 'none';
@@ -5091,7 +5096,7 @@
       document.getElementById('steam-stats-self').textContent = [lvl, cnt].filter(Boolean).join(' · ');
     } else {
       linked.style.display   = 'none';
-      btn.style.display      = '';
+      unlinked.style.display = 'block';
       avatar.style.display   = 'none';
       if (avatarPh) {
         avatarPh.style.display = 'flex';
@@ -6470,7 +6475,10 @@
             <div style="text-align:center;padding:20px 0;">
               <div style="font-size:36px;margin-bottom:12px;">🔗</div>
               <div style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--text-muted);margin-bottom:16px;">Link your Battle.net account to auto-discover your characters</div>
-              <button class="wow-btn btn-accent" style="font-size:14px;padding:10px 24px;" onclick="wowLinkBnet()">⚔️ Link Battle.net Account</button>
+              <button class="wow-btn btn-accent" style="font-size:14px;padding:10px 24px;margin-bottom:12px;" onclick="wowLinkBnet()">⚔️ Link Battle.net Account</button>
+              <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">
+                Linking the wrong account? <a href="https://account.battle.net/login/logout" target="_blank" style="color:var(--wow-gold);text-decoration:none;">Log out of Battle.net</a> first.
+              </div>
             </div>`;
         }
         if (myCard) myCard.style.display = 'none';
