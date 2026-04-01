@@ -78,7 +78,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.1.20"
+VERSION = "1.1.21"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -92,7 +92,7 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
-RUSTDESK_VERSION = "1.1.20"
+RUSTDESK_VERSION = "1.1.21"
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -1354,16 +1354,14 @@ def api_update():
                 ctypes.windll.kernel32.CloseHandle(_instance_mutex)
             except Exception:
                 pass
-            log.info("Launching installer via PowerShell then exiting to release file locks")
-            # Exit FIRST so file locks are released, then installer runs.
-            # Inno Setup's [Run] section launches the new exe and opens a fresh browser tab.
-            # PowerShell -WindowStyle Hidden suppresses any visible console window.
-            subprocess.Popen(
-                ["powershell", "-NonInteractive", "-WindowStyle", "Hidden", "-Command",
-                 f"Start-Sleep -Seconds 3; "
-                 f"Start-Process -FilePath '{tmp}' -ArgumentList '/VERYSILENT','/NORESTART' -Wait"],
-                creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
-            )
+            log.info("Running installer — Inno Setup CurStepChanged will taskkill us to release file locks")
+            # Block on the installer. Inno Setup's CurStepChanged runs:
+            #   taskkill /F /IM GamezNET.exe
+            # which kills this process mid-wait, releasing all DLL locks.
+            # The installer continues as an independent process, installs files,
+            # then its [Run] section (no postinstall flag) launches the new exe.
+            subprocess.run([tmp, "/VERYSILENT", "/NORESTART"],
+                           creationflags=subprocess.CREATE_NO_WINDOW)
             os._exit(0)
 
         threading.Thread(target=_install_and_relaunch, daemon=True).start()
