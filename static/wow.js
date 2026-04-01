@@ -633,13 +633,13 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
     if (loadingCol) return html`
       <div class="layout-full" style="display:flex;align-items:center;justify-content:center;height:300px;flex-direction:column;gap:14px;">
         <div class="skel" style="width:40px;height:40px;border-radius:50%;"></div>
-        <div style="font-family:var(--wow-mono);font-size:12px;color:var(--wow-muted);letter-spacing:2px;">FETCHING MASTER BLIZZARD DATABASE...</div>
+        <div style="font-family:var(--wow-mono);font-size:12px;color:var(--wow-muted);letter-spacing:2px;">LOADING COLLECTIONS...</div>
       </div>
     `;
 
     if (colError) return html`
       <div class="layout-full">
-        <div class="empty" style="margin-top:100px;">Failed to load master database. Check your API key.</div>
+        <div class="empty" style="margin-top:100px;">Failed to load collection data.</div>
         <div style="text-align:center;"><button class="btn btn-ghost" onClick=${() => setColView(null)}>← Back to World</button></div>
       </div>
     `;
@@ -917,7 +917,6 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
   };
 
   const renderHousing = () => html`
-    <div class="info-box purple" style="margin-bottom:8px;">Player Estate data will be fully supported once the Blizzard Midnight API endpoints go live.</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 160px), 1fr));gap:10px;">
       <div style="background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;padding:10px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -1461,12 +1460,7 @@ function WowPVP({ character, charCacheRef, dataTick }) {
 }
 
 function WowAccount({ me, characters, onRefresh }) {
-  const [bnetStatus, setBnetStatus] = useState({ configured: false });
   const [busy, setBusy] = useState(null);
-
-  useEffect(() => {
-    req('/api/wow/bnet-status').then(r => r.ok ? r.json() : null).then(d => { if (d) setBnetStatus(d); });
-  }, []);
 
   const myChars = characters.filter(c => c.player_name === me.name);
   const activeAltCount = myChars.filter(c => !c.is_main && c.alt_slot).length;
@@ -1508,14 +1502,8 @@ function WowAccount({ me, characters, onRefresh }) {
       <div class="wow-card" style="max-width: 700px; margin: 0 auto 16px;">
         <div class="card-header">
           <div class="card-title"><div class="dot dot-gold"></div>Battle.net Account</div>
-          <span class="wow-badge ${bnetStatus.configured ? 'badge-free' : 'badge-dim'}">${bnetStatus.configured ? 'API ACTIVE' : 'NOT CONFIGURED'}</span>
         </div>
         <div class="card-body">
-          <div class="info-box" style="margin-bottom:12px;">
-            ${bnetStatus.configured
-              ? 'Blizzard API is active. Link your account below to enable personal character data, collections, and PVP ratings.'
-              : 'Blizzard API credentials are not configured. Ask an admin to set up API access to enable full character data.'}
-          </div>
           <button class="wow-btn btn-accent" onclick=${doLinkBnet} style="margin-bottom:12px;">⚔️ Link Battle.net Account</button>
           <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">
             Linking the wrong account? <a href="https://account.battle.net/login/logout" target="_blank" style="color:var(--wow-gold);text-decoration:none;">Log out of Battle.net</a> first.
@@ -1603,10 +1591,6 @@ function WowCharBar({ characters, activeChar, subTab, onSelect, charCacheRef, da
   `;
 }
 
-function WowPickerModal({ available, selections, setSelections, mainChar, setMainChar, filter, setFilter, onSave, onClose }) {
-  return html`<div>Picker Modal coming soon...</div>`;
-}
-
 // ── Root tab component ───────────────────────────────────────────────────────
 export function WowTab({ me }) {
   const [characters, setCharacters] = useState([]);
@@ -1648,7 +1632,7 @@ export function WowTab({ me }) {
       let didUpdate = false;
       const fields = 'gear,guild,mythic_plus_scores_by_season:current,mythic_plus_recent_runs,mythic_plus_best_runs,mythic_plus_weekly_highest_level_runs,raid_progression';
       
-      // Attempt to load Blizzard access token for the 13x background calls
+      // Load Blizzard access token for background character data fetching
       let bnetToken = bnetTokenRef.current;
       if (!bnetToken) {
         try {
