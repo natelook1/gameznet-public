@@ -126,6 +126,21 @@ The **YouTube** tab lets you browse and watch gaming videos without leaving the 
 
 ---
 
+## ⚔️ World of Warcraft
+
+The **WoW** tab is a full guild roster and character tracker — no addons or third-party sites required.
+
+- **Guild roster** — browse all characters added to the network, with class icons, realm, and region
+- **Character profiles** — click any character to see their Raider.io score, progression, and recent activity
+- **Collections** — view characters organised by player
+- **WoW Token price** — live gold token price shown in the tab header
+- **Link your Battle.net account** — sign in with Battle.net to automatically import your own characters. Your characters stay synced and are visible to other players on the network
+- **Main / Alt designation** — mark characters as mains or alts; alts are nested under the main in the roster
+
+**Setup (admin):** Configure Battle.net API credentials in the Admin Panel → Integrations tab. Players can then link their own accounts from the WoW tab.
+
+---
+
 ## 💬 Player Status
 
 Set a custom status visible to everyone on the network using the controls in the **bottom footer**. Use the preset buttons (**AFK**, **BRB**, **Gaming**) or type your own message and click **SET**. Your status appears next to your name in the online player list. Your status is saved locally and restored automatically after an app update or restart.
@@ -243,7 +258,7 @@ Message the server admin. Running the install command again solves 99% of issues
 
 | Component | Role |
 |---|---|
-| Node.js/Express backend | Token management, API, install script delivery, YouTube/Discord/Steam proxy |
+| Node.js/Express backend | Token management, API, install script delivery, YouTube/Discord/Steam/WoW proxy |
 | SQLite | Persistent storage for tokens, settings, players, sessions |
 | Docker Swarm | Backend deployment and orchestration |
 | Traefik | Reverse proxy routing all `*.looknet.ca` traffic |
@@ -256,6 +271,8 @@ Message the server admin. Running the install command again solves 99% of issues
 | YouTube OAuth2 | Sign in with Google for personalised feed |
 | Discord Bot API v10 + Gateway WS | Channel/message/member/presence/voice — real-time via WebSocket; alert and support notifications |
 | Steam Web API | Steam OpenID auth, player profile linking, avatar, level, game library |
+| Blizzard Battle.net OAuth2 | Character import and account linking for WoW tab |
+| Raider.io API | WoW character progression scores and raid history |
 
 ### Requirements
 
@@ -309,9 +326,9 @@ python build.py
 # Output: dist/GamezNET-Setup.exe
 ```
 
-`build.py` handles everything: generates the icon, downloads the WireGuard installer if needed, runs PyInstaller via `gameznet.spec`, and compiles the installer via `gameznet.iss`.
+`build.py` handles everything: generates the icon, downloads the WireGuard installer if needed, runs PyInstaller via `gameznet.spec` (onedir mode — DLLs alongside exe, no temp extraction), and compiles the installer via `gameznet.iss`.
 
-Requires: `pip install pyinstaller pillow flask psutil pystray certifi` and [Inno Setup 6](https://jrsoftware.org/isdl.php).
+Requires: `pip install pyinstaller pillow flask psutil pystray certifi web-push` and [Inno Setup 6](https://jrsoftware.org/isdl.php).
 
 ### Deploying Updates
 
@@ -322,9 +339,9 @@ deploy-gameznet
 ```
 Pulls latest code on gamez-vm, rebuilds the Docker image with `--no-cache`, and rolls out the stack.
 
-**Client (GamezNET.exe):**
+**Client (GamezNET-Setup.exe):**
 
-Push to `main` — GitHub Actions builds the exe on a Windows runner and publishes it to the public repo's GitHub Releases automatically. Players receive the update the next time they click the update badge in the app.
+Run `.\release.ps1 -Bump patch` on the Windows dev machine. This builds the exe via PyInstaller + Inno Setup, commits it, and publishes it to the public repo's GitHub Releases automatically. Players receive the update the next time they click the update badge in the app.
 
 ### Environment Variables
 
@@ -365,11 +382,22 @@ All variables are loaded from `/etc/gameznet/.env` at deploy time. Credentials a
 | `/api/youtube/feed` | GET | Personalised feed for authenticated user |
 | `/api/discord/presence` | GET | Discord guild member list with live presence and online counts |
 | `/api/discord/voice` | GET | Discord voice channel activity |
-| `/api/discord/channels` | GET | Full channel tree (categories, text, voice) with member presence (30s cache) |
+| `/api/discord/channels` | GET | Full channel tree (categories, text, voice) with member presence and voice state (30s cache) |
 | `/api/discord/messages` | GET | Last 50 messages for a channel (10s per-channel cache) |
 | `/api/discord/pins` | GET | Pinned messages for a channel |
 | `/api/discord/send` | POST | Send a message via webhook (player name + Steam avatar) |
 | `/api/steam/game` | GET | Steam player game detection (30s cache) |
+| `/api/steam/news` | GET | Steam news feed for a game |
+| `/api/steam/friends` | GET | Player's Steam friends list |
+| `/api/steam/recent` | GET | Recently played games |
+| `/api/wow/characters` | GET | Player's WoW characters |
+| `/api/wow/characters/sync` | POST | Sync character data from Battle.net |
+| `/api/wow/profile` | GET | Detailed character profile with Raider.io data |
+| `/api/wow/account/status` | GET | Battle.net account link status |
+| `/api/wow/account/unlink` | POST | Remove Battle.net link |
+| `/api/wow/bnet/characters` | GET | Characters from linked Battle.net account |
+| `/api/wow/token-price` | GET | Current WoW gold token price |
+| `/auth/battlenet` | GET | Start Battle.net OAuth flow |
 | `/auth/youtube` | GET | Start YouTube OAuth flow |
 | `/auth/youtube/callback` | GET | OAuth callback handler |
 | `/api/redeem` | POST | Redeem an invite token |
