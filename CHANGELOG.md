@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.1.16 — 2026-04-01
+
+### Added
+- `/api/session/set` and `/api/session/clear` — admin endpoints to create and clear the scheduled session; already wired in the PC UI session scheduler
+- `/api/discord/presence` — lightweight member list with online status and activity, purpose-built for the mobile app
+- `/api/discord/voice` — voice channel occupancy endpoint for mobile app
+
+### Fixed
+- Removed duplicate `/api/youtube/search` route definition (second copy was dead code, never reached by Express)
+
+---
+
+## v1.1.15 — 2026-04-01
+
+### Changed
+- **Onedir installer build** — switched from PyInstaller one-file to one-dir mode. DLLs now live alongside the exe in `%LOCALAPPDATA%\GamezNET\` — no runtime extraction to `%TEMP%`, eliminating Windows Defender false positives on `python313.dll`
+- **Installer delivery via GitHub Releases** — `/install` PowerShell script now downloads `GamezNET-Setup.exe` directly from GitHub Releases instead of the old Python-based approach. No Python, pip, or `.bat` files involved
+- **WoW tab cleanup** — removed development-only source status indicators (API ACTIVE / NOT CONFIGURED badges, Blizzard API info box) from the WoW account section
+
+### Fixed
+- `web-push` added as explicit backend dependency (was required by server.js but missing from package.json)
+- Release pipeline no longer commits build artifacts (`dist/` and `build/` properly gitignored)
+- Hardcoded GitHub token removed from `publish.sh` — reads from `/etc/gameznet/gh_token` on the code server
+
+---
+
 ## v1.1.2 — 2026-03-25
 
 ### Fixed
