@@ -78,7 +78,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.1.16"
+VERSION = "1.1.18"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -92,7 +92,7 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
-RUSTDESK_VERSION = "1.1.16"
+RUSTDESK_VERSION = "1.1.18"
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -1354,17 +1354,17 @@ def api_update():
                 ctypes.windll.kernel32.CloseHandle(_instance_mutex)
             except Exception:
                 pass
-            log.info("Running installer silently")
-            subprocess.run([tmp, "/VERYSILENT", "/NORESTART"],
-                           creationflags=subprocess.CREATE_NO_WINDOW)
-            log.info("Installer finished; scheduling new exe launch after exit")
-            if os.path.exists(exe_path):
-                # Use a detached cmd process with a short delay so the new exe
-                # starts only after this process (and its _MEI* DLL locks) are gone
-                subprocess.Popen(
-                    ["cmd", "/c", f"ping 127.0.0.1 -n 3 >nul 2>&1 && start \"\" \"{exe_path}\""],
-                    creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
-                )
+            log.info("Launching installer detached then exiting to release file locks")
+            # Exit FIRST so DLL locks are released, then installer runs, then new exe launches.
+            # ping delay gives this process time to fully exit before installer starts.
+            subprocess.Popen(
+                ["cmd", "/c",
+                 f"ping 127.0.0.1 -n 4 >nul 2>&1"
+                 f" && \"{tmp}\" /VERYSILENT /NORESTART"
+                 f" && ping 127.0.0.1 -n 2 >nul 2>&1"
+                 f" && start \"\" \"{exe_path}\""],
+                creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
+            )
             os._exit(0)
 
         threading.Thread(target=_install_and_relaunch, daemon=True).start()
