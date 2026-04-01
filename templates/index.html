@@ -3283,28 +3283,8 @@
 
   function _showUpdatingOverlay() {
     state.updating = true;
-    document.body.innerHTML = `
-      <div style="height:100vh;display:flex;flex-direction:column;align-items:center;
-                  justify-content:center;gap:16px;background:#07090f;
-                  font-family:'Rajdhani',sans-serif;text-align:center;">
-        <img src="/static/gameznet.png" style="width:56px;opacity:.9;">
-        <div style="font-size:1.6rem;font-weight:700;color:#00c8ff;letter-spacing:.08em;">
-          UPDATING GAMEZNET
-        </div>
-        <div style="color:#6888a8;font-size:1rem;" id="_upd_status">
-          Installing — please wait...
-        </div>
-      </div>`;
-    // Poll until the new server is up, then reload in place
-    const poll = setInterval(async () => {
-      try {
-        const r = await fetch('/api/status');
-        if (r.ok) {
-          clearInterval(poll);
-          window.location.reload();
-        }
-      } catch (e) { /* server still restarting — keep waiting */ }
-    }, 2000);
+    // Close this tab — the installer will open a fresh GamezNET window when done
+    window.close();
   }
 
   // ── Reset ──────────────────────────────────────────────────────────────────
