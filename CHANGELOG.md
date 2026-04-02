@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.2.0 — 2026-04-01
+
+### Milestone — Stable Release & Polished Delivery Pipeline
+
+This release marks the first fully stable, end-to-end release of GamezNET as a compiled Windows application. The update mechanism, bootstrap installer, and build pipeline are all working reliably. No new features — just everything buttoned up.
+
+### Fixed
+- **In-app update flow overhauled** — clicking the update badge closes the current tab, the installer runs silently in the background, and GamezNET reopens automatically on the new version. No stuck screens, no manual relaunch.
+- **New version auto-launches after silent update** — a flag in the installer was preventing auto-launch after `/VERYSILENT` runs; removed.
+- **Committed installer always matches version** — exe is now built *before* the git commit during a version bump, so the binary in the repo matches the version it was tagged under.
+- **Bootstrap installer UX** (`irm … | iex`) — live progress bars during downloads, labelled step indicators, and a proper "Press Enter to close" prompt when done.
+- **Installer branding** — GamezNET logo shown in the wizard header on all installer pages.
+
+---
+
 ## v1.1.16 — 2026-04-01
 
 ### Added
@@ -26,6 +41,19 @@
 
 ---
 
+## v1.1.3 — 2026-03-25
+
+### Added
+- **Mobile Companion App** — a static Preact SPA served via Cloudflare Pages (`m.gameznet.looknet.ca`). Works on any device with a browser — no install required. Features: Who's Online, Game Server status, Network Chat, Discord channel browser, and Direct Messages
+- **Mobile token auth** — `X-Token` header validated against active tokens on the backend; mobile identity is enforced server-side on all write operations (chat send, DM send, Discord send) preventing impersonation
+- **`GET /api/mobile/whoami`** — validates a token and returns player identity for mobile first launch
+- **`mobile_enabled` flag** — per-token toggle to enable or disable mobile access without revoking the token; admin panel shows a 📱/📵 toggle per player
+
+### Fixed
+- Update SSL handling now tries the Windows certificate store first, falls back to certifi, then unverified — fixes update failures on machines with broken Python cert stores (e.g. fresh Python 3.12 installs)
+
+---
+
 ## v1.1.2 — 2026-03-25
 
 ### Fixed
@@ -45,25 +73,12 @@
 
 ---
 
-## v1.2.0 — 2026-03-25
-
-### Added
-- **Mobile Companion App** — a static Preact SPA served via Cloudflare Pages (`m.gameznet.looknet.ca`). Works on any device with a browser — no install required. Features: Who's Online, Game Server status, Network Chat, Discord channel browser, and Direct Messages
-- **Mobile token auth** — `X-Token` header validated against active tokens on the backend; mobile identity is enforced server-side on all write operations (chat send, DM send, Discord send) preventing impersonation
-- **`GET /api/mobile/whoami`** — validates a token and returns player identity for mobile first launch
-- **`mobile_enabled` flag** — per-token toggle to enable or disable mobile access without revoking the token; admin panel shows a 📱/📵 toggle per player
-
-### Fixed
-- Update SSL handling now tries the Windows certificate store first, falls back to certifi, then unverified — fixes update failures on machines with broken Python cert stores (e.g. fresh Python 3.12 installs)
-
----
-
 ## v1.1.0 — 2026-03-25
 
 ### Changed
 - **Compiled Windows installer** — GamezNET is now distributed as `GamezNET-Setup.exe`. No Python, Git, or pip required. Installs to `%LOCALAPPDATA%\GamezNET\` with a desktop shortcut and runs as a native Windows executable.
 - **WireGuard bundled** — included in the installer and installed silently if not already present.
-- **Silent in-place updates** — clicking the update badge downloads and applies the new version silently in the background. The app relaunches automatically with no user interaction required.
+- **Silent in-place updates** — clicking the update badge closes the current tab, runs the new installer silently in the background, and relaunches the app automatically. No user interaction required. *(Fully stabilised in v1.2.0.)*
 - **Existing bat users auto-migrate** — users on the old `.bat` setup are upgraded automatically on their next update click. Saved credentials carry over with no re-provisioning needed.
 
 ### Added
@@ -86,8 +101,9 @@
 - Fixed an issue where the Admin Panel showed duplicate configuration fields for YouTube API keys
 - Corrected syntax and rendering logic for Admin Panel server action buttons based on live server state
 
+---
+
 ## v1.0.1 — 2026-03-19
-*Consolidates experimental v1.14.3 – v1.15.1 updates into the first official stable release.*
 
 ### Added
 - **Per-player Ping Sparkline** — the Who's Online list now shows a live, rolling ping history graph (sparkline) for each connected player
@@ -104,6 +120,13 @@
 - RustDesk remote assistance: fixed portable launcher ID reading from stdout, improved ID log polling, and properly killed stale RustDesk processes before starting a host session
 - Remote progress modal visibility bug fixed (`display:''` overriding issues)
 - Satisfactory Steam join now uses `rungameid` instead of Source query to fix launch parameters
+
+---
+
+<details>
+<summary>Pre-revert history (archived)</summary>
+
+These entries predate a full version reset to v1.0.0. Version numbers were non-sequential during this period.
 
 ## v1.14.2 — 2026-03-16
 
@@ -190,3 +213,5 @@
 - Discord panel on Home tab with live member list, voice activity, online counts
 - Steam game detection — shows what game each player is currently playing
 - Admin panel overhaul: token management, player roster with client version tracking, WireGuard peer stats
+
+</details>

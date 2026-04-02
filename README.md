@@ -241,7 +241,7 @@ Find **GamezNET** in your Start Menu or `%LOCALAPPDATA%\GamezNET\` and launch it
 Wait 10 seconds after connecting and try again. If it keeps failing, let the admin know.
 
 **Update required / version badge flashing**
-Click the version badge in the top-right corner of the app — it will download the new installer and update silently in the background. The new version launches automatically when done.
+Click the version badge in the top-right corner of the app. The current tab closes, the installer runs silently in the background, and GamezNET reopens automatically on the new version — no interaction needed.
 
 ---
 
