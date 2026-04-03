@@ -1495,6 +1495,21 @@ function WowAccount({ me, characters, onRefresh }) {
       }
     };
     window.addEventListener('message', handler);
+
+      const poll = setInterval(async () => {
+        try {
+          const res = await req('/api/wow/account/status');
+          if (res.ok) {
+            const data = await res.json();
+            if (data.linked) {
+              clearInterval(poll);
+              if (popup) popup.close();
+              onRefresh && onRefresh();
+            }
+          }
+        } catch(e) {}
+      }, 3000);
+      setTimeout(() => clearInterval(poll), 5 * 60 * 1000);
   };
 
   return html`
