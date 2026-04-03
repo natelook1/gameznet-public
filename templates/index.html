@@ -3058,6 +3058,16 @@
       state.clientIp    = cfg.client_ip;
       state.token       = cfg.token;
 
+      if (state.provisioned && !state.token) {
+        try {
+          const tRes = await fetch('/api/mobile-token');
+          if (tRes.ok) {
+            const tData = await tRes.json();
+            if (tData.token) state.token = tData.token;
+          }
+        } catch {}
+      }
+
       if (state.provisioned) {
         showProvisioned();
         // Fetch steam profile from server (may have been linked/updated since last session)
@@ -6820,6 +6830,21 @@
         await wowLoadAll();
       }
     }, { once: false });
+
+    const poll = setInterval(async () => {
+      try {
+        const res = await wowReq('/api/wow/account/status');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.linked) {
+            clearInterval(poll);
+            if (popup) popup.close();
+            await wowLoadAll();
+          }
+        }
+      } catch(e) {}
+    }, 3000);
+    setTimeout(() => clearInterval(poll), 5 * 60 * 1000);
   };
 
   window.toggleWowFullscreen = function() {
