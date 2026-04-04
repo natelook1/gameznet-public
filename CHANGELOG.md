@@ -1,21 +1,5 @@
 # Changelog
 
-## v1.2.1 — 2026-04-04
-
-### Added
-- **Frontend Telemetry Bridging:** Implemented a new `/api/client-log` endpoint in the local Python client to allow the browser UI to write directly to the local `gameznet.log` file.
-- **Battle.net Auth Tracing:** Added comprehensive step-by-step trace logging to the Battle.net account linking flow to easily diagnose future popup or API connection issues.
-
-### Changed
-- **Telemetry Resilience:** Increased the internal `urlopen` timeouts for background telemetry loops (MOTD, Alerts, Session) from 5 to 10 seconds to better survive network congestion without triggering HA failovers.
-- **Log Truncation:** The API proxy now intelligently truncates massive HTML gateway error payloads (like Traefik 404s/502s) to 250 characters to prevent log spam.
-
-### Fixed
-- **OAuth Token Exchange:** Stripped invisible whitespace characters from Battle.net credentials during OAuth token exchange to prevent `401 Unauthorized` errors.
-- **Auto-Updater Assets:** Fixed an issue in `api_update` where image files (`.png`, `.svg`, etc.) were skipped during OTA source updates.
-
----
-
 ## v1.2.0 — 2026-04-01
 
 ### Milestone — Stable Release & Polished Delivery Pipeline
