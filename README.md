@@ -245,6 +245,14 @@ Click the version badge in the top-right corner of the app. The current tab clos
 
 ---
 
+### Client Logging & Telemetry
+GamezNET writes detailed diagnostic logs directly to your local user directory:
+`C:\Users\<YourUsername>\gameznet.log`
+
+As of **v1.2.1**, the frontend web UI now bridges its console telemetry directly into this local Python log file. If you or a friend encounter issues with Battle.net account linking, Steam authentication, or UI states, simply check this file for `[FRONTEND]` tags to pinpoint the exact point of failure.
+
+---
+
 ## 🤝 Need Help?
 
 Message the server admin. Running the install command again solves 99% of issues.

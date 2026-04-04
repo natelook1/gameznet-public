@@ -28,6 +28,62 @@ _handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s
 logging.basicConfig(level=logging.DEBUG, handlers=[_handler])
 log = logging.getLogger("gameznet")
 
+# ─── Client-Side High Availability Routing ──────────────────────────────────
+import socket
+import urllib.request
+import urllib.error
+import random
+
+_proxy_local = threading.local()
+_orig_getaddrinfo = socket.getaddrinfo
+_orig_urlopen = urllib.request.urlopen
+
+def _patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    # Only hijack DNS when the HA wrapper tells us it is safe to do so
+    if host == "gameznet.looknet.ca" and getattr(_proxy_local, "use_lan_dns", False):
+        lan_ip = random.choice(["192.168.30.67", "192.168.30.68", "192.168.30.69"])
+        return _orig_getaddrinfo(lan_ip, port, family, type, proto, flags)
+    return _orig_getaddrinfo(host, port, family, type, proto, flags)
+
+socket.getaddrinfo = _patched_getaddrinfo
+
+def _ha_urlopen(url, *args, **kwargs):
+    req_url = url if isinstance(url, str) else url.full_url
+    is_gameznet = req_url.startswith("https://gameznet.looknet.ca")
+    
+    # Bypass LAN routing if disconnected, already falling back, or hitting external APIs (YouTube/Steam)
+    if not globals().get("_connected") or getattr(_proxy_local, "fallback", False) or not is_gameznet:
+        return _orig_urlopen(url, *args, **kwargs)
+        
+    _proxy_local.use_lan_dns = True
+    orig_timeout = kwargs.get("timeout")
+    is_long_poll = any(x in req_url for x in ["chat/stream", "remote/pending", "remote/request"])
+    
+    # Shorten LAN timeout to 3s for fast failover (but leave long-polling alone)
+    if orig_timeout is not None and not is_long_poll:
+        kwargs["timeout"] = min(orig_timeout, 3)
+        
+    try:
+        return _orig_urlopen(url, *args, **kwargs)
+    except urllib.error.HTTPError as e:
+        # Traefik/Docker gateway errors mean the node is dead -> trigger fallback
+        if getattr(e, 'code', 0) not in (502, 503, 504):
+            raise e
+        log.debug("LAN request to %s returned HTTP %s. Falling back to public.", req_url, getattr(e, 'code', 'unknown'))
+    except Exception as e:
+        # Timeouts, connection refused -> trigger fallback
+        log.debug("LAN request to %s failed (%s). Falling back to public.", req_url, type(e).__name__)
+    finally:
+        _proxy_local.use_lan_dns = False
+
+    # --- PUBLIC FALLBACK ---
+    _proxy_local.fallback = True
+    if orig_timeout is not None: kwargs["timeout"] = orig_timeout
+    try: return _orig_urlopen(url, *args, **kwargs)
+    finally: _proxy_local.fallback = False
+
+urllib.request.urlopen = _ha_urlopen
+
 # ─── Game Detection ───────────────────────────────────────────────────────────
 
 GAME_PROCESSES = {
@@ -78,7 +134,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -92,7 +148,7 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
-RUSTDESK_VERSION = "1.2.0"
+RUSTDESK_VERSION = "1.2.1"
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -244,7 +300,7 @@ def update_telemetry():
         if motd_timer <= 0:
             try:
                 req = urllib.request.Request(f"{WORKER_URL}/api/motd", headers={'User-Agent': 'GamezNET'})
-                with urllib.request.urlopen(req, timeout=5) as resp:
+                with urllib.request.urlopen(req, timeout=10) as resp:
                     data = json.loads(resp.read().decode())
                     _telemetry["motd"] = data.get("message", "Connected to GamezNET")
             except Exception:
@@ -256,7 +312,7 @@ def update_telemetry():
         if alert_timer <= 0:
             try:
                 req = urllib.request.Request(f"{WORKER_URL}/api/alert", headers={'User-Agent': 'GamezNET'})
-                with urllib.request.urlopen(req, timeout=5) as resp:
+                with urllib.request.urlopen(req, timeout=10) as resp:
                     data = json.loads(resp.read().decode())
                     _telemetry["alert"] = data.get("alert", None)
             except Exception:
@@ -268,7 +324,7 @@ def update_telemetry():
         if session_timer <= 0:
             try:
                 req = urllib.request.Request(f"{WORKER_URL}/api/session", headers={'User-Agent': 'GamezNET'})
-                with urllib.request.urlopen(req, timeout=5) as resp:
+                with urllib.request.urlopen(req, timeout=10) as resp:
                     data = json.loads(resp.read().decode())
                     _telemetry["session"] = data.get("session", None)
             except Exception:
@@ -527,7 +583,7 @@ def api_disconnect():
                     headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
                     method="POST"
                 )
-                urllib.request.urlopen(req, timeout=5)
+                urllib.request.urlopen(req, timeout=10)
                 log.debug("Disconnect heartbeat sent")
         except Exception as hb_err:
             log.debug("Disconnect heartbeat failed: %s", hb_err)
@@ -758,6 +814,21 @@ def api_logs():
         return jsonify({"log": "".join(lines[-100:])})
     except Exception as e:
         return jsonify({"log": f"Error reading log: {e}"})
+
+@app.route("/api/client-log", methods=["POST"])
+def api_client_log():
+    """Allow frontend to write directly to the local gameznet.log for debugging."""
+    data = request.json or {}
+    msg = data.get("message", "")
+    level = data.get("level", "info")
+    if msg:
+        if level == "error":
+            log.error("[FRONTEND] %s", msg)
+        elif level == "warning":
+            log.warning("[FRONTEND] %s", msg)
+        else:
+            log.info("[FRONTEND] %s", msg)
+    return jsonify({"success": True})
 
 @app.route("/api/report", methods=["POST"])
 def api_report():
@@ -1295,7 +1366,8 @@ def proxy_remote_api(endpoint):
                 req.data = request.data
                 log.info(f"[RUSTDESK TRACKER] Outgoing payload: {request.get_data(as_text=True)}")
                 
-        with urllib.request.urlopen(req, timeout=5) as response:
+        timeout_val = 40 if endpoint in ["pending", "request"] else 15
+        with urllib.request.urlopen(req, timeout=timeout_val) as response:
             content_type = response.headers.get('Content-Type', 'application/json')
             body = response.read()
             # Log a small snippet of the response body to avoid spamming the log if it's huge
@@ -1383,8 +1455,6 @@ def api_update():
                     relative_path = member.replace("gameznet-public-main/", "", 1)
                     if not relative_path:
                         continue
-                    if relative_path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico')):
-                        continue
                     target_path = os.path.join(install_dir, relative_path)
                     if member.endswith('/'):
                         os.makedirs(target_path, exist_ok=True)
@@ -1420,7 +1490,7 @@ def api_alert():
     import urllib.request as _urllib_request
     try:
         req = _urllib_request.Request(f"{WORKER_URL}/api/alert", headers={'User-Agent': 'GamezNET'})
-        with _urllib_request.urlopen(req, timeout=5) as resp:
+        with _urllib_request.urlopen(req, timeout=10) as resp:
             return resp.read(), resp.status, {'Content-Type': 'application/json'}
     except Exception as e:
         log.debug("api_alert proxy failed: %s", e)
@@ -1438,11 +1508,13 @@ def api_proxy(subpath):
         body = request.get_data() or None
         ct = request.content_type or "application/json"
         req = _ur.Request(url, data=body, headers={"User-Agent": "GamezNET", "Content-Type": ct}, method=request.method)
-        with _ur.urlopen(req, timeout=10) as resp:
+        with _ur.urlopen(req, timeout=30) as resp:
             return resp.read(), resp.status, {"Content-Type": resp.headers.get("Content-Type", "application/json")}
     except _ue.HTTPError as e:
         body = e.read()
-        log.error("api proxy HTTP %s for %s: %s", e.code, subpath, body)
+        body_text = body.decode(errors='replace')
+        short_body = body_text if len(body_text) < 250 else body_text[:250] + "... [truncated HTML]"
+        log.error("api proxy HTTP %s for %s: %s", e.code, subpath, short_body)
         return body, e.code, {"Content-Type": e.headers.get("Content-Type", "application/json")}
     except Exception as e:
         log.error("api proxy failed for %s: %s", subpath, e)
@@ -1498,7 +1570,7 @@ def heartbeat_loop():
                     headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
                     method="POST"
                 )
-                urllib.request.urlopen(req, timeout=5)
+                urllib.request.urlopen(req, timeout=10)
             except Exception as e:
                 log.warning("Heartbeat failed: %s", e)
 
