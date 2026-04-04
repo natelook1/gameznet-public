@@ -2832,6 +2832,14 @@
     clearTimeout(el._t);
     el._t = setTimeout(() => el.className = '', 3500);
   }
+  
+  function logToLocal(msg, level = 'info') {
+    fetch('/api/client-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, level: level })
+    }).catch(() => {});
+  }
 
   // ── Session Timer ──────────────────────────────────────────────────────────
   function startSessionTimer() {
@@ -6681,9 +6689,11 @@
 
     if (wowAvailableChars.length === 0) {
       listEl.innerHTML = '<div class="empty">Loading characters from Battle.net...</div>';
+      logToLocal(`[BNET] Fetching characters for inline picker...`);
       try {
         const res = await wowReq('/api/wow/bnet/characters');
         if (!res.ok) {
+           logToLocal(`[BNET] Fetch characters failed. HTTP Status: ${res.status}`, 'error');
            if (res.status === 401) {
              listEl.innerHTML = '<div class="empty">Battle.net token expired or not linked. Please link your account again.</div>';
            } else {
@@ -6692,7 +6702,10 @@
            return;
         }
         wowAvailableChars = await res.json();
+        logToLocal(`[BNET] Fetched ${wowAvailableChars.length} characters successfully.`);
+        if (!Array.isArray(wowAvailableChars)) wowAvailableChars = [];
       } catch(e) {
+        logToLocal(`[BNET] Fetch characters exception: ${e.message}`, 'error');
         listEl.innerHTML = '<div class="empty">Failed to load characters.</div>';
         return;
       }
@@ -6814,37 +6827,55 @@
   };
 
   window.wowLinkBnet = async function() {
+    logToLocal(`[BNET] Starting Battle.net link process for player: ${state.name}`);
     // Force a heartbeat so the player row exists before OAuth callback attempts to update it
     try {
+      logToLocal(`[BNET] Sending pre-link heartbeat to ensure player row exists...`);
       await fetch('{{ worker_url }}/api/heartbeat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: state.name, vpn_ip: state.clientIp || '0.0.0.0', version: '1.0.0' })
       });
+      logToLocal(`[BNET] Pre-link heartbeat successful.`);
     } catch(e) {}
 
-    const popup = window.open('{{ worker_url }}/auth/battlenet?name=' + encodeURIComponent(state.name), 'bnetauth', 'width=600,height=700');
+    const popupUrl = '{{ worker_url }}/auth/battlenet?name=' + encodeURIComponent(state.name);
+    logToLocal(`[BNET] Opening OAuth popup: ${popupUrl}`);
+    const popup = window.open(popupUrl, 'bnetauth', 'width=600,height=700');
+    
     window.addEventListener('message', async function handler(e) {
       if (e.data === 'bnet_auth_success') {
+        logToLocal(`[BNET] Received 'bnet_auth_success' message from popup.`);
         window.removeEventListener('message', handler);
         if (popup) popup.close();
         await wowLoadAll();
+      } else if (e.data === 'bnet_auth_error') {
+        logToLocal(`[BNET] Received 'bnet_auth_error' message from popup.`, 'error');
       }
     }, { once: false });
 
+    logToLocal(`[BNET] Starting background polling for account link status...`);
     const poll = setInterval(async () => {
       try {
         const res = await wowReq('/api/wow/account/status');
         if (res.ok) {
           const data = await res.json();
           if (data.linked) {
+            logToLocal(`[BNET] Polling confirmed account is now linked!`);
             clearInterval(poll);
             if (popup) popup.close();
             await wowLoadAll();
           }
+        } else {
+          logToLocal(`[BNET] Polling returned HTTP ${res.status}`, 'warning');
         }
-      } catch(e) {}
+      } catch(e) {
+        logToLocal(`[BNET] Polling fetch failed: ${e.message}`, 'error');
+      }
     }, 3000);
-    setTimeout(() => clearInterval(poll), 5 * 60 * 1000);
+    setTimeout(() => {
+      clearInterval(poll);
+      logToLocal(`[BNET] Background polling timed out after 5 minutes.`, 'warning');
+    }, 5 * 60 * 1000);
   };
 
   window.toggleWowFullscreen = function() {
