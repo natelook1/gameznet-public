@@ -134,7 +134,7 @@ def detect_game_steam(steam_id):
 
 WORKER_URL = "https://gameznet.looknet.ca"
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -148,7 +148,7 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
-RUSTDESK_VERSION = "1.2.1"
+RUSTDESK_VERSION = "1.2.2"
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -1427,13 +1427,11 @@ def api_update():
             except Exception:
                 pass
             log.info("Running installer — Inno Setup CurStepChanged will taskkill us to release file locks")
-            # Block on the installer. Inno Setup's CurStepChanged runs:
-            #   taskkill /F /IM GamezNET.exe
-            # which kills this process mid-wait, releasing all DLL locks.
-            # The installer continues as an independent process, installs files,
-            # then its [Run] section (no postinstall flag) launches the new exe.
-            subprocess.run([tmp, "/VERYSILENT", "/NORESTART"],
-                           creationflags=subprocess.CREATE_NO_WINDOW)
+            # Launch the installer asynchronously and immediately exit.
+            # This cleanly releases all DLL file locks and the single-instance mutex
+            # so the installer can seamlessly overwrite files and launch the new tab.
+            subprocess.Popen([tmp, "/VERYSILENT", "/NORESTART"],
+                             creationflags=subprocess.CREATE_NO_WINDOW)
             os._exit(0)
 
         threading.Thread(target=_install_and_relaunch, daemon=True).start()
@@ -1475,8 +1473,8 @@ def api_update():
         except Exception:
             pass
         args = [sys.executable] + sys.argv
-        if "--no-browser" not in args:
-            args.append("--no-browser")
+        # Strip --no-browser so the relaunched dev instance opens a fresh tab
+        args = [a for a in args if a != "--no-browser"]
         subprocess.Popen(args, cwd=install_dir,
                          creationflags=subprocess.CREATE_NO_WINDOW)
         os._exit(0)
@@ -1863,7 +1861,7 @@ if __name__ == "__main__":
                 with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
                     with open(tmp, "wb") as f:
                         f.write(resp.read())
-                subprocess.run([tmp, "/VERYSILENT", "/NORESTART"],
+                subprocess.Popen([tmp, "/VERYSILENT", "/NORESTART"],
                                creationflags=subprocess.CREATE_NO_WINDOW)
                 os._exit(0)
             except Exception as e:
