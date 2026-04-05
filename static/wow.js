@@ -1855,7 +1855,7 @@ export function WowTab({ me }) {
   return html`
     <div class="wow-wrap scroll">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--wow-surface);border-bottom:1px solid var(--wow-border);">
-        <div style="font-family:var(--wow-display);font-size:16px;font-weight:700;color:var(--wow-accent);letter-spacing:2px;">GamezNET <span style="color:var(--wow-border2)">/</span> <span style="color:var(--wow-gold)">⚔️ WoW</span></div>
+        <div style="font-family:var(--wow-display);font-size:16px;font-weight:700;color:var(--wow-accent);letter-spacing:2px;">GamezNET <span style="color:var(--wow-border2)">/</span> <span style="color:var(--wow-gold);display:inline-flex;align-items:center;gap:6px;"><img src="/static/WoW_icon.svg" style="height:16px;" alt="WoW"/> WoW</span></div>
         <div style="display:flex;align-items:center;gap:12px;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">
           <div style="display:flex;align-items:center;gap:6px;">
             <div style="width:7px;height:7px;border-radius:50%;background:var(--wow-gold);box-shadow:0 0 6px var(--wow-gold);"></div>
