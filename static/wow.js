@@ -277,6 +277,11 @@ function injectWowAssets() {
     
     .wow-wrap .skel { background: linear-gradient(90deg, var(--wow-surface2) 25%, var(--wow-border) 50%, var(--wow-surface2) 75%); background-size: 200% 100%; animation: wow-shimmer 1.4s infinite; border-radius: 4px; }
     @keyframes wow-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    @keyframes ptr-spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+    .wow-ptr { display:flex; align-items:center; justify-content:center; overflow:hidden; transition:height 0.15s ease, opacity 0.15s ease; }
+    .wow-ptr-icon { font-size:18px; color:var(--wow-muted); transition:transform 0.15s; }
+    .wow-ptr-icon.ready { color:var(--wow-accent); }
+    .wow-ptr-icon.spinning { animation:ptr-spin 0.8s linear infinite; color:var(--wow-accent); }
     .wow-wrap .col-main { display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; }
     .wow-wrap .col-side { display: flex; flex-direction: column; gap: 14px; width: 340px; flex-shrink: 0; }
     .wow-wrap .wow-layout { display: flex; gap: 16px; padding: 16px 20px; max-width: 1400px; margin: 0 auto; }
@@ -564,7 +569,7 @@ function getZoneProgress(lvl) {
     { name: 'The War Within — Isle of Dorn',      min: 70, max: 72, done: lvl >= 72 },
     { name: 'The War Within — The Ringing Deeps', min: 72, max: 74, done: lvl >= 74 },
     { name: 'The War Within — Hallowfall',        min: 74, max: 76, done: lvl >= 76 },
-    { name: 'The War Within — Azj-Kahet',         min: 76, max: 90, done: lvl >= 90 },
+    { name: 'The War Within — Azj-Kahet',         min: 76, max: 80, done: lvl >= 80 },
   ];
 }
 
@@ -575,10 +580,12 @@ function getDungeonUnlocks(lvl) {
     { name: 'Normal Dungeons',  icon: '🗡️', status: status(10),  label: label(10)  },
     { name: 'Heroic Dungeons',  icon: '⚔️',  status: status(70),  label: label(70)  },
     { name: 'Mythic Dungeons',  icon: '💀',  status: status(70),  label: label(70)  },
+    { name: 'Delves',           icon: '⛏️',  status: status(70),  label: label(70)  },
     { name: 'Mythic+ (Season)', icon: '🔑',  status: status(90),  label: label(90)  },
     { name: 'LFR Raid',         icon: '🏰',  status: status(90),  label: label(90)  },
     { name: 'Normal Raid',      icon: '🏰',  status: status(90),  label: label(90)  },
     { name: 'Heroic Raid',      icon: '🏰',  status: status(90),  label: label(90)  },
+    { name: 'Mythic Raid',      icon: '👑',  status: status(90),  label: label(90)  },
   ];
 }
 
@@ -917,28 +924,11 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
   };
 
   const renderHousing = () => html`
-    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 160px), 1fr));gap:10px;">
-      <div style="background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;padding:10px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <div style="width:24px;height:24px;background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;">🏕️</div>
-          <div style="font-family:var(--wow-display);font-size:14px;font-weight:600;">Estate Level</div>
-        </div>
-        <div style="font-family:var(--wow-mono);font-size:20px;font-weight:700;color:var(--wow-green);margin-bottom:2px;">Tier 2</div>
-        <div style="font-size:10px;color:var(--wow-muted);">Cozy Cabin</div>
-      </div>
-      <div style="background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;padding:10px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <div style="width:24px;height:24px;background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;">🪵</div>
-          <div style="font-family:var(--wow-display);font-size:14px;font-weight:600;">Resources</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:10px;color:var(--wow-muted);">Timber</span>
-          <span style="font-family:var(--wow-mono);font-size:13px;font-weight:700;color:var(--wow-gold);">1,250</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
-          <span style="font-size:10px;color:var(--wow-muted);">Stone</span>
-          <span style="font-family:var(--wow-mono);font-size:13px;font-weight:700;color:var(--wow-text);">420</span>
-        </div>
+    <div class="empty" style="padding:16px;gap:8px;">
+      <div style="font-size:28px;">🏕️</div>
+      <div style="font-size:13px;color:var(--wow-muted);text-align:center;line-height:1.5;">
+        Player Estate data is not yet available via the Blizzard API.<br/>
+        <span style="font-size:11px;">Check back once Blizzard publishes housing endpoints.</span>
       </div>
     </div>
   `;
@@ -1745,11 +1735,18 @@ export function WowTab({ me }) {
   const [dataTick, setDataTick] = useState(0); // Forces re-render when background data loads
   const [resetStr, setResetStr] = useState('—');
   const [tokenPrice, setTokenPrice] = useState('Fetching...');
+  const [pullY, setPullY] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const charCacheRef = useRef({});
   const affixCacheRef = useRef(null);
   const bnetTokenRef = useRef(null);
   const collectionsRef = useRef({});
+  const scrollRef = useRef(null);
+  const ptrRef = useRef({ startY: 0, active: false, busy: false });
+  const pullYRef = useRef(0);
+
+  const PTR_THRESHOLD = 65;
 
   const loadCharacters = () => {
     req('/api/wow/characters')
@@ -1758,9 +1755,49 @@ export function WowTab({ me }) {
       .catch(() => setLoading(false));
   };
 
+  const fullRefresh = () => {
+    if (ptrRef.current.busy) return;
+    ptrRef.current.busy = true;
+    charCacheRef.current = {};
+    affixCacheRef.current = null;
+    bnetTokenRef.current = null;
+    setRefreshing(true);
+    loadCharacters();
+    setTimeout(() => { ptrRef.current.busy = false; setRefreshing(false); }, 1200);
+  };
+
   useEffect(() => {
     injectWowAssets();
     loadCharacters();
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onStart = (e) => {
+      if (el.scrollTop === 0) { ptrRef.current.startY = e.touches[0].clientY; ptrRef.current.active = true; }
+    };
+    const onMove = (e) => {
+      if (!ptrRef.current.active) return;
+      if (el.scrollTop > 0) { ptrRef.current.active = false; pullYRef.current = 0; setPullY(0); return; }
+      const dist = Math.max(0, Math.min(100, e.touches[0].clientY - ptrRef.current.startY));
+      pullYRef.current = dist;
+      setPullY(dist);
+    };
+    const onEnd = () => {
+      if (ptrRef.current.active && pullYRef.current >= PTR_THRESHOLD) fullRefresh();
+      ptrRef.current.active = false;
+      pullYRef.current = 0;
+      setPullY(0);
+    };
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: true });
+    el.addEventListener('touchend', onEnd);
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+    };
   }, []);
 
   useEffect(() => {
@@ -1852,8 +1889,15 @@ export function WowTab({ me }) {
     { id: 'account',  icon: '👤', label: 'My Account' },
   ];
 
+  const ptrHeight = refreshing ? 44 : Math.min(44, pullY * 0.6);
+  const ptrReady = pullY >= PTR_THRESHOLD;
+
   return html`
-    <div class="wow-wrap scroll">
+    <div class="wow-wrap scroll" ref=${scrollRef}>
+      <div class="wow-ptr" style="height:${ptrHeight}px;opacity:${ptrHeight > 4 ? 1 : 0};">
+        <div class="wow-ptr-icon ${refreshing ? 'spinning' : (ptrReady ? 'ready' : '')}"
+             style="transform:rotate(${refreshing ? 'none' : `${Math.min(pullY * 2.5, 180)}deg`});">⟳</div>
+      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--wow-surface);border-bottom:1px solid var(--wow-border);">
         <div style="font-family:var(--wow-display);font-size:16px;font-weight:700;color:var(--wow-accent);letter-spacing:2px;">GamezNET <span style="color:var(--wow-border2)">/</span> <span style="color:var(--wow-gold);display:inline-flex;align-items:center;gap:6px;"><img src="/WoW_icon.svg" style="height:16px;" alt="WoW"/></span></div>
         <div style="display:flex;align-items:center;gap:12px;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">
