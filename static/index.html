@@ -187,7 +187,7 @@
   import { h, render } from 'https://esm.sh/preact@10';
   import { useState, useEffect, useRef } from 'https://esm.sh/preact@10/hooks';
   import htm from 'https://esm.sh/htm@3';
-  import { WowTab } from '/wow.js?v=1.2.10';
+  import { WowTab } from '/wow.js?v=1.2.11';
   const html = htm.bind(h);
 
   const API = 'https://gameznet.looknet.ca';
@@ -403,14 +403,17 @@
       return () => clearInterval(iv);
     }, [session]);
 
+    const activePlayers = online.filter(p => p.online);
+    const offlinePlayers = online.filter(p => !p.online);
+
     return html`
       <div class="scroll">
 
         <div class="card">
-          <div class="card-label">Who's Online · ${online.length}</div>
-          ${online.length === 0
+          <div class="card-label">Who's Online · ${activePlayers.length}</div>
+          ${activePlayers.length === 0
             ? html`<div class="empty" style="padding:16px 0;"><span class="empty-icon">🎮</span><span>No one online yet</span></div>`
-            : online.map(p => html`
+            : activePlayers.map(p => html`
               <div class="player-row" key=${p.name}>
                 <${PlayerAv} player=${p} />
                 <div class="player-info">
@@ -422,6 +425,21 @@
             `)
           }
         </div>
+
+        ${offlinePlayers.length > 0 && html`
+          <div class="card">
+            <div class="card-label">Recently Online · ${offlinePlayers.length}</div>
+            ${offlinePlayers.map(p => html`
+              <div class="player-row" key=${p.name} style="opacity: 0.6;">
+                <${PlayerAv} player=${p} />
+                <div class="player-info">
+                  <div class="player-name">${p.name}</div>
+                  <div class="player-sub">Offline</div>
+                </div>
+              </div>
+            `)}
+          </div>
+        `}
 
         ${session && html`
           <div class="card session-card">
@@ -867,11 +885,11 @@
         ${others.length === 0
           ? html`<div class="empty" style="margin-top:40px;"><span class="empty-icon">👥</span><span>No one else online right now</span></div>`
           : others.map(p => html`
-            <div class="dm-row" key=${p.name} onClick=${() => openConvo(p)}>
+            <div class="dm-row" key=${p.name} onClick=${() => openConvo(p)} style=${!p.online ? 'opacity: 0.6;' : ''}>
               <${PlayerAv} player=${p} />
               <div class="player-info">
                 <div class="player-name">${p.name}</div>
-                <div class="player-sub">${p.game || 'Online'}</div>
+                <div class="player-sub">${p.online ? (p.mobile ? 'Mobile' : (p.game || p.status || 'Online')) : 'Offline'}</div>
               </div>
               ${unread[p.name] && html`<span class="dm-unread">${unread[p.name]}</span>`}
             </div>
