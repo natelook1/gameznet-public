@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.2.13 — 2026-04-05
+
+### Fixed
+- **WoW character avatars no longer revert to question marks on new devices/sessions** — the backend now persists the avatar URL to the database when a character profile is first fetched, so all clients get the correct image immediately from `/api/wow/characters` rather than waiting for the profile API to respond
+- **Player Estate card no longer shows fake data** — replaced hardcoded "Tier 2 / Cozy Cabin / 1,250 Timber / 420 Stone" filler with an honest empty state noting that Blizzard has not yet published housing API endpoints (both desktop and mobile)
+- **Level cap corrected to 90 in desktop app** — `wowRenderWorld` was using 80 as the level cap; updated to 90 to reflect the current Midnight expansion cap
+- **Azj-Kahet zone range corrected** — zone was showing `Lvl 76–90`; corrected to `Lvl 76–80` since it's a War Within zone that completes at level 80
+
+### Changed
+- **Dungeon Unlock Status expanded** — added Delves (⛏️, unlocks at 70) and Mythic Raid (👑, unlocks at 90) to the unlock list in both desktop and mobile; desktop was previously showing only Normal Dungeons
+- **Campaign Progress zones updated in desktop app** — replaced single "Khaz Algar" zone entry with the full War Within zone breakdown: Isle of Dorn, The Ringing Deeps, Hallowfall, and Azj-Kahet, each with correct level thresholds
+
+### Added
+- **Pull-to-refresh on WoW tab (mobile)** — drag down from the top of the WoW tab to trigger a full cache-clearing refresh; the ⟳ icon rotates as you pull, turns blue when past the threshold (65px), and spins while reloading. Clears character profile cache, affix cache, and Battle.net token cache so all data is re-fetched fresh
+
+---
+
 ## v1.2.0 — 2026-04-01
 
 ### Milestone — Stable Release & Polished Delivery Pipeline
