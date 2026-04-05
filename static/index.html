@@ -187,7 +187,7 @@
   import { h, render } from 'https://esm.sh/preact@10';
   import { useState, useEffect, useRef } from 'https://esm.sh/preact@10/hooks';
   import htm from 'https://esm.sh/htm@3';
-  import { WowTab } from '/wow.js?v=1.2.8';
+  import { WowTab } from '/wow.js?v=1.2.9';
   const html = htm.bind(h);
 
   const API = 'https://gameznet.looknet.ca';
@@ -937,7 +937,7 @@
       { id: 'chat',    icon: '💬', label: 'Chat' },
       { id: 'discord', icon: '🎮', label: 'Discord' },
       { id: 'dms',     icon: '✉️',  label: 'DMs', badge: dmUnread || null },
-      { id: 'wow',     icon: html`<img src="/static/WoW_icon.svg" class="wow-tab-logo" alt="WoW" />`,  label: 'WoW' },
+      { id: 'wow',     icon: html`<img src="/WoW_icon.svg" class="wow-tab-logo" alt="WoW" />`,  label: 'WoW' },
     ];
 
     return html`
