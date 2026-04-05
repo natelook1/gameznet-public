@@ -3062,7 +3062,7 @@
         showProvisioned();
         // Fetch steam profile from server (may have been linked/updated since last session)
         try {
-          const sp = await fetch(`{{ worker_url }}/api/steam/profile?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+          const sp = await fetch(`/api/steam/profile?name=${encodeURIComponent(state.name)}`).then(r => r.json());
           if (sp.steam_id) {
             Object.assign(state, { steam_id: sp.steam_id, steam_name: sp.steam_name, steam_avatar: sp.steam_avatar, steam_level: sp.steam_level || 0, steam_game_count: sp.steam_game_count || 0, steam_library: sp.steam_library || null });
           }
@@ -3102,7 +3102,7 @@
     btn.disabled = true;
     btn.textContent = 'Activating...';
     try {
-      const workerRes = await fetch('{{ worker_url }}/api/redeem', {
+      const workerRes = await fetch('/api/redeem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
@@ -3155,7 +3155,7 @@
     const btn = document.getElementById('req-btn');
     btn.disabled = true; btn.textContent = 'Sending...';
     try {
-      const res  = await fetch('{{ worker_url }}/api/request-token', {
+      const res  = await fetch('/api/request-token', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ name, email })
       });
@@ -3747,7 +3747,7 @@
   async function pollChat() {
     if (!state.provisioned) return;
     try {
-      const res = await fetch(`{{ worker_url }}/api/chat?since=${encodeURIComponent(chatSince)}`);
+      const res = await fetch(`/api/chat?since=${encodeURIComponent(chatSince)}`);
       const msgs = await res.json();
       if (msgs.length) {
         appendMessages(msgs);
@@ -3763,9 +3763,9 @@
     input.value = '';
     try {
       if (chatActiveTarget === 'global') {
-        await fetch('{{ worker_url }}/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name, body }) });
+        await fetch('/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name, body }) });
       } else {
-        await fetch('{{ worker_url }}/api/chat/dm/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_name: state.name, to_name: chatActiveTarget, body }) });
+        await fetch('/api/chat/dm/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_name: state.name, to_name: chatActiveTarget, body }) });
       }
     } catch {}
   }
@@ -3848,7 +3848,7 @@
     await pollChat(); // Fetch any history missed while disconnected
     
     try {
-      const uRes = await fetch(`{{ worker_url }}/api/chat/dm/unread?name=${encodeURIComponent(state.name)}`);
+      const uRes = await fetch(`/api/chat/dm/unread?name=${encodeURIComponent(state.name)}`);
       if (uRes.ok) {
          const unreads = await uRes.json();
          unreads.forEach(u => {
@@ -3860,7 +3860,7 @@
       }
     } catch {}
     
-    _chatStream = new EventSource(`{{ worker_url }}/api/chat/stream?name=${encodeURIComponent(state.name)}`);
+    _chatStream = new EventSource(`/api/chat/stream?name=${encodeURIComponent(state.name)}`);
     _chatStream.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data);
@@ -4037,7 +4037,7 @@
         if (logRes.ok) { const d = await logRes.json(); logTail = d.log || ''; }
       } catch (_) {}
 
-      const res = await fetch('{{ worker_url }}/api/report', {
+      const res = await fetch('/api/report', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
@@ -4079,7 +4079,7 @@
   let _serverList = [];
   async function loadClientServers() {
     try {
-      const res = await fetch('{{ worker_url }}/api/servers');
+      const res = await fetch('/api/servers');
       if (!res.ok) return;
       _serverList = await res.json();
       renderClientServers(_serverList);
@@ -4256,7 +4256,7 @@
     if (!state.steam_id) return;
     const el = document.getElementById('steam-friends-list');
     try {
-      const res = await fetch(`{{ worker_url }}/api/steam/friends?steamid=${state.steam_id}`);
+      const res = await fetch(`/api/steam/friends?steamid=${state.steam_id}`);
       if (!res.ok) { el.innerHTML = '<div class="online-empty">○ Friends list private or unavailable</div>'; return; }
       const friends = await res.json();
       if (!friends.length) { el.innerHTML = '<div class="online-empty">○ No friends online</div>'; return; }
@@ -4277,7 +4277,7 @@
     if (!state.steam_id) return;
     const el = document.getElementById('steam-recent-list');
     try {
-      const res = await fetch(`{{ worker_url }}/api/steam/recent?steamid=${state.steam_id}`);
+      const res = await fetch(`/api/steam/recent?steamid=${state.steam_id}`);
       if (!res.ok) return;
       const games = await res.json();
       if (!games.length) { el.innerHTML = '<div class="online-empty">○ No recent games</div>'; return; }
@@ -4299,7 +4299,7 @@
     if (!appids?.length) { el.innerHTML = '<div class="online-empty">○ No running servers</div>'; return; }
     try {
       const results = await Promise.all(appids.map(async id => {
-        const res = await fetch(`{{ worker_url }}/api/steam/news?appid=${id}`);
+        const res = await fetch(`/api/steam/news?appid=${id}`);
         return res.ok ? res.json() : [];
       }));
       const appidToName = {};
@@ -5093,7 +5093,7 @@
       // Poll server until the link appears (up to 5 min)
       const poll = setInterval(async () => {
         try {
-          const d = await fetch(`{{ worker_url }}/api/steam/profile?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+          const d = await fetch(`/api/steam/profile?name=${encodeURIComponent(state.name)}`).then(r => r.json());
           if (d.steam_id) {
             clearInterval(poll);
             Object.assign(state, { steam_id: d.steam_id, steam_name: d.steam_name, steam_avatar: d.steam_avatar, steam_level: d.steam_level, steam_game_count: d.steam_game_count, steam_library: d.steam_library });
@@ -5109,7 +5109,7 @@
   async function unlinkSteam() {
     if (!state.name) return;
     try {
-      await fetch('{{ worker_url }}/api/steam/unlink', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
+      await fetch('/api/steam/unlink', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
       Object.assign(state, { steam_id: null, steam_name: null, steam_avatar: null, steam_level: 0, steam_game_count: 0, steam_library: null });
       updateSteamUI();
       toast('Steam account unlinked', 'info');
@@ -5676,7 +5676,7 @@
     const btn = document.getElementById('mobile-sync-btn');
     if (!btn || !state.name) return;
     try {
-      const res = await fetch(`{{ worker_url }}/api/mobile/status?name=${encodeURIComponent(state.name)}`);
+      const res = await fetch(`/api/mobile/status?name=${encodeURIComponent(state.name)}`);
       const status = res.ok ? await res.json() : { active: false };
       if (status.active) {
         btn.textContent = '📱 MOBILE CONNECTED  ·  REVOKE DEVICE';
@@ -5709,7 +5709,7 @@
     try {
       const [tokenRes, statusRes] = await Promise.all([
         fetch('/api/mobile-token'),
-        fetch(`{{ worker_url }}/api/mobile/status?name=${encodeURIComponent(state.name)}`)
+        fetch(`/api/mobile/status?name=${encodeURIComponent(state.name)}`)
       ]);
       document.getElementById('mobile-qr-loading').style.display = 'none';
       if (!tokenRes.ok) {
@@ -5885,7 +5885,7 @@
   };
 
   function wowReq(path, opts = {}) {
-    return fetch('{{ worker_url }}' + path, {
+    return fetch(path, {
       ...opts,
       headers: { 'Content-Type': 'application/json', 'X-Token': state.token, ...(opts.headers || {}) }
     });
@@ -6806,7 +6806,7 @@
   window.wowLinkBnet = async function() {
     // Force a heartbeat so the player row exists before OAuth callback attempts to update it
     try {
-      await fetch('{{ worker_url }}/api/heartbeat', {
+      await fetch('/api/heartbeat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: state.name, vpn_ip: state.clientIp || '0.0.0.0', version: '1.0.0' })
       });

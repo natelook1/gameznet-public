@@ -66,7 +66,7 @@ def detect_game_steam(steam_id):
     """Query /api/steam/game on WORKER_URL for the player's current game."""
     import urllib.request
     try:
-        url = f"{WORKER_URL}/api/steam/game?steam_id={urllib.request.quote(steam_id)}"
+        url = f"{_backend_url()}/api/steam/game?steam_id={urllib.request.quote(steam_id)}"
         req = urllib.request.Request(url, headers={"User-Agent": "GamezNET"})
         with urllib.request.urlopen(req, timeout=3) as resp:
             data = json.loads(resp.read().decode())
@@ -77,8 +77,9 @@ def detect_game_steam(steam_id):
 # ─── Configuration ────────────────────────────────────────────────────────────
 
 WORKER_URL = "https://gameznet.looknet.ca"
+VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.2.11"
+VERSION = "1.2.12"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -92,7 +93,7 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
-RUSTDESK_VERSION = "1.2.11"
+RUSTDESK_VERSION = "1.2.12"
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -240,47 +241,48 @@ def update_telemetry():
     version_timer = 0
 
     while True:
-        # 1. Update MOTD every ~30 seconds
-        if motd_timer <= 0:
-            try:
-                req = urllib.request.Request(f"{WORKER_URL}/api/motd", headers={'User-Agent': 'GamezNET'})
-                with urllib.request.urlopen(req, timeout=5) as resp:
-                    data = json.loads(resp.read().decode())
-                    _telemetry["motd"] = data.get("message", "Connected to GamezNET")
-            except Exception:
-                pass
-            motd_timer = 15
-        motd_timer -= 1
+        if _connected:
+            # 1. Update MOTD every ~30 seconds
+            if motd_timer <= 0:
+                try:
+                    req = urllib.request.Request(f"{_backend_url()}/api/motd", headers={'User-Agent': 'GamezNET'})
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        data = json.loads(resp.read().decode())
+                        _telemetry["motd"] = data.get("message", "Connected to GamezNET")
+                except Exception:
+                    pass
+                motd_timer = 15
+            motd_timer -= 1
 
-        # 1b. Update Alert every ~10 seconds
-        if alert_timer <= 0:
-            try:
-                req = urllib.request.Request(f"{WORKER_URL}/api/alert", headers={'User-Agent': 'GamezNET'})
-                with urllib.request.urlopen(req, timeout=5) as resp:
-                    data = json.loads(resp.read().decode())
-                    _telemetry["alert"] = data.get("alert", None)
-            except Exception:
-                pass
-            alert_timer = 5
-        alert_timer -= 1
+            # 1b. Update Alert every ~10 seconds
+            if alert_timer <= 0:
+                try:
+                    req = urllib.request.Request(f"{_backend_url()}/api/alert", headers={'User-Agent': 'GamezNET'})
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        data = json.loads(resp.read().decode())
+                        _telemetry["alert"] = data.get("alert", None)
+                except Exception:
+                    pass
+                alert_timer = 5
+            alert_timer -= 1
 
-        # 1c. Poll session every ~30 seconds
-        if session_timer <= 0:
-            try:
-                req = urllib.request.Request(f"{WORKER_URL}/api/session", headers={'User-Agent': 'GamezNET'})
-                with urllib.request.urlopen(req, timeout=5) as resp:
-                    data = json.loads(resp.read().decode())
-                    _telemetry["session"] = data.get("session", None)
-            except Exception:
-                pass
-            session_timer = 15
-        session_timer -= 1
+            # 1c. Poll session every ~30 seconds
+            if session_timer <= 0:
+                try:
+                    req = urllib.request.Request(f"{_backend_url()}/api/session", headers={'User-Agent': 'GamezNET'})
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        data = json.loads(resp.read().decode())
+                        _telemetry["session"] = data.get("session", None)
+                except Exception:
+                    pass
+                session_timer = 15
+            session_timer -= 1
 
-        # 1d. Check Version every ~60 seconds
-        if version_timer <= 0:
-            check_version()
-            version_timer = 30
-        version_timer -= 1
+            # 1d. Check Version every ~60 seconds
+            if version_timer <= 0:
+                check_version()
+                version_timer = 30
+            version_timer -= 1
 
         if _connected:
             # 2. Ping Latency (Targeting internal VPN Gateway to prove tunnel works)
@@ -345,6 +347,10 @@ _player_status = ""
 _full_route = False
 _update_required = False
 
+def _backend_url():
+    """Return VPN backend URL when connected (direct IP, no DNS), else external public URL."""
+    return VPN_BACKEND_URL if _connected else WORKER_URL
+
 def _version_tuple(v):
     try:
         return tuple(int(x) for x in v.split('.'))
@@ -355,7 +361,7 @@ def check_version():
     global _update_required
     import urllib.request
     try:
-        req = urllib.request.Request(f"{WORKER_URL}/api/version", headers={'User-Agent': 'GamezNET'})
+        req = urllib.request.Request(f"{_backend_url()}/api/version", headers={'User-Agent': 'GamezNET'})
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode())
             min_ver = data.get("min_version", "1.0.0")
@@ -522,7 +528,7 @@ def api_disconnect():
                     "disconnecting": True
                 }).encode()
                 req = urllib.request.Request(
-                    f"{WORKER_URL}/api/heartbeat",
+                    f"{_backend_url()}/api/heartbeat",
                     data=payload,
                     headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
                     method="POST"
@@ -604,7 +610,7 @@ def api_mobile_token():
             try:
                 import urllib.request as _ur
                 req_obj = _ur.Request(
-                    f"{WORKER_URL}/api/token-migrate",
+                    f"{_backend_url()}/api/token-migrate",
                     data=json.dumps({"private_key": private_key}).encode(),
                     headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}
                 )
@@ -634,7 +640,7 @@ def api_mobile_status():
             return jsonify({"error": "Not provisioned"}), 404
         import urllib.request as _ur
         req_obj = _ur.Request(
-            f"{WORKER_URL}/api/mobile/session-status",
+            f"{_backend_url()}/api/mobile/session-status",
             data=json.dumps({"private_key": private_key}).encode(),
             headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}
         )
@@ -658,7 +664,7 @@ def api_mobile_revoke():
             return jsonify({"error": "Not provisioned"}), 404
         import urllib.request as _ur
         req_obj = _ur.Request(
-            f"{WORKER_URL}/api/mobile/revoke",
+            f"{_backend_url()}/api/mobile/revoke",
             data=json.dumps({"private_key": private_key}).encode(),
             headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}
         )
@@ -722,7 +728,7 @@ def api_rename():
     vpn_ip   = config.get("vpn_ip", "")
     import urllib.request as _ur2
     body = json.dumps({"old_name": old_name, "new_name": new_name, "vpn_ip": vpn_ip}).encode()
-    req = _ur2.Request(f"{WORKER_URL}/api/rename", data=body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
+    req = _ur2.Request(f"{_backend_url()}/api/rename", data=body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
     try:
         with _ur2.urlopen(req, timeout=5) as r:
             resp = json.loads(r.read().decode())
@@ -797,7 +803,7 @@ def api_report():
             "log_tail": log_tail
         }).encode()
         req = urllib.request.Request(
-            f"{WORKER_URL}/api/report",
+            f"{_backend_url()}/api/report",
             data=payload,
             headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
             method="POST"
@@ -815,7 +821,7 @@ def api_online():
     """Proxy to Worker /api/online so the client UI can call it locally."""
     import urllib.request
     try:
-        req = urllib.request.Request(f"{WORKER_URL}/api/online", headers={'User-Agent': 'GamezNET'})
+        req = urllib.request.Request(f"{_backend_url()}/api/online", headers={'User-Agent': 'GamezNET'})
         with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.read(), resp.status, {'Content-Type': 'application/json'}
     except Exception as e:
@@ -838,7 +844,7 @@ def api_chat():
     import urllib.request
     since = request.args.get("since", "")
     try:
-        url = f"{WORKER_URL}/api/chat?since={urllib.request.quote(since)}"
+        url = f"{_backend_url()}/api/chat?since={urllib.request.quote(since)}"
         req = urllib.request.Request(url, headers={"User-Agent": "GamezNET"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.read(), resp.status, {"Content-Type": "application/json"}
@@ -854,7 +860,7 @@ def api_chat_send():
         data = request.get_json(silent=True) or {}
         payload = json.dumps(data).encode()
         req = urllib.request.Request(
-            f"{WORKER_URL}/api/chat/send",
+            f"{_backend_url()}/api/chat/send",
             data=payload,
             headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
             method="POST"
@@ -914,7 +920,7 @@ def play_minecraft():
             
             # Try central server first, fallback to raw GitHub repo
             urls = [
-                f"{WORKER_URL}/public/eaglercraft.html",
+                f"{_backend_url()}/public/eaglercraft.html",
                 "https://raw.githubusercontent.com/natelook1/gameznet-public/main/static/eaglercraft.html"
             ]
             
@@ -952,10 +958,10 @@ def api_minecraft_prepare():
         import urllib.request
         import shutil
         urls = [
-            f"{WORKER_URL}/public/eaglercraft.html",
+            f"{_backend_url()}/public/eaglercraft.html",
             "https://raw.githubusercontent.com/natelook1/gameznet-public/main/static/eaglercraft.html"
         ]
-        
+
         for url in urls:
             try:
                 req = urllib.request.Request(url, headers={'User-Agent': 'GamezNET'})
@@ -994,7 +1000,7 @@ def _watch_rustdesk_process(name_to_end):
             
             log.info(f"[RUSTDESK TRACKER] RustDesk completely exited. Ending session for '{name_to_end}'...")
             _body = json.dumps({"name": name_to_end}).encode()
-            _req = urllib.request.Request(f"{WORKER_URL}/api/remote/end", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
+            _req = urllib.request.Request(f"{_backend_url()}/api/remote/end", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
             urllib.request.urlopen(_req, timeout=5)
         except Exception as e:
             log.debug(f"[RUSTDESK TRACKER] Watcher finished or failed: {e}")
@@ -1130,7 +1136,7 @@ def api_remote_start_host():
                 "rustdesk_id": rustdesk_id,
                 "password": password
             }).encode()
-            _req = _ur2.Request(f"{WORKER_URL}/api/remote/ready", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
+            _req = _ur2.Request(f"{_backend_url()}/api/remote/ready", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
             with _ur2.urlopen(_req, timeout=5) as resp:
                 log.info(f"[RUSTDESK TRACKER] /api/remote/ready post success: {resp.status}")
         except Exception as _e:
@@ -1169,7 +1175,7 @@ def _notify_connected(helper):
     try:
         import urllib.request as _ur3
         _body = json.dumps({"helper": helper}).encode()
-        _req = _ur3.Request(f"{WORKER_URL}/api/remote/connected", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
+        _req = _ur3.Request(f"{_backend_url()}/api/remote/connected", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
         with _ur3.urlopen(_req, timeout=5) as resp:
             log.info(f"[RUSTDESK TRACKER] /api/remote/connected post success: {resp.status}")
     except Exception as _e:
@@ -1277,7 +1283,7 @@ def proxy_remote_api(endpoint):
     """
     import urllib.request
     import urllib.error
-    url = f"{WORKER_URL}/api/remote/{endpoint}"
+    url = f"{_backend_url()}/api/remote/{endpoint}"
     
     # Forward query parameters (e.g., ?name=User)
     if request.query_string:
@@ -1419,13 +1425,34 @@ def api_alert():
     """Proxy GET to Worker /api/alert and return the JSON."""
     import urllib.request as _urllib_request
     try:
-        req = _urllib_request.Request(f"{WORKER_URL}/api/alert", headers={'User-Agent': 'GamezNET'})
+        req = _urllib_request.Request(f"{_backend_url()}/api/alert", headers={'User-Agent': 'GamezNET'})
         with _urllib_request.urlopen(req, timeout=5) as resp:
             return resp.read(), resp.status, {'Content-Type': 'application/json'}
     except Exception as e:
         log.debug("api_alert proxy failed: %s", e)
         return jsonify({"alert": None})
 
+
+@app.route("/api/chat/stream")
+def api_chat_stream():
+    """SSE proxy for real-time chat — keeps connection alive through the VPN path."""
+    import urllib.request as _ur
+    from flask import Response, stream_with_context
+    name = request.args.get("name", "")
+    url = f"{_backend_url()}/api/chat/stream?name={_ur.quote(name)}"
+    def _generate():
+        try:
+            req = _ur.Request(url, headers={"User-Agent": "GamezNET", "Accept": "text/event-stream"})
+            with _ur.urlopen(req, timeout=None) as resp:
+                while True:
+                    chunk = resp.read(1024)
+                    if not chunk:
+                        break
+                    yield chunk
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n".encode()
+    return Response(stream_with_context(_generate()), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 @app.route("/api/<path:subpath>", methods=["GET", "POST"])
 def api_proxy(subpath):
@@ -1434,10 +1461,16 @@ def api_proxy(subpath):
     import urllib.error as _ue
     try:
         qs = request.query_string.decode()
-        url = f"{WORKER_URL}/api/{subpath}" + (f"?{qs}" if qs else "")
+        url = f"{_backend_url()}/api/{subpath}" + (f"?{qs}" if qs else "")
         body = request.get_data() or None
         ct = request.content_type or "application/json"
-        req = _ur.Request(url, data=body, headers={"User-Agent": "GamezNET", "Content-Type": ct}, method=request.method)
+        # Forward auth headers so token-gated routes (WoW, mobile, etc.) work
+        fwd_headers = {"User-Agent": "GamezNET", "Content-Type": ct}
+        for h in ("X-Token", "X-Session"):
+            val = request.headers.get(h)
+            if val:
+                fwd_headers[h] = val
+        req = _ur.Request(url, data=body, headers=fwd_headers, method=request.method)
         with _ur.urlopen(req, timeout=10) as resp:
             return resp.read(), resp.status, {"Content-Type": resp.headers.get("Content-Type", "application/json")}
     except _ue.HTTPError as e:
@@ -1493,7 +1526,7 @@ def heartbeat_loop():
                     "status": _player_status
                 }).encode()
                 req = urllib.request.Request(
-                    f"{WORKER_URL}/api/heartbeat",
+                    f"{_backend_url()}/api/heartbeat",
                     data=payload,
                     headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
                     method="POST"
@@ -1665,7 +1698,7 @@ def run_tray(flask_thread):
                 if my_name is None and os.path.exists(CONFIG_FILE):
                     with open(CONFIG_FILE) as f:
                         my_name = json.load(f).get("name", "")
-                req = _ur.Request(f"{WORKER_URL}/api/online", headers={"User-Agent": "GamezNET"})
+                req = _ur.Request(f"{_backend_url()}/api/online", headers={"User-Agent": "GamezNET"})
                 with _ur.urlopen(req, timeout=5) as resp:
                     online = {p["name"] for p in json.loads(resp.read()) if p.get("name") != my_name}
                 if known is None:
@@ -1695,7 +1728,7 @@ def run_tray(flask_thread):
             if not _connected:
                 continue
             try:
-                req = _ur.Request(f"{WORKER_URL}/api/alert", headers={"User-Agent": "GamezNET"})
+                req = _ur.Request(f"{_backend_url()}/api/alert", headers={"User-Agent": "GamezNET"})
                 with _ur.urlopen(req, timeout=5) as resp:
                     data = json.loads(resp.read().decode())
                 alert = data.get("alert")
@@ -1717,8 +1750,10 @@ def run_tray(flask_thread):
         last_id = None
         while True:
             time.sleep(20)
+            if not _connected:
+                continue
             try:
-                req = _ur.Request(f"{WORKER_URL}/api/session", headers={"User-Agent": "GamezNET"})
+                req = _ur.Request(f"{_backend_url()}/api/session", headers={"User-Agent": "GamezNET"})
                 with _ur.urlopen(req, timeout=5) as resp:
                     data = json.loads(resp.read().decode())
                 session = data.get("session")
@@ -1797,9 +1832,6 @@ if __name__ == "__main__":
             except Exception as e:
                 log.error("Auto-migration failed: %s", e)
         threading.Thread(target=_auto_migrate, daemon=True).start()
-
-    # Version check (non-blocking)
-    threading.Thread(target=check_version, daemon=True).start()
 
     # Start Telemetry Thread
     threading.Thread(target=update_telemetry, daemon=True).start()
