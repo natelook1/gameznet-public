@@ -63,7 +63,9 @@
     .tabbar { background: var(--surface); border-top: 1px solid var(--border); display: flex; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
     .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 9px 4px; gap: 3px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 10px; font-weight: 500; position: relative; transition: color 0.15s; }
     .tab.active { color: var(--accent); }
-    .tab-icon { font-size: 19px; line-height: 1; }
+    .tab-icon { font-size: 19px; line-height: 1; display: flex; align-items: center; justify-content: center; height: 19px; }
+    .tab .wow-tab-logo { height: 18px; opacity: 0.5; filter: grayscale(1); transition: all 0.15s; }
+    .tab.active .wow-tab-logo { opacity: 1; filter: grayscale(0); }
     .badge { position: absolute; top: 5px; right: calc(50% - 18px); background: var(--red); color: #fff; font-size: 9px; font-weight: 700; border-radius: 99px; padding: 1px 4px; min-width: 15px; text-align: center; }
 
     /* ── Shared ── */
@@ -185,7 +187,7 @@
   import { h, render } from 'https://esm.sh/preact@10';
   import { useState, useEffect, useRef } from 'https://esm.sh/preact@10/hooks';
   import htm from 'https://esm.sh/htm@3';
-  import { WowTab } from '/wow.js?v=1.2.7';
+  import { WowTab } from '/wow.js?v=1.2.8';
   const html = htm.bind(h);
 
   const API = 'https://gameznet.looknet.ca';
@@ -935,7 +937,7 @@
       { id: 'chat',    icon: '💬', label: 'Chat' },
       { id: 'discord', icon: '🎮', label: 'Discord' },
       { id: 'dms',     icon: '✉️',  label: 'DMs', badge: dmUnread || null },
-      { id: 'wow',     icon: '⚔️',  label: 'WoW' },
+      { id: 'wow',     icon: html`<img src="/static/WoW_icon.svg" class="wow-tab-logo" alt="WoW" />`,  label: 'WoW' },
     ];
 
     return html`
