@@ -1461,40 +1461,125 @@ function WowPVP({ character, charCacheRef, dataTick }) {
 
 function WowAccount({ me, characters, onRefresh }) {
   const [busy, setBusy] = useState(null);
+  const [bnetStatus, setBnetStatus] = useState(null);
+  const [bnetChars, setBnetChars] = useState([]);
+  const [bnetLoading, setBnetLoading] = useState(false);
+  const [pickerSelections, setPickerSelections] = useState(new Set());
+  const [pickerMain, setPickerMain] = useState('');
+  const [pickerFilter, setPickerFilter] = useState('active');
+  const [pickerSaving, setPickerSaving] = useState(false);
+
+  const loadBnetStatus = useCallback(async () => {
+    try {
+      const res = await req('/api/wow/account/status');
+      if (res.ok) {
+        const data = await res.json();
+        setBnetStatus(data);
+        if (data.linked) {
+          setBnetLoading(true);
+          const charsRes = await req('/api/wow/bnet/characters');
+          if (charsRes.ok) {
+            const charsData = await charsRes.json();
+            setBnetChars(Array.isArray(charsData) ? charsData : []);
+          }
+          setBnetLoading(false);
+        }
+      }
+    } catch(e) { setBnetLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    loadBnetStatus();
+  }, [loadBnetStatus]);
+
+  useEffect(() => {
+    const mine = characters.filter(c => c.player_name === me.name);
+    const sel = new Set(mine.map(c => `${c.name.toLowerCase()}-${(c.realm?.slug || c.realm).toLowerCase()}`));
+    setPickerSelections(sel);
+    const main = mine.find(c => c.is_main);
+    if (main) setPickerMain(`${main.name.toLowerCase()}-${(main.realm?.slug || main.realm).toLowerCase()}`);
+  }, [characters, me.name]);
 
   const myChars = characters.filter(c => c.player_name === me.name);
-  const activeAltCount = myChars.filter(c => !c.is_main && c.alt_slot).length;
 
-  const doSetMain = async (id) => {
-    setBusy(id + '-main');
-    await req(`/api/wow/character/${id}/set-main`, { method: 'POST' });
+  const doRemoveChar = async (id) => {
+    if (!confirm('Remove this character from your roster?')) return;
+    const mine = characters.filter(c => c.player_name === me.name && c.id !== id);
+    const selectedChars = mine.map(c => ({ name: c.display_name || c.name, realm: c.realm, class: c.class, isMain: c.is_main }));
+    if (selectedChars.length > 0 && !selectedChars.some(c => c.isMain)) selectedChars[0].isMain = true;
+    setBusy(id + '-remove');
+    try {
+      await req('/api/wow/characters/sync', { method: 'POST', body: JSON.stringify({ characters: selectedChars }) });
+      if (onRefresh) onRefresh();
+    } catch(e) {}
     setBusy(null);
-    onRefresh && onRefresh();
   };
-  const doSetAlt = async (id) => {
-    const nextSlot = [1,2,3,4].find(s => !myChars.some(c => c.alt_slot === s));
-    if (!nextSlot) return;
-    setBusy(id + '-alt');
-    await req(`/api/wow/character/${id}/set-alt`, { method: 'POST', body: JSON.stringify({ slot: nextSlot }) });
-    setBusy(null);
-    onRefresh && onRefresh();
-  };
-  const doClearSlot = async (id) => {
-    setBusy(id + '-clear');
-    await req(`/api/wow/character/${id}/clear-slot`, { method: 'POST' });
-    setBusy(null);
-    onRefresh && onRefresh();
-  };
+
   const doLinkBnet = () => {
-    const popup = window.open(`${API}/auth/battlenet?name=${encodeURIComponent(me.name)}`, 'bnetauth', 'width=600,height=700');
+    req('/api/heartbeat', {
+      method: 'POST',
+      body: JSON.stringify({ name: me.name, vpn_ip: '0.0.0.0', version: '1.0.0' })
+    }).catch(()=>{});
+
+    const popupUrl = `${API}/auth/battlenet?name=${encodeURIComponent(me.name)}`;
+    const popup = window.open(popupUrl, 'bnetauth', 'width=600,height=700');
     const handler = (e) => {
       if (e.data === 'bnet_auth_success') {
         window.removeEventListener('message', handler);
         if (popup) popup.close();
+        loadBnetStatus();
         onRefresh && onRefresh();
       }
     };
     window.addEventListener('message', handler);
+  };
+
+  const doUnlinkBnet = async () => {
+    if (!confirm('Unlink your Battle.net account? Your characters will be removed from the family roster.')) return;
+    setBnetStatus(null);
+    setBnetChars([]);
+    await req('/api/wow/account/unlink', { method: 'POST' });
+    if (onRefresh) onRefresh();
+    loadBnetStatus();
+  };
+
+  const togglePickerChar = (id, checked) => {
+    setPickerSelections(prev => {
+      const next = new Set(prev);
+      if (checked) {
+        if (next.size < 5) next.add(id);
+      } else {
+        next.delete(id);
+        if (pickerMain === id) setPickerMain([...next][0] || '');
+      }
+      if (checked && next.size === 1) setPickerMain(id);
+      return next;
+    });
+  };
+
+  const savePicker = async () => {
+    setPickerSaving(true);
+    const selectedChars = bnetChars
+      .filter(c => pickerSelections.has(`${c.name.toLowerCase()}-${c.realm.slug}`))
+      .map(c => {
+         const idKey = `${c.name.toLowerCase()}-${c.realm.slug}`;
+         return {
+           name: c.name,
+           realm: c.realm.slug,
+           class: c.playable_class.name,
+           isMain: idKey === pickerMain
+         };
+      });
+      
+    if (selectedChars.length > 0 && !selectedChars.some(c => c.isMain)) {
+      selectedChars[0].isMain = true;
+    }
+
+    try {
+      await req('/api/wow/characters/sync', { method: 'POST', body: JSON.stringify({ characters: selectedChars }) });
+      if (onRefresh) onRefresh();
+    } catch(e) {}
+    setPickerSaving(false);
   };
 
   return html`
@@ -1502,27 +1587,41 @@ function WowAccount({ me, characters, onRefresh }) {
       <div class="wow-card" style="max-width: 700px; margin: 0 auto 16px;">
         <div class="card-header">
           <div class="card-title"><div class="dot dot-gold"></div>Battle.net Account</div>
+          ${bnetStatus?.linked ? html`<span class="wow-badge badge-free">LINKED</span>` : html`<span class="wow-badge badge-dim">NOT LINKED</span>`}
         </div>
         <div class="card-body">
-          <button class="wow-btn btn-accent" onclick=${doLinkBnet} style="margin-bottom:12px;">⚔️ Link Battle.net Account</button>
-          <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">
-            Linking the wrong account? <a href="https://account.battle.net/login/logout" target="_blank" style="color:var(--wow-gold);text-decoration:none;">Log out of Battle.net</a> first.
-          </div>
+          ${bnetStatus?.linked ? html`
+            <div style="display:flex;align-items:center;gap:14px;padding:4px 0;">
+              <div style="font-size:28px;">🔒</div>
+              <div>
+                <div style="font-family:var(--wow-display);font-size:16px;font-weight:700;color:var(--wow-green);">${bnetStatus.battletag}</div>
+                <div style="font-size:11px;color:var(--wow-muted);margin-top:2px;">Battle.net account linked</div>
+              </div>
+              <div style="margin-left:auto;">
+                <button class="wow-btn btn-ghost" style="border-color:var(--wow-red);color:var(--wow-red);font-size:11px;" onClick=${doUnlinkBnet}>Unlink Account</button>
+              </div>
+            </div>
+          ` : html`
+            <div style="text-align:center;padding:20px 0;">
+              <div style="font-size:36px;margin-bottom:12px;">🔗</div>
+              <div style="font-family:var(--wow-display);font-size:15px;font-weight:600;color:var(--wow-muted);margin-bottom:16px;">Link your Battle.net account to auto-discover your characters</div>
+              <button class="wow-btn btn-accent" onClick=${doLinkBnet} style="margin-bottom:12px;">⚔️ Link Battle.net Account</button>
+              <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">
+                Linking the wrong account? <a href="https://account.battle.net/login/logout" target="_blank" style="color:var(--wow-gold);text-decoration:none;">Log out of Battle.net</a> first.
+              </div>
+            </div>
+          `}
         </div>
       </div>
 
       <div class="wow-card" style="max-width: 700px; margin: 0 auto;">
         <div class="card-header">
           <div class="card-title"><div class="dot"></div>My Characters</div>
-          <span style="font-size:10px;color:var(--wow-text-muted);font-family:var(--wow-mono);">1 MAIN · UP TO 4 ALTS</span>
         </div>
-        <div class="card-body">
+        <div class="card-body" style="padding:0 14px;">
           ${myChars.length > 0 ? html`
             <div class="char-list">
               ${myChars.map(c => {
-                const slotLabel = c.is_main ? '★ Main' : (c.alt_slot ? `Alt ${c.alt_slot}` : 'Inactive');
-                const slotColor = c.is_main ? 'var(--wow-gold)' : (c.alt_slot ? 'var(--wow-blue)' : 'var(--wow-border)');
-                const canAddAlt = !c.is_main && !c.alt_slot && activeAltCount < 4;
                 return html`
                   <div class="char-list-row" key=${c.id}>
                     <img class="char-list-avatar" src=${c.thumbnail || 'https://render.worldofwarcraft.com/us/icons/56/inv_misc_questionmark.jpg'} onError=${e => e.target.style.opacity='0.3'} />
@@ -1530,20 +1629,66 @@ function WowAccount({ me, characters, onRefresh }) {
                       <div class="char-list-name">${c.display_name}</div>
                       <div class="char-list-realm">${[c.spec, c.class].filter(Boolean).join(' ')} · ${c.realm}</div>
                     </div>
-                    <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
-                      <span style="font-size:9px;font-family:var(--wow-mono);padding:2px 6px;border-radius:3px;border:1px solid ${slotColor};color:${slotColor};">${slotLabel.toUpperCase()}</span>
-                      ${!c.is_main && html`<button class="wow-btn btn-ghost" style="font-size:10px;padding:3px 7px;" disabled=${!!busy} onclick=${() => doSetMain(c.id)}>★</button>`}
-                      ${canAddAlt && html`<button class="wow-btn btn-ghost" style="font-size:10px;padding:3px 7px;" disabled=${!!busy} onclick=${() => doSetAlt(c.id)}>+ALT</button>`}
-                      ${c.alt_slot && html`<button class="wow-btn btn-ghost" style="font-size:10px;padding:3px 7px;color:var(--wow-text-muted);" disabled=${!!busy} onclick=${() => doClearSlot(c.id)}>✕</button>`}
-                    </div>
+                    <button class="wow-btn btn-ghost" style="font-size:10px;padding:3px 8px;border-color:var(--wow-red);color:var(--wow-red);" disabled=${busy === c.id + '-remove'} onClick=${() => doRemoveChar(c.id)}>Remove</button>
                   </div>`;
               })}
             </div>
           ` : html`
-            <div class="empty">No characters assigned to your account. Ask an admin to add your characters, or link your Battle.net account above.</div>
+            <div class="empty" style="padding:16px 0;">No characters in your roster.</div>
           `}
         </div>
       </div>
+
+      ${bnetStatus?.linked ? html`
+        <div class="wow-card" style="max-width: 700px; margin: 0 auto;">
+          <div class="card-header">
+            <div class="card-title"><div class="dot"></div>Battle.net Characters</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="picker-filter ${pickerFilter === 'active' ? 'active' : ''}" onClick=${() => setPickerFilter('active')} style="font-family:var(--wow-mono);font-size:10px;padding:4px 10px;border-radius:3px;border:1px solid ${pickerFilter === 'active' ? 'rgba(0,195,255,0.4)' : 'var(--wow-border2)'};color:${pickerFilter === 'active' ? 'var(--wow-accent)' : 'var(--wow-muted)'};cursor:pointer;letter-spacing:1px;background:${pickerFilter === 'active' ? 'var(--wow-accent-dim)' : 'transparent'};">Max Level</div>
+              <div class="picker-filter ${pickerFilter === 'all' ? 'active' : ''}" onClick=${() => setPickerFilter('all')} style="font-family:var(--wow-mono);font-size:10px;padding:4px 10px;border-radius:3px;border:1px solid ${pickerFilter === 'all' ? 'rgba(0,195,255,0.4)' : 'var(--wow-border2)'};color:${pickerFilter === 'all' ? 'var(--wow-accent)' : 'var(--wow-muted)'};cursor:pointer;letter-spacing:1px;background:${pickerFilter === 'all' ? 'var(--wow-accent-dim)' : 'transparent'};">All</div>
+            </div>
+          </div>
+          <div class="card-body" style="max-height:400px;overflow-y:auto;padding:0 14px;">
+            ${bnetLoading ? html`<div class="empty">Loading characters from Battle.net...</div>` : html`
+              ${bnetChars.length === 0 ? html`<div class="empty">No characters found on this account.</div>` : html`
+                ${bnetChars.filter(c => pickerFilter === 'all' || c.level >= 90).map(c => {
+                  const idKey = `${c.name.toLowerCase()}-${c.realm.slug}`;
+                  const selected = pickerSelections.has(idKey);
+                  const isMain = idKey === pickerMain;
+                  const disabled = !selected && pickerSelections.size >= 5;
+                  return html`
+                    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--wow-border);opacity:${disabled ? '0.4' : '1'};">
+                      <input type="checkbox" checked=${selected} disabled=${disabled && !selected} onChange=${e => togglePickerChar(idKey, e.target.checked)} style="width:16px;height:16px;accent-color:var(--wow-accent);flex-shrink:0;cursor:pointer;" />
+                      <div style="flex:1;">
+                        <div style="font-family:var(--wow-display);font-size:14px;font-weight:700;color:${selected ? 'var(--wow-text)' : 'var(--wow-muted)'}">${c.name}</div>
+                        <div style="font-size:10px;color:var(--wow-muted);">${c.playable_class.name} · ${c.realm.name} · Lvl ${c.level}</div>
+                      </div>
+                      ${selected ? html`
+                        <button onClick=${() => setPickerMain(idKey)} style="font-family:var(--wow-mono);font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;background:${isMain ? 'var(--wow-gold-dim)' : 'transparent'};border:1px solid ${isMain ? 'rgba(240,180,41,0.4)' : 'var(--wow-border2)'};color:${isMain ? 'var(--wow-gold)' : 'var(--wow-muted)'};">
+                          ★ ${isMain ? 'Main' : 'Set Main'}
+                        </button>
+                      ` : ''}
+                    </div>
+                  `;
+                })}
+                ${pickerFilter === 'active' && bnetChars.filter(c => c.level < 90).length > 0 ? html`
+                  <div style="text-align:center;padding:12px;font-size:11px;color:var(--wow-muted);font-family:var(--wow-mono);">
+                    ${bnetChars.filter(c => c.level < 90).length} character(s) hidden (below level 90)
+                    <span onClick=${() => setPickerFilter('all')} style="color:var(--wow-accent);cursor:pointer;margin-left:6px;">Show all</span>
+                  </div>
+                ` : ''}
+              `}
+            `}
+          </div>
+          <div class="card-body" style="border-top:1px solid var(--wow-border);background:var(--wow-surface2);display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:11px;color:var(--wow-muted);">
+              <span style="font-family:var(--wow-mono);color:var(--wow-text);font-weight:700;margin-right:8px;">${pickerSelections.size} / 5 selected</span>
+              (1 Main, up to 4 Alts)
+            </div>
+            <button class="wow-btn btn-accent" disabled=${pickerSaving || bnetLoading} onClick=${savePicker}>${pickerSaving ? 'Saving...' : 'Save to Roster'}</button>
+          </div>
+        </div>
+      ` : ''}
     </div>
   `;
 }
