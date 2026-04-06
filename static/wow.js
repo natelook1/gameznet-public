@@ -392,12 +392,13 @@ function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, on
     const raidSummary = (prog) => {
       if (!prog) return '—';
       const raids = Object.entries(prog);
-      if (!raids.length) return '—';
-      const data = raids[raids.length-1][1];
-      if (data.mythic_bosses_killed > 0) return `${data.mythic_bosses_killed}/${data.total_bosses}M`;
-      if (data.heroic_bosses_killed > 0) return `${data.heroic_bosses_killed}/${data.total_bosses}H`;
-      if (data.normal_bosses_killed > 0) return `${data.normal_bosses_killed}/${data.total_bosses}N`;
-      return `0/${data.total_bosses}`;
+      for (let i = raids.length - 1; i >= 0; i--) {
+        const data = raids[i][1];
+        if (data.mythic_bosses_killed > 0) return `${data.mythic_bosses_killed}/${data.total_bosses}M`;
+        if (data.heroic_bosses_killed > 0) return `${data.heroic_bosses_killed}/${data.total_bosses}H`;
+        if (data.normal_bosses_killed > 0) return `${data.normal_bosses_killed}/${data.total_bosses}N`;
+      }
+      return '—';
     };
     const raid = raidSummary(rio?.raid_progression);
     const barKey = getClassBarKey(c.class);
@@ -1833,7 +1834,7 @@ export function WowTab({ me }) {
         const cacheKey = `${c.region}-${c.realm}-${c.name}`;
         try {
           if (!charCacheRef.current[cacheKey] || !charCacheRef.current[cacheKey]._bnet) {
-            const res = await req(`/api/wow/profile?region=${c.region||'us'}&realm=${encodeURIComponent(c.realm)}&name=${encodeURIComponent(c.name)}`);
+            const res = await req(`/api/wow/profile?region=${c.region||'us'}&realm=${c.realm}&name=${c.name}`);
             if (res.ok) {
               const data = await res.json();
               charCacheRef.current[cacheKey] = data.raiderIo || {};
