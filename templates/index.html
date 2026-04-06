@@ -6064,9 +6064,11 @@
       let raid = '—';
       if (c?.raid_progression) {
         const raids = Object.entries(c.raid_progression);
-        if (raids.length) {
-          const data = raids[raids.length-1][1];
-          raid = data.mythic_bosses_killed > 0 ? `${data.mythic_bosses_killed}/${data.total_bosses}M` : data.heroic_bosses_killed > 0 ? `${data.heroic_bosses_killed}/${data.total_bosses}H` : `${data.normal_bosses_killed}/${data.total_bosses}N`;
+        for (let i = raids.length - 1; i >= 0; i--) {
+          const data = raids[i][1];
+          if (data.mythic_bosses_killed > 0) { raid = `${data.mythic_bosses_killed}/${data.total_bosses}M`; break; }
+          if (data.heroic_bosses_killed > 0) { raid = `${data.heroic_bosses_killed}/${data.total_bosses}H`; break; }
+          if (data.normal_bosses_killed > 0) { raid = `${data.normal_bosses_killed}/${data.total_bosses}N`; break; }
         }
       }
       const lastSeen = wowLastSeenStr(c);
