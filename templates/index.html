@@ -3572,6 +3572,8 @@
           const appid = steamAppMap[p.game];
           if (appid) {
             gameBadgeHtml = `<img class="op-game-badge" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/capsule_sm_120.jpg" title="Playing: ${esc(p.game)}" onerror="this.style.display='none'">`;
+          } else if (/world of warcraft/i.test(p.game)) {
+            gameBadgeHtml = `<img class="op-game-badge" src="/static/WoW_icon.svg" title="Playing: ${esc(p.game)}" style="object-fit:contain;">`;
           } else {
             gameBadgeHtml = `<div class="op-game-badge text-badge" title="Playing: ${esc(p.game)}">🎮</div>`;
           }
