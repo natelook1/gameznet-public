@@ -3225,6 +3225,10 @@
           state.connected = true;
           setStatus('connected');
           toast('Connected to game server!', 'success');
+        } else if (res.status === 426 || data.update_required) {
+          state.updateRequired = true;
+          setStatus('disconnected');
+          showError(data.error || 'A required update is available. Please update GamezNET before connecting.');
         } else {
           setStatus('disconnected');
           showError(data.error || 'Connection failed');
