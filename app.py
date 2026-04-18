@@ -79,7 +79,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.3.6"
+VERSION = "1.3.7"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -93,7 +93,7 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
-RUSTDESK_VERSION = "1.3.6"
+RUSTDESK_VERSION = "1.3.7"
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -1586,17 +1586,14 @@ def heartbeat_loop():
                     headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
                     method="POST"
                 )
-                urllib.request.urlopen(req, timeout=5)
-            except urllib.error.HTTPError as e:
-                if e.code == 426:
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode())
+                if data.get("update_available"):
                     global _update_required
                     _update_required = True
-                    log.warning("Server requires update (426) — forcing disconnect")
-                    with _lock:
-                        _connected = False
-                    cleanup_tunnel()
-                else:
-                    log.warning("Heartbeat failed: %s", e)
+                    log.info("Update available — will block reconnect after disconnect")
+            except urllib.error.HTTPError as e:
+                log.warning("Heartbeat failed: HTTP %s", e.code)
             except Exception as e:
                 log.warning("Heartbeat failed: %s", e)
 
