@@ -202,6 +202,16 @@ def cleanup_tunnel():
     Ensures the WireGuard tunnel drops when this Python script exits,
     even if the user forcibly closes the background command prompt window.
     """
+    if _connected and os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                cfg = json.load(f)
+            import urllib.request as _ur
+            _hb = json.dumps({"name": cfg.get("name", ""), "vpn_ip": cfg.get("vpn_ip", ""), "disconnecting": True}).encode()
+            _req = _ur.Request(f"{WORKER_URL}/api/heartbeat", data=_hb, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}, method="POST")
+            _ur.urlopen(_req, timeout=4)
+        except Exception:
+            pass
     try:
         wg = wg_exe()
         if wg:
@@ -398,6 +408,16 @@ def api_connect():
         with open(CONFIG_FILE, "r") as f:
             config_data = json.load(f)
         log.info("Config loaded — player=%s vpn_ip=%s", config_data.get("name"), config_data.get("vpn_ip"))
+
+        # Pre-connect heartbeat: tells backend to re-add UDM peer before tunnel installs
+        try:
+            import urllib.request as _ur
+            _hb = json.dumps({"name": config_data.get("name", ""), "vpn_ip": config_data.get("vpn_ip", ""), "version": VERSION}).encode()
+            _req = _ur.Request(f"{WORKER_URL}/api/heartbeat", data=_hb, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}, method="POST")
+            _ur.urlopen(_req, timeout=5)
+            log.info("Pre-connect heartbeat sent to public URL")
+        except Exception as _e:
+            log.warning("Pre-connect heartbeat failed: %s", _e)
 
         # Fetch live server config (falls back to hardcoded if Worker unreachable)
         srv = fetch_server_config()
@@ -1839,13 +1859,29 @@ if __name__ == "__main__":
     except Exception:
         pass
 
-    # Auto-reconnect: if the tunnel is already up (e.g. after an in-place update), resume connected state
+    # Startup WireGuard cleanup: if tunnel service is running from a previous unclean exit,
+    # send a pre-connect heartbeat to re-add UDM peer if needed, then resume connected state.
+    # If no config exists, uninstall the orphaned tunnel and stay disconnected.
     try:
         wg = wg_cli()
         if wg:
             result = subprocess.run([wg, "show", TUNNEL_NAME], capture_output=True, creationflags=0x08000000, timeout=3)
             if result.returncode == 0 and result.stdout.strip():
-                _connected = True
+                if os.path.exists(CONFIG_FILE):
+                    try:
+                        with open(CONFIG_FILE, "r") as f:
+                            _cfg = json.load(f)
+                        import urllib.request as _ur
+                        _hb = json.dumps({"name": _cfg.get("name", ""), "vpn_ip": _cfg.get("vpn_ip", ""), "version": VERSION}).encode()
+                        _req = _ur.Request(f"{WORKER_URL}/api/heartbeat", data=_hb, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}, method="POST")
+                        _ur.urlopen(_req, timeout=5)
+                        log.info("Startup pre-connect heartbeat sent (tunnel was already running)")
+                    except Exception as _e:
+                        log.warning("Startup heartbeat failed: %s", _e)
+                    _connected = True
+                else:
+                    subprocess.run([wg, "/uninstalltunnelservice", TUNNEL_NAME], capture_output=True, creationflags=0x08000000)
+                    log.info("Orphaned tunnel uninstalled on startup (no config found)")
     except Exception:
         pass
 
