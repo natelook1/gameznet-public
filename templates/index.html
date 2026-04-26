@@ -4733,6 +4733,7 @@
       const r = await fetch('/api/files/upload', {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/octet-stream',
           'X-Filename': file.name,
           'X-Description': description
         },

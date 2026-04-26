@@ -1526,7 +1526,7 @@ def api_proxy(subpath):
         ct = request.content_type or "application/json"
         # Forward auth headers so token-gated routes (WoW, mobile, etc.) work
         fwd_headers = {"User-Agent": "GamezNET", "Content-Type": ct}
-        for h in ("X-Token", "X-Session"):
+        for h in ("X-Token", "X-Session", "X-Filename", "X-Description", "X-Admin-Password"):
             val = request.headers.get(h)
             if val:
                 fwd_headers[h] = val
