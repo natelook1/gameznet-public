@@ -350,6 +350,7 @@ def update_telemetry():
 app = Flask(__name__,
             template_folder=resource_path("templates"),
             static_folder=resource_path("static"))
+app.config['MAX_CONTENT_LENGTH'] = 550 * 1024 * 1024  # 550MB max upload
 _lock = threading.Lock()
 _connected = False
 _invisible = False
