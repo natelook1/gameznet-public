@@ -4684,7 +4684,7 @@
             </div>
           </div>
           <div style="display:flex;gap:8px;flex-shrink:0;">
-            <a href="/api/files/${f.id}" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--accent);text-decoration:none;transition:all 0.15s;" title="Download">⬇</a>
+            <a href="{{ worker_url }}/api/files/${f.id}" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--accent);text-decoration:none;transition:all 0.15s;" title="Download">⬇</a>
           </div>
         </div>
       `;
@@ -4729,12 +4729,14 @@
 
     try {
       const buf = await file.arrayBuffer();
+      const token = localStorage.getItem('gzn_token');
       const r = await fetch('/api/files/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/octet-stream',
           'X-Filename': file.name,
-          'X-Description': description
+          'X-Description': description,
+          ...(token ? { 'X-Token': token } : {})
         },
         body: buf
       });
