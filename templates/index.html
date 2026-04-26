@@ -4685,7 +4685,6 @@
           </div>
           <div style="display:flex;gap:8px;flex-shrink:0;">
             <a href="/api/files/${f.id}" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--accent);text-decoration:none;transition:all 0.15s;" title="Download">⬇</a>
-            ${f.uploader === (window._playerName || '') ? `<button onclick="filesDelete('${f.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--red);transition:all 0.15s;">✕</button>` : ''}
           </div>
         </div>
       `;
