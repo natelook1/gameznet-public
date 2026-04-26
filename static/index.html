@@ -148,6 +148,34 @@
     .dm-row:active { background: var(--surface2); }
     .dm-unread { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; border-radius: 99px; padding: 2px 7px; flex-shrink: 0; }
 
+    /* ── Files ── */
+    .files-tab { display: flex; flex-direction: column; flex: 1; overflow: hidden; padding: 16px; gap: 16px; }
+    .upload-zone { border: 2px dashed var(--border2); border-radius: 12px; padding: 28px 20px; text-align: center; cursor: pointer; transition: all 0.15s; background: rgba(0,200,255,0.02); }
+    .upload-zone.active { border-color: var(--accent); background: rgba(0,200,255,0.08); }
+    .upload-content { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .upload-icon { font-size: 48px; opacity: 0.6; }
+    .upload-title { font-size: 15px; font-weight: 600; color: var(--text); }
+    .upload-subtitle { font-size: 13px; color: var(--text-dim); margin: -4px 0; }
+    .upload-btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 24px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+    .upload-btn:active { opacity: 0.85; }
+    .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .upload-limit { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+    .upload-error { background: rgba(255,51,85,0.1); border: 1px solid rgba(255,51,85,0.3); border-radius: 8px; padding: 12px; font-size: 13px; color: var(--danger); }
+    .files-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+    .file-row { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; transition: all 0.15s; }
+    .file-row:hover { background: var(--surface2); border-color: var(--border2); }
+    .file-icon { font-size: 20px; flex-shrink: 0; }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-meta { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+    .file-meta .dot { margin: 0 4px; }
+    .expires-soon { color: var(--warn); font-weight: 600; }
+    .file-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .file-action-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer; color: var(--text-dim); transition: all 0.15s; }
+    .file-action-btn:hover { border-color: var(--border2); color: var(--text); background: var(--surface); }
+    .file-action-btn.download { color: var(--accent); }
+    .file-action-btn.delete { color: var(--danger); }
+
     /* ── Bottom sheet ── */
     .sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: flex-end; animation: fade-in 0.15s ease; }
     .sheet { background: var(--surface); border-radius: 18px 18px 0 0; width: 100%; padding: 0 0 calc(24px + env(safe-area-inset-bottom,0px)); max-height: 85vh; overflow-y: auto; animation: slide-up 0.22s cubic-bezier(0.32,0.72,0,1); }
@@ -899,6 +927,185 @@
     `;
   }
 
+  // ── Files Tab (Drop Folder) ──────────────────────────────────────────────────
+  function FilesTab({ me }) {
+    const [files, setFiles] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState('');
+    const [dragActive, setDragActive] = useState(false);
+    const fileInputRef = useRef(null);
+
+    async function loadFiles() {
+      try {
+        setLoading(true);
+        const r = await req('/api/files');
+        if (r.ok) {
+          const data = await r.json();
+          setFiles(data.files || []);
+        }
+      } catch (e) {
+        console.error('Failed to load files:', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    useEffect(() => {
+      loadFiles();
+      const iv = setInterval(loadFiles, 30000);
+      return () => clearInterval(iv);
+    }, []);
+
+    async function handleUpload(file) {
+      if (!file) return;
+      if (file.size > 500 * 1024 * 1024) {
+        setUploadError('File exceeds 500MB limit');
+        return;
+      }
+
+      setUploading(true);
+      setUploadError('');
+      try {
+        const buf = await file.arrayBuffer();
+        const token = localStorage.getItem('gzn_token');
+        const description = prompt('Optional description (leave blank to skip):') || '';
+
+        const headers = {
+          'X-Token': token,
+          'X-Filename': file.name,
+          'X-Description': description
+        };
+
+        const r = await fetch(`${API}/api/files/upload`, {
+          method: 'POST',
+          headers,
+          body: buf
+        });
+
+        if (r.ok) {
+          setUploadError('');
+          await loadFiles();
+        } else {
+          const err = await r.json();
+          setUploadError(err.error || 'Upload failed');
+        }
+      } catch (e) {
+        setUploadError(e.message || 'Upload failed');
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    async function deleteFile(fileId) {
+      if (!confirm('Delete this file?')) return;
+      try {
+        const token = localStorage.getItem('gzn_token');
+        const r = await fetch(`${API}/api/files/${fileId}`, {
+          method: 'DELETE',
+          headers: { 'X-Token': token }
+        });
+        if (r.ok) {
+          await loadFiles();
+        } else {
+          alert('Failed to delete file');
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    function handleDrag(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(e.type === 'dragenter' || e.type === 'dragover');
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleUpload(files[0]);
+      }
+    }
+
+    function formatSize(bytes) {
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let size = bytes;
+      let unitIdx = 0;
+      while (size >= 1024 && unitIdx < units.length - 1) {
+        size /= 1024;
+        unitIdx++;
+      }
+      return size.toFixed(1) + ' ' + units[unitIdx];
+    }
+
+    function formatTime(isoStr) {
+      const d = new Date(isoStr);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    const token = localStorage.getItem('gzn_token');
+    const canDelete = (file) => file.uploader === me.name;
+
+    return html`
+      <div class="files-tab">
+        <div class="upload-zone ${dragActive ? 'active' : ''}"
+             onDragEnter=${handleDrag} onDragLeave=${handleDrag} onDragOver=${handleDrag} onDrop=${handleDrop}>
+          <div class="upload-content">
+            <div class="upload-icon">📁</div>
+            <div class="upload-title">Drop files here to share</div>
+            <div class="upload-subtitle">or</div>
+            <button type="button" class="upload-btn" onClick=${() => fileInputRef.current?.click()} disabled=${uploading}>
+              ${uploading ? 'Uploading...' : 'Choose File'}
+            </button>
+            <div class="upload-limit">Max 500MB per file • Auto-delete in 7 days</div>
+          </div>
+          <input ref=${fileInputRef} type="file" style="display:none" onChange=${e => handleUpload(e.target.files?.[0])} />
+        </div>
+
+        ${uploadError && html`<div class="upload-error">⚠️ ${uploadError}</div>`}
+
+        <div class="files-list">
+          ${loading ? html`<div class="empty"><span class="empty-icon">📂</span><span>Loading files…</span></div>` :
+            files.length === 0 ? html`<div class="empty"><span class="empty-icon">📂</span><span>No files yet</span></div>` :
+            html`
+              ${files.map(file => {
+                const expiresDate = new Date(file.expires_at);
+                const now = new Date();
+                const daysLeft = Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24));
+                return html`
+                  <div class="file-row" key=${file.id}>
+                    <div class="file-icon">📄</div>
+                    <div class="file-info">
+                      <div class="file-name" title=${file.original_filename}>${file.original_filename}</div>
+                      <div class="file-meta">
+                        ${file.description ? html`<span>${file.description}</span><span class="dot">•</span>` : ''}
+                        <span>${file.uploader}</span>
+                        <span class="dot">•</span>
+                        <span>${formatSize(file.file_size)}</span>
+                        <span class="dot">•</span>
+                        <span>${formatTime(file.uploaded_at)}</span>
+                        ${daysLeft <= 1 ? html`<span class="dot">•</span><span class="expires-soon">expires today</span>` :
+                          daysLeft <= 3 ? html`<span class="dot">•</span><span class="expires-soon">${daysLeft}d left</span>` : ''}
+                      </div>
+                    </div>
+                    <div class="file-actions">
+                      <a href="${API}/api/files/${file.id}" class="file-action-btn download" title="Download">⬇</a>
+                      ${canDelete(file) ? html`<button class="file-action-btn delete" onClick=${() => deleteFile(file.id)} title="Delete">✕</button>` : ''}
+                    </div>
+                  </div>
+                `;
+              })}
+            `
+          }
+        </div>
+      </div>
+    `;
+  }
+
   // ── Main App ────────────────────────────────────────────────────────────────
   function MainApp({ me }) {
     const [tab, setTab] = useState('home');
@@ -955,6 +1162,7 @@
       { id: 'chat',    icon: '💬', label: 'Chat' },
       { id: 'discord', icon: '🎮', label: 'Discord' },
       { id: 'dms',     icon: '✉️',  label: 'DMs', badge: dmUnread || null },
+      { id: 'files',   icon: '📁', label: 'Files' },
       { id: 'wow',     icon: html`<img src="/WoW_icon.svg" class="wow-tab-logo" alt="WoW" />`,  label: 'WoW' },
     ];
 
@@ -970,6 +1178,7 @@
           ${tab === 'chat'    && html`<${ChatTab}    me=${me} />`}
           ${tab === 'discord' && html`<${DiscordTab} me=${me} />`}
           ${tab === 'dms'     && html`<${DMsTab}     me=${me} onUnreadChange=${setDmUnread} />`}
+          ${tab === 'files'   && html`<${FilesTab}   me=${me} />`}
           ${tab === 'wow'     && html`<${WowTab}     me=${me} />`}
         </div>
         <nav class="tabbar">
