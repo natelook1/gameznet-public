@@ -4744,8 +4744,12 @@
         document.getElementById('files-input').value = '';
         await filesLoadAll();
       } else {
-        const err = await r.json();
-        filesError(err.error || 'Upload failed');
+        try {
+          const err = await r.json();
+          filesError(err.error || `Upload failed (${r.status})`);
+        } catch {
+          filesError(`Upload failed: ${r.status} ${r.statusText}`);
+        }
       }
     } catch (err) {
       filesError(err.message || 'Upload failed');
