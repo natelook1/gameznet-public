@@ -4729,12 +4729,10 @@
     const description = prompt('Optional description (leave blank to skip):') || '';
 
     try {
-      const token = localStorage.getItem('gzn_token');
       const buf = await file.arrayBuffer();
       const r = await fetch('/api/files/upload', {
         method: 'POST',
         headers: {
-          'X-Token': token,
           'X-Filename': file.name,
           'X-Description': description
         },
