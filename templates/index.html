@@ -2186,6 +2186,7 @@
     <button class="tab-btn active" onclick="switchTab('home', this)">HOME</button>
     <button class="tab-btn yt-tab" onclick="switchTab('youtube', this)">YOUTUBE</button>
     <button class="tab-btn dc-tab" onclick="switchTab('discord', this)">DISCORD<span class="dc-tab-badge" id="tab-dc-online" style="display:none;"></span></button>
+    <button class="tab-btn files-tab" onclick="switchTab('files', this)">📁 FILES</button>
     <button class="tab-btn wow-tab" onclick="switchTab('wow', this)">
       <img src="/static/WoW_icon.svg" class="wow-tab-logo" alt="WoW"> WOW
     </button>
@@ -2656,6 +2657,22 @@
           <div style="padding:8px;color:var(--text-dim);font-size:10px;font-family:'Share Tech Mono',monospace;">Loading...</div>
         </div>
       </div>
+    </div>
+
+    <!-- ── FILES TAB ── -->
+    <div id="files-section" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+      <div class="upload-zone" id="files-upload-zone">
+        <div class="upload-content">
+          <div style="font-size:40px;opacity:0.6;">📁</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);">Drop files to share</div>
+          <div style="font-size:12px;color:var(--text-dim);margin:8px 0 0;">or</div>
+          <button type="button" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;" onclick="document.getElementById('files-input').click();">Choose File</button>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:8px;">Max 500MB • Auto-delete in 7 days</div>
+        </div>
+        <input id="files-input" type="file" style="display:none;" />
+      </div>
+      <div id="files-error" style="display:none;background:rgba(255,51,85,0.1);border:1px solid rgba(255,51,85,0.3);border-radius:8px;padding:12px;font-size:13px;color:var(--red);margin:16px;"></div>
+      <div id="files-list" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;"></div>
     </div>
 
     <div id="wow-fullscreen-backdrop" onclick="if(event.target===this)toggleWowFullscreen()"></div>
@@ -4344,10 +4361,12 @@
     const dash = document.getElementById('dashboard-section');
     const yt   = document.getElementById('youtube-section');
     const dc   = document.getElementById('discord-section');
+    const files = document.getElementById('files-section');
     const wow  = document.getElementById('wow-section');
     dash.style.display = 'none';
     yt.classList.remove('yt-active');
     dc.classList.remove('dc-active');
+    files.style.display = 'none';
     wow.style.display = 'none';
     if (name === 'youtube') {
       yt.classList.add('yt-active');
@@ -4355,6 +4374,9 @@
     } else if (name === 'discord') {
       dc.classList.add('dc-active');
       if (Notification.permission === 'default') Notification.requestPermission();
+    } else if (name === 'files') {
+      files.style.display = 'flex';
+      if (!window._filesInitialized) { filesLoadAll(); window._filesInitialized = true; }
     } else if (name === 'wow') {
       wow.style.display = 'flex';
       if (!window._wowInitialized) { window._wowInitialized = true; wowLoadAll(); }
@@ -4614,6 +4636,146 @@
     });
     document.addEventListener('mouseup', () => { dragging = false; });
   })();
+
+  // ── Files tab ───────────────────────────────────────────────────────────────
+  async function filesLoadAll() {
+    try {
+      const r = await fetch('/api/files');
+      if (!r.ok) throw new Error('Failed to load files');
+      const data = await r.json();
+      filesRender(data.files || []);
+    } catch (err) {
+      filesError('Failed to load files: ' + err.message);
+    }
+  }
+
+  function filesRender(files) {
+    const el = document.getElementById('files-list');
+    const errEl = document.getElementById('files-error');
+    errEl.style.display = 'none';
+
+    if (files.length === 0) {
+      el.innerHTML = '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-dim);"><div style="font-size:32px;margin-bottom:10px;">📂</div><div>No files yet</div></div>';
+      return;
+    }
+
+    el.innerHTML = files.map(f => {
+      const expiresDate = new Date(f.expires_at);
+      const now = new Date();
+      const daysLeft = Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24));
+      const uploadTime = new Date(f.uploaded_at).toLocaleString();
+      const size = f.file_size > 1024*1024 ? (f.file_size/(1024*1024)).toFixed(1) + ' MB' : (f.file_size/1024).toFixed(1) + ' KB';
+
+      let expiryText = '';
+      if (daysLeft <= 1) expiryText = '<span style="color:var(--warn);font-weight:600;">expires today</span>';
+      else if (daysLeft <= 3) expiryText = '<span style="color:var(--warn);">' + daysLeft + 'd left</span>';
+
+      return `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
+          <div style="font-size:20px;">📄</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${f.original_filename}">${f.original_filename}</div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:3px;">
+              ${f.description ? `<span>${f.description}</span><span style="margin:0 4px;">•</span>` : ''}
+              <span>${f.uploader}</span><span style="margin:0 4px;">•</span>
+              <span>${size}</span><span style="margin:0 4px;">•</span>
+              <span>${uploadTime}</span>
+              ${expiryText ? '<span style="margin:0 4px;">•</span>' + expiryText : ''}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0;">
+            <a href="/api/files/${f.id}" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--accent);text-decoration:none;transition:all 0.15s;" title="Download">⬇</a>
+            ${f.uploader === (window._playerName || '') ? `<button onclick="filesDelete('${f.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--red);transition:all 0.15s;">✕</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function filesError(msg) {
+    const errEl = document.getElementById('files-error');
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+  }
+
+  async function filesDelete(fileId) {
+    if (!confirm('Delete this file?')) return;
+    try {
+      const token = localStorage.getItem('gzn_token');
+      const r = await fetch('/api/files/' + fileId, {
+        method: 'DELETE',
+        headers: { 'X-Token': token }
+      });
+      if (r.ok) {
+        await filesLoadAll();
+      } else {
+        filesError('Failed to delete file');
+      }
+    } catch (err) {
+      filesError('Error: ' + err.message);
+    }
+  }
+
+  // File upload setup
+  document.getElementById('files-input').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024 * 1024) {
+      filesError('File exceeds 500MB limit');
+      return;
+    }
+
+    const description = prompt('Optional description (leave blank to skip):') || '';
+
+    try {
+      const token = localStorage.getItem('gzn_token');
+      const buf = await file.arrayBuffer();
+      const r = await fetch('/api/files/upload', {
+        method: 'POST',
+        headers: {
+          'X-Token': token,
+          'X-Filename': file.name,
+          'X-Description': description
+        },
+        body: buf
+      });
+
+      if (r.ok) {
+        document.getElementById('files-input').value = '';
+        await filesLoadAll();
+      } else {
+        const err = await r.json();
+        filesError(err.error || 'Upload failed');
+      }
+    } catch (err) {
+      filesError(err.message || 'Upload failed');
+    }
+  });
+
+  // Drag-and-drop
+  const uploadZone = document.getElementById('files-upload-zone');
+  uploadZone.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    uploadZone.style.borderColor = 'var(--accent)';
+    uploadZone.style.background = 'rgba(0,200,255,0.08)';
+  });
+  uploadZone.addEventListener('dragleave', () => {
+    uploadZone.style.borderColor = 'var(--border2)';
+    uploadZone.style.background = 'rgba(0,200,255,0.02)';
+  });
+  uploadZone.addEventListener('dragover', (e) => e.preventDefault());
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.style.borderColor = 'var(--border2)';
+    uploadZone.style.background = 'rgba(0,200,255,0.02)';
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      document.getElementById('files-input').files = files;
+      const event = new Event('change', { bubbles: true });
+      document.getElementById('files-input').dispatchEvent(event);
+    }
+  });
 
   // ── Discord tab ─────────────────────────────────────────────────────────────
   const dcState = { activeChannel: null, roles: {}, channelNames: {}, unread: {}, lastMsgIds: {} };
