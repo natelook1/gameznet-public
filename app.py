@@ -79,7 +79,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.4.4"
+VERSION = "1.4.5"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -93,7 +93,7 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
-RUSTDESK_VERSION = "1.4.4"
+RUSTDESK_VERSION = "1.4.5"
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -1530,6 +1530,11 @@ def api_proxy(subpath):
             val = request.headers.get(h) or request.headers.get(h.lower())
             if val:
                 fwd_headers[h] = val
+
+        # Debug: log file upload headers
+        if 'files/upload' in url:
+            log.debug(f"[API Proxy] File upload to {url} - Received headers: {dict(request.headers)}")
+            log.debug(f"[API Proxy] File upload - Forwarding headers: {fwd_headers}")
         req = _ur.Request(url, data=body, headers=fwd_headers, method=request.method)
         with _ur.urlopen(req, timeout=10) as resp:
             return resp.read(), resp.status, {"Content-Type": resp.headers.get("Content-Type", "application/json")}
