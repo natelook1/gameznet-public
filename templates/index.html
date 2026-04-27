@@ -4645,7 +4645,9 @@
   // ── Files tab ───────────────────────────────────────────────────────────────
   async function filesLoadAll() {
     try {
-      const r = await fetch('/api/files');
+      const token = localStorage.getItem('gzn_token');
+      const headers = token ? { 'X-Token': token } : {};
+      const r = await fetch('/api/files', { headers });
       if (!r.ok) throw new Error('Failed to load files');
       const data = await r.json();
       filesRender(data.files || []);
