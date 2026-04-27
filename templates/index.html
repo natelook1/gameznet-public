@@ -2676,7 +2676,7 @@
       <div id="files-list" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;"></div>
 
       <!-- Upload Settings Modal -->
-      <div id="upload-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:50;" onclick="if(event.target===this)closeUploadModal()">
+      <div id="upload-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:50;" onclick="if(event.target===this)closeUploadModal()">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:400px;width:90%;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.5);" onclick="event.stopPropagation()">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border);flex-shrink:0;">
             <div style="font-size:16px;font-weight:600;color:var(--text);">Upload Settings</div>
@@ -4683,6 +4683,12 @@
     try {
       const token = localStorage.getItem('gzn_token');
       const headers = token ? { 'X-Token': token } : {};
+
+      // Send VPN IP if available (for VPN-based auth on desktop)
+      if (state.vpnIp) {
+        headers['X-Client-IP'] = state.vpnIp;
+      }
+
       const r = await fetch('/api/files', { headers });
       if (!r.ok) throw new Error('Failed to load files');
       const data = await r.json();
