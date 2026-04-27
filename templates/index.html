@@ -1141,7 +1141,7 @@
     .steam-news-title { font-size: 10px; font-weight: 600; line-height: 1.3; }
     .steam-news-title a { color: var(--text); text-decoration: none; }
     .steam-news-title a:hover { color: var(--accent); }
-    .steam-news-excerpt { font-size: 9px; color: var(--text-dim); line-height: 1.4; margin-top: 1px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .steam-news-excerpt { font-size: 9px; color: var(--text-dim); line-height: 1.4; margin-top: 1px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
 
     /* ── Discord unread & mentions ── */
     .dc-unread-dot { width: 7px; height: 7px; background: var(--danger); border-radius: 50%; flex-shrink: 0; margin-left: auto; }
@@ -1357,7 +1357,7 @@
     .yt-card-info { padding: 7px 4px; background: var(--bg); }
     .yt-card-title {
       font-size: 12px; font-weight: 600; line-height: 1.3; margin-bottom: 3px;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
     .yt-card-meta { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; }
 
@@ -1392,7 +1392,7 @@
     .yt-mini-info { flex: 1; min-width: 0; }
     .yt-mini-title {
       font-size: 11px; font-weight: 600; line-height: 1.3;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
     .yt-mini-meta { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; margin-top: 3px; }
 
@@ -2694,8 +2694,8 @@
             <div style="display:flex;flex-direction:column;gap:8px;">
               <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">Visibility</label>
               <div style="display:flex;gap:8px;">
-                <button id="upload-modal-public-btn" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--accent);color:#fff;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;" onclick="uploadModalIsPublic=true;document.getElementById('upload-modal-users').style.display='none';document.getElementById('upload-modal-public-btn').style.background='var(--accent)';document.getElementById('upload-modal-private-btn').style.background='transparent';">🌐 Public</button>
-                <button id="upload-modal-private-btn" style="flex:1;padding:10px;border:1px solid var(--border);background:transparent;color:var(--text-dim);border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;" onclick="uploadModalIsPublic=false;document.getElementById('upload-modal-users').style.display='flex';document.getElementById('upload-modal-private-btn').style.background='var(--accent)';document.getElementById('upload-modal-private-btn').style.color='#fff';document.getElementById('upload-modal-public-btn').style.background='transparent';document.getElementById('upload-modal-public-btn').style.color='var(--text-dim)';">🔒 Private</button>
+                <button id="upload-modal-public-btn" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--accent);color:#fff;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;" onclick="setUploadVisibility(true)">🌐 Public</button>
+                <button id="upload-modal-private-btn" style="flex:1;padding:10px;border:1px solid var(--border);background:transparent;color:var(--text-dim);border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;" onclick="setUploadVisibility(false)">🔒 Private</button>
               </div>
             </div>
             <div id="upload-modal-users" style="display:none;flex-direction:column;gap:8px;">
@@ -4811,11 +4811,20 @@
 
       document.getElementById('upload-modal-filename').textContent = file.name;
       document.getElementById('upload-modal-description').value = '';
-      document.getElementById('upload-modal-public-btn').click();
+      setUploadVisibility(true);
       document.getElementById('upload-modal').style.display = 'flex';
     } catch (err) {
       filesError('Failed to load online players: ' + err.message);
     }
+  }
+
+  function setUploadVisibility(isPublic) {
+    uploadModalIsPublic = isPublic;
+    document.getElementById('upload-modal-users').style.display = isPublic ? 'none' : 'flex';
+    document.getElementById('upload-modal-public-btn').style.background = isPublic ? 'var(--accent)' : 'transparent';
+    document.getElementById('upload-modal-public-btn').style.color = isPublic ? '#fff' : 'var(--text-dim)';
+    document.getElementById('upload-modal-private-btn').style.background = isPublic ? 'transparent' : 'var(--accent)';
+    document.getElementById('upload-modal-private-btn').style.color = isPublic ? 'var(--text-dim)' : '#fff';
   }
 
   function closeUploadModal() {
