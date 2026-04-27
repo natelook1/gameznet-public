@@ -4681,12 +4681,16 @@
   // ── Files tab ───────────────────────────────────────────────────────────────
   async function filesLoadAll() {
     try {
-      const token = localStorage.getItem('gzn_token');
-      const headers = token ? { 'X-Token': token } : {};
+      const headers = {};
 
-      // Send VPN IP if available (for VPN-based auth on desktop)
+      // Desktop: send VPN IP for auth (user is authenticated by VPN connection)
       if (state.vpnIp) {
         headers['X-Client-IP'] = state.vpnIp;
+      }
+
+      // Mobile: send token if available
+      if (state.token) {
+        headers['X-Token'] = state.token;
       }
 
       const r = await fetch('/api/files', { headers });
@@ -4770,6 +4774,8 @@
   let uploadModalDescription = '';
 
   async function showUploadModal(file) {
+    if (!file) return;
+
     uploadModalFile = file;
     uploadModalIsPublic = true;
     uploadModalSelectedUsers.clear();
@@ -4781,38 +4787,41 @@
       const players = await r.json();
       const playerNames = players.map(p => p.name).sort();
 
-      const modal = document.getElementById('upload-modal');
-      const userList = document.getElementById('upload-modal-users');
-      userList.innerHTML = playerNames.map(name => `
-        <label style="display:flex;gap:8px;padding:8px;border-radius:6px;cursor:pointer;transition:background 0.15s;" class="upload-user-checkbox">
-          <input type="checkbox" data-user="${name}" />
-          <span>${name}</span>
-        </label>
-      `).join('');
+      const userList = document.getElementById('upload-modal-users').parentElement;
+      const checkboxContainer = userList.querySelector('div[style*="flex-direction:column"]');
+      if (checkboxContainer) {
+        checkboxContainer.innerHTML = playerNames.map(name => `
+          <label style="display:flex;gap:8px;padding:8px;border-radius:6px;cursor:pointer;transition:background 0.15s;" class="upload-user-checkbox">
+            <input type="checkbox" data-user="${name}" />
+            <span>${name}</span>
+          </label>
+        `).join('');
 
-      // Add change listeners to checkboxes
-      userList.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-          if (e.target.checked) {
-            uploadModalSelectedUsers.add(e.target.dataset.user);
-          } else {
-            uploadModalSelectedUsers.delete(e.target.dataset.user);
-          }
+        // Add change listeners to checkboxes
+        checkboxContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          cb.addEventListener('change', (e) => {
+            if (e.target.checked) {
+              uploadModalSelectedUsers.add(e.target.dataset.user);
+            } else {
+              uploadModalSelectedUsers.delete(e.target.dataset.user);
+            }
+          });
         });
-      });
+      }
 
       document.getElementById('upload-modal-filename').textContent = file.name;
       document.getElementById('upload-modal-description').value = '';
       document.getElementById('upload-modal-public-btn').click();
-      modal.style.display = 'flex';
+      document.getElementById('upload-modal').style.display = 'flex';
     } catch (err) {
-      filesError('Failed to load online players');
+      filesError('Failed to load online players: ' + err.message);
     }
   }
 
   function closeUploadModal() {
     document.getElementById('upload-modal').style.display = 'none';
     uploadModalFile = null;
+    document.getElementById('files-input').value = '';
   }
 
   async function confirmUpload() {
