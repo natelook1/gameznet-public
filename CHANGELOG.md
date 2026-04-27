@@ -1,5 +1,54 @@
 # Changelog
 
+## v1.5.4 — 2026-04-27
+
+### Added
+- **File sharing** — players can upload files (up to 500 MB) to a shared drop folder accessible from the Files tab. Files are served directly and can be downloaded by anyone on the network
+- **Public / Private file visibility** — when uploading, choose between Public (visible to everyone) or Private (restricted to specific players you select). Private files show a user selection checklist populated from currently online players
+- **Upload settings modal** — a dialog appears on file select with a description field, public/private toggle, and multi-select user list; defaults to public so simple uploads stay frictionless
+- **File identity & access control** — uploads are tied to the uploader's token; the backend enforces visibility rules so private files are filtered out for users not on the allowlist. Desktop app uses VPN IP lookup for identity; mobile app uses token auth
+- **Admin file management** — the admin panel has a dedicated Files tab showing all files (public and private) regardless of visibility, with delete controls
+
+### Changed
+- **Non-Home tabs hidden until VPN connected** — Files, Discord, WoW, and YouTube tabs are greyed out and inaccessible until a VPN connection is active, making the connection requirement explicit
+
+### Fixed
+- **File uploads now require authentication** — unauthenticated upload attempts return 401
+- **File downloads route directly to HTTPS backend** — previously broken due to Flask proxy not forwarding the token header correctly
+- **Upload modal no longer fires on tab switch** — fixed a race condition where the file input change event could trigger without a file selected
+- **Admin panel tabs and file download regression repaired** — a JS parse error introduced during admin panel refactor was breaking the login screen
+
+---
+
+## v1.4.1 — 2026-04-26
+
+### Added
+- **UDM WireGuard peer lifecycle** — the backend now manages WireGuard peers on the UniFi Dream Machine automatically: peers are added when a player connects (heartbeat), removed when they disconnect or time out, and re-added when they reconnect. No manual UDM configuration required after initial setup
+- **KICK button** — admins can force-remove a player's UDM peer from the admin panel, immediately dropping their VPN access. The peer is blocked from reconnecting until they run GamezNET again (which re-adds them)
+- **UDM sync** — `/admin/wg/sync` cross-references the token database against UDM peers and adds any missing entries. Run automatically; also available as a manual trigger in the admin panel
+- **UDM purge** — `/admin/wg/purge` removes orphan peers from the UDM that have no matching token in the database, keeping the peer list clean
+
+### Fixed
+- **Invisible players shown as recently online** — players marked hidden were previously omitted entirely from the roster; now shown in a dimmed "recently online" state so admins can still see them
+
+---
+
+## v1.3.0 — 2026-04-15
+
+### Changed
+- **Network stability** — enforced `proxy_stable` Docker network for backend container, eliminating intermittent routing drops that caused heartbeat timeouts on busy hosts
+- **MTU tuned to 1360** — reduced WireGuard MTU to prevent fragmentation-related packet loss on some ISPs
+
+---
+
+## v1.2.16 — 2026-04-10
+
+### Added
+- **Mobile WoW portraits & raid badge** — character portraits now load in the mobile WoW tab; raid progression badge displayed alongside character name
+- **WoW icon for game identification** — WoW icon shown in the Who's Online list when a player is detected playing World of Warcraft
+
+---
+
 ## v1.2.13 — 2026-04-05
 
 ### Fixed

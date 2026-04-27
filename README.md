@@ -94,6 +94,22 @@ The admin can schedule a session from the **+ Schedule Session** button below th
 
 ---
 
+## 📁 Files
+
+The **Files** tab is a shared drop folder for the network — upload anything up to 500 MB and anyone on the network can download it instantly.
+
+**Upload** — click the upload button and select a file. An upload dialog appears where you can:
+- Add an optional description
+- Set visibility to **Public** (visible to everyone) or **Private** (restricted to specific players you choose from the currently online list)
+
+**Public files** are visible to all authenticated users. **Private files** are only visible to the uploader and the players explicitly selected at upload time.
+
+The **admin panel** Files tab shows all files regardless of visibility and includes delete controls.
+
+> Files tab is only accessible while connected to the VPN.
+
+---
+
 ## 🎙️ Discord
 
 The **Discord** tab is a full embedded Discord experience — no Discord account or login required.
@@ -414,6 +430,13 @@ All variables are loaded from `/etc/gameznet/.env` at deploy time. Credentials a
 | `/auth/steam/callback` | GET | Steam OpenID callback — verify, fetch profile, link token |
 | `/api/steam/profile` | GET | Fetch cached Steam profile by player name |
 | `/api/steam/unlink` | POST | Remove Steam link from a token |
+| `/api/files` | GET | List files visible to the requesting user (public + private allowlisted) |
+| `/api/files/upload` | POST | Upload a file (auth required); `X-Allowed-Users` header for private sharing |
+| `/api/files/:id` | GET | Download a file (access-controlled) |
+| `/api/files/:id` | DELETE | Delete a file (uploader token or admin password) |
+| `/admin/wg/peers` | POST | List all WireGuard peers on the UDM |
+| `/admin/wg/sync` | POST | Add any DB-provisioned peers missing from the UDM |
+| `/admin/wg/purge` | POST | Remove orphan peers from UDM with no matching token |
 
 </details>
 
