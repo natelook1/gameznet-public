@@ -1183,6 +1183,7 @@
     .tab-btn.dc-tab.active { color: #5865f2; border-bottom-color: #5865f2; }
     .dc-tab-badge { display: inline-block; background: #5865f2; color: #fff; font-size: 9px; padding: 1px 5px; border-radius: 8px; margin-left: 5px; vertical-align: middle; line-height: 1.4; }
     .tab-btn.wow-tab.active { color: #f0b429; border-bottom-color: #f0b429; }
+    .tab-nav.tabs-locked .tab-btn:not(.home-tab) { display: none; }
     .wow-tab-logo { height: 16px; opacity: 0.5; filter: grayscale(1); transition: all 0.15s; vertical-align: middle; }
     .tab-btn.wow-tab:hover .wow-tab-logo { opacity: 0.8; filter: grayscale(0.5); }
     .tab-btn.wow-tab.active .wow-tab-logo { opacity: 1; filter: grayscale(0) drop-shadow(0 2px 6px rgba(240, 180, 41, 0.4)); }
@@ -2183,7 +2184,7 @@
 
   <!-- Tab nav (shown once provisioned) -->
   <div class="tab-nav" id="tab-nav">
-    <button class="tab-btn active" onclick="switchTab('home', this)">HOME</button>
+    <button class="tab-btn home-tab active" onclick="switchTab('home', this)">HOME</button>
     <button class="tab-btn yt-tab" onclick="switchTab('youtube', this)">YOUTUBE</button>
     <button class="tab-btn dc-tab" onclick="switchTab('discord', this)">DISCORD<span class="dc-tab-badge" id="tab-dc-online" style="display:none;"></span></button>
     <button class="tab-btn files-tab" onclick="switchTab('files', this)">📁 FILES</button>
@@ -2919,7 +2920,7 @@
 
   function showProvisioned() {
     showView('dashboard');
-    document.getElementById('tab-nav').classList.add('visible');
+    document.getElementById('tab-nav').classList.add('visible', 'tabs-locked');
     document.getElementById('info-name').textContent = state.name;
     const ph = document.getElementById('session-avatar-ph');
     if (ph) ph.textContent = (state.name || '?')[0].toUpperCase();
@@ -2981,6 +2982,7 @@
       footer.textContent = `ACTIVE · ${state.name.toUpperCase()}`;
       startSessionTimer();
       document.getElementById('col-left').classList.add('net-connected');
+      document.getElementById('tab-nav').classList.remove('tabs-locked');
       document.getElementById('chat-float').style.display = '';
       document.getElementById('net-pill').classList.add('visible');
       document.getElementById('net-pill-ip').textContent = state.clientIp || '';
@@ -3025,6 +3027,9 @@
       
       footer.textContent = state.provisioned ? `READY · ${state.name.toUpperCase()}` : 'AWAITING SETUP';
       document.getElementById('col-left').classList.remove('net-connected');
+      document.getElementById('tab-nav').classList.add('tabs-locked');
+      const homeBtn = document.querySelector('#tab-nav .home-tab');
+      if (homeBtn && !homeBtn.classList.contains('active')) switchTab('home', homeBtn);
       document.getElementById('chat-float').style.display = 'none';
       document.getElementById('net-pill').classList.remove('visible');
       document.getElementById('net-dropdown').classList.remove('open');
