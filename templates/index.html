@@ -2674,6 +2674,42 @@
       </div>
       <div id="files-error" style="display:none;background:rgba(255,51,85,0.1);border:1px solid rgba(255,51,85,0.3);border-radius:8px;padding:12px;font-size:13px;color:var(--red);margin:16px;"></div>
       <div id="files-list" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;"></div>
+
+      <!-- Upload Settings Modal -->
+      <div id="upload-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:50;" onclick="if(event.target===this)closeUploadModal()">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:400px;width:90%;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.5);" onclick="event.stopPropagation()">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div style="font-size:16px;font-weight:600;color:var(--text);">Upload Settings</div>
+            <button style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:4px;" onclick="closeUploadModal()">✕</button>
+          </div>
+          <div style="padding:16px;flex:1;display:flex;flex-direction:column;gap:16px;overflow-y:auto;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">Filename</label>
+              <div id="upload-modal-filename" style="font-size:13px;color:var(--text);padding:10px;background:var(--surface2);border-radius:6px;"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">Description (optional)</label>
+              <input id="upload-modal-description" type="text" placeholder="Add a description..." style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:13px;color:var(--text);outline:none;" />
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">Visibility</label>
+              <div style="display:flex;gap:8px;">
+                <button id="upload-modal-public-btn" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--accent);color:#fff;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;" onclick="uploadModalIsPublic=true;document.getElementById('upload-modal-users').style.display='none';document.getElementById('upload-modal-public-btn').style.background='var(--accent)';document.getElementById('upload-modal-private-btn').style.background='transparent';">🌐 Public</button>
+                <button id="upload-modal-private-btn" style="flex:1;padding:10px;border:1px solid var(--border);background:transparent;color:var(--text-dim);border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;" onclick="uploadModalIsPublic=false;document.getElementById('upload-modal-users').style.display='flex';document.getElementById('upload-modal-private-btn').style.background='var(--accent)';document.getElementById('upload-modal-private-btn').style.color='#fff';document.getElementById('upload-modal-public-btn').style.background='transparent';document.getElementById('upload-modal-public-btn').style.color='var(--text-dim)';">🔒 Private</button>
+              </div>
+            </div>
+            <div id="upload-modal-users" style="display:none;flex-direction:column;gap:8px;">
+              <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">Allowed Users</label>
+              <div style="display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto;padding:4px;"></div>
+              <div id="upload-modal-hint" style="font-size:11px;color:var(--muted);margin-top:4px;">Select at least one user to proceed</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;padding:16px;border-top:1px solid var(--border);flex-shrink:0;">
+            <button style="flex:1;background:transparent;border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;" onclick="closeUploadModal()">Cancel</button>
+            <button style="flex:1;background:var(--accent);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;" onclick="confirmUpload()">Upload</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="wow-fullscreen-backdrop" onclick="if(event.target===this)toggleWowFullscreen()"></div>
@@ -4721,32 +4757,84 @@
     }
   }
 
-  // File upload setup
-  document.getElementById('files-input').addEventListener('change', async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // File upload modal state
+  let uploadModalFile = null;
+  let uploadModalIsPublic = true;
+  let uploadModalSelectedUsers = new Set();
+  let uploadModalDescription = '';
 
-    if (file.size > 500 * 1024 * 1024) {
-      filesError('File exceeds 500MB limit');
-      return;
+  async function showUploadModal(file) {
+    uploadModalFile = file;
+    uploadModalIsPublic = true;
+    uploadModalSelectedUsers.clear();
+    uploadModalDescription = '';
+
+    // Fetch online players for the modal
+    try {
+      const r = await fetch('/api/online');
+      const players = await r.json();
+      const playerNames = players.map(p => p.name).sort();
+
+      const modal = document.getElementById('upload-modal');
+      const userList = document.getElementById('upload-modal-users');
+      userList.innerHTML = playerNames.map(name => `
+        <label style="display:flex;gap:8px;padding:8px;border-radius:6px;cursor:pointer;transition:background 0.15s;" class="upload-user-checkbox">
+          <input type="checkbox" data-user="${name}" />
+          <span>${name}</span>
+        </label>
+      `).join('');
+
+      // Add change listeners to checkboxes
+      userList.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            uploadModalSelectedUsers.add(e.target.dataset.user);
+          } else {
+            uploadModalSelectedUsers.delete(e.target.dataset.user);
+          }
+        });
+      });
+
+      document.getElementById('upload-modal-filename').textContent = file.name;
+      document.getElementById('upload-modal-description').value = '';
+      document.getElementById('upload-modal-public-btn').click();
+      modal.style.display = 'flex';
+    } catch (err) {
+      filesError('Failed to load online players');
     }
+  }
 
-    const description = prompt('Optional description (leave blank to skip):') || '';
+  function closeUploadModal() {
+    document.getElementById('upload-modal').style.display = 'none';
+    uploadModalFile = null;
+  }
+
+  async function confirmUpload() {
+    if (!uploadModalFile) return;
+
+    uploadModalDescription = document.getElementById('upload-modal-description').value || '';
 
     try {
-      const buf = await file.arrayBuffer();
+      const buf = await uploadModalFile.arrayBuffer();
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Filename': uploadModalFile.name,
+        'X-Description': uploadModalDescription,
+        ...(state.token ? { 'X-Token': state.token } : {})
+      };
+
+      if (!uploadModalIsPublic && uploadModalSelectedUsers.size > 0) {
+        headers['X-Allowed-Users'] = Array.from(uploadModalSelectedUsers).join(',');
+      }
+
       const r = await fetch('/api/files/upload', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'X-Filename': file.name,
-          'X-Description': description,
-          ...(state.token ? { 'X-Token': state.token } : {})
-        },
+        headers,
         body: buf
       });
 
       if (r.ok) {
+        closeUploadModal();
         document.getElementById('files-input').value = '';
         await filesLoadAll();
       } else {
@@ -4760,6 +4848,19 @@
     } catch (err) {
       filesError(err.message || 'Upload failed');
     }
+  }
+
+  // File upload setup
+  document.getElementById('files-input').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024 * 1024) {
+      filesError('File exceeds 500MB limit');
+      return;
+    }
+
+    showUploadModal(file);
   });
 
   // Drag-and-drop
