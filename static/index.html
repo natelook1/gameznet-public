@@ -161,6 +161,42 @@
     .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .upload-limit { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
     .upload-error { background: rgba(255,51,85,0.1); border: 1px solid rgba(255,51,85,0.3); border-radius: 8px; padding: 12px; font-size: 13px; color: var(--danger); }
+
+    /* ── Modal Overlay ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
+    .modal-dialog { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; max-width: 400px; width: 90%; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .modal-title { font-size: 16px; font-weight: 600; color: var(--text); }
+    .modal-close { background: none; border: none; color: var(--text-dim); font-size: 20px; cursor: pointer; padding: 4px; }
+    .modal-close:hover { color: var(--text); }
+    .modal-content { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+    .modal-footer { display: flex; gap: 8px; padding: 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .modal-footer .btn { flex: 1; }
+    .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Settings ── */
+    .setting-group { display: flex; flex-direction: column; gap: 8px; }
+    .setting-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+    .setting-value { font-size: 13px; color: var(--text); padding: 10px; background: var(--surface2); border-radius: 6px; }
+    .setting-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-size: 13px; color: var(--text); outline: none; }
+    .setting-input:focus { border-color: var(--accent); }
+    .setting-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* ── Visibility Toggle ── */
+    .visibility-toggle { display: flex; gap: 8px; }
+    .toggle-btn { flex: 1; padding: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .toggle-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .toggle-btn:hover:not(.active) { border-color: var(--accent); }
+
+    /* ── User Select ── */
+    .user-select { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding: 4px; }
+    .user-checkbox { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+    .user-checkbox:hover { background: var(--surface2); }
+    .user-checkbox input { cursor: pointer; }
+    .user-checkbox span { font-size: 13px; color: var(--text); }
+    .empty-users { text-align: center; padding: 12px; font-size: 12px; color: var(--muted); }
+
     .files-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
     .file-row { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; transition: all 0.15s; }
     .file-row:hover { background: var(--surface2); border-color: var(--border2); }
@@ -934,6 +970,12 @@
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState('');
     const [dragActive, setDragActive] = useState(false);
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [pendingFile, setPendingFile] = useState(null);
+    const [onlineUsers, setOnlineUsers] = useState([]);
+    const [selectedUsers, setSelectedUsers] = useState(new Set());
+    const [isPublic, setIsPublic] = useState(true);
+    const [description, setDescription] = useState('');
     const fileInputRef = useRef(null);
 
     async function loadFiles() {
@@ -951,15 +993,36 @@
       }
     }
 
+    async function loadOnlineUsers() {
+      try {
+        const r = await req('/api/online');
+        if (r.ok) {
+          const players = await r.json();
+          setOnlineUsers(players.map(p => p.name).sort());
+        }
+      } catch (e) {
+        console.error('Failed to load online users:', e);
+      }
+    }
+
     useEffect(() => {
       loadFiles();
-      const iv = setInterval(loadFiles, 30000);
+      loadOnlineUsers();
+      const iv = setInterval(() => { loadFiles(); loadOnlineUsers(); }, 30000);
       return () => clearInterval(iv);
     }, []);
 
-    async function handleUpload(file) {
-      if (!file) return;
-      if (file.size > 500 * 1024 * 1024) {
+    function openUploadDialog(file) {
+      setPendingFile(file);
+      setSelectedUsers(new Set());
+      setIsPublic(true);
+      setDescription('');
+      setShowUploadModal(true);
+    }
+
+    async function handleUploadWithSettings() {
+      if (!pendingFile) return;
+      if (pendingFile.size > 500 * 1024 * 1024) {
         setUploadError('File exceeds 500MB limit');
         return;
       }
@@ -967,15 +1030,18 @@
       setUploading(true);
       setUploadError('');
       try {
-        const buf = await file.arrayBuffer();
+        const buf = await pendingFile.arrayBuffer();
         const token = localStorage.getItem('gzn_token');
-        const description = prompt('Optional description (leave blank to skip):') || '';
 
         const headers = {
           'X-Token': token,
-          'X-Filename': file.name,
+          'X-Filename': pendingFile.name,
           'X-Description': description
         };
+
+        if (!isPublic && selectedUsers.size > 0) {
+          headers['X-Allowed-Users'] = Array.from(selectedUsers).join(',');
+        }
 
         const r = await fetch(`${API}/api/files/upload`, {
           method: 'POST',
@@ -985,6 +1051,8 @@
 
         if (r.ok) {
           setUploadError('');
+          setShowUploadModal(false);
+          setPendingFile(null);
           await loadFiles();
         } else {
           const err = await r.json();
@@ -995,6 +1063,16 @@
       } finally {
         setUploading(false);
       }
+    }
+
+    function toggleUser(user) {
+      const newSet = new Set(selectedUsers);
+      if (newSet.has(user)) {
+        newSet.delete(user);
+      } else {
+        newSet.add(user);
+      }
+      setSelectedUsers(newSet);
     }
 
     async function deleteFile(fileId) {
@@ -1027,7 +1105,14 @@
       setDragActive(false);
       const files = e.dataTransfer.files;
       if (files.length > 0) {
-        handleUpload(files[0]);
+        openUploadDialog(files[0]);
+      }
+    }
+
+    function handleFileInputChange(e) {
+      if (e.target.files?.[0]) {
+        openUploadDialog(e.target.files[0]);
+        e.target.value = '';
       }
     }
 
@@ -1063,10 +1148,68 @@
             </button>
             <div class="upload-limit">Max 500MB per file • Auto-delete in 7 days</div>
           </div>
-          <input ref=${fileInputRef} type="file" style="display:none" onChange=${e => handleUpload(e.target.files?.[0])} />
+          <input ref=${fileInputRef} type="file" style="display:none" onChange=${handleFileInputChange} />
         </div>
 
         ${uploadError && html`<div class="upload-error">⚠️ ${uploadError}</div>`}
+
+        ${showUploadModal && html`
+          <div class="modal-overlay" onClick=${() => setShowUploadModal(false)}>
+            <div class="modal-dialog" onClick=${e => e.stopPropagation()}>
+              <div class="modal-header">
+                <div class="modal-title">Upload Settings</div>
+                <button class="modal-close" onClick=${() => setShowUploadModal(false)}>✕</button>
+              </div>
+              <div class="modal-content">
+                <div class="setting-group">
+                  <label class="setting-label">Filename</label>
+                  <div class="setting-value">${pendingFile?.name}</div>
+                </div>
+
+                <div class="setting-group">
+                  <label class="setting-label">Description (optional)</label>
+                  <input type="text" class="setting-input" placeholder="Add a description..." value=${description} onInput=${e => setDescription(e.target.value)} />
+                </div>
+
+                <div class="setting-group">
+                  <label class="setting-label">Visibility</label>
+                  <div class="visibility-toggle">
+                    <button class="toggle-btn ${isPublic ? 'active' : ''}" onClick=${() => { setIsPublic(true); setSelectedUsers(new Set()); }}>
+                      🌐 Public
+                    </button>
+                    <button class="toggle-btn ${!isPublic ? 'active' : ''}" onClick=${() => setIsPublic(false)}>
+                      🔒 Private
+                    </button>
+                  </div>
+                </div>
+
+                ${!isPublic && html`
+                  <div class="setting-group">
+                    <label class="setting-label">Allowed Users</label>
+                    <div class="user-select">
+                      ${onlineUsers.length === 0 ? html`<div class="empty-users">No online users</div>` :
+                        onlineUsers.map(user => html`
+                          <label class="user-checkbox">
+                            <input type="checkbox"
+                              checked=${selectedUsers.has(user)}
+                              onChange=${() => toggleUser(user)} />
+                            <span>${user}</span>
+                          </label>
+                        `)}
+                    </div>
+                    ${selectedUsers.size === 0 && !isPublic && html`<div class="setting-hint">Select at least one user to proceed</div>`}
+                  </div>
+                `}
+              </div>
+              <div class="modal-footer">
+                <button class="btn-secondary" onClick=${() => setShowUploadModal(false)}>Cancel</button>
+                <button class="btn" onClick=${handleUploadWithSettings} disabled=${uploading || (!isPublic && selectedUsers.size === 0)}>
+                  ${uploading ? 'Uploading...' : 'Upload'}
+                </button>
+              </div>
+            </div>
+          </div>
+        `}
 
         <div class="files-list">
           ${loading ? html`<div class="empty"><span class="empty-icon">📂</span><span>Loading files…</span></div>` :
