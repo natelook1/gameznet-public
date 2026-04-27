@@ -4787,8 +4787,8 @@
       const players = await r.json();
       const playerNames = players.map(p => p.name).sort();
 
-      const userList = document.getElementById('upload-modal-users').parentElement;
-      const checkboxContainer = userList.querySelector('div[style*="flex-direction:column"]');
+      const userList = document.getElementById('upload-modal-users');
+      const checkboxContainer = userList.querySelector('div');
       if (checkboxContainer) {
         checkboxContainer.innerHTML = playerNames.map(name => `
           <label style="display:flex;gap:8px;padding:8px;border-radius:6px;cursor:pointer;transition:background 0.15s;" class="upload-user-checkbox">
@@ -4797,7 +4797,6 @@
           </label>
         `).join('');
 
-        // Add change listeners to checkboxes
         checkboxContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
           cb.addEventListener('change', (e) => {
             if (e.target.checked) {
