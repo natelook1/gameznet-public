@@ -4773,7 +4773,7 @@
   let uploadModalSelectedUsers = new Set();
   let uploadModalDescription = '';
 
-  async function showUploadModal(file) {
+  function showUploadModal(file) {
     if (!file) return;
 
     uploadModalFile = file;
@@ -4781,14 +4781,16 @@
     uploadModalSelectedUsers.clear();
     uploadModalDescription = '';
 
-    // Fetch online players for the modal
-    try {
-      const r = await fetch('/api/online');
-      const players = await r.json();
-      const playerNames = players.map(p => p.name).sort();
+    document.getElementById('upload-modal-filename').textContent = file.name;
+    document.getElementById('upload-modal-description').value = '';
+    setUploadVisibility(true);
+    document.getElementById('upload-modal').style.display = 'flex';
 
+    // Fetch online players in background (only needed for private uploads)
+    fetch('/api/online').then(r => r.json()).then(players => {
+      const playerNames = players.map(p => p.name).sort();
       const userList = document.getElementById('upload-modal-users');
-      const checkboxContainer = userList.querySelector('div');
+      const checkboxContainer = userList && userList.querySelector('div');
       if (checkboxContainer) {
         checkboxContainer.innerHTML = playerNames.map(name => `
           <label style="display:flex;gap:8px;padding:8px;border-radius:6px;cursor:pointer;transition:background 0.15s;" class="upload-user-checkbox">
@@ -4796,7 +4798,6 @@
             <span>${name}</span>
           </label>
         `).join('');
-
         checkboxContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
           cb.addEventListener('change', (e) => {
             if (e.target.checked) {
@@ -4807,14 +4808,7 @@
           });
         });
       }
-
-      document.getElementById('upload-modal-filename').textContent = file.name;
-      document.getElementById('upload-modal-description').value = '';
-      setUploadVisibility(true);
-      document.getElementById('upload-modal').style.display = 'flex';
-    } catch (err) {
-      filesError('Failed to load online players: ' + err.message);
-    }
+    }).catch(() => {});
   }
 
   function setUploadVisibility(isPublic) {
