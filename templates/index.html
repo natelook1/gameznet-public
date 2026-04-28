@@ -1216,7 +1216,7 @@
   flex: 1; overflow: hidden; position: relative; min-height: 0;
 }
 #factory-iframe-wrap iframe {
-  position: absolute; top: -58px; left: 0; width: 100%; height: calc(100% + 58px); border: none;
+  position: absolute; top: -440px; left: 0; width: 100%; height: calc(100% + 440px); border: none;
 }
 
     .yt-topbar {
@@ -6306,6 +6306,7 @@
   // ── Satisfactory Map ─────────────────────────────────────────────────────
   const SF_R2_URL = 'https://photos.looknet.ca/satisfactory/latest.sav';
   const SF_SCIM_BASE = 'https://satisfactory-calculator.com/en/interactive-map';
+  const SF_SCIM_HASH = '#-376193.5,-375000,0.00026';
 
   let _factoryInitialized = false;
   let _factoryPollTimer = null;
@@ -6315,7 +6316,7 @@
     _factoryInitialized = true;
     const iframe = document.getElementById('factory-iframe');
     if (!iframe.src || iframe.src === window.location.href) {
-      iframe.src = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}`;
+      iframe.src = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}${SF_SCIM_HASH}`;
     }
     factoryPollStatus();
     _factoryPollTimer = setInterval(factoryPollStatus, 10000);
@@ -6340,7 +6341,7 @@
 
   async function factoryReload() {
     const iframe = document.getElementById('factory-iframe');
-    iframe.src = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}&_=${Date.now()}`;
+    iframe.src = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}&_=${Date.now()}${SF_SCIM_HASH}`;
     document.getElementById('factory-status-dot').style.background = 'var(--muted)';
     document.getElementById('factory-status-text').textContent = 'connecting...';
     factoryPollStatus();
