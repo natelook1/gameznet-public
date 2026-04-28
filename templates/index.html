@@ -1187,6 +1187,10 @@
     .wow-tab-logo { height: 16px; opacity: 0.5; filter: grayscale(1); transition: all 0.15s; vertical-align: middle; }
     .tab-btn.wow-tab:hover .wow-tab-logo { opacity: 0.8; filter: grayscale(0.5); }
     .tab-btn.wow-tab.active .wow-tab-logo { opacity: 1; filter: grayscale(0) drop-shadow(0 2px 6px rgba(240, 180, 41, 0.4)); }
+    .tab-btn.factory-tab.active { color: #fa9549; border-bottom-color: #fa9549; }
+    .factory-tab-logo { height: 16px; width: 16px; object-fit: contain; opacity: 0.5; filter: grayscale(1); transition: all 0.15s; vertical-align: middle; border-radius: 2px; margin-right: 2px; }
+    .tab-btn.factory-tab:hover .factory-tab-logo { opacity: 0.8; filter: grayscale(0.5); }
+    .tab-btn.factory-tab.active .factory-tab-logo { opacity: 1; filter: grayscale(0) drop-shadow(0 2px 6px rgba(250, 149, 73, 0.4)); }
     #discord-section {
       display: none; flex-direction: row;
       flex: 1; overflow: hidden; min-height: 0;
@@ -1201,6 +1205,18 @@
       margin: -18px -28px; /* bleed past content padding */
     }
     #youtube-section.yt-active { display: flex; }
+
+#factory-section {
+  display: none; flex-direction: column;
+  flex: 1; overflow: hidden; min-height: 0;
+  margin: -16px -32px; /* bleed past content padding */
+}
+#factory-section.factory-active { display: flex; }
+#factory-map-wrap {
+  flex: 1; overflow: hidden; position: relative; min-height: 0; background: #1a1a2e; cursor: grab;
+}
+#factory-map-wrap.grabbing { cursor: grabbing; }
+#factory-canvas { position: absolute; top: 0; left: 0; }
 
     .yt-topbar {
       display: flex; align-items: center; gap: 10px;
@@ -2188,6 +2204,9 @@
     <button class="tab-btn yt-tab" onclick="switchTab('youtube', this)">YOUTUBE</button>
     <button class="tab-btn dc-tab" onclick="switchTab('discord', this)">DISCORD<span class="dc-tab-badge" id="tab-dc-online" style="display:none;"></span></button>
     <button class="tab-btn files-tab" onclick="switchTab('files', this)">📁 FILES</button>
+    <button class="tab-btn factory-tab" onclick="switchTab('factory', this)">
+      <img src="/static/satisfactory.png" class="factory-tab-logo" alt="Map"> MAP
+    </button>
     <button class="tab-btn wow-tab" onclick="switchTab('wow', this)">
       <img src="/static/WoW_icon.svg" class="wow-tab-logo" alt="WoW"> WOW
     </button>
@@ -2659,6 +2678,28 @@
         </div>
       </div>
     </div>
+
+  <!-- ── FACTORY MAP ── -->
+  <div id="factory-section">
+    <div class="yt-topbar" style="border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink:0;">
+      <div style="font-family:'Share Tech Mono', monospace; font-size:14px; color:var(--warn); letter-spacing:2px; display:flex; align-items:center; gap:8px;">
+        <img src="/static/satisfactory.png" style="height:18px; width:18px; object-fit:contain; border-radius:2px;" alt="Logo"> SATISFACTORY MAP
+      </div>
+      <div id="factory-server-status" style="margin-left:16px; font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px;">
+        <span id="factory-status-dot" style="width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;"></span>
+        <span id="factory-status-text">connecting...</span>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
+        <span id="factory-save-age" style="font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--muted);"></span>
+        <button class="yt-action-btn" onclick="factoryReload()">⟳ REFRESH</button>
+      </div>
+    </div>
+    <div id="factory-map-wrap">
+      <canvas id="factory-canvas"></canvas>
+      <div id="factory-map-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--muted);pointer-events:none;">PARSING SAVE...</div>
+      <div id="factory-legend" style="position:absolute;bottom:16px;left:16px;background:rgba(0,0,0,0.7);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);line-height:1.8;"></div>
+    </div>
+  </div>
 
     <!-- ── FILES TAB ── -->
     <div id="files-section" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
@@ -4403,10 +4444,13 @@
     const yt   = document.getElementById('youtube-section');
     const dc   = document.getElementById('discord-section');
     const files = document.getElementById('files-section');
+    const factory = document.getElementById('factory-section');
     const wow  = document.getElementById('wow-section');
     dash.style.display = 'none';
     yt.classList.remove('yt-active');
     dc.classList.remove('dc-active');
+    factory.classList.remove('factory-active');
+    if (name !== 'factory' && _factoryPollTimer) { clearInterval(_factoryPollTimer); _factoryPollTimer = null; _factoryInitialized = false; _sfDrag = null; }
     files.style.display = 'none';
     wow.style.display = 'none';
     if (name === 'youtube') {
@@ -4418,6 +4462,9 @@
     } else if (name === 'files') {
       files.style.display = 'flex';
       if (!window._filesInitialized) { filesLoadAll(); window._filesInitialized = true; }
+    } else if (name === 'factory') {
+      factory.classList.add('factory-active');
+      factoryInit();
     } else if (name === 'wow') {
       wow.style.display = 'flex';
       if (!window._wowInitialized) { window._wowInitialized = true; wowLoadAll(); }
@@ -6255,6 +6302,152 @@
     if (wowActiveTab === 'world') wowRenderWorld(c);
     if (wowActiveTab === 'pve') wowRenderPVE(c);
     if (wowActiveTab === 'pvp') wowRenderPVPFromCache(wowActiveChar);
+  }
+
+  // ── Satisfactory Map ─────────────────────────────────────────────────────
+  const SF_MAP_BOUNDS = { minX: -324600, maxX: 425300, minY: -375000, maxY: 375000 };
+  const SF_CAT_COLORS = {
+    miner:      '#f59e0b',
+    power:      '#3b82f6',
+    factory:    '#10b981',
+    foundation: '#6b7280',
+    vehicle:    '#8b5cf6',
+    train:      '#ef4444',
+    resource:   '#06b6d4',
+  };
+  const SF_CAT_LABELS = {
+    miner: 'Miners / Pumps', power: 'Power', factory: 'Factory Buildings',
+    foundation: 'Structure', vehicle: 'Vehicles', train: 'Trains / Rails', resource: 'Resources',
+  };
+
+  let _factoryInitialized = false;
+  let _factoryPollTimer = null;
+  let _sfActors = [];
+  let _sfMapImg = null;
+  // pan/zoom state
+  let _sfScale = 1, _sfOffX = 0, _sfOffY = 0;
+  let _sfDrag = null;
+
+  function sfWorldToCanvas(wx, wy, cw, ch) {
+    const px = (wx - SF_MAP_BOUNDS.minX) / (SF_MAP_BOUNDS.maxX - SF_MAP_BOUNDS.minX);
+    const py = (wy - SF_MAP_BOUNDS.minY) / (SF_MAP_BOUNDS.maxY - SF_MAP_BOUNDS.minY);
+    return { x: px * cw, y: py * ch };
+  }
+
+  function sfDraw() {
+    const canvas = document.getElementById('factory-canvas');
+    const wrap = document.getElementById('factory-map-wrap');
+    if (!canvas || !wrap) return;
+    const W = wrap.clientWidth, H = wrap.clientHeight;
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    ctx.translate(_sfOffX, _sfOffY);
+    ctx.scale(_sfScale, _sfScale);
+    const iw = W, ih = H;
+    if (_sfMapImg) ctx.drawImage(_sfMapImg, 0, 0, iw, ih);
+    else { ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, iw, ih); }
+    const r = Math.max(1.5, 3 / _sfScale);
+    for (const a of _sfActors) {
+      const color = SF_CAT_COLORS[a.cat] || '#fff';
+      const { x, y } = sfWorldToCanvas(a.x, a.y, iw, ih);
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function sfBuildLegend() {
+    const el = document.getElementById('factory-legend');
+    const counts = {};
+    for (const a of _sfActors) counts[a.cat] = (counts[a.cat] || 0) + 1;
+    el.innerHTML = Object.entries(counts).map(([cat, n]) =>
+      `<div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${SF_CAT_COLORS[cat]};margin-right:6px;vertical-align:middle;"></span>${SF_CAT_LABELS[cat] || cat} <span style="color:var(--muted)">${n}</span></div>`
+    ).join('');
+  }
+
+  function sfInitPanZoom() {
+    const wrap = document.getElementById('factory-map-wrap');
+    wrap.onwheel = e => {
+      e.preventDefault();
+      const rect = wrap.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const delta = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      _sfOffX = mx - delta * (mx - _sfOffX);
+      _sfOffY = my - delta * (my - _sfOffY);
+      _sfScale = Math.min(20, Math.max(0.3, _sfScale * delta));
+      sfDraw();
+    };
+    wrap.onmousedown = e => { _sfDrag = { x: e.clientX - _sfOffX, y: e.clientY - _sfOffY }; wrap.classList.add('grabbing'); };
+    window.addEventListener('mousemove', e => {
+      if (!_sfDrag) return;
+      _sfOffX = e.clientX - _sfDrag.x; _sfOffY = e.clientY - _sfDrag.y; sfDraw();
+    });
+    window.addEventListener('mouseup', () => { _sfDrag = null; document.getElementById('factory-map-wrap')?.classList.remove('grabbing'); });
+    window.addEventListener('resize', sfDraw);
+  }
+
+  async function factoryInit() {
+    if (_factoryInitialized) return;
+    _factoryInitialized = true;
+    sfInitPanZoom();
+    if (!_sfMapImg) {
+      _sfMapImg = new Image();
+      _sfMapImg.onload = sfDraw;
+      _sfMapImg.src = '/api/satisfactory/map-background';
+    }
+    factoryPollStatus();
+    _factoryPollTimer = setInterval(factoryPollStatus, 10000);
+    setInterval(sfLoadMapData, 15 * 60 * 1000); // silent background refresh matching autosave interval
+    await sfLoadMapData();
+  }
+
+  async function sfLoadMapData() {
+    const firstLoad = _sfActors.length === 0;
+    const loading = document.getElementById('factory-map-loading');
+    if (loading && firstLoad) loading.style.display = 'flex';
+    try {
+      const r = await fetch('/api/satisfactory/map-data');
+      if (!r.ok) throw new Error(await r.text());
+      const data = await r.json();
+      _sfActors = data.actors || [];
+      const age = data.parsedAt ? new Date(data.parsedAt).toLocaleTimeString() : '';
+      const ageEl = document.getElementById('factory-save-age');
+      if (ageEl) ageEl.textContent = age ? `save parsed ${age}` : '';
+      sfBuildLegend();
+      sfDraw();
+    } catch (err) {
+      console.error('[Factory]', err);
+    } finally {
+      if (loading) loading.style.display = 'none';
+    }
+  }
+
+  async function factoryPollStatus() {
+    const dot = document.getElementById('factory-status-dot');
+    const txt = document.getElementById('factory-status-text');
+    try {
+      const r = await fetch('/api/satisfactory/players');
+      if (!r.ok) throw new Error('bad status');
+      const data = await r.json();
+      const n = data.serverState?.numConnectedPlayers ?? 0;
+      const name = data.serverState?.activeSessionName ?? '';
+      dot.style.background = '#4caf50';
+      txt.textContent = name ? `${name} · ${n} player${n !== 1 ? 's' : ''} online` : `${n} player${n !== 1 ? 's' : ''} online`;
+    } catch {
+      dot.style.background = 'var(--muted)';
+      txt.textContent = 'server offline';
+    }
+  }
+
+  async function factoryReload() {
+    // don't clear actors before fetch — swap in-place to avoid flicker
+    document.getElementById('factory-status-dot').style.background = 'var(--muted)';
+    document.getElementById('factory-status-text').textContent = 'connecting...';
+    await Promise.all([sfLoadMapData(), factoryPollStatus()]);
   }
 
   async function wowLoadAll() {

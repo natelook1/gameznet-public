@@ -1480,6 +1480,34 @@ def api_update():
     return jsonify({"success": True})
 
 
+@app.route("/api/satisfactory/map-data", methods=["GET"])
+def api_satisfactory_map_data():
+    """Proxy to backend — uses extended timeout since .sav parsing can take several seconds."""
+    import urllib.request as _ur
+    try:
+        req = _ur.Request(f"{_backend_url()}/api/satisfactory/map-data", headers={"User-Agent": "GamezNET"})
+        with _ur.urlopen(req, timeout=120) as resp:
+            return resp.read(), resp.status, {"Content-Type": "application/json"}
+    except Exception as e:
+        log.error("satisfactory map-data proxy failed: %s", e)
+        return jsonify({"error": str(e)}), 502
+
+@app.route("/api/satisfactory/map-background")
+def api_satisfactory_map_background():
+    """Proxy the wiki map image to avoid CORS issues in the browser."""
+    import urllib.request as _ur
+    try:
+        req = _ur.Request(
+            "https://satisfactory.wiki.gg/images/Map.jpg",
+            headers={"User-Agent": "Mozilla/5.0 GamezNET"}
+        )
+        with _ur.urlopen(req, timeout=15) as resp:
+            data = resp.read()
+            return data, 200, {"Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400"}
+    except Exception as e:
+        log.error("satisfactory map background proxy failed: %s", e)
+        return "", 502
+
 @app.route("/api/alert", methods=["GET"])
 def api_alert():
     """Proxy GET to Worker /api/alert and return the JSON."""
