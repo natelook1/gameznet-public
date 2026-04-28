@@ -1212,11 +1212,12 @@
   margin: -16px -32px; /* bleed past content padding */
 }
 #factory-section.factory-active { display: flex; }
-#factory-map-wrap {
-  flex: 1; overflow: hidden; position: relative; min-height: 0; background: #1a1a2e; cursor: grab;
+#factory-iframe-wrap {
+  flex: 1; overflow: hidden; position: relative; min-height: 0;
 }
-#factory-map-wrap.grabbing { cursor: grabbing; }
-#factory-canvas { position: absolute; top: 0; left: 0; }
+#factory-iframe-wrap iframe {
+  position: absolute; top: -58px; left: 0; width: 100%; height: calc(100% + 58px); border: none;
+}
 
     .yt-topbar {
       display: flex; align-items: center; gap: 10px;
@@ -2694,10 +2695,8 @@
         <button class="yt-action-btn" onclick="factoryReload()">⟳ REFRESH</button>
       </div>
     </div>
-    <div id="factory-map-wrap">
-      <canvas id="factory-canvas"></canvas>
-      <div id="factory-map-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--muted);pointer-events:none;">PARSING SAVE...</div>
-      <div id="factory-legend" style="position:absolute;bottom:16px;left:16px;background:rgba(0,0,0,0.7);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);line-height:1.8;"></div>
+    <div id="factory-iframe-wrap">
+      <iframe id="factory-iframe" src="" allowfullscreen></iframe>
     </div>
   </div>
 
@@ -6305,125 +6304,21 @@
   }
 
   // ── Satisfactory Map ─────────────────────────────────────────────────────
-  const SF_MAP_BOUNDS = { minX: -324600, maxX: 425300, minY: -375000, maxY: 375000 };
-  const SF_CAT_COLORS = {
-    miner:      '#f59e0b',
-    power:      '#3b82f6',
-    factory:    '#10b981',
-    foundation: '#6b7280',
-    vehicle:    '#8b5cf6',
-    train:      '#ef4444',
-    resource:   '#06b6d4',
-  };
-  const SF_CAT_LABELS = {
-    miner: 'Miners / Pumps', power: 'Power', factory: 'Factory Buildings',
-    foundation: 'Structure', vehicle: 'Vehicles', train: 'Trains / Rails', resource: 'Resources',
-  };
+  const SF_R2_URL = 'https://photos.looknet.ca/satisfactory/latest.sav';
+  const SF_SCIM_BASE = 'https://satisfactory-calculator.com/en/interactive-map';
 
   let _factoryInitialized = false;
   let _factoryPollTimer = null;
-  let _sfActors = [];
-  let _sfMapImg = null;
-  // pan/zoom state
-  let _sfScale = 1, _sfOffX = 0, _sfOffY = 0;
-  let _sfDrag = null;
-
-  function sfWorldToCanvas(wx, wy, cw, ch) {
-    const px = (wx - SF_MAP_BOUNDS.minX) / (SF_MAP_BOUNDS.maxX - SF_MAP_BOUNDS.minX);
-    const py = (wy - SF_MAP_BOUNDS.minY) / (SF_MAP_BOUNDS.maxY - SF_MAP_BOUNDS.minY);
-    return { x: px * cw, y: py * ch };
-  }
-
-  function sfDraw() {
-    const canvas = document.getElementById('factory-canvas');
-    const wrap = document.getElementById('factory-map-wrap');
-    if (!canvas || !wrap) return;
-    const W = wrap.clientWidth, H = wrap.clientHeight;
-    canvas.width = W; canvas.height = H;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, W, H);
-    ctx.save();
-    ctx.translate(_sfOffX, _sfOffY);
-    ctx.scale(_sfScale, _sfScale);
-    const iw = W, ih = H;
-    if (_sfMapImg) ctx.drawImage(_sfMapImg, 0, 0, iw, ih);
-    else { ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, iw, ih); }
-    const r = Math.max(1.5, 3 / _sfScale);
-    for (const a of _sfActors) {
-      const color = SF_CAT_COLORS[a.cat] || '#fff';
-      const { x, y } = sfWorldToCanvas(a.x, a.y, iw, ih);
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.fill();
-    }
-    ctx.restore();
-  }
-
-  function sfBuildLegend() {
-    const el = document.getElementById('factory-legend');
-    const counts = {};
-    for (const a of _sfActors) counts[a.cat] = (counts[a.cat] || 0) + 1;
-    el.innerHTML = Object.entries(counts).map(([cat, n]) =>
-      `<div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${SF_CAT_COLORS[cat]};margin-right:6px;vertical-align:middle;"></span>${SF_CAT_LABELS[cat] || cat} <span style="color:var(--muted)">${n}</span></div>`
-    ).join('');
-  }
-
-  function sfInitPanZoom() {
-    const wrap = document.getElementById('factory-map-wrap');
-    wrap.onwheel = e => {
-      e.preventDefault();
-      const rect = wrap.getBoundingClientRect();
-      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-      const delta = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-      _sfOffX = mx - delta * (mx - _sfOffX);
-      _sfOffY = my - delta * (my - _sfOffY);
-      _sfScale = Math.min(20, Math.max(0.3, _sfScale * delta));
-      sfDraw();
-    };
-    wrap.onmousedown = e => { _sfDrag = { x: e.clientX - _sfOffX, y: e.clientY - _sfOffY }; wrap.classList.add('grabbing'); };
-    window.addEventListener('mousemove', e => {
-      if (!_sfDrag) return;
-      _sfOffX = e.clientX - _sfDrag.x; _sfOffY = e.clientY - _sfDrag.y; sfDraw();
-    });
-    window.addEventListener('mouseup', () => { _sfDrag = null; document.getElementById('factory-map-wrap')?.classList.remove('grabbing'); });
-    window.addEventListener('resize', sfDraw);
-  }
 
   async function factoryInit() {
     if (_factoryInitialized) return;
     _factoryInitialized = true;
-    sfInitPanZoom();
-    if (!_sfMapImg) {
-      _sfMapImg = new Image();
-      _sfMapImg.onload = sfDraw;
-      _sfMapImg.src = '/api/satisfactory/map-background';
+    const iframe = document.getElementById('factory-iframe');
+    if (!iframe.src || iframe.src === window.location.href) {
+      iframe.src = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}`;
     }
     factoryPollStatus();
     _factoryPollTimer = setInterval(factoryPollStatus, 10000);
-    setInterval(sfLoadMapData, 15 * 60 * 1000); // silent background refresh matching autosave interval
-    await sfLoadMapData();
-  }
-
-  async function sfLoadMapData() {
-    const firstLoad = _sfActors.length === 0;
-    const loading = document.getElementById('factory-map-loading');
-    if (loading && firstLoad) loading.style.display = 'flex';
-    try {
-      const r = await fetch('/api/satisfactory/map-data');
-      if (!r.ok) throw new Error(await r.text());
-      const data = await r.json();
-      _sfActors = data.actors || [];
-      const age = data.parsedAt ? new Date(data.parsedAt).toLocaleTimeString() : '';
-      const ageEl = document.getElementById('factory-save-age');
-      if (ageEl) ageEl.textContent = age ? `save parsed ${age}` : '';
-      sfBuildLegend();
-      sfDraw();
-    } catch (err) {
-      console.error('[Factory]', err);
-    } finally {
-      if (loading) loading.style.display = 'none';
-    }
   }
 
   async function factoryPollStatus() {
@@ -6444,10 +6339,11 @@
   }
 
   async function factoryReload() {
-    // don't clear actors before fetch — swap in-place to avoid flicker
+    const iframe = document.getElementById('factory-iframe');
+    iframe.src = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}&_=${Date.now()}`;
     document.getElementById('factory-status-dot').style.background = 'var(--muted)';
     document.getElementById('factory-status-text').textContent = 'connecting...';
-    await Promise.all([sfLoadMapData(), factoryPollStatus()]);
+    factoryPollStatus();
   }
 
   async function wowLoadAll() {
