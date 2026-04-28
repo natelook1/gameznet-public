@@ -1480,6 +1480,18 @@ def api_update():
     return jsonify({"success": True})
 
 
+@app.route("/api/satisfactory/players", methods=["GET"])
+def api_satisfactory_players():
+    """Proxy with extended timeout — SF API can take up to 15s to respond."""
+    import urllib.request as _ur
+    try:
+        req = _ur.Request(f"{_backend_url()}/api/satisfactory/players", headers={"User-Agent": "GamezNET"})
+        with _ur.urlopen(req, timeout=20) as resp:
+            return resp.read(), resp.status, {"Content-Type": "application/json"}
+    except Exception as e:
+        log.error("satisfactory players proxy failed: %s", e)
+        return jsonify({"error": str(e)}), 502
+
 @app.route("/api/satisfactory/map-data", methods=["GET"])
 def api_satisfactory_map_data():
     """Proxy to backend — uses extended timeout since .sav parsing can take several seconds."""
