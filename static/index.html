@@ -963,6 +963,51 @@
     `;
   }
 
+  // ── Map Tab ─────────────────────────────────────────────────────────────────
+  const SF_R2_URL = 'https://photos.looknet.ca/satisfactory/latest.sav';
+  const SF_SCIM_BASE = 'https://satisfactory-calculator.com/en/interactive-map';
+  const SF_SCIM_HASH = '#-376193.5,-375000,0.00026';
+
+  function MapTab() {
+    const [status, setStatus] = useState('connecting...');
+    const [dot, setDot] = useState('#888');
+    const src = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}${SF_SCIM_HASH}`;
+
+    useEffect(() => {
+      async function poll() {
+        try {
+          const r = await req('/api/satisfactory/players');
+          if (!r.ok) throw new Error();
+          const d = await r.json();
+          const n = d.serverState?.numConnectedPlayers ?? 0;
+          const name = d.serverState?.activeSessionName ?? '';
+          setDot('#4caf50');
+          setStatus(name ? `${name} · ${n} player${n !== 1 ? 's' : ''} online` : `${n} player${n !== 1 ? 's' : ''} online`);
+        } catch {
+          setDot('#888');
+          setStatus('server offline');
+        }
+      }
+      poll();
+      const iv = setInterval(poll, 10000);
+      return () => clearInterval(iv);
+    }, []);
+
+    return html`
+      <div style="display:flex; flex-direction:column; flex:1; overflow:hidden; min-height:0;">
+        <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; font-size:12px; font-weight:600; color:var(--accent);">
+          <img src="/satisfactory.png" style="height:16px;" />
+          SATISFACTORY MAP
+          <span style="width:7px; height:7px; border-radius:50%; background:${dot}; display:inline-block; margin-left:4px;"></span>
+          <span style="color:var(--muted); font-weight:400;">${status}</span>
+        </div>
+        <div style="flex:1; overflow:hidden; position:relative; min-height:0;">
+          <iframe src=${src} style="position:absolute; top:-440px; left:0; width:100%; height:calc(100% + 440px); border:none;" allowfullscreen></iframe>
+        </div>
+      </div>
+    `;
+  }
+
   // ── Files Tab (Drop Folder) ──────────────────────────────────────────────────
   function FilesTab({ me }) {
     const [files, setFiles] = useState([]);
@@ -1306,6 +1351,7 @@
       { id: 'discord', icon: '🎮', label: 'Discord' },
       { id: 'dms',     icon: '✉️',  label: 'DMs', badge: dmUnread || null },
       { id: 'files',   icon: '📁', label: 'Files' },
+      { id: 'map',     icon: html`<img src="/satisfactory.png" style="height:18px; ${tab === 'map' ? '' : 'opacity:0.5; filter:grayscale(1);'}" alt="Map" />`, label: 'Map' },
       { id: 'wow',     icon: html`<img src="/WoW_icon.svg" class="wow-tab-logo" alt="WoW" />`,  label: 'WoW' },
     ];
 
@@ -1322,6 +1368,7 @@
           ${tab === 'discord' && html`<${DiscordTab} me=${me} />`}
           ${tab === 'dms'     && html`<${DMsTab}     me=${me} onUnreadChange=${setDmUnread} />`}
           ${tab === 'files'   && html`<${FilesTab}   me=${me} />`}
+          ${tab === 'map'     && html`<${MapTab} />`}
           ${tab === 'wow'     && html`<${WowTab}     me=${me} />`}
         </div>
         <nav class="tabbar">
