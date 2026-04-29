@@ -79,7 +79,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.7.7"
+VERSION = "1.7.8"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -93,7 +93,7 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
-RUSTDESK_VERSION = "1.7.7"
+RUSTDESK_VERSION = "1.7.8"
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -1965,10 +1965,20 @@ if __name__ == "__main__":
     threading.Thread(target=heartbeat_loop, daemon=True).start()
 
     # Start Flask in background thread
-    flask_thread = threading.Thread(
-        target=lambda: app.run(host="127.0.0.1", port=PORT, debug=False, use_reloader=False),
-        daemon=True
-    )
+    # Use waitress instead of Flask dev server for better frozen app stability
+    try:
+        from waitress import serve
+        flask_thread = threading.Thread(
+            target=lambda: serve(app, host="127.0.0.1", port=PORT, _quiet=True),
+            daemon=True
+        )
+    except ImportError:
+        # Fallback to Flask dev server if waitress unavailable
+        log.warning("waitress not available, using Flask development server")
+        flask_thread = threading.Thread(
+            target=lambda: app.run(host="127.0.0.1", port=PORT, debug=False, use_reloader=False),
+            daemon=True
+        )
     flask_thread.start()
 
     # Open browser after Flask is up (skip on silent update — existing tab reloads itself)
