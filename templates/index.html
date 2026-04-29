@@ -1191,8 +1191,8 @@
     .factory-tab-logo { height: 16px; width: 16px; object-fit: contain; opacity: 0.5; filter: grayscale(1); transition: all 0.15s; vertical-align: middle; border-radius: 2px; margin-right: 2px; }
     .tab-btn.factory-tab:hover .factory-tab-logo { opacity: 0.8; filter: grayscale(0.5); }
     .tab-btn.factory-tab.active .factory-tab-logo { opacity: 1; filter: grayscale(0) drop-shadow(0 2px 6px rgba(250, 149, 73, 0.4)); }
-    .tab-btn.dc-tab { padding: 6px 20px; position: relative; }
-    .dc-tab-logo { height: 70px; width: 70px; object-fit: contain; opacity: 1; filter: none; transition: all 0.15s; margin: -5px 0; }
+    .tab-btn.dc-tab { padding: 9px 28px; position: relative; line-height: 1; }
+    .dc-tab-logo { height: 56px; width: 56px; object-fit: contain; opacity: 1; filter: none; transition: all 0.15s; margin: -12px 0; }
     .tab-btn.dc-tab:hover .dc-tab-logo { opacity: 0.8; filter: grayscale(0.5); }
     .tab-btn.dc-tab.active .dc-tab-logo { opacity: 1; filter: grayscale(0) drop-shadow(0 2px 6px rgba(88, 101, 242, 0.4)); }
     .dc-tab-badge { position: absolute; top: 12px; right: 8px; display: inline-block; background: #5865f2; color: #fff; font-size: 9px; padding: 1px 5px; border-radius: 8px; }
@@ -2457,7 +2457,8 @@
     </div>
 
     <!-- Schedule trigger (always visible when no session active, provisioned) -->
-    <div id="schedule-trigger" style="display:none;justify-content:flex-end;padding:0 0 6px;">
+    <div id="schedule-trigger" style="display:none;justify-content:space-between;align-items:center;padding:0 0 6px;">
+      <a class="ptero-link" href="https://gamez.looknet.ca" target="_blank">PTERODACTYL ↗</a>
       <button class="btn-schedule" onclick="openScheduleModal()">+ Schedule Session</button>
     </div>
 
@@ -2465,7 +2466,6 @@
     <div class="server-strip-wrap" id="server-strip-wrap" style="display:none;">
       <div class="server-strip-hdr">
         <div class="section-label" style="margin-bottom:0;">Game Servers</div>
-        <a class="ptero-link" href="https://gamez.looknet.ca" target="_blank">PTERODACTYL ↗</a>
       </div>
       <div class="server-strip" id="server-strip-inner">
         <div class="online-empty">○ Loading...</div>
