@@ -2775,7 +2775,12 @@
             <div style="font-size:40px;opacity:0.6;">🏗️</div>
             <div style="font-size:14px;font-weight:600;color:var(--text);">Drop blueprint files to upload</div>
             <div style="font-size:12px;color:var(--text-dim);margin:8px 0 0;">or</div>
-            <button type="button" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;" onclick="document.getElementById('blueprints-input').click();">Choose Blueprint</button>
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+              <select id="blueprints-folder-select" style="padding:8px 12px;border:1px solid var(--border);border-radius:4px;background:var(--bg-secondary);color:var(--text);font-size:12px;flex:1;max-width:200px;">
+                <option value="">Select save folder (optional)</option>
+              </select>
+              <button type="button" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:600;cursor:pointer;" onclick="document.getElementById('blueprints-input').click();">Choose Blueprint</button>
+            </div>
             <div style="font-size:10px;color:var(--text-dim);margin-top:8px;"><strong>.bp</strong> or <strong>.json</strong> • Synced to server automatically</div>
           </div>
           <input id="blueprints-input" type="file" style="display:none;" accept=".bp,.sbp,.json" />
@@ -5023,6 +5028,34 @@
       const uploadedData = uploadedRes.ok ? await uploadedRes.json() : { files: [] };
       const serverData = serverRes.ok ? await serverRes.json() : { blueprints: [] };
 
+      // Populate blueprint folder dropdown with unique save folders
+      const folders = new Set();
+      (serverData.blueprints || []).forEach(bp => {
+        if (bp.save_folder) folders.add(bp.save_folder);
+      });
+      const folderSelect = document.getElementById('blueprints-folder-select');
+      if (folderSelect && folders.size > 0) {
+        // Clear existing options except the first one
+        while (folderSelect.options.length > 1) {
+          folderSelect.remove(1);
+        }
+        Array.from(folders).sort().forEach(folder => {
+          const opt = document.createElement('option');
+          opt.value = folder;
+          opt.textContent = folder;
+          folderSelect.appendChild(opt);
+        });
+        // Auto-select if only one folder exists
+        if (folders.size === 1) {
+          folderSelect.value = Array.from(folders)[0];
+          folderSelect.style.opacity = '0.6';
+          folderSelect.disabled = true;
+        } else {
+          folderSelect.style.opacity = '1';
+          folderSelect.disabled = false;
+        }
+      }
+
       const uploadedBlueprints = (uploadedData.files || []).filter(f =>
         f.original_filename.toLowerCase().endsWith('.bp') ||
         f.original_filename.toLowerCase().endsWith('.json')
@@ -5122,11 +5155,13 @@
 
     try {
       const buf = await file.arrayBuffer();
+      const selectedFolder = document.getElementById('blueprints-folder-select')?.value || '';
       const headers = {
         'Content-Type': 'application/octet-stream',
         'X-Filename': file.name,
         'X-Description': 'Blueprint: ' + file.name,
-        ...(state.token ? { 'X-Token': state.token } : {})
+        ...(state.token ? { 'X-Token': state.token } : {}),
+        ...(selectedFolder ? { 'X-Blueprint-Folder': selectedFolder } : {})
       };
 
       const r = await fetch('/api/files/upload', {
