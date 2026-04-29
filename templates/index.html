@@ -3228,12 +3228,15 @@
   // ── Init ───────────────────────────────────────────────────────────────────
   async function init() {
     try {
-      const res = await fetch('/api/config');
+      const storedToken = localStorage.getItem('gz-token');
+      const res = await fetch('/api/config', {
+        headers: storedToken ? { 'X-Token': storedToken } : {}
+      });
       const cfg = await res.json();
       state.provisioned = cfg.provisioned;
       state.name        = cfg.name;
       state.clientIp    = cfg.client_ip;
-      state.token       = cfg.token;
+      state.token       = cfg.token || storedToken;
 
       if (state.provisioned) {
         showProvisioned();
@@ -3306,6 +3309,7 @@
       state.steam_game_count  = data.steam_game_count || 0;
       state.steam_library     = data.steam_library || null;
       state.token             = token;
+      localStorage.setItem('gz-token', token);
       showProvisioned();
       updateSteamUI();
       if (state.steam_id) { loadSteamFriends(); loadSteamRecent(); }
