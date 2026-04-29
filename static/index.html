@@ -251,7 +251,7 @@
   import { h, render } from 'https://esm.sh/preact@10';
   import { useState, useEffect, useRef } from 'https://esm.sh/preact@10/hooks';
   import htm from 'https://esm.sh/htm@3';
-  import { WowTab } from '/wow.js?v=1.7.3';
+  import { WowTab } from '/wow.js?v=1.7.4';
   const html = htm.bind(h);
 
   const API = 'https://gameznet.looknet.ca';
@@ -1180,8 +1180,12 @@
     const token = localStorage.getItem('gzn_token');
     const canDelete = (file) => file.uploader === me.name;
 
+    const blueprints = files.filter(f => f.original_filename.toLowerCase().endsWith('.bp') || f.original_filename.toLowerCase().endsWith('.json'));
+    const regularFiles = files.filter(f => !f.original_filename.toLowerCase().endsWith('.bp') && !f.original_filename.toLowerCase().endsWith('.json'));
+
     return html`
       <div class="files-tab">
+        <!-- General Files -->
         <div class="upload-zone ${dragActive ? 'active' : ''}"
              onDragEnter=${handleDrag} onDragLeave=${handleDrag} onDragOver=${handleDrag} onDrop=${handleDrop}>
           <div class="upload-content">
@@ -1260,24 +1264,21 @@
           ${loading ? html`<div class="empty"><span class="empty-icon">📂</span><span>Loading files…</span></div>` :
             files.length === 0 ? html`<div class="empty"><span class="empty-icon">📂</span><span>No files yet</span></div>` :
             html`
-              ${files.map(file => {
-                const expiresDate = new Date(file.expires_at);
-                const now = new Date();
-                const daysLeft = Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24));
-                return html`
+              ${blueprints.length > 0 ? html`
+                <div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:#999;margin-top:8px;">🏗️ Blueprints</div>
+                ${blueprints.map(file => html`
                   <div class="file-row" key=${file.id}>
-                    <div class="file-icon">📄</div>
+                    <div class="file-icon">🏗️</div>
                     <div class="file-info">
                       <div class="file-name" title=${file.original_filename}>${file.original_filename}</div>
                       <div class="file-meta">
-                        ${file.description ? html`<span>${file.description}</span><span class="dot">•</span>` : ''}
                         <span>${file.uploader}</span>
                         <span class="dot">•</span>
                         <span>${formatSize(file.file_size)}</span>
                         <span class="dot">•</span>
                         <span>${formatTime(file.uploaded_at)}</span>
-                        ${daysLeft <= 1 ? html`<span class="dot">•</span><span class="expires-soon">expires today</span>` :
-                          daysLeft <= 3 ? html`<span class="dot">•</span><span class="expires-soon">${daysLeft}d left</span>` : ''}
+                        <span class="dot">•</span>
+                        <span style="color:#ffb000;font-weight:600;">Permanent</span>
                       </div>
                     </div>
                     <div class="file-actions">
@@ -1285,8 +1286,38 @@
                       ${canDelete(file) ? html`<button class="file-action-btn delete" onClick=${() => deleteFile(file.id)} title="Delete">✕</button>` : ''}
                     </div>
                   </div>
-                `;
-              })}
+                `)}
+              ` : ''}
+              ${regularFiles.length > 0 ? html`
+                ${blueprints.length > 0 ? html`<div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:#999;margin-top:8px;">📄 Other Files</div>` : ''}
+                ${regularFiles.map(file => {
+                  const expiresDate = file.expires_at ? new Date(file.expires_at) : null;
+                  const now = new Date();
+                  const daysLeft = expiresDate ? Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24)) : null;
+                  return html`
+                    <div class="file-row" key=${file.id}>
+                      <div class="file-icon">📄</div>
+                      <div class="file-info">
+                        <div class="file-name" title=${file.original_filename}>${file.original_filename}</div>
+                        <div class="file-meta">
+                          ${file.description ? html`<span>${file.description}</span><span class="dot">•</span>` : ''}
+                          <span>${file.uploader}</span>
+                          <span class="dot">•</span>
+                          <span>${formatSize(file.file_size)}</span>
+                          <span class="dot">•</span>
+                          <span>${formatTime(file.uploaded_at)}</span>
+                          ${daysLeft && daysLeft <= 1 ? html`<span class="dot">•</span><span class="expires-soon">expires today</span>` :
+                            daysLeft && daysLeft <= 3 ? html`<span class="dot">•</span><span class="expires-soon">${daysLeft}d left</span>` : ''}
+                        </div>
+                      </div>
+                      <div class="file-actions">
+                        <a href="${API}/api/files/${file.id}" class="file-action-btn download" title="Download">⬇</a>
+                        ${canDelete(file) ? html`<button class="file-action-btn delete" onClick=${() => deleteFile(file.id)} title="Delete">✕</button>` : ''}
+                      </div>
+                    </div>
+                  `;
+                })}
+              ` : ''}
             `
           }
         </div>
