@@ -251,7 +251,7 @@
   import { h, render } from 'https://esm.sh/preact@10';
   import { useState, useEffect, useRef } from 'https://esm.sh/preact@10/hooks';
   import htm from 'https://esm.sh/htm@3';
-  import { WowTab } from '/wow.js?v=1.6.4';
+  import { WowTab } from '/wow.js?v=1.6.5';
   const html = htm.bind(h);
 
   const API = 'https://gameznet.looknet.ca';
@@ -1348,7 +1348,7 @@
     const tabs = [
       { id: 'home',    icon: '🏠', label: 'Home' },
       { id: 'chat',    icon: '💬', label: 'Chat' },
-      { id: 'discord', icon: '🎮', label: 'Discord' },
+      { id: 'discord', icon: html`<img src="/discord-logo-old.png" style="height:18px; ${tab === 'discord' ? '' : 'opacity:0.5; filter:grayscale(1);'}" alt="Discord" />`, label: '' },
       { id: 'dms',     icon: '✉️',  label: 'DMs', badge: dmUnread || null },
       { id: 'files',   icon: '📁', label: 'Files' },
       { id: 'map',     icon: html`<img src="/satisfactory.png" style="height:18px; ${tab === 'map' ? '' : 'opacity:0.5; filter:grayscale(1);'}" alt="Map" />`, label: 'Map' },
