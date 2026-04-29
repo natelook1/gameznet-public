@@ -2525,7 +2525,10 @@
               </div>
               </div>
             </div>
-            <button id="mobile-sync-btn" onclick="openMobileQr()" style="margin-top:8px;width:100%;background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text-dim);font-size:11px;padding:5px 10px;cursor:pointer;letter-spacing:0.5px;transition:border-color 0.15s,color 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text-dim)';">SYNC MOBILE APP</button>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+              <button id="mobile-sync-btn" onclick="openMobileQr()" style="background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text-dim);font-size:11px;padding:4px 8px;cursor:pointer;letter-spacing:0.5px;transition:border-color 0.15s,color 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text-dim)';">📱</button>
+              <button id="mobile-revoke-inline-btn" onclick="revokeMobileDevice()" style="display:none;background:transparent;border:1px solid var(--danger);border-radius:3px;color:var(--danger);font-size:10px;font-family:'Share Tech Mono',monospace;letter-spacing:1px;padding:4px 8px;cursor:pointer;">REVOKE</button>
+            </div>
           </div>
         </div>
 
@@ -6015,22 +6018,23 @@
   // ── Mobile Status ───────────────────────────────────────────────────────────
   async function refreshMobileStatus() {
     const btn = document.getElementById('mobile-sync-btn');
+    const revokeBtn = document.getElementById('mobile-revoke-inline-btn');
     if (!btn || !state.name) return;
     try {
       const res = await fetch(`/api/mobile/status?name=${encodeURIComponent(state.name)}`);
       const status = res.ok ? await res.json() : { active: false };
       if (status.active) {
-        btn.textContent = '📱 MOBILE CONNECTED  ·  REVOKE DEVICE';
         btn.style.borderColor = 'var(--accent)';
         btn.style.color = 'var(--accent)';
-        btn.onmouseover = () => { btn.style.borderColor = 'var(--danger)'; btn.style.color = 'var(--danger)'; };
+        btn.onmouseover = () => { btn.style.borderColor = 'var(--accent)'; btn.style.color = 'var(--accent)'; };
         btn.onmouseout  = () => { btn.style.borderColor = 'var(--accent)'; btn.style.color = 'var(--accent)'; };
+        if (revokeBtn) revokeBtn.style.display = '';
       } else {
-        btn.textContent = 'SYNC MOBILE APP';
         btn.style.borderColor = 'var(--border2)';
         btn.style.color = 'var(--text-dim)';
         btn.onmouseover = () => { btn.style.borderColor = 'var(--accent)'; btn.style.color = 'var(--accent)'; };
         btn.onmouseout  = () => { btn.style.borderColor = 'var(--border2)'; btn.style.color = 'var(--text-dim)'; };
+        if (revokeBtn) revokeBtn.style.display = 'none';
       }
     } catch {}
   }
@@ -6079,9 +6083,9 @@
   }
 
   async function revokeMobileDevice() {
-    const btn = document.getElementById('mobile-revoke-btn');
-    btn.disabled = true;
-    btn.textContent = 'Revoking...';
+    const modalBtn  = document.getElementById('mobile-revoke-btn');
+    const inlineBtn = document.getElementById('mobile-revoke-inline-btn');
+    [modalBtn, inlineBtn].forEach(b => { if (b) { b.disabled = true; b.textContent = '...'; } });
     try {
       const res = await fetch('/api/mobile-revoke', { method: 'POST' });
       if (res.ok) {
@@ -6090,8 +6094,8 @@
         refreshMobileStatus();
       }
     } catch {}
-    btn.disabled = false;
-    btn.textContent = 'Revoke Device';
+    if (modalBtn)  { modalBtn.disabled  = false; modalBtn.textContent  = 'Revoke Device'; }
+    if (inlineBtn) { inlineBtn.disabled = false; inlineBtn.textContent = 'REVOKE'; }
   }
 </script>
 
