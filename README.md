@@ -86,6 +86,16 @@ Clicking a server chip opens a **Detail Modal** displaying CPU load, RAM usage, 
 
 ---
 
+## 🏭 Satisfactory Map
+
+The **Map** tab shows an interactive live map of the Satisfactory factory using the [Satisfactory Calculator Interactive Map](https://satisfactory-calculator.com/en/interactive-map).
+
+The server autosave (`.sav`) is synced automatically every 15 minutes from the Pterodactyl game server and uploaded to R2. The map loads the latest save on first open with a loading modal. When a new save is available, the map **silently hot-reloads in the background** — the old map stays visible until the new one is ready, then swaps in with no loading screen.
+
+The **⟳ REFRESH** button forces an immediate reload with the loading modal if you want to pull the latest save manually.
+
+---
+
 ## 📅 Scheduled Sessions
 
 The **Home** tab shows the next scheduled game session when one is active. It displays the game name, host, scheduled time, message, and a live countdown. Sessions auto-expire 2 hours after the scheduled start time.
@@ -345,7 +355,7 @@ Pulls latest code on gamez-vm, rebuilds the Docker image with `--no-cache`, and 
 
 **Client (GamezNET-Setup.exe):**
 
-Run `.\release.ps1 -Bump patch` on the Windows dev machine. This builds the exe via PyInstaller + Inno Setup, commits it, and publishes it to the public repo's GitHub Releases automatically. Players receive the update the next time they click the update badge in the app.
+Run `.\release.ps1 -Bump patch` on the Windows dev machine. This builds the exe via PyInstaller + Inno Setup, SCPs the installer to the code server, and publishes it to the public repo's GitHub Releases automatically. Players receive the update the next time they click the update badge in the app. The installer binary is not committed to git — it lives on disk and is uploaded to GitHub Releases by `publish.sh`.
 
 ### Environment Variables
 

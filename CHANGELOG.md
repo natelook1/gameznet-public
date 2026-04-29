@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.6.3 — 2026-04-29
+
+### Added
+- **Satisfactory map loading modal** — a blurred overlay with an animated progress bar and humorous step messages appears when the interactive map first loads, hiding the raw iframe loading state
+- **Silent Satisfactory map hot-reload** — the backend increments a save version counter each time a new autosave is uploaded to R2. The map tab polls `/api/satisfactory/save-version` every 30s and, when a new version is detected, loads the updated map into a hidden ghost iframe; the visible map swaps in only after the ghost fires `load` — no modal, no flicker
+- **Eaglercraft download via R2** — Eaglercraft is no longer pulled from GitHub (removed from source control due to repo size). It is now downloaded on-demand from the R2 bucket (`family-kiosk-photos`) when a player first clicks Play
+
+### Changed
+- **`dist/` removed from git** — the installer binary is no longer committed to the repo. `release.ps1` now SCPs `GamezNET-Setup.exe` directly to the code server before `publish.sh` runs, keeping git pulls fast
+- **Release pipeline** — added installer existence guard and SCP upload step to `release.ps1`; removed `dist/GamezNET-Setup.exe` from the version bump commit
+
+### Fixed
+- **Eaglercraft prepare endpoint** — `/api/minecraft/prepare` now correctly checks the `templates/` directory (same as the serve route) before attempting a download, preventing a false "File not found" error when the file is already bundled
+
+---
+
 ## v1.5.4 — 2026-04-27
 
 ### Added
