@@ -3305,6 +3305,7 @@
       state.steam_level       = data.steam_level || 0;
       state.steam_game_count  = data.steam_game_count || 0;
       state.steam_library     = data.steam_library || null;
+      state.token             = token;
       showProvisioned();
       updateSteamUI();
       if (state.steam_id) { loadSteamFriends(); loadSteamRecent(); }
