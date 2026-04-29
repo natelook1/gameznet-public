@@ -79,7 +79,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.6.2"
+VERSION = "1.6.3"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -93,7 +93,7 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
-RUSTDESK_VERSION = "1.6.2"
+RUSTDESK_VERSION = "1.6.3"
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -976,8 +976,7 @@ def play_minecraft():
             
             # Try central server first, fallback to raw GitHub repo
             urls = [
-                f"{_backend_url()}/public/eaglercraft.html",
-                "https://raw.githubusercontent.com/natelook1/gameznet-public/main/static/eaglercraft.html"
+                "https://pub-aa3ac1ad195f45e9b7872a5b32d6ebbd.r2.dev/eaglercraft.html",
             ]
             
             for url in urls:
@@ -990,7 +989,7 @@ def play_minecraft():
                     return send_from_directory(static_dir, "eaglercraft.html")
                 except Exception as e:
                     log.warning("Failed to download from %s: %s", url, e)
-            raise Exception("Could not find eaglercraft.html on central server or GitHub fallback.")
+            raise Exception("Could not download eaglercraft.html from R2.")
         except Exception as e:
             log.error("Failed to download Eaglercraft: %s", e)
             if os.path.exists(mc_file): os.remove(mc_file)
@@ -1006,15 +1005,14 @@ def api_minecraft_prepare():
     os.makedirs(static_dir, exist_ok=True)
     mc_file = os.path.join(static_dir, "eaglercraft.html")
 
-    if os.path.exists(mc_file):
-        return jsonify({"success": True})
+    if os.path.exists(mc_file) or os.path.exists(os.path.join(template_dir, "eaglercraft.html")):
+        return jsonify({"success": True, "source": "bundled"})
 
     try:
         import urllib.request
         import shutil
         urls = [
-            f"{_backend_url()}/public/eaglercraft.html",
-            "https://raw.githubusercontent.com/natelook1/gameznet-public/main/static/eaglercraft.html"
+            "https://pub-aa3ac1ad195f45e9b7872a5b32d6ebbd.r2.dev/eaglercraft.html",
         ]
 
         for url in urls:
@@ -1025,7 +1023,7 @@ def api_minecraft_prepare():
                 return jsonify({"success": True})
             except Exception as e:
                 pass
-        raise Exception("File not found on central server or GitHub.")
+        raise Exception("Could not download eaglercraft.html from R2.")
     except Exception as e:
         if os.path.exists(mc_file): os.remove(mc_file)
         return jsonify({"error": f"Failed to download client: {e}"}), 500
@@ -1474,6 +1472,16 @@ def api_update():
     threading.Thread(target=_relaunch, daemon=True).start()
     return jsonify({"success": True})
 
+
+@app.route("/api/satisfactory/save-version", methods=["GET"])
+def api_satisfactory_save_version():
+    import urllib.request as _ur
+    try:
+        req = _ur.Request(f"{_backend_url()}/api/satisfactory/save-version", headers={"User-Agent": "GamezNET"})
+        with _ur.urlopen(req, timeout=5) as resp:
+            return resp.read(), resp.status, {"Content-Type": "application/json"}
+    except Exception as e:
+        return jsonify({"version": 0}), 200
 
 @app.route("/api/satisfactory/players", methods=["GET"])
 def api_satisfactory_players():
