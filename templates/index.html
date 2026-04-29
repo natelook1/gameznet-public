@@ -2202,7 +2202,6 @@
   <!-- Tab nav (shown once provisioned) -->
   <div class="tab-nav" id="tab-nav">
     <button class="tab-btn home-tab active" onclick="switchTab('home', this)">HOME</button>
-    <!-- <button class="tab-btn yt-tab" onclick="switchTab('youtube', this)">YOUTUBE</button> -->
     <button class="tab-btn dc-tab" onclick="switchTab('discord', this)">DISCORD<span class="dc-tab-badge" id="tab-dc-online" style="display:none;"></span></button>
     <button class="tab-btn files-tab" onclick="switchTab('files', this)">📁 FILES</button>
     <button class="tab-btn factory-tab" onclick="switchTab('factory', this)">
@@ -4440,22 +4439,17 @@
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const dash = document.getElementById('dashboard-section');
-    const yt   = document.getElementById('youtube-section');
     const dc   = document.getElementById('discord-section');
     const files = document.getElementById('files-section');
     const factory = document.getElementById('factory-section');
     const wow  = document.getElementById('wow-section');
     dash.style.display = 'none';
-    yt.classList.remove('yt-active');
     dc.classList.remove('dc-active');
     factory.classList.remove('factory-active');
     if (name !== 'factory' && _factoryPollTimer) { clearInterval(_factoryPollTimer); _factoryPollTimer = null; _factoryInitialized = false; _sfDrag = null; }
     files.style.display = 'none';
     wow.style.display = 'none';
-    if (name === 'youtube') {
-      yt.classList.add('yt-active');
-      if (!_ytInitialized) { ytLoadCategory(_ytCat); _ytInitialized = true; }
-    } else if (name === 'discord') {
+    if (name === 'discord') {
       dc.classList.add('dc-active');
       if (Notification.permission === 'default') Notification.requestPermission();
     } else if (name === 'files') {

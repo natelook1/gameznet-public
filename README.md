@@ -130,18 +130,6 @@ The **Discord** tab is a full embedded Discord experience — no Discord account
 
 ---
 
-## 📺 YouTube
-
-The **YouTube** tab lets you browse and watch gaming videos without leaving the app.
-
-- **Categories** — curated video feeds for the games we play: EVE Online, Project Zomboid, Satisfactory, Monster Hunter, Final Fantasy, Conan Exiles, Enshrouded, World of Sea Battle, World of Tanks, Tarkov, League of Legends, and chill music
-- **Search** — search YouTube directly from the app; your last 5 searches are remembered
-- **Sign in with Google** — sign in to unlock **My Feed**, a personalised stream of recent uploads from your subscribed channels. Your session persists across restarts.
-- **Floating pop-out player** — detach any video into a draggable, resizable window that stays open while you switch tabs
-- **Theater mode** — full-width immersive view for focused watching
-
----
-
 ## ⚔️ World of Warcraft
 
 The **WoW** tab is a full guild roster and character tracker — no addons or third-party sites required.
