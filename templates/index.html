@@ -6374,6 +6374,10 @@
         document.getElementById('factory-modal-step').textContent = msg;
       }, delay));
     });
+    // Auto-hide 3s after the last step — iframe is always loaded well before this
+    _sfLoadTimers.push(setTimeout(_sfHideModal, 35000));
+    // Click anywhere on backdrop to dismiss early
+    backdrop.onclick = () => _sfHideModal();
   }
 
   function _sfHideModal() {
@@ -6383,6 +6387,7 @@
     document.getElementById('factory-modal-pct').textContent = '100%';
     document.getElementById('factory-modal-step').textContent = 'Map ready!';
     const backdrop = document.getElementById('factory-modal-backdrop');
+    backdrop.onclick = null;
     setTimeout(() => backdrop.classList.add('hidden'), 800);
   }
 
@@ -6397,7 +6402,6 @@
     _factoryInitialized = true;
     const iframe = document.getElementById('factory-iframe');
     _sfShowModal();
-    iframe.addEventListener('load', _sfHideModal, { once: true });
     iframe.src = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}${SF_SCIM_HASH}`;
     factoryPollStatus();
     _factoryPollTimer = setInterval(factoryPollStatus, 10000);
@@ -6468,7 +6472,6 @@
     _factoryInitialized = false;
     const iframe = document.getElementById('factory-iframe');
     _sfShowModal();
-    iframe.addEventListener('load', _sfHideModal, { once: true });
     iframe.src = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}&_=${Date.now()}${SF_SCIM_HASH}`;
     document.getElementById('factory-status-dot').style.background = 'var(--muted)';
     document.getElementById('factory-status-text').textContent = 'connecting...';
