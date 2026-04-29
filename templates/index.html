@@ -5002,70 +5002,10 @@
     }
   }
 
-  // File upload setup
-  document.getElementById('files-input').addEventListener('change', async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 500 * 1024 * 1024) {
-      filesError('File exceeds 500MB limit');
-      return;
-    }
-
-    showUploadModal(file);
-  });
-
-  // Blueprint upload setup
-  async function uploadBlueprint() {
-    const input = document.getElementById('blueprints-input');
-    const file = input.files?.[0];
-    if (!file) return;
-
-    if (file.size > 500 * 1024 * 1024) {
-      document.getElementById('blueprints-error').textContent = 'File exceeds 500MB limit';
-      document.getElementById('blueprints-error').style.display = 'block';
-      return;
-    }
-
-    document.getElementById('blueprints-error').style.display = 'none';
-
-    try {
-      const buf = await file.arrayBuffer();
-      const headers = {
-        'Content-Type': 'application/octet-stream',
-        'X-Filename': file.name,
-        'X-Description': 'Blueprint: ' + file.name,
-        ...(state.token ? { 'X-Token': state.token } : {})
-      };
-
-      const r = await fetch('/api/files/upload', {
-        method: 'POST',
-        headers,
-        body: buf
-      });
-
-      if (r.ok) {
-        input.value = '';
-        await blueprintsLoadAll();
-      } else {
-        try {
-          const err = await r.json();
-          document.getElementById('blueprints-error').textContent = err.error || `Upload failed (${r.status})`;
-        } catch {
-          document.getElementById('blueprints-error').textContent = `Upload failed: ${r.status} ${r.statusText}`;
-        }
-        document.getElementById('blueprints-error').style.display = 'block';
-      }
-    } catch (err) {
-      document.getElementById('blueprints-error').textContent = err.message || 'Upload failed';
-      document.getElementById('blueprints-error').style.display = 'block';
-    }
-  }
-
+  // Load blueprints when FILES tab is first opened
   async function blueprintsLoadAll() {
     const el = document.getElementById('blueprints-list');
     if (!el) return;
-    el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-dim);">Loading blueprints...</div>';
 
     try {
       const [uploadedRes, serverRes] = await Promise.all([
@@ -5143,7 +5083,68 @@
 
       el.innerHTML = html;
     } catch (err) {
+      console.error('Failed to load blueprints:', err);
       el.innerHTML = '<div style="color:var(--red);padding:16px;">Error loading blueprints</div>';
+    }
+  }
+
+  // File upload setup
+  document.getElementById('files-input').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024 * 1024) {
+      filesError('File exceeds 500MB limit');
+      return;
+    }
+
+    showUploadModal(file);
+  });
+
+  // Blueprint upload setup
+  async function uploadBlueprint() {
+    const input = document.getElementById('blueprints-input');
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024 * 1024) {
+      document.getElementById('blueprints-error').textContent = 'File exceeds 500MB limit';
+      document.getElementById('blueprints-error').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('blueprints-error').style.display = 'none';
+
+    try {
+      const buf = await file.arrayBuffer();
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Filename': file.name,
+        'X-Description': 'Blueprint: ' + file.name,
+        ...(state.token ? { 'X-Token': state.token } : {})
+      };
+
+      const r = await fetch('/api/files/upload', {
+        method: 'POST',
+        headers,
+        body: buf
+      });
+
+      if (r.ok) {
+        input.value = '';
+        await blueprintsLoadAll();
+      } else {
+        try {
+          const err = await r.json();
+          document.getElementById('blueprints-error').textContent = err.error || `Upload failed (${r.status})`;
+        } catch {
+          document.getElementById('blueprints-error').textContent = `Upload failed: ${r.status} ${r.statusText}`;
+        }
+        document.getElementById('blueprints-error').style.display = 'block';
+      }
+    } catch (err) {
+      document.getElementById('blueprints-error').textContent = err.message || 'Upload failed';
+      document.getElementById('blueprints-error').style.display = 'block';
     }
   }
 
