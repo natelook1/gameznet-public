@@ -2510,6 +2510,10 @@
                 <div class="player-identity-row">
                 <div class="player-name-large" id="info-name" style="margin-bottom: 0;">—</div>
                   <button class="rename-btn" onclick="openRename()" title="Change name">✎</button>
+                  <div id="mobile-icon-wrap" style="display:none;align-items:center;gap:3px;" onmouseenter="document.getElementById('mobile-revoke-inline-btn').style.opacity='1';document.getElementById('mobile-revoke-inline-btn').style.pointerEvents='auto';" onmouseleave="document.getElementById('mobile-revoke-inline-btn').style.opacity='0';document.getElementById('mobile-revoke-inline-btn').style.pointerEvents='none';">
+                    <button id="mobile-sync-btn" onclick="openMobileQr()" title="Mobile connected — click to manage" style="background:transparent;border:none;color:var(--accent);font-size:14px;padding:0;cursor:pointer;line-height:1;">📱</button>
+                    <button id="mobile-revoke-inline-btn" onclick="revokeMobileDevice()" title="Revoke mobile device" style="opacity:0;pointer-events:none;background:transparent;border:none;color:var(--danger);font-size:12px;padding:0;cursor:pointer;line-height:1;transition:opacity 0.15s;">✕</button>
+                  </div>
                 <div style="margin-left: auto; text-align: right;">
                   <div id="steam-linked-view" class="session-steam-row" style="display:none;">
                     <span class="steam-self-stats" id="steam-stats-self"></span>
@@ -2524,10 +2528,6 @@
                 </div>
               </div>
               </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
-              <button id="mobile-sync-btn" onclick="openMobileQr()" style="background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text-dim);font-size:11px;padding:4px 8px;cursor:pointer;letter-spacing:0.5px;transition:border-color 0.15s,color 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text-dim)';">📱</button>
-              <button id="mobile-revoke-inline-btn" onclick="revokeMobileDevice()" style="display:none;background:transparent;border:1px solid var(--danger);border-radius:3px;color:var(--danger);font-size:10px;font-family:'Share Tech Mono',monospace;letter-spacing:1px;padding:4px 8px;cursor:pointer;">REVOKE</button>
             </div>
           </div>
         </div>
@@ -6017,24 +6017,23 @@
 
   // ── Mobile Status ───────────────────────────────────────────────────────────
   async function refreshMobileStatus() {
-    const btn = document.getElementById('mobile-sync-btn');
-    const revokeBtn = document.getElementById('mobile-revoke-inline-btn');
-    if (!btn || !state.name) return;
+    const wrap = document.getElementById('mobile-icon-wrap');
+    const btn  = document.getElementById('mobile-sync-btn');
+    if (!wrap || !state.name) return;
     try {
       const res = await fetch(`/api/mobile/status?name=${encodeURIComponent(state.name)}`);
       const status = res.ok ? await res.json() : { active: false };
+      wrap.style.display = 'flex';
       if (status.active) {
-        btn.style.borderColor = 'var(--accent)';
         btn.style.color = 'var(--accent)';
-        btn.onmouseover = () => { btn.style.borderColor = 'var(--accent)'; btn.style.color = 'var(--accent)'; };
-        btn.onmouseout  = () => { btn.style.borderColor = 'var(--accent)'; btn.style.color = 'var(--accent)'; };
-        if (revokeBtn) revokeBtn.style.display = '';
+        btn.title = 'Mobile connected — click to manage';
+        wrap.onmouseenter = () => { document.getElementById('mobile-revoke-inline-btn').style.opacity = '1'; document.getElementById('mobile-revoke-inline-btn').style.pointerEvents = 'auto'; };
+        wrap.onmouseleave = () => { document.getElementById('mobile-revoke-inline-btn').style.opacity = '0'; document.getElementById('mobile-revoke-inline-btn').style.pointerEvents = 'none'; };
       } else {
-        btn.style.borderColor = 'var(--border2)';
         btn.style.color = 'var(--text-dim)';
-        btn.onmouseover = () => { btn.style.borderColor = 'var(--accent)'; btn.style.color = 'var(--accent)'; };
-        btn.onmouseout  = () => { btn.style.borderColor = 'var(--border2)'; btn.style.color = 'var(--text-dim)'; };
-        if (revokeBtn) revokeBtn.style.display = 'none';
+        btn.title = 'Sync mobile app';
+        wrap.onmouseenter = null;
+        wrap.onmouseleave = null;
       }
     } catch {}
   }
