@@ -2746,18 +2746,43 @@
 
     <!-- ── FILES TAB ── -->
     <div id="files-section" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
-      <div class="upload-zone" id="files-upload-zone">
-        <div class="upload-content">
-          <div style="font-size:40px;opacity:0.6;">📁</div>
-          <div style="font-size:14px;font-weight:600;color:var(--text);">Drop files to share</div>
-          <div style="font-size:12px;color:var(--text-dim);margin:8px 0 0;">or</div>
-          <button type="button" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;" onclick="document.getElementById('files-input').click();">Choose File</button>
-          <div style="font-size:10px;color:var(--text-dim);margin-top:8px;">Max 500MB • Auto-delete in 7 days</div>
-        </div>
-        <input id="files-input" type="file" style="display:none;" />
+      <!-- Files section nav tabs -->
+      <div style="display:flex;gap:8px;padding:16px 16px 0;border-bottom:1px solid var(--border);flex-shrink:0;">
+        <button id="files-nav-general" onclick="switchFilesNav('general')" style="background:none;border:none;padding:8px 16px;border-bottom:2px solid var(--accent);color:var(--text);cursor:pointer;font-size:13px;font-weight:600;">📄 General Files</button>
+        <button id="files-nav-blueprints" onclick="switchFilesNav('blueprints')" style="background:none;border:none;padding:8px 16px;border-bottom:2px solid transparent;color:var(--text-dim);cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;">🏗️ Blueprints</button>
       </div>
-      <div id="files-error" style="display:none;background:rgba(255,51,85,0.1);border:1px solid rgba(255,51,85,0.3);border-radius:8px;padding:12px;font-size:13px;color:var(--red);margin:16px;"></div>
-      <div id="files-list" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;"></div>
+
+      <!-- General Files View -->
+      <div id="files-view-general" style="display:flex;flex:1;flex-direction:column;overflow:hidden;">
+        <div class="upload-zone" id="files-upload-zone">
+          <div class="upload-content">
+            <div style="font-size:40px;opacity:0.6;">📁</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">Drop files to share</div>
+            <div style="font-size:12px;color:var(--text-dim);margin:8px 0 0;">or</div>
+            <button type="button" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;" onclick="document.getElementById('files-input').click();">Choose File</button>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:8px;">Max 500MB • Auto-delete in 7 days</div>
+          </div>
+          <input id="files-input" type="file" style="display:none;" />
+        </div>
+        <div id="files-error" style="display:none;background:rgba(255,51,85,0.1);border:1px solid rgba(255,51,85,0.3);border-radius:8px;padding:12px;font-size:13px;color:var(--red);margin:16px;"></div>
+        <div id="files-list" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
+      <!-- Blueprints View -->
+      <div id="files-view-blueprints" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+        <div class="upload-zone" id="blueprints-upload-zone" style="margin:16px;">
+          <div class="upload-content">
+            <div style="font-size:40px;opacity:0.6;">🏗️</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">Drop blueprint files to upload</div>
+            <div style="font-size:12px;color:var(--text-dim);margin:8px 0 0;">or</div>
+            <button type="button" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;" onclick="document.getElementById('blueprints-input').click();">Choose Blueprint</button>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:8px;"><strong>.bp</strong> or <strong>.json</strong> • Synced to server automatically</div>
+          </div>
+          <input id="blueprints-input" type="file" style="display:none;" accept=".bp,.json" />
+        </div>
+        <div id="blueprints-error" style="display:none;background:rgba(255,51,85,0.1);border:1px solid rgba(255,51,85,0.3);border-radius:8px;padding:12px;font-size:13px;color:var(--red);margin:0 16px;"></div>
+        <div id="blueprints-list" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
 
       <!-- Upload Settings Modal -->
       <div id="upload-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:50;" onclick="if(event.target===this)closeUploadModal()">
@@ -4952,6 +4977,31 @@
     }
   }
 
+  // Files nav switching
+  function switchFilesNav(view) {
+    const generalBtn = document.getElementById('files-nav-general');
+    const blueprintsBtn = document.getElementById('files-nav-blueprints');
+    const generalView = document.getElementById('files-view-general');
+    const blueprintsView = document.getElementById('files-view-blueprints');
+
+    if (view === 'blueprints') {
+      generalBtn.style.borderColor = 'transparent';
+      generalBtn.style.color = 'var(--text-dim)';
+      blueprintsBtn.style.borderColor = 'var(--accent)';
+      blueprintsBtn.style.color = 'var(--text)';
+      generalView.style.display = 'none';
+      blueprintsView.style.display = 'flex';
+      blueprintsLoadAll();
+    } else {
+      generalBtn.style.borderColor = 'var(--accent)';
+      generalBtn.style.color = 'var(--text)';
+      blueprintsBtn.style.borderColor = 'transparent';
+      blueprintsBtn.style.color = 'var(--text-dim)';
+      generalView.style.display = 'flex';
+      blueprintsView.style.display = 'none';
+    }
+  }
+
   // File upload setup
   document.getElementById('files-input').addEventListener('change', async (e) => {
     const file = e.target.files?.[0];
@@ -4963,6 +5013,164 @@
     }
 
     showUploadModal(file);
+  });
+
+  // Blueprint upload setup
+  async function uploadBlueprint() {
+    const input = document.getElementById('blueprints-input');
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024 * 1024) {
+      document.getElementById('blueprints-error').textContent = 'File exceeds 500MB limit';
+      document.getElementById('blueprints-error').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('blueprints-error').style.display = 'none';
+
+    try {
+      const buf = await file.arrayBuffer();
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Filename': file.name,
+        'X-Description': 'Blueprint: ' + file.name,
+        ...(state.token ? { 'X-Token': state.token } : {})
+      };
+
+      const r = await fetch('/api/files/upload', {
+        method: 'POST',
+        headers,
+        body: buf
+      });
+
+      if (r.ok) {
+        input.value = '';
+        await blueprintsLoadAll();
+      } else {
+        try {
+          const err = await r.json();
+          document.getElementById('blueprints-error').textContent = err.error || `Upload failed (${r.status})`;
+        } catch {
+          document.getElementById('blueprints-error').textContent = `Upload failed: ${r.status} ${r.statusText}`;
+        }
+        document.getElementById('blueprints-error').style.display = 'block';
+      }
+    } catch (err) {
+      document.getElementById('blueprints-error').textContent = err.message || 'Upload failed';
+      document.getElementById('blueprints-error').style.display = 'block';
+    }
+  }
+
+  async function blueprintsLoadAll() {
+    const el = document.getElementById('blueprints-list');
+    if (!el) return;
+    el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-dim);">Loading blueprints...</div>';
+
+    try {
+      const [uploadedRes, serverRes] = await Promise.all([
+        fetch('/api/files', {
+          headers: state.token ? { 'X-Token': state.token } : {}
+        }),
+        fetch('/api/blueprints/server')
+      ]);
+
+      const uploadedData = uploadedRes.ok ? await uploadedRes.json() : { files: [] };
+      const serverData = serverRes.ok ? await serverRes.json() : { blueprints: [] };
+
+      const uploadedBlueprints = (uploadedData.files || []).filter(f =>
+        f.original_filename.toLowerCase().endsWith('.bp') ||
+        f.original_filename.toLowerCase().endsWith('.json')
+      );
+
+      const serverBlueprints = serverData.blueprints || [];
+
+      let html = '';
+
+      if (serverBlueprints.length > 0) {
+        html += '<div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted);margin-top:8px;">🖥️ Server Blueprints</div>';
+        html += serverBlueprints.map(f => {
+          const modTime = new Date(f.modified_at).toLocaleString();
+          const size = f.size > 1024*1024 ? (f.size/(1024*1024)).toFixed(1) + ' MB' : (f.size/1024).toFixed(1) + ' KB';
+          return `
+            <div style="background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;">
+              <div style="font-size:20px;">✓</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${f.name}">${f.name}</div>
+                <div style="font-size:11px;color:var(--text-dim);margin-top:3px;">
+                  <span>${size}</span><span style="margin:0 4px;">•</span>
+                  <span>${modTime}</span>
+                  <span style="margin:0 4px;">•</span>
+                  <span style="color:var(--green);font-weight:600;">On Server</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (uploadedBlueprints.length > 0) {
+        html += '<div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted);margin-top:12px;">📤 Pending Upload</div>';
+        html += uploadedBlueprints.map(f => {
+          const uploadTime = new Date(f.uploaded_at).toLocaleString();
+          const size = f.file_size > 1024*1024 ? (f.file_size/(1024*1024)).toFixed(1) + ' MB' : (f.file_size/1024).toFixed(1) + ' KB';
+
+          return `
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;">
+              <div style="font-size:24px;">🏗️</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${f.original_filename}">${f.original_filename}</div>
+                <div style="font-size:11px;color:var(--text-dim);margin-top:3px;">
+                  <span>${f.uploader}</span><span style="margin:0 4px;">•</span>
+                  <span>${size}</span><span style="margin:0 4px;">•</span>
+                  <span>${uploadTime}</span>
+                  <span style="margin:0 4px;">•</span>
+                  <span style="color:var(--yellow);font-weight:600;">Waiting for reboot</span>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;flex-shrink:0;">
+                <a href="{{ worker_url }}/api/files/${f.id}" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--accent);text-decoration:none;transition:all 0.15s;" title="Download">⬇</a>
+                <button onclick="deleteFile('${f.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--red);transition:all 0.15s;">🗑️</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (serverBlueprints.length === 0 && uploadedBlueprints.length === 0) {
+        html = '<div style="padding:32px;text-align:center;color:var(--text-dim);">No blueprints yet<br><span style="font-size:12px;">Upload above to add blueprints to your server</span></div>';
+      }
+
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<div style="color:var(--red);padding:16px;">Error loading blueprints</div>';
+    }
+  }
+
+  document.getElementById('blueprints-input').addEventListener('change', uploadBlueprint);
+
+  // Blueprints drag-and-drop
+  const blueprintsUploadZone = document.getElementById('blueprints-upload-zone');
+  blueprintsUploadZone.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    blueprintsUploadZone.style.borderColor = 'var(--accent)';
+    blueprintsUploadZone.style.background = 'rgba(0,200,255,0.08)';
+  });
+  blueprintsUploadZone.addEventListener('dragleave', () => {
+    blueprintsUploadZone.style.borderColor = 'var(--border2)';
+    blueprintsUploadZone.style.background = 'rgba(0,200,255,0.02)';
+  });
+  blueprintsUploadZone.addEventListener('dragover', (e) => e.preventDefault());
+  blueprintsUploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    blueprintsUploadZone.style.borderColor = 'var(--border2)';
+    blueprintsUploadZone.style.background = 'rgba(0,200,255,0.02)';
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      document.getElementById('blueprints-input').files = files;
+      const event = new Event('change', { bubbles: true });
+      document.getElementById('blueprints-input').dispatchEvent(event);
+    }
   });
 
   // Drag-and-drop
