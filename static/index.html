@@ -1011,6 +1011,7 @@
   // ── Files Tab (Drop Folder) ──────────────────────────────────────────────────
   function FilesTab({ me }) {
     const [files, setFiles] = useState([]);
+    const [serverBlueprints, setServerBlueprints] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState('');
@@ -1026,10 +1027,17 @@
     async function loadFiles() {
       try {
         setLoading(true);
-        const r = await req('/api/files');
-        if (r.ok) {
-          const data = await r.json();
+        const [filesRes, blueprintsRes] = await Promise.all([
+          req('/api/files'),
+          req('/api/blueprints/server')
+        ]);
+        if (filesRes.ok) {
+          const data = await filesRes.json();
           setFiles(data.files || []);
+        }
+        if (blueprintsRes.ok) {
+          const data = await blueprintsRes.json();
+          setServerBlueprints(data.blueprints || []);
         }
       } catch (e) {
         console.error('Failed to load files:', e);
@@ -1262,12 +1270,36 @@
 
         <div class="files-list">
           ${loading ? html`<div class="empty"><span class="empty-icon">📂</span><span>Loading files…</span></div>` :
-            files.length === 0 ? html`<div class="empty"><span class="empty-icon">📂</span><span>No files yet</span></div>` :
+            (files.length === 0 && serverBlueprints.length === 0) ? html`<div class="empty"><span class="empty-icon">📂</span><span>No files yet</span></div>` :
             html`
+              ${serverBlueprints.length > 0 ? html`
+                <div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted);margin-top:8px;">🖥️ Server Blueprints</div>
+                ${serverBlueprints.map(f => {
+                  const isLive = f.is_live !== false;
+                  return html`
+                    <div class="file-row" key=${f.name} style="background:${isLive ? 'rgba(76,175,80,0.1)' : 'rgba(255,165,0,0.07)'};border-color:${isLive ? 'rgba(76,175,80,0.3)' : 'rgba(255,165,0,0.3)'}">
+                      <div class="file-icon" style="font-size:20px;">${isLive ? '✓' : '⏳'}</div>
+                      <div class="file-info">
+                        <div class="file-name" title=${f.name}>${f.name}</div>
+                        <div class="file-meta">
+                          ${f.save_folder ? html`<span style="color:var(--accent)">${f.save_folder}</span><span class="dot">•</span>` : ''}
+                          <span>${formatSize(f.size)}</span>
+                          <span class="dot">•</span>
+                          <span>${formatTime(f.modified_at)}</span>
+                          <span class="dot">•</span>
+                          ${isLive
+                            ? html`<span style="color:var(--green);font-weight:600;">Live</span>`
+                            : html`<span style="color:orange;font-weight:600;">Pending Restart</span>`}
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                })}
+              ` : ''}
               ${blueprints.length > 0 ? html`
-                <div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:#999;margin-top:8px;">🏗️ Blueprints</div>
+                <div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted);margin-top:12px;">📤 Pending Upload</div>
                 ${blueprints.map(file => html`
-                  <div class="file-row" key=${file.id}>
+                  <div class="file-row" key=${file.id} style="background:var(--surface2);">
                     <div class="file-icon">🏗️</div>
                     <div class="file-info">
                       <div class="file-name" title=${file.original_filename}>${file.original_filename}</div>
@@ -1278,7 +1310,7 @@
                         <span class="dot">•</span>
                         <span>${formatTime(file.uploaded_at)}</span>
                         <span class="dot">•</span>
-                        <span style="color:#ffb000;font-weight:600;">Permanent</span>
+                        <span style="color:var(--yellow);font-weight:600;">Waiting for reboot</span>
                       </div>
                     </div>
                     <div class="file-actions">
@@ -1289,7 +1321,7 @@
                 `)}
               ` : ''}
               ${regularFiles.length > 0 ? html`
-                ${blueprints.length > 0 ? html`<div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:#999;margin-top:8px;">📄 Other Files</div>` : ''}
+                ${(blueprints.length > 0 || serverBlueprints.length > 0) ? html`<div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted);margin-top:8px;">📄 Other Files</div>` : ''}
                 ${regularFiles.map(file => {
                   const expiresDate = file.expires_at ? new Date(file.expires_at) : null;
                   const now = new Date();
