@@ -149,7 +149,9 @@
     .dm-unread { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; border-radius: 99px; padding: 2px 7px; flex-shrink: 0; }
 
     /* ── Files ── */
-    .files-tab { display: flex; flex-direction: column; flex: 1; overflow: hidden; padding: 16px; gap: 16px; }
+    .files-tab { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    .files-tab .upload-zone { margin: 16px; }
+    .files-tab .files-list { padding: 0 16px 16px; }
     .upload-zone { border: 2px dashed var(--border2); border-radius: 12px; padding: 28px 20px; text-align: center; cursor: pointer; transition: all 0.15s; background: rgba(0,200,255,0.02); }
     .upload-zone.active { border-color: var(--accent); background: rgba(0,200,255,0.08); }
     .upload-content { display: flex; flex-direction: column; align-items: center; gap: 12px; }
@@ -1010,12 +1012,14 @@
 
   // ── Files Tab (Drop Folder) ──────────────────────────────────────────────────
   function FilesTab({ me }) {
+    const [filesView, setFilesView] = useState('general');
     const [files, setFiles] = useState([]);
     const [serverBlueprints, setServerBlueprints] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState('');
     const [dragActive, setDragActive] = useState(false);
+    const [bpDragActive, setBpDragActive] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [pendingFile, setPendingFile] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState([]);
@@ -1024,6 +1028,7 @@
     const [description, setDescription] = useState('');
     const [blueprintFolder, setBlueprintFolder] = useState('');
     const fileInputRef = useRef(null);
+    const bpInputRef = useRef(null);
 
     async function loadFiles() {
       try {
@@ -1176,6 +1181,27 @@
       }
     }
 
+    function handleBpDrag(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      setBpDragActive(e.type === 'dragenter' || e.type === 'dragover');
+    }
+
+    function handleBpDrop(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      setBpDragActive(false);
+      const f = e.dataTransfer.files[0];
+      if (f) openUploadDialog(f);
+    }
+
+    function handleBpInputChange(e) {
+      if (e.target.files?.[0]) {
+        openUploadDialog(e.target.files[0]);
+        e.target.value = '';
+      }
+    }
+
     function formatSize(bytes) {
       const units = ['B', 'KB', 'MB', 'GB'];
       let size = bytes;
@@ -1196,136 +1222,128 @@
     const canDelete = (file) => file.uploader === me.name;
 
     const isBlueprint = (f) => ['.bp', '.sbp', '.json'].some(ext => f.original_filename.toLowerCase().endsWith(ext));
-    const blueprints = files.filter(isBlueprint);
+    const pendingBlueprints = files.filter(isBlueprint);
     const regularFiles = files.filter(f => !isBlueprint(f));
 
-    return html`
-      <div class="files-tab">
-        <!-- General Files -->
-        <div class="upload-zone ${dragActive ? 'active' : ''}"
-             onDragEnter=${handleDrag} onDragLeave=${handleDrag} onDragOver=${handleDrag} onDrop=${handleDrop}>
-          <div class="upload-content">
-            <div class="upload-icon">📁</div>
-            <div class="upload-title">Drop files here to share</div>
-            <div class="upload-subtitle">or</div>
-            <button type="button" class="upload-btn" onClick=${() => fileInputRef.current?.click()} disabled=${uploading}>
-              ${uploading ? 'Uploading...' : 'Choose File'}
-            </button>
-            <div class="upload-limit">Max 500MB per file • Auto-delete in 7 days</div>
+    const subNavStyle = (active) => `
+      background:none; border:none; border-bottom: 2px solid ${active ? 'var(--accent)' : 'transparent'};
+      color:${active ? 'var(--text)' : 'var(--muted)'}; cursor:pointer; font-size:13px; font-weight:600;
+      padding:10px 16px; transition:all 0.15s; flex:1;
+    `;
+
+    const uploadModal = showUploadModal && html`
+      <div class="modal-overlay" onClick=${() => setShowUploadModal(false)}>
+        <div class="modal-dialog" onClick=${e => e.stopPropagation()}>
+          <div class="modal-header">
+            <div class="modal-title">Upload Settings</div>
+            <button class="modal-close" onClick=${() => setShowUploadModal(false)}>✕</button>
           </div>
-          <input ref=${fileInputRef} type="file" style="display:none" onChange=${handleFileInputChange} />
-        </div>
+          <div class="modal-content">
+            <div class="setting-group">
+              <label class="setting-label">Filename</label>
+              <div class="setting-value">${pendingFile?.name}</div>
+            </div>
 
-        ${uploadError && html`<div class="upload-error">⚠️ ${uploadError}</div>`}
+            <div class="setting-group">
+              <label class="setting-label">Description (optional)</label>
+              <input type="text" class="setting-input" placeholder="Add a description..." value=${description} onInput=${e => setDescription(e.target.value)} />
+            </div>
 
-        ${showUploadModal && html`
-          <div class="modal-overlay" onClick=${() => setShowUploadModal(false)}>
-            <div class="modal-dialog" onClick=${e => e.stopPropagation()}>
-              <div class="modal-header">
-                <div class="modal-title">Upload Settings</div>
-                <button class="modal-close" onClick=${() => setShowUploadModal(false)}>✕</button>
+            ${['.bp', '.sbp', '.json'].some(ext => pendingFile?.name?.toLowerCase().endsWith(ext)) && html`
+              <div class="setting-group">
+                <label class="setting-label">Blueprint Folder (optional)</label>
+                <input type="text" class="setting-input" placeholder="e.g. Nate" value=${blueprintFolder} onInput=${e => setBlueprintFolder(e.target.value)} />
               </div>
-              <div class="modal-content">
-                <div class="setting-group">
-                  <label class="setting-label">Filename</label>
-                  <div class="setting-value">${pendingFile?.name}</div>
-                </div>
+            `}
 
-                <div class="setting-group">
-                  <label class="setting-label">Description (optional)</label>
-                  <input type="text" class="setting-input" placeholder="Add a description..." value=${description} onInput=${e => setDescription(e.target.value)} />
-                </div>
-
-                ${['.bp', '.sbp', '.json'].some(ext => pendingFile?.name?.toLowerCase().endsWith(ext)) && html`
-                  <div class="setting-group">
-                    <label class="setting-label">Blueprint Folder (optional)</label>
-                    <input type="text" class="setting-input" placeholder="e.g. Nate" value=${blueprintFolder} onInput=${e => setBlueprintFolder(e.target.value)} />
-                  </div>
-                `}
-
-                <div class="setting-group">
-                  <label class="setting-label">Visibility</label>
-                  <div class="visibility-toggle">
-                    <button class="toggle-btn ${isPublic ? 'active' : ''}" onClick=${() => { setIsPublic(true); setSelectedUsers(new Set()); }}>
-                      🌐 Public
-                    </button>
-                    <button class="toggle-btn ${!isPublic ? 'active' : ''}" onClick=${() => setIsPublic(false)}>
-                      🔒 Private
-                    </button>
-                  </div>
-                </div>
-
-                ${!isPublic && html`
-                  <div class="setting-group">
-                    <label class="setting-label">Allowed Users</label>
-                    <div class="user-select">
-                      ${onlineUsers.length === 0 ? html`<div class="empty-users">No online users</div>` :
-                        onlineUsers.map(user => html`
-                          <label class="user-checkbox">
-                            <input type="checkbox"
-                              checked=${selectedUsers.has(user)}
-                              onChange=${() => toggleUser(user)} />
-                            <span>${user}</span>
-                          </label>
-                        `)}
-                    </div>
-                    ${selectedUsers.size === 0 && !isPublic && html`<div class="setting-hint">Select at least one user to proceed</div>`}
-                  </div>
-                `}
-              </div>
-              <div class="modal-footer">
-                <button class="btn-secondary" onClick=${() => setShowUploadModal(false)}>Cancel</button>
-                <button class="btn" onClick=${handleUploadWithSettings} disabled=${uploading || (!isPublic && selectedUsers.size === 0)}>
-                  ${uploading ? 'Uploading...' : 'Upload'}
+            <div class="setting-group">
+              <label class="setting-label">Visibility</label>
+              <div class="visibility-toggle">
+                <button class="toggle-btn ${isPublic ? 'active' : ''}" onClick=${() => { setIsPublic(true); setSelectedUsers(new Set()); }}>
+                  🌐 Public
+                </button>
+                <button class="toggle-btn ${!isPublic ? 'active' : ''}" onClick=${() => setIsPublic(false)}>
+                  🔒 Private
                 </button>
               </div>
             </div>
-          </div>
-        `}
 
-        <div class="files-list">
-          ${loading ? html`<div class="empty"><span class="empty-icon">📂</span><span>Loading files…</span></div>` :
-            (files.length === 0 && serverBlueprints.length === 0) ? html`<div class="empty"><span class="empty-icon">📂</span><span>No files yet</span></div>` :
-            html`
-              ${serverBlueprints.length > 0 ? html`
-                <div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted);margin-top:8px;">🖥️ Server Blueprints</div>
-                ${serverBlueprints.map(f => {
-                  const isLive = f.is_live !== false;
-                  return html`
-                    <div class="file-row" key=${f.name} style="background:${isLive ? 'rgba(76,175,80,0.1)' : 'rgba(255,165,0,0.07)'};border-color:${isLive ? 'rgba(76,175,80,0.3)' : 'rgba(255,165,0,0.3)'}">
-                      <div class="file-icon" style="font-size:20px;">${isLive ? '✓' : '⏳'}</div>
-                      <div class="file-info">
-                        <div class="file-name" title=${f.name}>${f.name}</div>
-                        <div class="file-meta">
-                          ${f.save_folder ? html`<span style="color:var(--accent)">${f.save_folder}</span><span class="dot">•</span>` : ''}
-                          <span>${formatSize(f.size)}</span>
-                          <span class="dot">•</span>
-                          <span>${formatTime(f.modified_at)}</span>
-                          <span class="dot">•</span>
-                          ${isLive
-                            ? html`<span style="color:var(--green);font-weight:600;">Live</span>`
-                            : html`<span style="color:orange;font-weight:600;">Pending Restart</span>`}
-                        </div>
-                      </div>
-                    </div>
-                  `;
-                })}
-              ` : ''}
-              ${blueprints.length > 0 ? html`
-                <div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted);margin-top:12px;">📤 Pending Upload</div>
-                ${blueprints.map(file => html`
-                  <div class="file-row" key=${file.id} style="background:var(--surface2);">
-                    <div class="file-icon">🏗️</div>
+            ${!isPublic && html`
+              <div class="setting-group">
+                <label class="setting-label">Allowed Users</label>
+                <div class="user-select">
+                  ${onlineUsers.length === 0 ? html`<div class="empty-users">No online users</div>` :
+                    onlineUsers.map(user => html`
+                      <label class="user-checkbox">
+                        <input type="checkbox"
+                          checked=${selectedUsers.has(user)}
+                          onChange=${() => toggleUser(user)} />
+                        <span>${user}</span>
+                      </label>
+                    `)}
+                </div>
+                ${selectedUsers.size === 0 && !isPublic && html`<div class="setting-hint">Select at least one user to proceed</div>`}
+              </div>
+            `}
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" onClick=${() => setShowUploadModal(false)}>Cancel</button>
+            <button class="btn" onClick=${handleUploadWithSettings} disabled=${uploading || (!isPublic && selectedUsers.size === 0)}>
+              ${uploading ? 'Uploading...' : 'Upload'}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    return html`
+      <div class="files-tab">
+        <!-- Sub-tab nav -->
+        <div style="display:flex; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0;">
+          <button style=${subNavStyle(filesView === 'general')} onClick=${() => setFilesView('general')}>📄 General Files</button>
+          <button style=${subNavStyle(filesView === 'blueprints')} onClick=${() => setFilesView('blueprints')}>🏗️ Blueprints</button>
+        </div>
+
+        ${uploadError && html`<div class="upload-error">⚠️ ${uploadError}</div>`}
+        ${uploadModal}
+
+        ${filesView === 'general' ? html`
+          <!-- General Files view -->
+          <div class="upload-zone ${dragActive ? 'active' : ''}"
+               onDragEnter=${handleDrag} onDragLeave=${handleDrag} onDragOver=${handleDrag} onDrop=${handleDrop}>
+            <div class="upload-content">
+              <div class="upload-icon">📁</div>
+              <div class="upload-title">Drop files here to share</div>
+              <div class="upload-subtitle">or</div>
+              <button type="button" class="upload-btn" onClick=${() => fileInputRef.current?.click()} disabled=${uploading}>
+                ${uploading ? 'Uploading...' : 'Choose File'}
+              </button>
+              <div class="upload-limit">Max 500MB per file • Auto-delete in 7 days</div>
+            </div>
+            <input ref=${fileInputRef} type="file" style="display:none" onChange=${handleFileInputChange} />
+          </div>
+
+          <div class="files-list">
+            ${loading ? html`<div class="empty"><span class="empty-icon">📂</span><span>Loading…</span></div>` :
+              regularFiles.length === 0 ? html`<div class="empty"><span class="empty-icon">📄</span><span>No files yet</span></div>` :
+              regularFiles.map(file => {
+                const expiresDate = file.expires_at ? new Date(file.expires_at) : null;
+                const now = new Date();
+                const daysLeft = expiresDate ? Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24)) : null;
+                return html`
+                  <div class="file-row" key=${file.id}>
+                    <div class="file-icon">📄</div>
                     <div class="file-info">
                       <div class="file-name" title=${file.original_filename}>${file.original_filename}</div>
                       <div class="file-meta">
+                        ${file.description ? html`<span>${file.description}</span><span class="dot">•</span>` : ''}
                         <span>${file.uploader}</span>
                         <span class="dot">•</span>
                         <span>${formatSize(file.file_size)}</span>
                         <span class="dot">•</span>
                         <span>${formatTime(file.uploaded_at)}</span>
-                        <span class="dot">•</span>
-                        <span style="color:var(--yellow);font-weight:600;">Waiting for reboot</span>
+                        ${daysLeft && daysLeft <= 1 ? html`<span class="dot">•</span><span class="expires-soon">expires today</span>` :
+                          daysLeft && daysLeft <= 3 ? html`<span class="dot">•</span><span class="expires-soon">${daysLeft}d left</span>` : ''}
                       </div>
                     </div>
                     <div class="file-actions">
@@ -1333,28 +1351,69 @@
                       ${canDelete(file) ? html`<button class="file-action-btn delete" onClick=${() => deleteFile(file.id)} title="Delete">✕</button>` : ''}
                     </div>
                   </div>
-                `)}
-              ` : ''}
-              ${regularFiles.length > 0 ? html`
-                ${(blueprints.length > 0 || serverBlueprints.length > 0) ? html`<div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted);margin-top:8px;">📄 Other Files</div>` : ''}
-                ${regularFiles.map(file => {
-                  const expiresDate = file.expires_at ? new Date(file.expires_at) : null;
-                  const now = new Date();
-                  const daysLeft = expiresDate ? Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24)) : null;
-                  return html`
-                    <div class="file-row" key=${file.id}>
-                      <div class="file-icon">📄</div>
+                `;
+              })
+            }
+          </div>
+        ` : html`
+          <!-- Blueprints view -->
+          <div class="upload-zone ${bpDragActive ? 'active' : ''}"
+               onDragEnter=${handleBpDrag} onDragLeave=${handleBpDrag} onDragOver=${handleBpDrag} onDrop=${handleBpDrop}>
+            <div class="upload-content">
+              <div class="upload-icon">🏗️</div>
+              <div class="upload-title">Drop blueprint to upload</div>
+              <div class="upload-subtitle">or</div>
+              <button type="button" class="upload-btn" onClick=${() => bpInputRef.current?.click()} disabled=${uploading}>
+                ${uploading ? 'Uploading...' : 'Choose Blueprint'}
+              </button>
+              <div class="upload-limit">.sbp • .bp • .json</div>
+            </div>
+            <input ref=${bpInputRef} type="file" accept=".sbp,.bp,.json" style="display:none" onChange=${handleBpInputChange} />
+          </div>
+
+          <div class="files-list">
+            ${loading ? html`<div class="empty"><span class="empty-icon">🏗️</span><span>Loading…</span></div>` :
+              (serverBlueprints.length === 0 && pendingBlueprints.length === 0) ? html`<div class="empty"><span class="empty-icon">🏗️</span><span>No blueprints yet</span></div>` :
+              html`
+                ${serverBlueprints.length > 0 ? html`
+                  <div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted);margin-top:8px;">🖥️ On Server</div>
+                  ${serverBlueprints.map(f => {
+                    const isLive = f.is_live !== false;
+                    return html`
+                      <div class="file-row" key=${f.name} style="background:${isLive ? 'rgba(76,175,80,0.1)' : 'rgba(255,165,0,0.07)'};border-color:${isLive ? 'rgba(76,175,80,0.3)' : 'rgba(255,165,0,0.3)'}">
+                        <div class="file-icon" style="font-size:20px;">${isLive ? '✓' : '⏳'}</div>
+                        <div class="file-info">
+                          <div class="file-name" title=${f.name}>${f.name}</div>
+                          <div class="file-meta">
+                            ${f.save_folder ? html`<span style="color:var(--accent)">${f.save_folder}</span><span class="dot">•</span>` : ''}
+                            <span>${formatSize(f.size)}</span>
+                            <span class="dot">•</span>
+                            <span>${formatTime(f.modified_at)}</span>
+                            <span class="dot">•</span>
+                            ${isLive
+                              ? html`<span style="color:var(--green);font-weight:600;">Live</span>`
+                              : html`<span style="color:orange;font-weight:600;">Pending Restart</span>`}
+                          </div>
+                        </div>
+                      </div>
+                    `;
+                  })}
+                ` : ''}
+                ${pendingBlueprints.length > 0 ? html`
+                  <div style="padding:8px 0;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted);margin-top:12px;">📤 Pending Upload</div>
+                  ${pendingBlueprints.map(file => html`
+                    <div class="file-row" key=${file.id} style="background:var(--surface2);">
+                      <div class="file-icon">🏗️</div>
                       <div class="file-info">
                         <div class="file-name" title=${file.original_filename}>${file.original_filename}</div>
                         <div class="file-meta">
-                          ${file.description ? html`<span>${file.description}</span><span class="dot">•</span>` : ''}
                           <span>${file.uploader}</span>
                           <span class="dot">•</span>
                           <span>${formatSize(file.file_size)}</span>
                           <span class="dot">•</span>
                           <span>${formatTime(file.uploaded_at)}</span>
-                          ${daysLeft && daysLeft <= 1 ? html`<span class="dot">•</span><span class="expires-soon">expires today</span>` :
-                            daysLeft && daysLeft <= 3 ? html`<span class="dot">•</span><span class="expires-soon">${daysLeft}d left</span>` : ''}
+                          <span class="dot">•</span>
+                          <span style="color:var(--yellow);font-weight:600;">Waiting for reboot</span>
                         </div>
                       </div>
                       <div class="file-actions">
@@ -1362,12 +1421,12 @@
                         ${canDelete(file) ? html`<button class="file-action-btn delete" onClick=${() => deleteFile(file.id)} title="Delete">✕</button>` : ''}
                       </div>
                     </div>
-                  `;
-                })}
-              ` : ''}
-            `
-          }
-        </div>
+                  `)}
+                ` : ''}
+              `
+            }
+          </div>
+        `}
       </div>
     `;
   }
