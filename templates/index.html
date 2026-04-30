@@ -5070,16 +5070,23 @@
         html += serverBlueprints.map(f => {
           const modTime = new Date(f.modified_at).toLocaleString();
           const size = f.size > 1024*1024 ? (f.size/(1024*1024)).toFixed(1) + ' MB' : (f.size/1024).toFixed(1) + ' KB';
+          const isLive = f.is_live !== false;
+          const borderColor = isLive ? 'rgba(76,175,80,0.3)' : 'rgba(255,165,0,0.3)';
+          const bgColor = isLive ? 'rgba(76,175,80,0.1)' : 'rgba(255,165,0,0.07)';
+          const icon = isLive ? '✓' : '⏳';
+          const statusLabel = isLive
+            ? '<span style="color:var(--green);font-weight:600;">Live</span>'
+            : '<span style="color:orange;font-weight:600;">Pending Restart</span>';
           return `
-            <div style="background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;">
-              <div style="font-size:20px;">✓</div>
+            <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;">
+              <div style="font-size:20px;">${icon}</div>
               <div style="flex:1;min-width:0;">
                 <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${f.name}">${f.name}</div>
                 <div style="font-size:11px;color:var(--text-dim);margin-top:3px;">
+                  ${f.save_folder ? `<span style="color:var(--accent)">${f.save_folder}</span><span style="margin:0 4px;">•</span>` : ''}
                   <span>${size}</span><span style="margin:0 4px;">•</span>
-                  <span>${modTime}</span>
-                  <span style="margin:0 4px;">•</span>
-                  <span style="color:var(--green);font-weight:600;">On Server</span>
+                  <span>${modTime}</span><span style="margin:0 4px;">•</span>
+                  ${statusLabel}
                 </div>
               </div>
             </div>
