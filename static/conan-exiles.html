@@ -660,13 +660,15 @@
   <div class="modal" id="admin-modal">
     <div class="modal-content">
       <div class="modal-title">Admin Access Required</div>
-      <div class="modal-body">
-        <input type="password" id="admin-password" placeholder="Enter admin password" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;">
-      </div>
-      <div class="modal-buttons">
-        <button class="btn secondary" onclick="closeAdminModal()">Cancel</button>
-        <button class="btn" onclick="verifyAdminPassword()">Enter</button>
-      </div>
+      <form onsubmit="verifyAdminPassword(); return false;">
+        <div class="modal-body">
+          <input type="password" id="admin-password" placeholder="Enter admin password" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;">
+        </div>
+        <div class="modal-buttons">
+          <button type="button" class="btn secondary" onclick="closeAdminModal()">Cancel</button>
+          <button type="submit" class="btn">Enter</button>
+        </div>
+      </form>
     </div>
   </div>
 
