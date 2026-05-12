@@ -958,13 +958,14 @@
     function mapZoom(factor) {
       const oldScale = mapScale;
       mapScale *= factor;
-      mapScale = Math.max(0.5, Math.min(5, mapScale));
+      mapScale = Math.max(0.1, Math.min(10, mapScale));
 
       // Zoom towards center of canvas
       const centerX = mapCanvas.width / 2;
       const centerY = mapCanvas.height / 2;
-      mapPanX = centerX - (centerX - mapPanX) * (mapScale / oldScale);
-      mapPanY = centerY - (centerY - mapPanY) * (mapScale / oldScale);
+      const scaleRatio = mapScale / oldScale;
+      mapPanX = centerX - (centerX - mapPanX) * scaleRatio;
+      mapPanY = centerY - (centerY - mapPanY) * scaleRatio;
 
       redrawMap();
     }
@@ -983,69 +984,74 @@
       mapCtx.fillStyle = '#1a1a10';
       mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
 
+      // Scale factor: convert game units to canvas pixels
+      const pixelsPerUnit = mapScale / 500; // Adjust denominator to fit map nicely
+
       mapCtx.save();
       mapCtx.translate(mapPanX, mapPanY);
-      mapCtx.scale(mapScale, mapScale);
 
       // Draw map background
       if (mapImage && mapImage.complete) {
         // Draw loaded external image
-        const scaledW = mapCanvas.width / mapScale;
-        const scaledH = mapCanvas.height / mapScale;
-        mapCtx.drawImage(mapImage, -mapPanX / mapScale, -mapPanY / mapScale, scaledW, scaledH);
+        mapCtx.drawImage(mapImage, 0, 0, MAP_WIDTH * pixelsPerUnit, MAP_HEIGHT * pixelsPerUnit);
       } else {
         // Draw procedural map as fallback
         mapCtx.fillStyle = '#4a4a2a';
-        mapCtx.fillRect(0, 0, mapCanvas.width / mapScale, mapCanvas.height / mapScale);
+        mapCtx.fillRect(0, 0, MAP_WIDTH * pixelsPerUnit, MAP_HEIGHT * pixelsPerUnit);
 
-        // Terrain zones
+        // Terrain zones (scaled to pixels)
         mapCtx.fillStyle = 'rgba(58, 90, 58, 0.3)';
-        mapCtx.fillRect(0, 0, mapCanvas.width / mapScale, 30000);
+        mapCtx.fillRect(0, 0, MAP_WIDTH * pixelsPerUnit, 30000 * pixelsPerUnit);
 
         mapCtx.fillStyle = 'rgba(90, 90, 42, 0.2)';
-        mapCtx.fillRect(0, 30000, mapCanvas.width / mapScale, 150000);
+        mapCtx.fillRect(0, 30000 * pixelsPerUnit, MAP_WIDTH * pixelsPerUnit, 150000 * pixelsPerUnit);
 
         mapCtx.fillStyle = 'rgba(74, 106, 122, 0.2)';
-        mapCtx.fillRect(0, 180000, mapCanvas.width / mapScale * 0.5, 120000);
+        mapCtx.fillRect(0, 180000 * pixelsPerUnit, (MAP_WIDTH * 0.5) * pixelsPerUnit, 120000 * pixelsPerUnit);
 
         mapCtx.fillStyle = 'rgba(42, 90, 42, 0.2)';
-        mapCtx.fillRect(mapCanvas.width / mapScale * 0.5, 180000, mapCanvas.width / mapScale * 0.5, 120000);
+        mapCtx.fillRect((MAP_WIDTH * 0.5) * pixelsPerUnit, 180000 * pixelsPerUnit, (MAP_WIDTH * 0.5) * pixelsPerUnit, 120000 * pixelsPerUnit);
       }
 
       // Draw buildings first (behind players)
       currentBuildings.forEach(b => {
         if (b.x !== null && b.y !== null) {
-          const size = 500 * (1 / mapScale);
+          const screenX = b.x * pixelsPerUnit;
+          const screenY = b.y * pixelsPerUnit;
+          const size = 1000 * pixelsPerUnit;
           mapCtx.fillStyle = 'rgba(249, 115, 22, 0.6)';
-          mapCtx.fillRect(b.x - size / 2, b.y - size / 2, size, size);
+          mapCtx.fillRect(screenX - size / 2, screenY - size / 2, size, size);
           mapCtx.strokeStyle = 'rgba(234, 88, 12, 0.8)';
-          mapCtx.lineWidth = 100 / mapScale;
-          mapCtx.strokeRect(b.x - size / 2, b.y - size / 2, size, size);
+          mapCtx.lineWidth = Math.max(1, 200 * pixelsPerUnit);
+          mapCtx.strokeRect(screenX - size / 2, screenY - size / 2, size, size);
         }
       });
 
       // Draw players
       currentPlayers.forEach(p => {
         if (p.x !== null && p.y !== null) {
-          const radius = 400 * (1 / mapScale);
+          const screenX = p.x * pixelsPerUnit;
+          const screenY = p.y * pixelsPerUnit;
+          const radius = 800 * pixelsPerUnit;
+
           mapCtx.fillStyle = 'rgba(34, 197, 94, 0.8)';
           mapCtx.beginPath();
-          mapCtx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+          mapCtx.arc(screenX, screenY, radius, 0, Math.PI * 2);
           mapCtx.fill();
 
           mapCtx.strokeStyle = 'rgba(22, 163, 74, 0.9)';
-          mapCtx.lineWidth = 150 / mapScale;
+          mapCtx.lineWidth = Math.max(1, 300 * pixelsPerUnit);
           mapCtx.stroke();
 
           // Draw player name
           mapCtx.fillStyle = '#22c55e';
-          mapCtx.font = `bold ${Math.max(12, 16 / mapScale)}px sans-serif`;
+          mapCtx.font = `bold ${Math.max(10, 16 * pixelsPerUnit)}px sans-serif`;
           mapCtx.textAlign = 'center';
           mapCtx.textBaseline = 'bottom';
           mapCtx.strokeStyle = '#000';
-          mapCtx.lineWidth = 4 / mapScale;
-          mapCtx.strokeText(p.char_name, p.x, p.y - radius - 200);
-          mapCtx.fillText(p.char_name, p.x, p.y - radius - 200);
+          mapCtx.lineWidth = Math.max(1, 4 * pixelsPerUnit);
+          mapCtx.strokeText(p.char_name, screenX, screenY - radius - 400 * pixelsPerUnit);
+          mapCtx.fillText(p.char_name, screenX, screenY - radius - 400 * pixelsPerUnit);
         }
       });
 
