@@ -451,6 +451,7 @@
         <div class="nav-item active" data-view="overview">📊 Overview</div>
         <div class="nav-item" data-view="players">👥 Players</div>
         <div class="nav-item" data-view="guilds">⚔️ Guilds</div>
+        <div class="nav-item" data-view="map">🗺️ Map</div>
         <div class="nav-item" data-view="world">🌍 World Stats</div>
       </div>
 
@@ -505,8 +506,8 @@
               <div class="table-header players-3col">
                 <div>Name</div>
                 <div>Level</div>
-                <div>Playtime</div>
                 <div>Last Online</div>
+                <div>Location</div>
               </div>
               <div class="table-rows" id="recent-players">
                 <div class="table-row" style="grid-column: 1/-1; text-align: center;">
@@ -613,6 +614,35 @@
           </div>
         </div>
 
+        <!-- Map -->
+        <div class="view" id="view-map">
+          <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Server Map</h2>
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
+            <div style="position: relative; height: 700px; background: #1a1a10; overflow: hidden;">
+              <canvas id="map-canvas" style="display: block; width: 100%; height: 100%; cursor: grab;"></canvas>
+
+              <!-- Map controls -->
+              <div style="position: absolute; bottom: 16px; left: 16px; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.7); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+                <button class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="mapZoom(1.2)">🔍+ Zoom In</button>
+                <button class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="mapZoom(0.8)">🔍- Zoom Out</button>
+                <button class="btn secondary" style="padding: 6px 12px; font-size: 12px;" onclick="mapReset()">⟲ Reset</button>
+              </div>
+
+              <!-- Legend -->
+              <div style="position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; font-size: 12px; background: rgba(0,0,0,0.7); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="width: 12px; height: 12px; background: var(--green); border-radius: 50%;"></div>
+                  <span>Players</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="width: 12px; height: 12px; background: var(--orange); border-radius: 2px;"></div>
+                  <span>Buildings</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Admin Panel -->
         <div class="view" id="view-admin">
           <div class="admin-warning">🔒 Admin panel. All actions are logged. Use responsibly.</div>
@@ -662,7 +692,7 @@
       <div class="modal-title">Admin Access Required</div>
       <form onsubmit="verifyAdminPassword(); return false;">
         <div class="modal-body">
-          <input type="password" id="admin-password" placeholder="Enter admin password" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;">
+          <input type="password" id="admin-password" placeholder="Enter admin password" autocomplete="current-password" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;">
         </div>
         <div class="modal-buttons">
           <button type="button" class="btn secondary" onclick="closeAdminModal()">Cancel</button>
@@ -778,6 +808,7 @@
       updatePlayerDetail(players);
       updateGuildDetail(guilds);
       updateWorldStats();
+      updateMapView(players, serverData.buildings || []);
     }
 
     function updatePlayersList(players) {
@@ -785,8 +816,8 @@
         <div class="table-row players-3col">
           <div>${p.char_name || 'Unknown'}</div>
           <div><span class="level-badge">${p.level || '?'}</span></div>
-          <div class="time-ago">${formatPlaytime(p.playtime || 0)}</div>
           <div class="time-ago">${formatLastOnline(p.lastTimeOnline)}</div>
+          <div style="font-size: 12px; color: var(--muted);">${p.x ? `(${Math.round(p.x)}, ${Math.round(p.y)})` : 'Unknown'}</div>
         </div>
       `).join('');
 
@@ -802,6 +833,168 @@
       `).join('');
 
       document.getElementById('overview-guilds').innerHTML = guildRows || '<div class="table-row" style="grid-column: 1/-1; text-align: center;">No guilds</div>';
+    }
+
+    // Map canvas state
+    let mapCanvas = null;
+    let mapCtx = null;
+    let mapImage = null;
+    let mapScale = 1;
+    let mapPanX = 0;
+    let mapPanY = 0;
+    let isPanning = false;
+    let panStartX = 0;
+    let panStartY = 0;
+    let currentPlayers = [];
+    let currentBuildings = [];
+
+    // Conan Exiles map dimensions (in game units)
+    const MAP_WIDTH = 400000;
+    const MAP_HEIGHT = 400000;
+
+    function initMap() {
+      mapCanvas = document.getElementById('map-canvas');
+      if (!mapCanvas) return;
+
+      mapCtx = mapCanvas.getContext('2d');
+      resizeCanvas();
+
+      // Load Ginfo map image
+      mapImage = new Image();
+      mapImage.crossOrigin = 'anonymous';
+      mapImage.src = 'https://conanexiles.ginfo.gg/img/map/exiled_lands.jpg';
+      mapImage.onload = () => redrawMap();
+      mapImage.onerror = () => {
+        mapCtx.fillStyle = '#4a4a2a';
+        mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+        mapCtx.fillStyle = '#bbb';
+        mapCtx.font = '16px sans-serif';
+        mapCtx.textAlign = 'center';
+        mapCtx.fillText('Map image failed to load', mapCanvas.width / 2, mapCanvas.height / 2);
+      };
+
+      // Mouse events
+      mapCanvas.addEventListener('mousedown', mapMouseDown);
+      document.addEventListener('mousemove', mapMouseMove);
+      document.addEventListener('mouseup', mapMouseUp);
+      mapCanvas.addEventListener('wheel', mapWheel);
+    }
+
+    function resizeCanvas() {
+      const rect = mapCanvas.parentElement.getBoundingClientRect();
+      mapCanvas.width = rect.width;
+      mapCanvas.height = rect.height;
+      redrawMap();
+    }
+
+    function mapMouseDown(e) {
+      isPanning = true;
+      panStartX = e.clientX - mapPanX;
+      panStartY = e.clientY - mapPanY;
+      mapCanvas.style.cursor = 'grabbing';
+    }
+
+    function mapMouseMove(e) {
+      if (isPanning) {
+        mapPanX = e.clientX - panStartX;
+        mapPanY = e.clientY - panStartY;
+        redrawMap();
+      }
+    }
+
+    function mapMouseUp() {
+      isPanning = false;
+      mapCanvas.style.cursor = 'grab';
+    }
+
+    function mapWheel(e) {
+      e.preventDefault();
+      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+      mapZoom(zoomFactor);
+    }
+
+    function mapZoom(factor) {
+      const oldScale = mapScale;
+      mapScale *= factor;
+      mapScale = Math.max(0.5, Math.min(5, mapScale));
+
+      // Zoom towards center of canvas
+      const centerX = mapCanvas.width / 2;
+      const centerY = mapCanvas.height / 2;
+      mapPanX = centerX - (centerX - mapPanX) * (mapScale / oldScale);
+      mapPanY = centerY - (centerY - mapPanY) * (mapScale / oldScale);
+
+      redrawMap();
+    }
+
+    function mapReset() {
+      mapScale = 1;
+      mapPanX = 0;
+      mapPanY = 0;
+      redrawMap();
+    }
+
+    function redrawMap() {
+      if (!mapCanvas || !mapCtx) return;
+
+      mapCtx.fillStyle = '#1a1a10';
+      mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+
+      mapCtx.save();
+      mapCtx.translate(mapPanX, mapPanY);
+      mapCtx.scale(mapScale, mapScale);
+
+      // Draw map image
+      if (mapImage && mapImage.complete) {
+        const scaledW = mapCanvas.width / mapScale;
+        const scaledH = mapCanvas.height / mapScale;
+        mapCtx.drawImage(mapImage, -mapPanX / mapScale, -mapPanY / mapScale, scaledW, scaledH);
+      }
+
+      // Draw buildings first (behind players)
+      currentBuildings.forEach(b => {
+        if (b.x !== null && b.y !== null) {
+          const size = 500 * (1 / mapScale);
+          mapCtx.fillStyle = 'rgba(249, 115, 22, 0.6)';
+          mapCtx.fillRect(b.x - size / 2, b.y - size / 2, size, size);
+          mapCtx.strokeStyle = 'rgba(234, 88, 12, 0.8)';
+          mapCtx.lineWidth = 100 / mapScale;
+          mapCtx.strokeRect(b.x - size / 2, b.y - size / 2, size, size);
+        }
+      });
+
+      // Draw players
+      currentPlayers.forEach(p => {
+        if (p.x !== null && p.y !== null) {
+          const radius = 400 * (1 / mapScale);
+          mapCtx.fillStyle = 'rgba(34, 197, 94, 0.8)';
+          mapCtx.beginPath();
+          mapCtx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+          mapCtx.fill();
+
+          mapCtx.strokeStyle = 'rgba(22, 163, 74, 0.9)';
+          mapCtx.lineWidth = 150 / mapScale;
+          mapCtx.stroke();
+
+          // Draw player name
+          mapCtx.fillStyle = '#22c55e';
+          mapCtx.font = `bold ${Math.max(12, 16 / mapScale)}px sans-serif`;
+          mapCtx.textAlign = 'center';
+          mapCtx.textBaseline = 'bottom';
+          mapCtx.strokeStyle = '#000';
+          mapCtx.lineWidth = 4 / mapScale;
+          mapCtx.strokeText(p.char_name, p.x, p.y - radius - 200);
+          mapCtx.fillText(p.char_name, p.x, p.y - radius - 200);
+        }
+      });
+
+      mapCtx.restore();
+    }
+
+    function updateMapView(players, buildings) {
+      currentPlayers = players.filter(p => p.x !== null && p.y !== null);
+      currentBuildings = (buildings || []).slice(0, 300).filter(b => b.x !== null && b.y !== null);
+      redrawMap();
     }
 
     function updatePlayerDetail(players) {
@@ -976,7 +1169,10 @@
       return `${hours}h`;
     }
 
-    window.addEventListener('load', loadServerData);
+    window.addEventListener('load', () => {
+      initMap();
+      loadServerData();
+    });
   </script>
 </body>
 </html>
