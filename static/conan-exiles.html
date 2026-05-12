@@ -88,6 +88,14 @@
       color: var(--accent);
     }
 
+    .nav-item.admin {
+      color: var(--orange);
+    }
+
+    .nav-item.admin.active {
+      background: rgba(249, 115, 22, 0.15);
+    }
+
     .main-content {
       flex: 1;
       display: flex;
@@ -227,8 +235,6 @@
 
     .table-header {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
-      gap: 16px;
       padding: 16px 20px;
       background: var(--surface2);
       border-bottom: 1px solid var(--border);
@@ -237,6 +243,7 @@
       letter-spacing: 1px;
       color: var(--muted);
       font-weight: 600;
+      gap: 16px;
     }
 
     .table-rows {
@@ -246,12 +253,11 @@
 
     .table-row {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
-      gap: 16px;
       padding: 12px 20px;
       border-bottom: 1px solid var(--border);
       align-items: center;
       font-size: 13px;
+      gap: 16px;
     }
 
     .table-row:hover {
@@ -300,6 +306,139 @@
       color: #86efac;
       font-size: 13px;
     }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .modal-body {
+      margin-bottom: 24px;
+    }
+
+    .modal-body input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .player-detail-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .player-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .detail-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .detail-value {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .guild-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .mini-stat {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .mini-stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .mini-stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .players-3col {
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+    }
+
+    .guilds-2col {
+      grid-template-columns: 2fr 1fr;
+    }
+
+    .admin-warning {
+      background: rgba(249, 115, 22, 0.1);
+      border: 1px solid rgba(249, 115, 22, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      color: #fed7aa;
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
   </style>
 </head>
 <body>
@@ -311,8 +450,13 @@
         <div class="section-title">Views</div>
         <div class="nav-item active" data-view="overview">📊 Overview</div>
         <div class="nav-item" data-view="players">👥 Players</div>
-        <div class="nav-item" data-view="clans">⚔️ Clans</div>
-        <div class="nav-item" data-view="rcon">⚙️ RCON Commands</div>
+        <div class="nav-item" data-view="guilds">⚔️ Guilds</div>
+        <div class="nav-item" data-view="world">🌍 World Stats</div>
+      </div>
+
+      <div>
+        <div class="section-title">Admin</div>
+        <div class="nav-item admin" data-view="admin" onclick="promptAdminPassword()">🔐 Admin Panel</div>
       </div>
 
       <div>
@@ -320,7 +464,7 @@
         <div style="font-size: 12px; color: var(--muted); line-height: 1.6;">
           <div><strong>Status:</strong> <span id="server-status" style="color: var(--green);">Unknown</span></div>
           <div style="margin-top: 8px;"><strong>Players:</strong> <span id="sidebar-players">--</span></div>
-          <div><strong>Clans:</strong> <span id="sidebar-clans">--</span></div>
+          <div><strong>Guilds:</strong> <span id="sidebar-guilds">--</span></div>
         </div>
       </div>
     </div>
@@ -338,26 +482,30 @@
         <div class="view active" id="view-overview">
           <div class="stats-grid">
             <div class="stat-card">
-              <div class="stat-label">Total Players</div>
+              <div class="stat-label">Active Players</div>
               <div class="stat-value" id="stat-players">--</div>
             </div>
             <div class="stat-card">
-              <div class="stat-label">Total Clans</div>
-              <div class="stat-value" id="stat-clans">--</div>
+              <div class="stat-label">Total Guilds</div>
+              <div class="stat-value" id="stat-guilds">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Structures</div>
+              <div class="stat-value" id="stat-structures">--</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Last Updated</div>
-              <div class="stat-value" id="stat-updated" style="font-size: 14px; word-break: break-all;">--</div>
+              <div class="stat-value" id="stat-updated" style="font-size: 14px;">--</div>
             </div>
           </div>
 
           <div>
-            <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Recent Players</h3>
+            <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Active Players</h3>
             <div class="table-container">
-              <div class="table-header">
+              <div class="table-header players-3col">
                 <div>Name</div>
                 <div>Level</div>
-                <div>Experience</div>
+                <div>Playtime</div>
                 <div>Last Online</div>
               </div>
               <div class="table-rows" id="recent-players">
@@ -367,78 +515,172 @@
               </div>
             </div>
           </div>
+
+          <div>
+            <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Guild Overview</h3>
+            <div class="table-container">
+              <div class="table-header guilds-2col">
+                <div>Guild Name</div>
+                <div>Members</div>
+              </div>
+              <div class="table-rows" id="overview-guilds">
+                <div class="table-row" style="grid-column: 1/-1; text-align: center;">
+                  <div style="color: var(--muted);">Load data to see guilds</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Players -->
         <div class="view" id="view-players">
-          <h2 style="font-size: 20px; font-weight: 600;">Player List</h2>
-          <div class="table-container">
-            <div class="table-header">
-              <div>Name</div>
-              <div>Level</div>
-              <div>Experience</div>
-              <div>Last Online</div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Active Players</div>
+              <div class="stat-value" id="players-count">--</div>
             </div>
-            <div class="table-rows" id="all-players">
-              <div class="table-row" style="grid-column: 1/-1; text-align: center;">
-                <div style="color: var(--muted);">Load data to see players</div>
+            <div class="stat-card">
+              <div class="stat-label">Avg Level</div>
+              <div class="stat-value" id="players-avg-level">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Max Level</div>
+              <div class="stat-value" id="players-max-level">--</div>
+            </div>
+          </div>
+
+          <div>
+            <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Player Details</h2>
+            <div id="players-detail-list"></div>
+          </div>
+        </div>
+
+        <!-- Guilds -->
+        <div class="view" id="view-guilds">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total Guilds</div>
+              <div class="stat-value" id="guilds-count">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Avg Guild Size</div>
+              <div class="stat-value" id="guilds-avg-size">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Largest Guild</div>
+              <div class="stat-value" id="guilds-largest">--</div>
+            </div>
+          </div>
+
+          <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Guild Roster</h2>
+          <div id="guilds-detail-list"></div>
+        </div>
+
+        <!-- World Stats -->
+        <div class="view" id="view-world">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total Structures</div>
+              <div class="stat-value" id="world-structures">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Decaying Structures</div>
+              <div class="stat-value" id="world-decaying">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Destruction Events</div>
+              <div class="stat-value" id="world-destructions">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Server Uptime Events</div>
+              <div class="stat-value" id="world-events">--</div>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Structure Distribution by Owner</h3>
+            <div class="table-container">
+              <div class="table-header guilds-2col">
+                <div>Owner/Guild</div>
+                <div>Structures</div>
+              </div>
+              <div class="table-rows" id="structure-owners">
+                <div class="table-row" style="grid-column: 1/-1; text-align: center;">
+                  <div style="color: var(--muted);">Load data to see structures</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Clans -->
-        <div class="view" id="view-clans">
-          <h2 style="font-size: 20px; font-weight: 600;">Top Clans</h2>
-          <div class="table-container">
-            <div class="table-header" style="grid-template-columns: 2fr 1fr;">
-              <div>Clan Name</div>
-              <div>Members</div>
+        <!-- Admin Panel -->
+        <div class="view" id="view-admin">
+          <div class="admin-warning">🔒 Admin panel. All actions are logged. Use responsibly.</div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total Characters</div>
+              <div class="stat-value" id="admin-total-chars">--</div>
             </div>
-            <div class="table-rows" id="clan-list">
-              <div class="table-row" style="grid-column: 1/-1; text-align: center;">
-                <div style="color: var(--muted);">Load data to see clans</div>
+            <div class="stat-card">
+              <div class="stat-label">Deleted Characters</div>
+              <div class="stat-value" id="admin-deleted-chars">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Buildings</div>
+              <div class="stat-value" id="admin-total-buildings">--</div>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Search & Analyze</h3>
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+              <div style="display: grid; gap: 16px;">
+                <div>
+                  <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--muted);">Search Player</label>
+                  <div style="display: flex; gap: 8px;">
+                    <input type="text" id="admin-search-player" placeholder="Player name..." style="flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;">
+                    <button class="btn" onclick="adminSearchPlayer()">Search</button>
+                  </div>
+                </div>
+                <div id="admin-search-result" style="display: none;"></div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- RCON Commands -->
-        <div class="view" id="view-rcon">
-          <h2 style="font-size: 20px; font-weight: 600;">RCON Commands</h2>
-          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
-            <div style="display: grid; gap: 16px;">
-              <div>
-                <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--muted);">RCON Host</label>
-                <input type="text" id="rcon-host" placeholder="192.168.30.58" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;">
-              </div>
-              <div>
-                <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--muted);">RCON Port</label>
-                <input type="text" id="rcon-port" placeholder="25575" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;">
-              </div>
-              <div>
-                <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--muted);">RCON Password</label>
-                <input type="password" id="rcon-password" placeholder="Your RCON password" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;">
-              </div>
-              <div>
-                <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--muted);">Command</label>
-                <textarea id="rcon-command" placeholder="e.g., listplayers" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px; min-height: 80px; font-family: monospace; resize: vertical;"></textarea>
-              </div>
-              <button class="btn" onclick="sendRconCommand()">Execute Command</button>
-              <div id="rcon-output" style="background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; color: var(--muted); white-space: pre-wrap; word-break: break-all; display: none; max-height: 200px; overflow-y: auto;"></div>
-            </div>
+          <div>
+            <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Suspicious Activity Detection</h3>
+            <div id="admin-suspicious-list"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <div class="modal" id="admin-modal">
+    <div class="modal-content">
+      <div class="modal-title">Admin Access Required</div>
+      <div class="modal-body">
+        <input type="password" id="admin-password" placeholder="Enter admin password" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;">
+      </div>
+      <div class="modal-buttons">
+        <button class="btn secondary" onclick="closeAdminModal()">Cancel</button>
+        <button class="btn" onclick="verifyAdminPassword()">Enter</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let serverData = null;
+    let adminAuthenticated = false;
 
     const navItems = document.querySelectorAll('.nav-item[data-view]');
     navItems.forEach(item => {
-      item.addEventListener('click', () => {
+      item.addEventListener('click', (e) => {
+        if (item.dataset.view === 'admin') {
+          e.preventDefault();
+          return;
+        }
         navItems.forEach(i => i.classList.remove('active'));
         item.classList.add('active');
         switchView(item.dataset.view);
@@ -451,17 +693,54 @@
 
       const titles = {
         'overview': 'Overview',
-        'players': 'Players',
-        'clans': 'Clans',
-        'rcon': 'RCON Commands'
+        'players': 'Player Details',
+        'guilds': 'Guild Roster',
+        'world': 'World Statistics',
+        'admin': 'Admin Panel'
       };
       document.getElementById('page-title').textContent = titles[viewName];
     }
 
+    function promptAdminPassword() {
+      if (adminAuthenticated) {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        document.querySelector('[data-view="admin"]').classList.add('active');
+        switchView('admin');
+      } else {
+        document.getElementById('admin-modal').classList.add('active');
+      }
+    }
+
+    function closeAdminModal() {
+      document.getElementById('admin-modal').classList.remove('active');
+      document.getElementById('admin-password').value = '';
+    }
+
+    function verifyAdminPassword() {
+      const password = document.getElementById('admin-password').value;
+      if (!password) return;
+
+      fetch('/api/conan-exiles/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      }).then(r => r.json()).then(data => {
+        if (data.authenticated) {
+          adminAuthenticated = true;
+          closeAdminModal();
+          document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+          document.querySelector('[data-view="admin"]').classList.add('active');
+          switchView('admin');
+          loadAdminData();
+        } else {
+          alert('Invalid password');
+        }
+      }).catch(err => alert('Auth error: ' + err.message));
+    }
+
     async function loadServerData() {
       try {
-        const apiUrl = window.location.origin + '/api/conan-exiles/status';
-        const response = await fetch(apiUrl);
+        const response = await fetch('/api/conan-exiles/status');
         const data = await response.json();
 
         if (!response.ok || data.error) {
@@ -480,43 +759,184 @@
       if (!serverData) return;
 
       const players = serverData.players || [];
-      const clans = serverData.clans || [];
-      const playerCount = serverData.player_count || 0;
-      const clanCount = serverData.clan_count || 0;
+      const guilds = serverData.guilds || [];
+      const playerCount = players.length;
+      const guildCount = guilds.length;
 
       document.getElementById('stat-players').textContent = playerCount;
-      document.getElementById('stat-clans').textContent = clanCount;
+      document.getElementById('stat-guilds').textContent = guildCount;
+      document.getElementById('stat-structures').textContent = serverData.structure_count || '--';
       document.getElementById('stat-updated').textContent = new Date().toLocaleTimeString();
       document.getElementById('server-status').textContent = 'Online';
       document.getElementById('sidebar-players').textContent = playerCount;
-      document.getElementById('sidebar-clans').textContent = clanCount;
+      document.getElementById('sidebar-guilds').textContent = guildCount;
 
+      updatePlayersList(players);
+      updateGuildsList(guilds);
+      updatePlayerDetail(players);
+      updateGuildDetail(guilds);
+      updateWorldStats();
+    }
+
+    function updatePlayersList(players) {
       const playerRows = players.map(p => `
-        <div class="table-row">
-          <div>${p.name || 'Unknown'}</div>
+        <div class="table-row players-3col">
+          <div>${p.char_name || 'Unknown'}</div>
           <div><span class="level-badge">${p.level || '?'}</span></div>
-          <div>${(p.experience || 0).toLocaleString()}</div>
-          <div class="time-ago">${formatLastOnline(p.last_online)}</div>
+          <div class="time-ago">${formatPlaytime(p.playtime || 0)}</div>
+          <div class="time-ago">${formatLastOnline(p.lastTimeOnline)}</div>
         </div>
       `).join('');
 
-      document.getElementById('recent-players').innerHTML = playerRows || '<div class="table-row" style="grid-column: 1/-1; text-align: center;">No players yet</div>';
-      document.getElementById('all-players').innerHTML = playerRows || '<div class="table-row" style="grid-column: 1/-1; text-align: center;">No players yet</div>';
+      document.getElementById('recent-players').innerHTML = playerRows || '<div class="table-row" style="grid-column: 1/-1; text-align: center;">No players</div>';
+    }
 
-      const clanRows = clans.map(c => `
-        <div class="table-row" style="grid-template-columns: 2fr 1fr;">
-          <div>${c.name || 'Unknown'}</div>
-          <div>${c.member_count || 0}</div>
+    function updateGuildsList(guilds) {
+      const guildRows = guilds.slice(0, 5).map(g => `
+        <div class="table-row guilds-2col">
+          <div>${g.name || 'Unknown'}</div>
+          <div>${g.member_count || 0}</div>
         </div>
       `).join('');
 
-      document.getElementById('clan-list').innerHTML = clanRows || '<div class="table-row" style="grid-column: 1/-1; text-align: center;">No clans yet</div>';
+      document.getElementById('overview-guilds').innerHTML = guildRows || '<div class="table-row" style="grid-column: 1/-1; text-align: center;">No guilds</div>';
+    }
+
+    function updatePlayerDetail(players) {
+      if (players.length === 0) {
+        document.getElementById('players-detail-list').innerHTML = '<div class="error">No players online</div>';
+        return;
+      }
+
+      const avgLevel = Math.round(players.reduce((sum, p) => sum + (p.level || 0), 0) / players.length);
+      const maxLevel = Math.max(...players.map(p => p.level || 0));
+
+      document.getElementById('players-count').textContent = players.length;
+      document.getElementById('players-avg-level').textContent = avgLevel;
+      document.getElementById('players-max-level').textContent = maxLevel;
+
+      const detailHtml = players.map(p => `
+        <div class="player-detail-card">
+          <div style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">${p.char_name}</div>
+          <div class="player-detail-grid">
+            <div class="detail-item">
+              <div class="detail-label">Level</div>
+              <div class="detail-value"><span class="level-badge">${p.level}</span></div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Guild</div>
+              <div class="detail-value">${p.guild_name || 'No Guild'}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Playtime</div>
+              <div class="detail-value">${formatPlaytime(p.playtime || 0)}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Last Online</div>
+              <div class="detail-value">${formatLastOnline(p.lastTimeOnline)}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('players-detail-list').innerHTML = detailHtml;
+    }
+
+    function updateGuildDetail(guilds) {
+      if (guilds.length === 0) {
+        document.getElementById('guilds-detail-list').innerHTML = '<div class="error">No guilds</div>';
+        return;
+      }
+
+      const avgSize = Math.round(guilds.reduce((sum, g) => sum + (g.member_count || 0), 0) / guilds.length);
+      const largestGuild = guilds.reduce((max, g) => (g.member_count || 0) > (max.member_count || 0) ? g : max);
+
+      document.getElementById('guilds-count').textContent = guilds.length;
+      document.getElementById('guilds-avg-size').textContent = avgSize;
+      document.getElementById('guilds-largest').textContent = largestGuild.name || 'Unknown';
+
+      const detailHtml = guilds.map(g => `
+        <div class="player-detail-card">
+          <div style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">${g.name}</div>
+          <div class="guild-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Members</div>
+              <div class="mini-stat-value">${g.member_count || 0}</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Guild ID</div>
+              <div class="mini-stat-value" style="font-size: 12px; word-break: break-all;">${g.guildId}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('guilds-detail-list').innerHTML = detailHtml;
+    }
+
+    function updateWorldStats() {
+      document.getElementById('world-structures').textContent = serverData.structure_count || '--';
+      document.getElementById('world-decaying').textContent = serverData.decaying_structures || '--';
+      document.getElementById('world-destructions').textContent = serverData.destruction_count || '--';
+      document.getElementById('world-events').textContent = serverData.event_count || '--';
+
+      const ownerRows = (serverData.structure_owners || []).map(o => `
+        <div class="table-row guilds-2col">
+          <div>${o.owner || 'Unknown'}</div>
+          <div>${o.count}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('structure-owners').innerHTML = ownerRows || '<div class="table-row" style="grid-column: 1/-1; text-align: center;">No structures</div>';
+    }
+
+    function loadAdminData() {
+      fetch('/api/conan-exiles/admin/stats').then(r => r.json()).then(data => {
+        if (data.error) return;
+        document.getElementById('admin-total-chars').textContent = data.total_characters || '--';
+        document.getElementById('admin-deleted-chars').textContent = data.deleted_characters || '--';
+        document.getElementById('admin-total-buildings').textContent = data.total_buildings || '--';
+
+        const suspiciousList = (data.suspicious_activity || []).map(a => `
+          <div class="player-detail-card">
+            <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">${a.type}</div>
+            <div style="font-size: 12px; color: var(--muted);">${a.description}</div>
+          </div>
+        `).join('');
+        document.getElementById('admin-suspicious-list').innerHTML = suspiciousList || '<div class="error">No suspicious activity detected</div>';
+      });
+    }
+
+    function adminSearchPlayer() {
+      const name = document.getElementById('admin-search-player').value;
+      if (!name) return;
+
+      fetch(`/api/conan-exiles/admin/search?name=${encodeURIComponent(name)}`).then(r => r.json()).then(data => {
+        const resultDiv = document.getElementById('admin-search-result');
+        if (data.error || !data.player) {
+          resultDiv.innerHTML = '<div class="error">Player not found</div>';
+        } else {
+          const p = data.player;
+          resultDiv.innerHTML = `
+            <div class="player-detail-card">
+              <div style="font-size: 14px; font-weight: 600;">${p.char_name}</div>
+              <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">
+                <div>Level: ${p.level}</div>
+                <div>ID: ${p.id}</div>
+                <div>Status: ${p.isAlive ? 'Active' : 'Deleted'}</div>
+                <div>Last Online: ${formatLastOnline(p.lastTimeOnline)}</div>
+              </div>
+            </div>
+          `;
+        }
+        resultDiv.style.display = 'block';
+      });
     }
 
     function formatLastOnline(timestamp) {
       if (!timestamp) return 'Never';
       try {
-        const date = new Date(timestamp);
+        const date = new Date(timestamp * 1000);
         const now = new Date();
         const diff = now - date;
         const hours = Math.floor(diff / 3600000);
@@ -529,35 +949,14 @@
       }
     }
 
-    async function sendRconCommand() {
-      const host = document.getElementById('rcon-host').value.trim();
-      const port = document.getElementById('rcon-port').value.trim();
-      const password = document.getElementById('rcon-password').value;
-      const command = document.getElementById('rcon-command').value.trim();
-
-      if (!host || !port || !password || !command) {
-        alert('Please fill in all fields');
-        return;
-      }
-
-      const output = document.getElementById('rcon-output');
-      output.textContent = 'Executing command...';
-      output.style.display = 'block';
-
-      try {
-        const response = await fetch('/api/rcon/execute', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ host, port: parseInt(port), password, command })
-        });
-        const data = await response.json();
-        output.textContent = data.output || data.error || 'No output';
-      } catch (err) {
-        output.textContent = `Error: ${err.message}`;
-      }
+    function formatPlaytime(ms) {
+      if (!ms) return '0h';
+      const hours = Math.floor(ms / 3600000);
+      const days = Math.floor(hours / 24);
+      if (days > 0) return `${days}d ${hours % 24}h`;
+      return `${hours}h`;
     }
 
-    // Load data on page load
     window.addEventListener('load', loadServerData);
   </script>
 </body>
