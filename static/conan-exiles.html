@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conan Exiles Server Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a21;
+      --surface2: #22222c;
+      --border: #2e2e3a;
+      --accent: #7c6af7;
+      --accent-dim: #3a3470;
+      --green: #22c55e;
+      --red: #ef4444;
+      --orange: #f97316;
+      --text: #e2e2e8;
+      --muted: #6b6b7a;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 280px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 20px;
+      gap: 24px;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .nav-item {
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .nav-item:hover {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .input-group input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 13px;
+      min-width: 300px;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .btn:active {
+      opacity: 0.8;
+    }
+
+    .btn.secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .table-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-header {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .table-rows {
+      overflow-y: auto;
+      max-height: 400px;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 16px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .table-row:hover {
+      background: var(--surface2);
+    }
+
+    .table-row:last-child {
+      border-bottom: none;
+    }
+
+    .level-badge {
+      display: inline-block;
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .time-ago {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    .error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      padding: 16px;
+      color: #fca5a5;
+      font-size: 13px;
+    }
+
+    .success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 8px;
+      padding: 16px;
+      color: #86efac;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <div class="logo">Conan <span>Exiles</span></div>
+
+      <div>
+        <div class="section-title">Views</div>
+        <div class="nav-item active" data-view="overview">📊 Overview</div>
+        <div class="nav-item" data-view="players">👥 Players</div>
+        <div class="nav-item" data-view="clans">⚔️ Clans</div>
+        <div class="nav-item" data-view="rcon">⚙️ RCON Commands</div>
+      </div>
+
+      <div>
+        <div class="section-title">Server</div>
+        <div style="font-size: 12px; color: var(--muted); line-height: 1.6;">
+          <div><strong>Status:</strong> <span id="server-status" style="color: var(--green);">Unknown</span></div>
+          <div style="margin-top: 8px;"><strong>Players:</strong> <span id="sidebar-players">--</span></div>
+          <div><strong>Clans:</strong> <span id="sidebar-clans">--</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="header">
+        <div class="header-title" id="page-title">Overview</div>
+        <div class="header-controls">
+          <button class="btn" onclick="loadServerData()">🔄 Refresh</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- Overview -->
+        <div class="view active" id="view-overview">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total Players</div>
+              <div class="stat-value" id="stat-players">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Clans</div>
+              <div class="stat-value" id="stat-clans">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Last Updated</div>
+              <div class="stat-value" id="stat-updated" style="font-size: 14px; word-break: break-all;">--</div>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Recent Players</h3>
+            <div class="table-container">
+              <div class="table-header">
+                <div>Name</div>
+                <div>Level</div>
+                <div>Experience</div>
+                <div>Last Online</div>
+              </div>
+              <div class="table-rows" id="recent-players">
+                <div class="table-row" style="grid-column: 1/-1; text-align: center;">
+                  <div style="color: var(--muted);">Load data to see players</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Players -->
+        <div class="view" id="view-players">
+          <h2 style="font-size: 20px; font-weight: 600;">Player List</h2>
+          <div class="table-container">
+            <div class="table-header">
+              <div>Name</div>
+              <div>Level</div>
+              <div>Experience</div>
+              <div>Last Online</div>
+            </div>
+            <div class="table-rows" id="all-players">
+              <div class="table-row" style="grid-column: 1/-1; text-align: center;">
+                <div style="color: var(--muted);">Load data to see players</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clans -->
+        <div class="view" id="view-clans">
+          <h2 style="font-size: 20px; font-weight: 600;">Top Clans</h2>
+          <div class="table-container">
+            <div class="table-header" style="grid-template-columns: 2fr 1fr;">
+              <div>Clan Name</div>
+              <div>Members</div>
+            </div>
+            <div class="table-rows" id="clan-list">
+              <div class="table-row" style="grid-column: 1/-1; text-align: center;">
+                <div style="color: var(--muted);">Load data to see clans</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RCON Commands -->
+        <div class="view" id="view-rcon">
+          <h2 style="font-size: 20px; font-weight: 600;">RCON Commands</h2>
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+            <div style="display: grid; gap: 16px;">
+              <div>
+                <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--muted);">RCON Host</label>
+                <input type="text" id="rcon-host" placeholder="192.168.30.58" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;">
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--muted);">RCON Port</label>
+                <input type="text" id="rcon-port" placeholder="25575" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;">
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--muted);">RCON Password</label>
+                <input type="password" id="rcon-password" placeholder="Your RCON password" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;">
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--muted);">Command</label>
+                <textarea id="rcon-command" placeholder="e.g., listplayers" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px; min-height: 80px; font-family: monospace; resize: vertical;"></textarea>
+              </div>
+              <button class="btn" onclick="sendRconCommand()">Execute Command</button>
+              <div id="rcon-output" style="background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; color: var(--muted); white-space: pre-wrap; word-break: break-all; display: none; max-height: 200px; overflow-y: auto;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let serverData = null;
+
+    const navItems = document.querySelectorAll('.nav-item[data-view]');
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        navItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        switchView(item.dataset.view);
+      });
+    });
+
+    function switchView(viewName) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(`view-${viewName}`).classList.add('active');
+
+      const titles = {
+        'overview': 'Overview',
+        'players': 'Players',
+        'clans': 'Clans',
+        'rcon': 'RCON Commands'
+      };
+      document.getElementById('page-title').textContent = titles[viewName];
+    }
+
+    async function loadServerData() {
+      try {
+        const apiUrl = window.location.origin + '/api/conan-exiles/status';
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+          document.querySelector('.content').innerHTML = `<div class="error">${data.error || 'Failed to load server data'}</div>`;
+          return;
+        }
+
+        serverData = data;
+        updateUI();
+      } catch (err) {
+        document.querySelector('.content').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+      }
+    }
+
+    function updateUI() {
+      if (!serverData) return;
+
+      const players = serverData.players || [];
+      const clans = serverData.clans || [];
+      const playerCount = serverData.player_count || 0;
+      const clanCount = serverData.clan_count || 0;
+
+      document.getElementById('stat-players').textContent = playerCount;
+      document.getElementById('stat-clans').textContent = clanCount;
+      document.getElementById('stat-updated').textContent = new Date().toLocaleTimeString();
+      document.getElementById('server-status').textContent = 'Online';
+      document.getElementById('sidebar-players').textContent = playerCount;
+      document.getElementById('sidebar-clans').textContent = clanCount;
+
+      const playerRows = players.map(p => `
+        <div class="table-row">
+          <div>${p.name || 'Unknown'}</div>
+          <div><span class="level-badge">${p.level || '?'}</span></div>
+          <div>${(p.experience || 0).toLocaleString()}</div>
+          <div class="time-ago">${formatLastOnline(p.last_online)}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('recent-players').innerHTML = playerRows || '<div class="table-row" style="grid-column: 1/-1; text-align: center;">No players yet</div>';
+      document.getElementById('all-players').innerHTML = playerRows || '<div class="table-row" style="grid-column: 1/-1; text-align: center;">No players yet</div>';
+
+      const clanRows = clans.map(c => `
+        <div class="table-row" style="grid-template-columns: 2fr 1fr;">
+          <div>${c.name || 'Unknown'}</div>
+          <div>${c.member_count || 0}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('clan-list').innerHTML = clanRows || '<div class="table-row" style="grid-column: 1/-1; text-align: center;">No clans yet</div>';
+    }
+
+    function formatLastOnline(timestamp) {
+      if (!timestamp) return 'Never';
+      try {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diff = now - date;
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(hours / 24);
+        if (days > 0) return `${days}d ago`;
+        if (hours > 0) return `${hours}h ago`;
+        return 'Recently';
+      } catch {
+        return 'Unknown';
+      }
+    }
+
+    async function sendRconCommand() {
+      const host = document.getElementById('rcon-host').value.trim();
+      const port = document.getElementById('rcon-port').value.trim();
+      const password = document.getElementById('rcon-password').value;
+      const command = document.getElementById('rcon-command').value.trim();
+
+      if (!host || !port || !password || !command) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      const output = document.getElementById('rcon-output');
+      output.textContent = 'Executing command...';
+      output.style.display = 'block';
+
+      try {
+        const response = await fetch('/api/rcon/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ host, port: parseInt(port), password, command })
+        });
+        const data = await response.json();
+        output.textContent = data.output || data.error || 'No output';
+      } catch (err) {
+        output.textContent = `Error: ${err.message}`;
+      }
+    }
+
+    // Load data on page load
+    window.addEventListener('load', loadServerData);
+  </script>
+</body>
+</html>
