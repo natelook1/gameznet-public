@@ -859,25 +859,67 @@
       mapCtx = mapCanvas.getContext('2d');
       resizeCanvas();
 
-      // Load Ginfo map image
+      // Create procedural map background (fallback while loading external image)
+      drawProceduralMap();
+
+      // Try to load Ginfo map image with fallback
       mapImage = new Image();
-      mapImage.crossOrigin = 'anonymous';
-      mapImage.src = 'https://conanexiles.ginfo.gg/img/map/exiled_lands.jpg';
-      mapImage.onload = () => redrawMap();
-      mapImage.onerror = () => {
-        mapCtx.fillStyle = '#4a4a2a';
-        mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
-        mapCtx.fillStyle = '#bbb';
-        mapCtx.font = '16px sans-serif';
-        mapCtx.textAlign = 'center';
-        mapCtx.fillText('Map image failed to load', mapCanvas.width / 2, mapCanvas.height / 2);
+      mapImage.onload = () => {
+        console.log('Map image loaded');
+        redrawMap();
       };
+      mapImage.onerror = () => {
+        console.log('Failed to load external map, using procedural');
+      };
+
+      // Use imgur or another CORS-friendly host
+      mapImage.src = 'https://imgur.com/CfTi8xN.jpg';
 
       // Mouse events
       mapCanvas.addEventListener('mousedown', mapMouseDown);
       document.addEventListener('mousemove', mapMouseMove);
       document.addEventListener('mouseup', mapMouseUp);
       mapCanvas.addEventListener('wheel', mapWheel);
+    }
+
+    function drawProceduralMap() {
+      // Draw a detailed procedural map as fallback
+      mapCtx.fillStyle = '#4a4a2a';
+      mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+
+      // Noob River (top)
+      mapCtx.fillStyle = 'rgba(58, 90, 58, 0.4)';
+      mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height * 0.08);
+
+      // Desert (middle)
+      mapCtx.fillStyle = 'rgba(90, 90, 42, 0.3)';
+      mapCtx.fillRect(0, mapCanvas.height * 0.08, mapCanvas.width, mapCanvas.height * 0.35);
+
+      // Snow (bottom left)
+      mapCtx.fillStyle = 'rgba(74, 106, 122, 0.3)';
+      mapCtx.fillRect(0, mapCanvas.height * 0.43, mapCanvas.width * 0.5, mapCanvas.height * 0.57);
+
+      // Jungle (bottom right)
+      mapCtx.fillStyle = 'rgba(42, 90, 42, 0.3)';
+      mapCtx.fillRect(mapCanvas.width * 0.5, mapCanvas.height * 0.43, mapCanvas.width * 0.5, mapCanvas.height * 0.57);
+
+      // Grid overlay
+      mapCtx.strokeStyle = 'rgba(107, 107, 122, 0.1)';
+      mapCtx.lineWidth = 1;
+      const gridSize = mapCanvas.width / 4;
+      for (let i = 0; i <= 4; i++) {
+        mapCtx.beginPath();
+        mapCtx.moveTo(gridSize * i, 0);
+        mapCtx.lineTo(gridSize * i, mapCanvas.height);
+        mapCtx.stroke();
+      }
+      const gridSizeV = mapCanvas.height / 5;
+      for (let i = 0; i <= 5; i++) {
+        mapCtx.beginPath();
+        mapCtx.moveTo(0, gridSizeV * i);
+        mapCtx.lineTo(mapCanvas.width, gridSizeV * i);
+        mapCtx.stroke();
+      }
     }
 
     function resizeCanvas() {
@@ -937,6 +979,7 @@
     function redrawMap() {
       if (!mapCanvas || !mapCtx) return;
 
+      // Clear background
       mapCtx.fillStyle = '#1a1a10';
       mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
 
@@ -944,11 +987,29 @@
       mapCtx.translate(mapPanX, mapPanY);
       mapCtx.scale(mapScale, mapScale);
 
-      // Draw map image
+      // Draw map background
       if (mapImage && mapImage.complete) {
+        // Draw loaded external image
         const scaledW = mapCanvas.width / mapScale;
         const scaledH = mapCanvas.height / mapScale;
         mapCtx.drawImage(mapImage, -mapPanX / mapScale, -mapPanY / mapScale, scaledW, scaledH);
+      } else {
+        // Draw procedural map as fallback
+        mapCtx.fillStyle = '#4a4a2a';
+        mapCtx.fillRect(0, 0, mapCanvas.width / mapScale, mapCanvas.height / mapScale);
+
+        // Terrain zones
+        mapCtx.fillStyle = 'rgba(58, 90, 58, 0.3)';
+        mapCtx.fillRect(0, 0, mapCanvas.width / mapScale, 30000);
+
+        mapCtx.fillStyle = 'rgba(90, 90, 42, 0.2)';
+        mapCtx.fillRect(0, 30000, mapCanvas.width / mapScale, 150000);
+
+        mapCtx.fillStyle = 'rgba(74, 106, 122, 0.2)';
+        mapCtx.fillRect(0, 180000, mapCanvas.width / mapScale * 0.5, 120000);
+
+        mapCtx.fillStyle = 'rgba(42, 90, 42, 0.2)';
+        mapCtx.fillRect(mapCanvas.width / mapScale * 0.5, 180000, mapCanvas.width / mapScale * 0.5, 120000);
       }
 
       // Draw buildings first (behind players)
