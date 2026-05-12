@@ -79,7 +79,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.8.3"
+VERSION = "1.8.4"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -93,7 +93,7 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
-RUSTDESK_VERSION = "1.8.3"
+RUSTDESK_VERSION = "1.8.4"
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -208,10 +208,12 @@ def cleanup_tunnel():
                 cfg = json.load(f)
             import urllib.request as _ur
             _hb = json.dumps({"name": cfg.get("name", ""), "vpn_ip": cfg.get("vpn_ip", ""), "disconnecting": True}).encode()
+            # Always use public WORKER_URL for cleanup heartbeat
             _req = _ur.Request(f"{WORKER_URL}/api/heartbeat", data=_hb, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}, method="POST")
             _ur.urlopen(_req, timeout=4)
-        except Exception:
-            pass
+            log.debug("Cleanup heartbeat sent to %s", WORKER_URL)
+        except Exception as _e:
+            log.debug("Cleanup heartbeat failed: %s", _e)
     try:
         wg = wg_exe()
         if wg:
@@ -357,6 +359,50 @@ _invisible = False
 _player_status = ""
 _full_route = False
 _update_required = False
+
+def cleanup_stale_tunnel():
+    """
+    On startup, check if WireGuard tunnel is still running from a previous unclean shutdown.
+    If so, uninstall it and flush DNS caches.
+    """
+    try:
+        wg = wg_exe()
+        if not wg:
+            return
+
+        CREATE_NO_WINDOW = 0x08000000
+
+        # Check if tunnel service exists
+        svc = subprocess.run(
+            ["sc", "query", f"WireGuardTunnel${TUNNEL_NAME}"],
+            capture_output=True, text=True,
+            creationflags=CREATE_NO_WINDOW
+        )
+
+        if "does not exist" not in svc.stdout.lower() and svc.returncode == 0:
+            log.warning("Found stale WireGuard tunnel from previous unclean shutdown — cleaning up")
+
+            # Uninstall the tunnel
+            subprocess.run(
+                [wg, "/uninstalltunnelservice", TUNNEL_NAME],
+                capture_output=True, creationflags=CREATE_NO_WINDOW,
+                timeout=10
+            )
+
+            # Remove config file
+            conf_path = os.path.join(os.path.expanduser("~"), f"{TUNNEL_NAME}.conf")
+            if os.path.exists(conf_path):
+                os.remove(conf_path)
+
+            # Flush DNS cache
+            subprocess.run(
+                ["ipconfig", "/flushdns"],
+                capture_output=True, creationflags=CREATE_NO_WINDOW,
+                timeout=5
+            )
+            log.info("Stale tunnel cleaned up and DNS cache flushed")
+    except Exception as e:
+        log.debug("Stale tunnel cleanup failed (non-critical): %s", e)
 
 def _backend_url():
     """Return VPN backend URL when connected (direct IP, no DNS), else external public URL."""
@@ -576,7 +622,7 @@ def api_disconnect():
         if os.path.exists(conf_path):
             os.remove(conf_path)
 
-        # Send disconnecting heartbeat before clearing state
+        # Send disconnecting heartbeat before clearing state (use WORKER_URL, not _backend_url)
         try:
             import urllib.request
             if os.path.exists(CONFIG_FILE):
@@ -588,15 +634,23 @@ def api_disconnect():
                     "disconnecting": True
                 }).encode()
                 req = urllib.request.Request(
-                    f"{_backend_url()}/api/heartbeat",
+                    f"{WORKER_URL}/api/heartbeat",
                     data=payload,
                     headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
                     method="POST"
                 )
                 urllib.request.urlopen(req, timeout=5)
-                log.debug("Disconnect heartbeat sent")
+                log.debug("Disconnect heartbeat sent to %s", WORKER_URL)
         except Exception as hb_err:
             log.debug("Disconnect heartbeat failed: %s", hb_err)
+
+        # Flush DNS and routing caches to clear any stale VPN routes
+        try:
+            CREATE_NO_WINDOW = 0x08000000
+            subprocess.run(["ipconfig", "/flushdns"], capture_output=True, creationflags=CREATE_NO_WINDOW, timeout=5)
+            log.debug("DNS cache flushed")
+        except Exception as flush_err:
+            log.debug("DNS flush failed: %s", flush_err)
 
         with _lock:
             _connected = False
@@ -1634,8 +1688,9 @@ def heartbeat_loop():
                     "version": VERSION,
                     "status": _player_status
                 }).encode()
+                # Use VPN backend URL for heartbeat while connected (proves tunnel is alive)
                 req = urllib.request.Request(
-                    f"{_backend_url()}/api/heartbeat",
+                    f"{VPN_BACKEND_URL}/api/heartbeat",
                     data=payload,
                     headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
                     method="POST"
@@ -1913,9 +1968,10 @@ if __name__ == "__main__":
     # send a pre-connect heartbeat to re-add UDM peer if needed, then resume connected state.
     # If no config exists, uninstall the orphaned tunnel and stay disconnected.
     try:
+        CREATE_NO_WINDOW = 0x08000000
         wg = wg_cli()
         if wg:
-            result = subprocess.run([wg, "show", TUNNEL_NAME], capture_output=True, creationflags=0x08000000, timeout=3)
+            result = subprocess.run([wg, "show", TUNNEL_NAME], capture_output=True, creationflags=CREATE_NO_WINDOW, timeout=3)
             if result.returncode == 0 and result.stdout.strip():
                 if os.path.exists(CONFIG_FILE):
                     try:
@@ -1930,8 +1986,14 @@ if __name__ == "__main__":
                         log.warning("Startup heartbeat failed: %s", _e)
                     _connected = True
                 else:
-                    subprocess.run([wg, "/uninstalltunnelservice", TUNNEL_NAME], capture_output=True, creationflags=0x08000000)
+                    subprocess.run([wg, "/uninstalltunnelservice", TUNNEL_NAME], capture_output=True, creationflags=CREATE_NO_WINDOW)
                     log.info("Orphaned tunnel uninstalled on startup (no config found)")
+                    # Flush DNS after uninstalling orphaned tunnel
+                    try:
+                        subprocess.run(["ipconfig", "/flushdns"], capture_output=True, creationflags=CREATE_NO_WINDOW, timeout=5)
+                        log.debug("DNS cache flushed after orphaned tunnel cleanup")
+                    except Exception as _flush_err:
+                        log.debug("DNS flush failed: %s", _flush_err)
     except Exception:
         pass
 
