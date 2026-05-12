@@ -936,15 +936,32 @@
     function formatLastOnline(timestamp) {
       if (!timestamp) return 'Never';
       try {
-        const date = new Date(timestamp * 1000);
+        let ts = typeof timestamp === 'string' ? parseFloat(timestamp) : timestamp;
+        if (ts === 0 || ts < 0) return 'Never';
         const now = new Date();
-        const diff = now - date;
-        const hours = Math.floor(diff / 3600000);
+        const nowMs = now.getTime();
+        let date;
+        if (ts > 1000000000000) {
+          date = new Date(ts);
+        } else if (ts > 1000000000) {
+          date = new Date(ts * 1000);
+        } else {
+          return 'Unknown timestamp format';
+        }
+        if (date.getTime() > nowMs) {
+          return 'Future timestamp';
+        }
+        const diff = nowMs - date.getTime();
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
         if (days > 0) return `${days}d ago`;
         if (hours > 0) return `${hours}h ago`;
-        return 'Recently';
-      } catch {
+        if (minutes > 0) return `${minutes}m ago`;
+        if (seconds > 0) return `${seconds}s ago`;
+        return 'Just now';
+      } catch (e) {
         return 'Unknown';
       }
     }
