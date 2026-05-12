@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Conan Exiles Server Manager</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -430,6 +432,17 @@
       grid-template-columns: 2fr 1fr;
     }
 
+    .player-label {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      color: #22c55e;
+      font-size: 12px;
+      font-weight: 700;
+      text-shadow: 0 0 3px #000, 0 0 3px #000;
+      white-space: nowrap;
+    }
+
     .admin-warning {
       background: rgba(249, 115, 22, 0.1);
       border: 1px solid rgba(249, 115, 22, 0.3);
@@ -618,18 +631,10 @@
         <div class="view" id="view-map">
           <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Server Map</h2>
           <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
-            <div style="position: relative; height: 700px; background: #1a1a10; overflow: hidden;">
-              <canvas id="map-canvas" style="display: block; width: 100%; height: 100%; cursor: grab;"></canvas>
-
-              <!-- Map controls -->
-              <div style="position: absolute; bottom: 16px; left: 16px; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.7); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-                <button class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="mapZoom(1.2)">🔍+ Zoom In</button>
-                <button class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="mapZoom(0.8)">🔍- Zoom Out</button>
-                <button class="btn secondary" style="padding: 6px 12px; font-size: 12px;" onclick="mapReset()">⟲ Reset</button>
-              </div>
-
+            <div style="position: relative; height: 700px;">
+              <div id="leaflet-map" style="width: 100%; height: 100%; background: #1a1a10;"></div>
               <!-- Legend -->
-              <div style="position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; font-size: 12px; background: rgba(0,0,0,0.7); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+              <div style="position: absolute; bottom: 16px; right: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; font-size: 12px; background: rgba(0,0,0,0.8); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <div style="width: 12px; height: 12px; background: var(--green); border-radius: 50%;"></div>
                   <span>Players</span>
@@ -733,10 +738,10 @@
       };
       document.getElementById('page-title').textContent = titles[viewName];
 
-      // Resize canvas when switching to map view
-      if (viewName === 'map' && mapCanvas) {
+      if (viewName === 'map') {
         setTimeout(() => {
-          resizeCanvas();
+          if (!leafletMap) initMap();
+          else leafletMap.invalidateSize();
         }, 50);
       }
     }
@@ -843,242 +848,105 @@
       document.getElementById('overview-guilds').innerHTML = guildRows || '<div class="table-row" style="grid-column: 1/-1; text-align: center;">No guilds</div>';
     }
 
-    // Map canvas state
-    let mapCanvas = null;
-    let mapCtx = null;
-    let mapImage = null;
-    let mapScale = 1;
-    let mapPanX = 0;
-    let mapPanY = 0;
-    let isPanning = false;
-    let panStartX = 0;
-    let panStartY = 0;
-    let currentPlayers = [];
-    let currentBuildings = [];
+    // Leaflet map state
+    let leafletMap = null;
+    let playerMarkers = [];
+    let buildingMarkers = [];
 
-    // Conan Exiles map dimensions (in game units)
-    const MAP_WIDTH = 400000;
-    const MAP_HEIGHT = 400000;
+    // Conan Exiles tile map is 16128x16128px at maxNativeZoom=6
+    // We use a simple CRS.Simple projection where 1 pixel = 1 unit
+    const TILE_SIZE = 256;
+    const MAX_NATIVE_ZOOM = 6;
+    const MAP_PX = TILE_SIZE * Math.pow(2, MAX_NATIVE_ZOOM); // 16384px
+
+    // Conan Exiles Unreal world bounds (empirically calibrated)
+    const WORLD_MIN_X = -166000;
+    const WORLD_MIN_Y = -166000;
+    const WORLD_MAX_X = 233000;
+    const WORLD_MAX_Y = 233000;
+    const WORLD_W = WORLD_MAX_X - WORLD_MIN_X;
+    const WORLD_H = WORLD_MAX_Y - WORLD_MIN_Y;
+
+    // Convert Unreal world coords to Leaflet LatLng (CRS.Simple: lat=y, lng=x)
+    // Tile origin is top-left; Unreal Y increases downward too so no flip needed
+    function worldToLatLng(wx, wy) {
+      const px = ((wx - WORLD_MIN_X) / WORLD_W) * MAP_PX;
+      const py = ((wy - WORLD_MIN_Y) / WORLD_H) * MAP_PX;
+      return leafletMap.unproject([px, py], MAX_NATIVE_ZOOM);
+    }
 
     function initMap() {
-      mapCanvas = document.getElementById('map-canvas');
-      if (!mapCanvas) return;
+      if (leafletMap) return;
 
-      mapCtx = mapCanvas.getContext('2d');
-      resizeCanvas();
+      leafletMap = L.map('leaflet-map', {
+        crs: L.CRS.Simple,
+        minZoom: 1,
+        maxZoom: 8,
+        zoomSnap: 0.5,
+        attributionControl: false,
+      });
 
-      // Create procedural map background (fallback while loading external image)
-      drawProceduralMap();
+      // Prefer self-hosted tiles; fall back to allgamemaps.com on first tile error
+      const localTiles = '/static/map-tiles/ConanExiles/{z}/{x}/{y}.png';
+      const remoteTiles = 'https://allgamemaps.com/img/map/ConanExiles/ConanExiles/{z}/{x}/{y}.png';
+      let usedRemote = false;
 
-      // Try to load Ginfo map image with fallback
-      mapImage = new Image();
-      mapImage.onload = () => {
-        console.log('Map image loaded');
-        redrawMap();
-      };
-      mapImage.onerror = () => {
-        console.log('Failed to load external map, using procedural');
-      };
+      const tileLayer = L.tileLayer(localTiles, {
+        tileSize: TILE_SIZE,
+        maxNativeZoom: MAX_NATIVE_ZOOM,
+        maxZoom: 8,
+        noWrap: true,
+      }).addTo(leafletMap);
 
-      // Use imgur or another CORS-friendly host
-      mapImage.src = 'https://imgur.com/CfTi8xN.jpg';
-
-      // Mouse events
-      mapCanvas.addEventListener('mousedown', mapMouseDown);
-      document.addEventListener('mousemove', mapMouseMove);
-      document.addEventListener('mouseup', mapMouseUp);
-      mapCanvas.addEventListener('wheel', mapWheel);
-    }
-
-    function drawProceduralMap() {
-      // Draw a detailed procedural map as fallback
-      mapCtx.fillStyle = '#4a4a2a';
-      mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
-
-      // Noob River (top)
-      mapCtx.fillStyle = 'rgba(58, 90, 58, 0.4)';
-      mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height * 0.08);
-
-      // Desert (middle)
-      mapCtx.fillStyle = 'rgba(90, 90, 42, 0.3)';
-      mapCtx.fillRect(0, mapCanvas.height * 0.08, mapCanvas.width, mapCanvas.height * 0.35);
-
-      // Snow (bottom left)
-      mapCtx.fillStyle = 'rgba(74, 106, 122, 0.3)';
-      mapCtx.fillRect(0, mapCanvas.height * 0.43, mapCanvas.width * 0.5, mapCanvas.height * 0.57);
-
-      // Jungle (bottom right)
-      mapCtx.fillStyle = 'rgba(42, 90, 42, 0.3)';
-      mapCtx.fillRect(mapCanvas.width * 0.5, mapCanvas.height * 0.43, mapCanvas.width * 0.5, mapCanvas.height * 0.57);
-
-      // Grid overlay
-      mapCtx.strokeStyle = 'rgba(107, 107, 122, 0.1)';
-      mapCtx.lineWidth = 1;
-      const gridSize = mapCanvas.width / 4;
-      for (let i = 0; i <= 4; i++) {
-        mapCtx.beginPath();
-        mapCtx.moveTo(gridSize * i, 0);
-        mapCtx.lineTo(gridSize * i, mapCanvas.height);
-        mapCtx.stroke();
-      }
-      const gridSizeV = mapCanvas.height / 5;
-      for (let i = 0; i <= 5; i++) {
-        mapCtx.beginPath();
-        mapCtx.moveTo(0, gridSizeV * i);
-        mapCtx.lineTo(mapCanvas.width, gridSizeV * i);
-        mapCtx.stroke();
-      }
-    }
-
-    function resizeCanvas() {
-      const rect = mapCanvas.parentElement.getBoundingClientRect();
-      mapCanvas.width = rect.width;
-      mapCanvas.height = rect.height;
-      console.log('Canvas resized to', mapCanvas.width, 'x', mapCanvas.height);
-      redrawMap();
-    }
-
-    function mapMouseDown(e) {
-      isPanning = true;
-      panStartX = e.clientX - mapPanX;
-      panStartY = e.clientY - mapPanY;
-      mapCanvas.style.cursor = 'grabbing';
-    }
-
-    function mapMouseMove(e) {
-      if (isPanning) {
-        mapPanX = e.clientX - panStartX;
-        mapPanY = e.clientY - panStartY;
-        redrawMap();
-      }
-    }
-
-    function mapMouseUp() {
-      isPanning = false;
-      mapCanvas.style.cursor = 'grab';
-    }
-
-    function mapWheel(e) {
-      e.preventDefault();
-      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-      mapZoom(zoomFactor);
-    }
-
-    function mapZoom(factor) {
-      const oldScale = mapScale;
-      mapScale *= factor;
-      mapScale = Math.max(0.1, Math.min(10, mapScale));
-
-      // Zoom towards center of canvas
-      const centerX = mapCanvas.width / 2;
-      const centerY = mapCanvas.height / 2;
-      const scaleRatio = mapScale / oldScale;
-      mapPanX = centerX - (centerX - mapPanX) * scaleRatio;
-      mapPanY = centerY - (centerY - mapPanY) * scaleRatio;
-
-      redrawMap();
-    }
-
-    function mapReset() {
-      mapScale = 1;
-      mapPanX = 0;
-      mapPanY = 0;
-      redrawMap();
-    }
-
-    function redrawMap() {
-      if (!mapCanvas || !mapCtx) return;
-
-      // Clear background
-      mapCtx.fillStyle = '#1a1a10';
-      mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
-
-      // Fit entire map to canvas
-      const scaleX = mapCanvas.width / MAP_WIDTH;
-      const scaleY = mapCanvas.height / MAP_HEIGHT;
-      const baseScale = Math.min(scaleX, scaleY);
-      const pixelsPerUnit = baseScale * mapScale;
-
-      mapCtx.save();
-      mapCtx.translate(mapPanX, mapPanY);
-
-      // Draw terrain background - always visible
-      const mapPixelWidth = MAP_WIDTH * pixelsPerUnit;
-      const mapPixelHeight = MAP_HEIGHT * pixelsPerUnit;
-
-      // Base desert color
-      mapCtx.fillStyle = '#4a4a2a';
-      mapCtx.fillRect(0, 0, mapPixelWidth, mapPixelHeight);
-
-      // Noob River - green (top 30k units)
-      mapCtx.fillStyle = 'rgba(58, 90, 58, 0.5)';
-      mapCtx.fillRect(0, 0, mapPixelWidth, 30000 * pixelsPerUnit);
-
-      // Desert - sandy (30k-180k units)
-      mapCtx.fillStyle = 'rgba(90, 90, 42, 0.3)';
-      mapCtx.fillRect(0, 30000 * pixelsPerUnit, mapPixelWidth, 150000 * pixelsPerUnit);
-
-      // Snow - left side (180k+ units)
-      mapCtx.fillStyle = 'rgba(74, 106, 122, 0.4)';
-      mapCtx.fillRect(0, 180000 * pixelsPerUnit, mapPixelWidth * 0.5, 120000 * pixelsPerUnit);
-
-      // Jungle - right side (180k+ units)
-      mapCtx.fillStyle = 'rgba(42, 90, 42, 0.4)';
-      mapCtx.fillRect(mapPixelWidth * 0.5, 180000 * pixelsPerUnit, mapPixelWidth * 0.5, 120000 * pixelsPerUnit);
-
-      // Draw buildings first (behind players)
-      currentBuildings.forEach(b => {
-        if (b.x !== null && b.y !== null) {
-          const screenX = b.x * pixelsPerUnit;
-          const screenY = b.y * pixelsPerUnit;
-          const size = Math.max(4, 1000 * pixelsPerUnit);
-          mapCtx.fillStyle = 'rgba(249, 115, 22, 0.7)';
-          mapCtx.fillRect(screenX - size / 2, screenY - size / 2, size, size);
-          mapCtx.strokeStyle = '#ea580c';
-          mapCtx.lineWidth = 1;
-          mapCtx.strokeRect(screenX - size / 2, screenY - size / 2, size, size);
+      tileLayer.on('tileerror', () => {
+        if (!usedRemote) {
+          usedRemote = true;
+          tileLayer.setUrl(remoteTiles);
         }
       });
 
-      // Draw players
-      currentPlayers.forEach(p => {
-        if (p.x !== null && p.y !== null) {
-          const screenX = p.x * pixelsPerUnit;
-          const screenY = p.y * pixelsPerUnit;
-          const radius = Math.max(3, 800 * pixelsPerUnit);
-
-          mapCtx.fillStyle = 'rgba(34, 197, 94, 0.8)';
-          mapCtx.beginPath();
-          mapCtx.arc(screenX, screenY, radius, 0, Math.PI * 2);
-          mapCtx.fill();
-
-          mapCtx.strokeStyle = '#16a34a';
-          mapCtx.lineWidth = 1;
-          mapCtx.stroke();
-
-          // Draw player name at zoom-independent size
-          mapCtx.fillStyle = '#22c55e';
-          mapCtx.font = 'bold 14px sans-serif';
-          mapCtx.textAlign = 'center';
-          mapCtx.textBaseline = 'bottom';
-          mapCtx.strokeStyle = '#000';
-          mapCtx.lineWidth = 3;
-          mapCtx.strokeText(p.char_name, screenX, screenY - radius - 20);
-          mapCtx.fillText(p.char_name, screenX, screenY - radius - 20);
-        }
-      });
-
-      mapCtx.restore();
+      // Fit view to full map extent
+      const topLeft = leafletMap.unproject([0, 0], MAX_NATIVE_ZOOM);
+      const bottomRight = leafletMap.unproject([MAP_PX, MAP_PX], MAX_NATIVE_ZOOM);
+      leafletMap.fitBounds(L.latLngBounds(topLeft, bottomRight));
     }
 
     function updateMapView(players, buildings) {
-      currentPlayers = players.filter(p => p.x !== null && p.y !== null);
-      currentBuildings = (buildings || []).slice(0, 300).filter(b => b.x !== null && b.y !== null);
-      console.log('Map updated:', currentPlayers.length, 'players,', currentBuildings.length, 'buildings');
-      if (currentPlayers.length > 0) {
-        console.log('First player:', currentPlayers[0].char_name, 'at', currentPlayers[0].x, currentPlayers[0].y);
-      }
-      redrawMap();
+      if (!leafletMap) return;
+
+      // Clear old markers
+      playerMarkers.forEach(m => m.remove());
+      buildingMarkers.forEach(m => m.remove());
+      playerMarkers = [];
+      buildingMarkers = [];
+
+      const validPlayers = players.filter(p => p.x !== null && p.y !== null);
+      const validBuildings = (buildings || []).slice(0, 500).filter(b => b.x !== null && b.y !== null);
+
+      validBuildings.forEach(b => {
+        const latlng = worldToLatLng(b.x, b.y);
+        const marker = L.circleMarker(latlng, {
+          radius: 4,
+          color: '#ea580c',
+          fillColor: '#f97316',
+          fillOpacity: 0.7,
+          weight: 1,
+        }).addTo(leafletMap);
+        buildingMarkers.push(marker);
+      });
+
+      validPlayers.forEach(p => {
+        const latlng = worldToLatLng(p.x, p.y);
+        const marker = L.circleMarker(latlng, {
+          radius: 8,
+          color: '#16a34a',
+          fillColor: '#22c55e',
+          fillOpacity: 0.9,
+          weight: 2,
+        }).bindTooltip(p.char_name, { permanent: true, direction: 'top', offset: [0, -8], className: 'player-label' })
+          .addTo(leafletMap);
+        playerMarkers.push(marker);
+      });
     }
 
     function updatePlayerDetail(players) {
@@ -1254,7 +1122,6 @@
     }
 
     window.addEventListener('load', () => {
-      initMap();
       loadServerData();
     });
   </script>
