@@ -633,6 +633,8 @@
           <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
             <div style="position: relative; height: 700px;">
               <div id="leaflet-map" style="width: 100%; height: 100%; background: #1a1a10;"></div>
+              <!-- Debug coord readout -->
+              <div id="map-coord-debug" style="position: absolute; top: 16px; left: 16px; z-index: 1000; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.8); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); color: var(--muted);">Click map to show coords</div>
               <!-- Legend -->
               <div style="position: absolute; bottom: 16px; right: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; font-size: 12px; background: rgba(0,0,0,0.8); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -641,7 +643,11 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <div style="width: 12px; height: 12px; background: var(--orange); border-radius: 2px;"></div>
-                  <span>Buildings</span>
+                  <span>Structures</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="width: 12px; height: 12px; background: #a855f7; border-radius: 50%;"></div>
+                  <span>Teleporters</span>
                 </div>
               </div>
             </div>
@@ -821,7 +827,7 @@
       updatePlayerDetail(players);
       updateGuildDetail(guilds);
       updateWorldStats();
-      updateMapView(players, serverData.buildings || []);
+      updateMapView(players, serverData.buildings || [], serverData.teleporters || []);
     }
 
     function updatePlayersList(players) {
@@ -852,26 +858,34 @@
     let leafletMap = null;
     let playerMarkers = [];
     let buildingMarkers = [];
+    let teleporterMarkers = [];
+    let pendingMapData = null; // store data if map not yet initialized
 
     // Conan Exiles tile map is 16128x16128px at maxNativeZoom=6
     // We use a simple CRS.Simple projection where 1 pixel = 1 unit
     const TILE_SIZE = 256;
     const MAX_NATIVE_ZOOM = 6;
-    const MAP_PX = TILE_SIZE * Math.pow(2, MAX_NATIVE_ZOOM); // 16384px
+    const LEAFLET_MAP_PX = TILE_SIZE * Math.pow(2, MAX_NATIVE_ZOOM); // 16384 — what Leaflet uses internally
+    const IMAGE_PX = 16128; // actual tile image pixel size
 
-    // Conan Exiles Unreal world bounds (empirically calibrated)
-    const WORLD_MIN_X = -166000;
-    const WORLD_MIN_Y = -166000;
-    const WORLD_MAX_X = 233000;
-    const WORLD_MAX_Y = 233000;
-    const WORLD_W = WORLD_MAX_X - WORLD_MIN_X;
-    const WORLD_H = WORLD_MAX_Y - WORLD_MIN_Y;
+    // Conan Exiles Exiled Lands coordinate calibration:
+    // Map = 400,000 x 400,000 Unreal units across 16128px image
+    // Grid origin (0,0) is at G9 = col 6, row 8 (0-indexed) of a 16x16 grid
+    // Each cell = 25,000 units
+    const UNITS_PER_PX = 400000 / IMAGE_PX;
+    // Calibrated: world(-29982, 239317) should land near bottom of tile image (~px 16000)
+    // ORIGIN = target_px - world_coord * scale
+    const PX_SCALE = LEAFLET_MAP_PX / 400000; // 16384/400000 = 0.04096
+    // Calibrated: Nate-ette world(-61279, 233822) should be at px(5514, 13328)
+    const ORIGIN_PX_X = 8024;  // 5514 - (-61279 * 0.04096)
+    const ORIGIN_PX_Y = 3750;  // 13328 - (233822 * 0.04096)
 
-    // Convert Unreal world coords to Leaflet LatLng (CRS.Simple: lat=y, lng=x)
-    // Tile origin is top-left; Unreal Y increases downward too so no flip needed
+    // Convert Unreal world coords to Leaflet LatLng (CRS.Simple)
+    // Returns null if the coordinate falls outside the tile image
     function worldToLatLng(wx, wy) {
-      const px = ((wx - WORLD_MIN_X) / WORLD_W) * MAP_PX;
-      const py = ((wy - WORLD_MIN_Y) / WORLD_H) * MAP_PX;
+      const px = ORIGIN_PX_X + wx * PX_SCALE;
+      const py = ORIGIN_PX_Y + wy * PX_SCALE;
+      if (px < -500 || px > IMAGE_PX + 500 || py < -500 || py > IMAGE_PX + 500) return null;
       return leafletMap.unproject([px, py], MAX_NATIVE_ZOOM);
     }
 
@@ -891,11 +905,17 @@
       const remoteTiles = 'https://allgamemaps.com/img/map/ConanExiles/ConanExiles/{z}/{x}/{y}.png';
       let usedRemote = false;
 
+      // Tile image is 16128px — fit to that, not Leaflet's internal 16384
+      const imgTopLeft = leafletMap.unproject([0, 0], MAX_NATIVE_ZOOM);
+      const imgBottomRight = leafletMap.unproject([IMAGE_PX, IMAGE_PX], MAX_NATIVE_ZOOM);
+      const mapBounds = L.latLngBounds(imgTopLeft, imgBottomRight);
+
       const tileLayer = L.tileLayer(localTiles, {
         tileSize: TILE_SIZE,
         maxNativeZoom: MAX_NATIVE_ZOOM,
         maxZoom: 8,
         noWrap: true,
+        bounds: mapBounds,
       }).addTo(leafletMap);
 
       tileLayer.on('tileerror', () => {
@@ -905,38 +925,78 @@
         }
       });
 
-      // Fit view to full map extent
-      const topLeft = leafletMap.unproject([0, 0], MAX_NATIVE_ZOOM);
-      const bottomRight = leafletMap.unproject([MAP_PX, MAP_PX], MAX_NATIVE_ZOOM);
-      leafletMap.fitBounds(L.latLngBounds(topLeft, bottomRight));
+      leafletMap.fitBounds(mapBounds);
+
+      // Click to show world coordinates for calibration
+      leafletMap.on('click', function(e) {
+        const pt = leafletMap.project(e.latlng, MAX_NATIVE_ZOOM);
+        const wx = (pt.x - ORIGIN_PX_X) / PX_SCALE;
+        const wy = (pt.y - ORIGIN_PX_Y) / PX_SCALE;
+        document.getElementById('map-coord-debug').textContent =
+          `click px:(${Math.round(pt.x)}, ${Math.round(pt.y)})  world:(${Math.round(wx)}, ${Math.round(wy)})`;
+      });
+
+      // Apply any data that arrived before the map was ready
+      if (pendingMapData) {
+        updateMapView(pendingMapData.players, pendingMapData.buildings, pendingMapData.teleporters);
+        pendingMapData = null;
+      }
     }
 
-    function updateMapView(players, buildings) {
-      if (!leafletMap) return;
+    function updateMapView(players, buildings, teleporters) {
+      if (!leafletMap) {
+        pendingMapData = { players, buildings, teleporters };
+        return;
+      }
 
       // Clear old markers
       playerMarkers.forEach(m => m.remove());
       buildingMarkers.forEach(m => m.remove());
+      teleporterMarkers.forEach(m => m.remove());
       playerMarkers = [];
       buildingMarkers = [];
+      teleporterMarkers = [];
 
       const validPlayers = players.filter(p => p.x !== null && p.y !== null);
       const validBuildings = (buildings || []).slice(0, 500).filter(b => b.x !== null && b.y !== null);
+      const validTeleporters = (teleporters || []).filter(t => t.x !== null && t.y !== null);
 
       validBuildings.forEach(b => {
         const latlng = worldToLatLng(b.x, b.y);
+        if (!latlng) return;
         const marker = L.circleMarker(latlng, {
-          radius: 4,
+          radius: 6,
           color: '#ea580c',
           fillColor: '#f97316',
           fillOpacity: 0.7,
           weight: 1,
         }).addTo(leafletMap);
+        if (b.owner) marker.bindTooltip(b.owner, { direction: 'top', offset: [0, -4] });
         buildingMarkers.push(marker);
       });
 
+      validTeleporters.forEach(t => {
+        const latlng = worldToLatLng(t.x, t.y);
+        if (!latlng) return;
+        const marker = L.circleMarker(latlng, {
+          radius: 6,
+          color: '#7c3aed',
+          fillColor: '#a855f7',
+          fillOpacity: 0.9,
+          weight: 2,
+        }).addTo(leafletMap);
+        if (t.owner) marker.bindTooltip(`⬡ ${t.owner}`, { direction: 'top', offset: [0, -6] });
+        teleporterMarkers.push(marker);
+      });
+
+      if (validPlayers.length > 0) {
+        const p0 = validPlayers[0];
+        console.log(`[map] first player "${p0.char_name}" raw coords: x=${p0.x} y=${p0.y}`);
+      }
+
       validPlayers.forEach(p => {
         const latlng = worldToLatLng(p.x, p.y);
+        if (!latlng) return;
         const marker = L.circleMarker(latlng, {
           radius: 8,
           color: '#16a34a',
