@@ -22,15 +22,18 @@
       --muted: #6b6b7a;
     }
 
-    html, body {
+    html {
       height: 100%;
+      height: 100dvh;
+    }
+
+    body {
+      height: 100%;
+      height: 100dvh;
       background: var(--bg);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       -webkit-font-smoothing: antialiased;
-    }
-
-    body {
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -38,7 +41,9 @@
 
     .container {
       display: flex;
-      height: 100vh;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .sidebar {
@@ -432,6 +437,21 @@
       grid-template-columns: 2fr 1fr;
     }
 
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    .legend-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: inline-block;
+    }
     .player-label {
       background: transparent;
       border: none;
@@ -451,6 +471,105 @@
       color: #fed7aa;
       font-size: 12px;
       margin-bottom: 16px;
+    }
+
+    /* Bottom tab bar — hidden by default, shown on mobile */
+    .mobile-nav { display: none; }
+
+    .mobile-nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 4px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 10px;
+      gap: 3px;
+      transition: color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .mobile-nav-item .tab-icon { font-size: 20px; line-height: 1; }
+    .mobile-nav-item .tab-label { line-height: 1; }
+    .mobile-nav-item.active { color: var(--accent); }
+    .mobile-nav-item.admin-tab { color: var(--orange); }
+    .mobile-nav-item.admin-tab.active { color: var(--orange); }
+
+    /* ── Mobile ─────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .container { flex-direction: column; overflow: visible; }
+
+      /* Hide desktop sidebar */
+      .sidebar { display: none; }
+
+      .main-content { min-height: 0; }
+
+      /* Header: compact */
+      .header { padding: 10px 16px; min-height: 48px; }
+      .header-title { font-size: 17px; }
+      .header-controls { gap: 8px; }
+      .input-group input { min-width: 0; width: 150px; font-size: 12px; padding: 8px 10px; }
+
+      /* Content scrolls between header and tab bar */
+      .content {
+        padding: 12px 14px;
+        gap: 14px;
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* Stats */
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .stat-card { padding: 14px; }
+      .stat-value { font-size: 22px; }
+
+      /* Tables */
+      .table-container { font-size: 12px; }
+      .players-3col { grid-template-columns: 2fr 1fr 1fr; }
+      .players-3col > *:nth-child(4) { display: none; }
+      .guilds-2col { grid-template-columns: 2fr 1fr; }
+
+      /* Map — full bleed, no scroll */
+      #view-map {
+        gap: 0;
+        /* stretch to fill the scrollable content area */
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+      .map-heading { display: none; }
+      #map-container {
+        border-radius: 0 !important;
+        border: none !important;
+        flex: 1;
+        height: 100% !important;
+      }
+      #map-inner { height: 100% !important; }
+      /* content area: no padding when map is active */
+      .content:has(#view-map.active),
+      .content.map-active {
+        padding: 0;
+        overflow: hidden;
+        position: relative;
+      }
+      #map-legend { font-size: 11px; padding: 8px 10px; max-height: 40vh; overflow-y: auto; bottom: 8px; right: 8px; }
+
+      /* Admin */
+      .admin-grid { grid-template-columns: 1fr !important; }
+
+      /* Show bottom tab bar */
+      .mobile-nav {
+        display: flex;
+        flex-shrink: 0;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        height: calc(58px + env(safe-area-inset-bottom, 0px));
+      }
     }
   </style>
 </head>
@@ -486,9 +605,7 @@
     <div class="main-content">
       <div class="header">
         <div class="header-title" id="page-title">Overview</div>
-        <div class="header-controls">
-          <button class="btn" onclick="loadServerData()">🔄 Refresh</button>
-        </div>
+        <div class="header-controls"></div>
       </div>
 
       <div class="content">
@@ -629,27 +746,12 @@
 
         <!-- Map -->
         <div class="view" id="view-map">
-          <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Server Map</h2>
-          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
-            <div style="position: relative; height: 700px;">
+          <h2 class="map-heading" style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Server Map</h2>
+          <div id="map-container" style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
+            <div style="position: relative; height: 700px;" id="map-inner">
               <div id="leaflet-map" style="width: 100%; height: 100%; background: #1a1a10;"></div>
-              <!-- Debug coord readout -->
-              <div id="map-coord-debug" style="position: absolute; top: 16px; left: 16px; z-index: 1000; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.8); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); color: var(--muted);">Click map to show coords</div>
-              <!-- Legend -->
-              <div style="position: absolute; bottom: 16px; right: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; font-size: 12px; background: rgba(0,0,0,0.8); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <div style="width: 12px; height: 12px; background: var(--green); border-radius: 50%;"></div>
-                  <span>Players</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <div style="width: 12px; height: 12px; background: var(--orange); border-radius: 2px;"></div>
-                  <span>Structures</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <div style="width: 12px; height: 12px; background: #a855f7; border-radius: 50%;"></div>
-                  <span>Teleporters</span>
-                </div>
-              </div>
+              <div id="map-coord-debug" style="display:none; position: absolute; top: 16px; left: 16px; z-index: 1000; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.8); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); color: var(--muted);">Click map to show coords</div>
+              <div id="map-legend" style="position: absolute; bottom: 16px; right: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; font-size: 12px; background: rgba(0,0,0,0.85); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); color: var(--text);"></div>
             </div>
           </div>
         </div>
@@ -711,21 +813,51 @@
         </div>
       </form>
     </div>
+
   </div>
 
+  <!-- Mobile bottom tab bar — sibling of .container, flex child of body -->
+  <nav class="mobile-nav" id="mobile-nav">
+    <div class="mobile-nav-item active" data-view="overview">
+      <span class="tab-icon">📊</span>
+      <span class="tab-label">Overview</span>
+    </div>
+    <div class="mobile-nav-item" data-view="players">
+      <span class="tab-icon">👥</span>
+      <span class="tab-label">Players</span>
+    </div>
+    <div class="mobile-nav-item" data-view="guilds">
+      <span class="tab-icon">⚔️</span>
+      <span class="tab-label">Guilds</span>
+    </div>
+    <div class="mobile-nav-item" data-view="map">
+      <span class="tab-icon">🗺️</span>
+      <span class="tab-label">Map</span>
+    </div>
+    <div class="mobile-nav-item" data-view="world">
+      <span class="tab-icon">🌍</span>
+      <span class="tab-label">World</span>
+    </div>
+    <div class="mobile-nav-item admin-tab" data-view="admin" onclick="promptAdminPassword()">
+      <span class="tab-icon">🔐</span>
+      <span class="tab-label">Admin</span>
+    </div>
+  </nav>
+
   <script>
-    let serverData = null;
+    let serverData = { players: [], guilds: [], buildings: [], placeables: [], thralls: [], teleporters: [], following_thralls: [] };
     let adminAuthenticated = false;
 
-    const navItems = document.querySelectorAll('.nav-item[data-view]');
-    navItems.forEach(item => {
+    function setActiveNav(viewName) {
+      document.querySelectorAll('.nav-item[data-view], .mobile-nav-item[data-view]').forEach(i => {
+        i.classList.toggle('active', i.dataset.view === viewName);
+      });
+    }
+
+    document.querySelectorAll('.nav-item[data-view], .mobile-nav-item[data-view]').forEach(item => {
       item.addEventListener('click', (e) => {
-        if (item.dataset.view === 'admin') {
-          e.preventDefault();
-          return;
-        }
-        navItems.forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
+        if (item.dataset.view === 'admin') { e.preventDefault(); return; }
+        setActiveNav(item.dataset.view);
         switchView(item.dataset.view);
       });
     });
@@ -734,28 +866,43 @@
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       document.getElementById(`view-${viewName}`).classList.add('active');
 
+      // On mobile, toggle no-padding class when map is active so it fills the screen
+      const content = document.querySelector('.content');
+      if (content) content.classList.toggle('map-active', viewName === 'map');
+
       const titles = {
         'overview': 'Overview',
-        'players': 'Player Details',
-        'guilds': 'Guild Roster',
-        'map': 'Server Map',
-        'world': 'World Statistics',
-        'admin': 'Admin Panel'
+        'players': 'Players',
+        'guilds': 'Guilds',
+        'map': 'Map',
+        'world': 'World Stats',
+        'admin': 'Admin'
       };
       document.getElementById('page-title').textContent = titles[viewName];
 
       if (viewName === 'map') {
         setTimeout(() => {
-          if (!leafletMap) initMap();
-          else leafletMap.invalidateSize();
+          if (!leafletMap) {
+            initMap();
+          } else {
+            leafletMap.invalidateSize();
+            // Re-draw in case prefetchData resolved while map was hidden
+            const allPieces = [...serverData.buildings, ...serverData.placeables];
+            if (allPieces.length && cachedClusters && cachedClusters.length === 0) {
+              cachedClusters = clusterBuildings(allPieces);
+              cachedTeleporters = serverData.teleporters;
+              cachedThralls = serverData.thralls;
+              drawBuildings();
+              buildLegend();
+            }
+          }
         }, 50);
       }
     }
 
     function promptAdminPassword() {
       if (adminAuthenticated) {
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        document.querySelector('[data-view="admin"]').classList.add('active');
+        setActiveNav('admin');
         switchView('admin');
       } else {
         document.getElementById('admin-modal').classList.add('active');
@@ -779,8 +926,7 @@
         if (data.authenticated) {
           adminAuthenticated = true;
           closeAdminModal();
-          document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-          document.querySelector('[data-view="admin"]').classList.add('active');
+          setActiveNav('admin');
           switchView('admin');
           loadAdminData();
         } else {
@@ -789,25 +935,126 @@
       }).catch(err => alert('Auth error: ' + err.message));
     }
 
-    async function loadServerData() {
-      try {
-        const response = await fetch('/api/conan-exiles/status');
-        const data = await response.json();
+    let sseSource = null;
 
-        if (!response.ok || data.error) {
-          document.querySelector('.content').innerHTML = `<div class="error">${data.error || 'Failed to load server data'}</div>`;
-          return;
+    // Pre-fetch world + players via REST so data is available before SSE first fires
+    function prefetchData() {
+      fetch('/api/conan-exiles/world').then(r => r.json()).then(data => {
+        if (data.error) return;
+        serverData.buildings = data.buildings || [];
+        serverData.placeables = data.placeables || [];
+        serverData.thralls = data.thralls || [];
+        serverData.teleporters = data.teleporters || [];
+        serverData.guilds = data.guilds || [];
+        const structureCount = serverData.buildings.length + serverData.placeables.length;
+        document.getElementById('stat-guilds').textContent = serverData.guilds.length;
+        document.getElementById('sidebar-guilds').textContent = serverData.guilds.length;
+        document.getElementById('stat-structures').textContent = structureCount;
+        updateGuildsList(serverData.guilds);
+        updateGuildDetail(serverData.guilds);
+        updateWorldStats();
+        cachedThralls = serverData.thralls;
+        if (leafletMap) {
+          cachedClusters = clusterBuildings([...serverData.buildings, ...serverData.placeables]);
+          cachedTeleporters = serverData.teleporters;
+          drawBuildings();
+          redrawPlayersAndTeleporters();
+          buildLegend();
         }
+      }).catch(() => {});
 
-        serverData = data;
-        updateUI();
-      } catch (err) {
-        document.querySelector('.content').innerHTML = `<div class="error">Error: ${err.message}</div>`;
-      }
+      fetch('/api/conan-exiles/players').then(r => r.json()).then(data => {
+        if (data.error) return;
+        serverData.players = data.players || [];
+        serverData.following_thralls = data.following_thralls || [];
+        document.getElementById('stat-players').textContent = serverData.players.length;
+        document.getElementById('sidebar-players').textContent = serverData.players.length;
+        document.getElementById('stat-updated').textContent = new Date().toLocaleTimeString();
+        document.getElementById('server-status').textContent = 'Online';
+        updatePlayersList(serverData.players);
+        updatePlayerDetail(serverData.players);
+        if (leafletMap) { cachedPlayers = serverData.players; redrawPlayersAndTeleporters(); }
+      }).catch(() => {});
+    }
+
+    function loadServerData() {
+      if (sseSource) { sseSource.close(); }
+
+      prefetchData();
+      sseSource = new EventSource('/api/conan-exiles/stream');
+
+      // Fast path: players update every 5s
+      sseSource.addEventListener('players', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.error) return;
+          serverData.players = data.players || [];
+          serverData.following_thralls = data.following_thralls || [];
+          document.getElementById('stat-players').textContent = serverData.players.length;
+          document.getElementById('sidebar-players').textContent = serverData.players.length;
+          document.getElementById('stat-updated').textContent = new Date().toLocaleTimeString();
+          document.getElementById('server-status').textContent = 'Online';
+          updatePlayersList(serverData.players);
+          updatePlayerDetail(serverData.players);
+          if (leafletMap) {
+            cachedPlayers = serverData.players;
+            redrawPlayersAndTeleporters();
+          }
+        } catch (err) { console.error('[SSE:players] Parse error:', err); }
+      });
+
+      // Slow path: buildings + thralls + teleporters every 60s
+      sseSource.addEventListener('world', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.error) return;
+          serverData.buildings = data.buildings || [];
+          serverData.placeables = data.placeables || [];
+          serverData.thralls = data.thralls || [];
+          serverData.teleporters = data.teleporters || [];
+          serverData.guilds = data.guilds || [];
+          cachedThralls = serverData.thralls;
+          const structureCount = serverData.buildings.length + serverData.placeables.length;
+          document.getElementById('stat-guilds').textContent = serverData.guilds.length;
+          document.getElementById('sidebar-guilds').textContent = serverData.guilds.length;
+          document.getElementById('stat-structures').textContent = structureCount;
+          updateGuildsList(serverData.guilds);
+          updateGuildDetail(serverData.guilds);
+          updateWorldStats();
+          if (leafletMap) {
+            const allPieces = [...serverData.buildings, ...serverData.placeables];
+            cachedClusters = clusterBuildings(allPieces);
+            cachedTeleporters = serverData.teleporters;
+            drawBuildings();
+            redrawPlayersAndTeleporters();
+            buildLegend();
+          }
+        } catch (err) { console.error('[SSE:world] Parse error:', err); }
+      });
+
+      // Server-initiated requests — client responds via POST /api/conan-exiles/pong
+      sseSource.addEventListener('server-request', (e) => {
+        try {
+          const { requestId, type, payload } = JSON.parse(e.data);
+          let responseData = {};
+          if (type === 'ping') {
+            responseData = { clientTime: Date.now(), serverTime: payload?.serverTime, latency: Date.now() - (payload?.serverTime || Date.now()) };
+          }
+          fetch('/api/conan-exiles/pong', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ requestId, type, data: responseData }),
+          }).catch(() => {});
+        } catch (err) { console.error('[SSE:server-request] Parse error:', err); }
+      });
+
+      sseSource.onerror = () => {
+        console.warn('[SSE] Connection lost, reconnecting...');
+        document.getElementById('server-status').textContent = 'Reconnecting...';
+      };
     }
 
     function updateUI() {
-      if (!serverData) return;
 
       const players = serverData.players || [];
       const guilds = serverData.guilds || [];
@@ -827,7 +1074,8 @@
       updatePlayerDetail(players);
       updateGuildDetail(guilds);
       updateWorldStats();
-      updateMapView(players, serverData.buildings || [], serverData.teleporters || []);
+      const allPieces = [...(serverData.buildings || []), ...(serverData.placeables || [])];
+      updateMapView(players, allPieces, serverData.teleporters || [], serverData.thralls || []);
     }
 
     function updatePlayersList(players) {
@@ -875,16 +1123,17 @@
     const UNITS_PER_PX = 400000 / IMAGE_PX;
     // Calibrated: world(-29982, 239317) should land near bottom of tile image (~px 16000)
     // ORIGIN = target_px - world_coord * scale
-    const PX_SCALE = LEAFLET_MAP_PX / 400000; // 16384/400000 = 0.04096
-    // Calibrated: Nate-ette world(-61279, 233822) should be at px(5514, 13328)
-    const ORIGIN_PX_X = 8024;  // 5514 - (-61279 * 0.04096)
-    const ORIGIN_PX_Y = 3750;  // 13328 - (233822 * 0.04096)
+    const PX_SCALE_X = 0.02048;  // derived from two ground-truth points
+    const PX_SCALE_Y = 0.02024;  // Y is slightly compressed vs X
+    // Calibrated from two points: (-61557,233780)→px(5508,13327), (-30017,239216)→px(6154,13437)
+    const ORIGIN_PX_X = 6768;  // 5508 - (-61557 * 0.02048)
+    const ORIGIN_PX_Y = 8602;  // 13327 - (233780 * 0.02024)
 
     // Convert Unreal world coords to Leaflet LatLng (CRS.Simple)
     // Returns null if the coordinate falls outside the tile image
     function worldToLatLng(wx, wy) {
-      const px = ORIGIN_PX_X + wx * PX_SCALE;
-      const py = ORIGIN_PX_Y + wy * PX_SCALE;
+      const px = ORIGIN_PX_X + wx * PX_SCALE_X;
+      const py = ORIGIN_PX_Y + wy * PX_SCALE_Y;
       if (px < -500 || px > IMAGE_PX + 500 || py < -500 || py > IMAGE_PX + 500) return null;
       return leafletMap.unproject([px, py], MAX_NATIVE_ZOOM);
     }
@@ -927,86 +1176,315 @@
 
       leafletMap.fitBounds(mapBounds);
 
+      leafletMap.on('zoomend', drawBuildings);
+
       // Click to show world coordinates for calibration
       leafletMap.on('click', function(e) {
         const pt = leafletMap.project(e.latlng, MAX_NATIVE_ZOOM);
-        const wx = (pt.x - ORIGIN_PX_X) / PX_SCALE;
-        const wy = (pt.y - ORIGIN_PX_Y) / PX_SCALE;
+        const wx = (pt.x - ORIGIN_PX_X) / PX_SCALE_X;
+        const wy = (pt.y - ORIGIN_PX_Y) / PX_SCALE_Y;
         document.getElementById('map-coord-debug').textContent =
           `click px:(${Math.round(pt.x)}, ${Math.round(pt.y)})  world:(${Math.round(wx)}, ${Math.round(wy)})`;
       });
 
-      // Apply any data that arrived before the map was ready
-      if (pendingMapData) {
-        updateMapView(pendingMapData.players, pendingMapData.buildings, pendingMapData.teleporters);
-        pendingMapData = null;
+      // Apply any SSE data that arrived before the map tab was opened
+      const allPieces = [...serverData.buildings, ...serverData.placeables];
+      cachedClusters = clusterBuildings(allPieces);
+      cachedTeleporters = serverData.teleporters;
+      cachedThralls = serverData.thralls;
+      cachedPlayers = serverData.players;
+      drawBuildings();
+      drawPlayersAndTeleporters(serverData.players, serverData.teleporters, serverData.thralls);
+      buildLegend();
+
+      // Leaflet needs a tick to finish laying out. Then poll until prefetchData has
+      // returned data, re-clustering and redrawing so buildings appear without a filter toggle.
+      setTimeout(() => {
+        leafletMap.invalidateSize();
+        if (serverData.buildings.length > 0) {
+          cachedClusters = clusterBuildings([...serverData.buildings, ...serverData.placeables]);
+          cachedTeleporters = serverData.teleporters;
+          cachedThralls = serverData.thralls;
+          cachedPlayers = serverData.players;
+          drawBuildings();
+          drawPlayersAndTeleporters(serverData.players, serverData.teleporters, serverData.thralls);
+          buildLegend();
+        } else {
+          // Data not back yet — wait up to 10s for prefetchData to populate serverData
+          const waitForData = setInterval(() => {
+            if (serverData.buildings.length > 0) {
+              clearInterval(waitForData);
+              cachedClusters = clusterBuildings([...serverData.buildings, ...serverData.placeables]);
+              cachedTeleporters = serverData.teleporters;
+              cachedThralls = serverData.thralls;
+              cachedPlayers = serverData.players;
+              drawBuildings();
+              drawPlayersAndTeleporters(serverData.players, serverData.teleporters, serverData.thralls);
+              buildLegend();
+            }
+          }, 200);
+          setTimeout(() => clearInterval(waitForData), 10000);
+        }
+      }, 100);
+    }
+
+    // Building categories — the DB only stores placeables + foundation bases.
+    // Walls/ceilings are not recorded per-piece in actor_position.
+    const CATEGORIES = {
+      foundation: {
+        label: 'Foundations',
+        color: '#f97316', border: '#ea580c',
+        test: cls => /BuildFoundation|BuildTriangleFoundation/i.test(cls),
+      },
+      structure: {
+        label: 'Walls & Roofs',
+        color: '#94a3b8', border: '#64748b',
+        test: cls => /BuildWall|BuildCeiling|BuildRoof|BuildFence|BuildDoor|BuildStairs|BuildRamp/i.test(cls),
+      },
+      crafting: {
+        label: 'Crafting Stations',
+        color: '#38bdf8', border: '#0ea5e9',
+        test: cls => /CraftingStation|WorkStation|WheelOfPain|Bonfire|CampFire|Forge/i.test(cls),
+      },
+      storage: {
+        label: 'Storage & Beds',
+        color: '#a78bfa', border: '#7c3aed',
+        test: cls => /Chest|Bed|Bedroll/i.test(cls),
+      },
+      misc: {
+        label: 'Placeables',
+        color: '#fbbf24', border: '#d97706',
+        test: _cls => false, // catch-all via classifyPiece fallback only
+      },
+    };
+
+    function classifyPiece(cls, src) {
+      for (const [key, cat] of Object.entries(CATEGORIES)) {
+        if (cat.test(cls || '')) return key;
+      }
+      // building_instances pieces that don't match go to structure (unknown tile type)
+      // actor_position placeables that don't match go to misc
+      return src === 'bi' ? 'structure' : 'misc';
+    }
+
+    // Layer visibility toggles — true = visible
+    const layerVisible = { foundation: true, structure: false, crafting: true, storage: true, misc: false, thralls: true, players: true, teleporters: true };
+
+    // Cluster radius in Unreal units — tight enough for one base
+    const CLUSTER_RADIUS = 6000;
+    const BLUEPRINT_ZOOM = 4;
+
+    let cachedClusters = null;
+    let cachedTeleporters = [];
+    let cachedPlayers = [];
+    let cachedThralls = [];
+
+    function clusterBuildings(pieces) {
+      const clusters = [];
+      pieces.forEach(p => {
+        let nearest = null, nearestDist = Infinity;
+        clusters.forEach(c => {
+          const dx = c.cx - p.x, dy = c.cy - p.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < nearestDist) { nearestDist = d; nearest = c; }
+        });
+        if (nearest && nearestDist < CLUSTER_RADIUS) {
+          nearest.pieces.push(p);
+          nearest.cx = nearest.pieces.reduce((s, q) => s + q.x, 0) / nearest.pieces.length;
+          nearest.cy = nearest.pieces.reduce((s, q) => s + q.y, 0) / nearest.pieces.length;
+        } else {
+          clusters.push({ cx: p.x, cy: p.y, pieces: [p] });
+        }
+      });
+      return clusters;
+    }
+
+    function pieceLabel(cls) {
+      return (cls || '').split('/').pop().replace(/_C$/, '')
+        .replace(/^BP_PL_/, '').replace(/^BP_/, '')
+        .replace(/CraftingStation_|WorkStation_Artisan_/, '');
+    }
+
+    function drawBuildings() {
+      buildingMarkers.forEach(m => m.remove());
+      buildingMarkers = [];
+      if (!cachedClusters) return;
+
+      const zoom = leafletMap.getZoom();
+
+      if (zoom < BLUEPRINT_ZOOM) {
+        // Cluster mode: one dot per base cluster
+        cachedClusters.forEach(c => {
+          const latlng = worldToLatLng(c.cx, c.cy);
+          if (!latlng) return;
+          if (!layerVisible.foundation) return; // cluster dot follows foundation toggle
+
+          const owners = [...new Set(c.pieces.map(p => p.owner).filter(Boolean))];
+          const label = owners.length ? owners.join(', ') : 'Unknown';
+          const radius = Math.min(6 + Math.sqrt(c.pieces.length) * 1.5, 22);
+
+          const m = L.circleMarker(latlng, {
+            radius,
+            color: CATEGORIES.foundation.border,
+            fillColor: CATEGORIES.foundation.color,
+            fillOpacity: 0.75,
+            weight: 1.5,
+          }).addTo(leafletMap);
+          m.bindTooltip(`${label} (${c.pieces.length} pieces)`, { direction: 'top' });
+          buildingMarkers.push(m);
+        });
+      } else {
+        // Blueprint mode: every piece drawn as a rotated square, color by category
+        // half=95 matches the original working implementation — each piece is ~190 Unreal units
+        // which at PX_SCALE 0.02048 = ~3.9px half-width at native zoom, visible as squares when zoomed in
+        const half = 95;
+        cachedClusters.forEach(c => {
+          c.pieces.forEach(b => {
+            const catKey = classifyPiece(b.class, b.src);
+            if (!layerVisible[catKey]) return;
+
+            const cat = CATEGORIES[catKey];
+            const center = worldToLatLng(b.x, b.y);
+            if (!center) return;
+
+            const yaw = 2 * Math.atan2(b.rz || 0, b.rw || 1);
+            const cos = Math.cos(yaw), sin = Math.sin(yaw);
+            const corners = [
+              [-half * cos - half * sin, -half * sin + half * cos],
+              [ half * cos - half * sin,  half * sin + half * cos],
+              [ half * cos + half * sin,  half * sin - half * cos],
+              [-half * cos + half * sin, -half * sin - half * cos],
+            ].map(([dx, dy]) => worldToLatLng(b.x + dx, b.y + dy)).filter(Boolean);
+
+            if (corners.length < 4) return;
+
+            const poly = L.polygon(corners, {
+              color: cat.border, fillColor: cat.color, fillOpacity: 0.7, weight: 1,
+            }).addTo(leafletMap);
+            const lbl = pieceLabel(b.class);
+            poly.bindTooltip(b.owner ? `${lbl} (${b.owner})` : lbl, { direction: 'top' });
+            buildingMarkers.push(poly);
+          });
+        });
       }
     }
 
-    function updateMapView(players, buildings, teleporters) {
+    function buildLegend() {
+      const el = document.getElementById('map-legend');
+      if (!el) return;
+      el.innerHTML = Object.entries(CATEGORIES).map(([key, cat]) => `
+        <label class="legend-item" data-layer="${key}" style="opacity:${layerVisible[key] ? 1 : 0.4}">
+          <span class="legend-dot" style="background:${cat.color};border:2px solid ${cat.border}"></span>
+          ${cat.label}
+        </label>
+      `).join('') + `
+        <label class="legend-item" data-layer="thralls" style="opacity:${layerVisible.thralls ? 1 : 0.4}">
+          <span class="legend-dot" style="background:#4ade80;border:2px solid #16a34a"></span>
+          Thralls
+        </label>
+        <label class="legend-item" data-layer="players" style="opacity:${layerVisible.players ? 1 : 0.4}">
+          <span class="legend-dot" style="background:#22c55e;border:2px solid #16a34a"></span>
+          Players
+        </label>
+        <label class="legend-item" data-layer="teleporters" style="opacity:${layerVisible.teleporters ? 1 : 0.4}">
+          <span class="legend-dot" style="background:#a855f7;border:2px solid #7c3aed"></span>
+          Teleporters
+        </label>
+      `;
+      el.querySelectorAll('.legend-item').forEach(item => {
+        item.style.cursor = 'pointer';
+        item.addEventListener('click', () => {
+          const layer = item.dataset.layer;
+          layerVisible[layer] = !layerVisible[layer];
+          item.style.opacity = layerVisible[layer] ? 1 : 0.4;
+          if (layer === 'players' || layer === 'teleporters' || layer === 'thralls') {
+            redrawPlayersAndTeleporters();
+          } else {
+            drawBuildings();
+          }
+        });
+      });
+    }
+
+    function redrawPlayersAndTeleporters() {
+      playerMarkers.forEach(m => m.remove()); playerMarkers = [];
+      teleporterMarkers.forEach(m => m.remove()); teleporterMarkers = [];
+      drawPlayersAndTeleporters(cachedPlayers, cachedTeleporters, cachedThralls);
+    }
+
+    function drawPlayersAndTeleporters(players, teleporters, thralls) {
+      if (layerVisible.teleporters) {
+        (teleporters || []).forEach(t => {
+          const latlng = worldToLatLng(t.x, t.y);
+          if (!latlng) return;
+          const m = L.circleMarker(latlng, {
+            radius: 6, color: '#7c3aed', fillColor: '#a855f7', fillOpacity: 0.9, weight: 2,
+          }).addTo(leafletMap);
+          if (t.owner) m.bindTooltip(`⬡ ${t.owner}`, { direction: 'top', offset: [0, -6] });
+          teleporterMarkers.push(m);
+        });
+      }
+
+      if (layerVisible.thralls) {
+        (thralls || []).forEach(t => {
+          const latlng = worldToLatLng(t.x, t.y);
+          if (!latlng) return;
+          const m = L.circleMarker(latlng, {
+            radius: 4, color: '#16a34a', fillColor: '#4ade80', fillOpacity: 0.85, weight: 1,
+          }).addTo(leafletMap);
+          if (t.name) m.bindTooltip(t.name, { direction: 'top' });
+          teleporterMarkers.push(m);
+        });
+      }
+
+      if (layerVisible.players) {
+        (players || []).forEach(p => {
+          const latlng = worldToLatLng(p.x, p.y);
+          if (!latlng) return;
+          const m = L.marker(latlng, {
+            icon: L.divIcon({
+              className: '',
+              html: `<div style="width:12px;height:12px;background:#22c55e;border:2px solid #16a34a;border-radius:50%;box-shadow:0 0 4px rgba(34,197,94,0.8)"></div>`,
+              iconSize: [12, 12], iconAnchor: [6, 6],
+            }),
+          }).addTo(leafletMap);
+          m.bindTooltip(p.char_name || 'Player', { permanent: true, direction: 'top', offset: [0, -8], className: 'player-label' });
+          playerMarkers.push(m);
+        });
+      }
+    }
+
+    function updateMapView(players, buildings, teleporters, thralls) {
       if (!leafletMap) {
-        pendingMapData = { players, buildings, teleporters };
+        pendingMapData = { players, buildings, teleporters, thralls };
         return;
       }
 
-      // Clear old markers
       playerMarkers.forEach(m => m.remove());
       buildingMarkers.forEach(m => m.remove());
       teleporterMarkers.forEach(m => m.remove());
-      playerMarkers = [];
-      buildingMarkers = [];
-      teleporterMarkers = [];
+      playerMarkers = []; buildingMarkers = []; teleporterMarkers = [];
 
       const validPlayers = players.filter(p => p.x !== null && p.y !== null);
-      const validBuildings = (buildings || []).slice(0, 500).filter(b => b.x !== null && b.y !== null);
+      const validBuildings = (buildings || []).filter(b => b.x !== null && b.y !== null);
       const validTeleporters = (teleporters || []).filter(t => t.x !== null && t.y !== null);
+      const validThralls = (thralls || []).filter(t => t.x !== null && t.y !== null);
 
-      validBuildings.forEach(b => {
-        const latlng = worldToLatLng(b.x, b.y);
-        if (!latlng) return;
-        const marker = L.circleMarker(latlng, {
-          radius: 6,
-          color: '#ea580c',
-          fillColor: '#f97316',
-          fillOpacity: 0.7,
-          weight: 1,
-        }).addTo(leafletMap);
-        if (b.owner) marker.bindTooltip(b.owner, { direction: 'top', offset: [0, -4] });
-        buildingMarkers.push(marker);
-      });
+      cachedClusters = clusterBuildings(validBuildings);
+      cachedTeleporters = validTeleporters;
+      cachedPlayers = validPlayers;
+      cachedThralls = validThralls;
 
-      validTeleporters.forEach(t => {
-        const latlng = worldToLatLng(t.x, t.y);
-        if (!latlng) return;
-        const marker = L.circleMarker(latlng, {
-          radius: 6,
-          color: '#7c3aed',
-          fillColor: '#a855f7',
-          fillOpacity: 0.9,
-          weight: 2,
-        }).addTo(leafletMap);
-        if (t.owner) marker.bindTooltip(`⬡ ${t.owner}`, { direction: 'top', offset: [0, -6] });
-        teleporterMarkers.push(marker);
-      });
+      console.log(`[map] ${validBuildings.length} pieces → ${cachedClusters.length} clusters, ${validThralls.length} thralls`);
 
-      if (validPlayers.length > 0) {
-        const p0 = validPlayers[0];
-        console.log(`[map] first player "${p0.char_name}" raw coords: x=${p0.x} y=${p0.y}`);
+      drawBuildings();
+      drawPlayersAndTeleporters(validPlayers, validTeleporters, validThralls);
+      buildLegend();
+
+      if (!leafletMap._buildingZoomListener) {
+        leafletMap.on('zoomend', drawBuildings);
+        leafletMap._buildingZoomListener = true;
       }
-
-      validPlayers.forEach(p => {
-        const latlng = worldToLatLng(p.x, p.y);
-        if (!latlng) return;
-        const marker = L.circleMarker(latlng, {
-          radius: 8,
-          color: '#16a34a',
-          fillColor: '#22c55e',
-          fillOpacity: 0.9,
-          weight: 2,
-        }).bindTooltip(p.char_name, { permanent: true, direction: 'top', offset: [0, -8], className: 'player-label' })
-          .addTo(leafletMap);
-        playerMarkers.push(marker);
-      });
     }
 
     function updatePlayerDetail(players) {
@@ -1032,11 +1510,7 @@
             </div>
             <div class="detail-item">
               <div class="detail-label">Guild</div>
-              <div class="detail-value">${p.guild_name || 'No Guild'}</div>
-            </div>
-            <div class="detail-item">
-              <div class="detail-label">Playtime</div>
-              <div class="detail-value">${formatPlaytime(p.playtime || 0)}</div>
+              <div class="detail-value">${p.guild || 'No Guild'}</div>
             </div>
             <div class="detail-item">
               <div class="detail-label">Last Online</div>
@@ -1082,15 +1556,20 @@
     }
 
     function updateWorldStats() {
-      document.getElementById('world-structures').textContent = serverData.structure_count || '--';
+      const allPieces = [...(serverData.buildings || []), ...(serverData.placeables || [])];
+      document.getElementById('world-structures').textContent = allPieces.length || '--';
       document.getElementById('world-decaying').textContent = serverData.decaying_structures || '--';
       document.getElementById('world-destructions').textContent = serverData.destruction_count || '--';
       document.getElementById('world-events').textContent = serverData.event_count || '--';
 
-      const ownerRows = (serverData.structure_owners || []).map(o => `
+      // Build per-owner structure counts from live data
+      const ownerMap = {};
+      allPieces.forEach(p => { const o = p.owner || 'Unknown'; ownerMap[o] = (ownerMap[o] || 0) + 1; });
+      const owners = Object.entries(ownerMap).sort((a, b) => b[1] - a[1]);
+      const ownerRows = owners.map(([owner, count]) => `
         <div class="table-row guilds-2col">
-          <div>${o.owner || 'Unknown'}</div>
-          <div>${o.count}</div>
+          <div>${owner}</div>
+          <div>${count}</div>
         </div>
       `).join('');
 
