@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GamezNET — Private Game Network</title>
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080b14;
+    --bg2: #0d1220;
+    --accent: #6c63ff;
+    --accent2: #00d4ff;
+    --glass: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.08);
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --danger: #ef4444;
+    --success: #22c55e;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Background ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(108,99,255,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,212,255,0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Grid overlay ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Nav ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+    background: rgba(8,11,20,0.8);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .nav-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.3px;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .nav-links { display: flex; align-items: center; gap: 8px; }
+  .btn-ghost {
+    background: none;
+    border: 1px solid var(--glass-border);
+    color: var(--muted);
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 100px 0 80px;
+    text-align: center;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(108,99,255,0.12);
+    border: 1px solid rgba(108,99,255,0.3);
+    color: #a89fff;
+    padding: 5px 14px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    margin-bottom: 28px;
+    text-transform: uppercase;
+  }
+  .badge-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+
+  h1 {
+    font-size: clamp(38px, 6vw, 68px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    margin-bottom: 20px;
+  }
+  .gradient-text {
+    background: linear-gradient(135deg, #fff 30%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 18px;
+    color: var(--muted);
+    max-width: 520px;
+    margin: 0 auto 40px;
+    line-height: 1.6;
+  }
+  .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    color: #fff;
+    border: none;
+    padding: 13px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    box-shadow: 0 0 30px rgba(108,99,255,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 40px rgba(108,99,255,0.5); }
+  .btn-secondary {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--text);
+    padding: 13px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+  }
+  .btn-secondary:hover { border-color: var(--accent2); }
+
+  /* ── Features grid ── */
+  .section { padding: 80px 0; }
+  .section-label {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .section-title {
+    text-align: center;
+    font-size: clamp(26px, 4vw, 38px);
+    font-weight: 700;
+    letter-spacing: -0.8px;
+    margin-bottom: 12px;
+  }
+  .section-sub {
+    text-align: center;
+    color: var(--muted);
+    font-size: 16px;
+    margin-bottom: 56px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .feature-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 28px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--glow-color, rgba(108,99,255,0.06)), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .feature-card:hover { border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+  .feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .feature-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  /* ── How it works ── */
+  .steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .step {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 28px;
+    backdrop-filter: blur(10px);
+    text-align: center;
+  }
+  .step-num {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 auto 14px;
+  }
+  .step h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .step p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ── Stats strip ── */
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    margin: 0 0 80px;
+  }
+  .stat {
+    flex: 1;
+    min-width: 160px;
+    padding: 32px 24px;
+    text-align: center;
+    border-right: 1px solid var(--glass-border);
+  }
+  .stat:last-child { border-right: none; }
+  .stat-val { font-size: 32px; font-weight: 800; letter-spacing: -1px; background: linear-gradient(135deg, #fff, var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .stat-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* ── CTA ── */
+  .cta-section {
+    padding: 80px 0 100px;
+    text-align: center;
+  }
+  .cta-box {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 64px 40px;
+    backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-box::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(108,99,255,0.15), transparent 70%);
+    pointer-events: none;
+  }
+  .cta-box h2 { font-size: clamp(24px, 4vw, 36px); font-weight: 700; letter-spacing: -0.8px; margin-bottom: 12px; }
+  .cta-box p { color: var(--muted); font-size: 16px; margin-bottom: 40px; }
+
+  /* ── Request form ── */
+  .request-form {
+    display: flex;
+    gap: 10px;
+    max-width: 480px;
+    margin: 0 auto 12px;
+    flex-wrap: wrap;
+  }
+  .request-form input {
+    flex: 1;
+    min-width: 180px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    color: var(--text);
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .request-form input:focus { border-color: var(--accent); }
+  .request-form input::placeholder { color: var(--muted); }
+  .form-note { font-size: 12px; color: var(--muted); }
+  .form-msg { font-size: 14px; margin-top: 12px; min-height: 20px; }
+  .form-msg.success { color: var(--success); }
+  .form-msg.error { color: var(--danger); }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--glass-border);
+    padding: 24px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    position: relative;
+    z-index: 1;
+  }
+  footer a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  footer a:hover { color: var(--text); }
+
+  /* ── Windows pill ── */
+  .windows-only {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,120,212,0.12);
+    border: 1px solid rgba(0,120,212,0.25);
+    color: #60a5fa;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 600px) {
+    .hero { padding: 60px 0 50px; }
+    .stat { border-right: none; border-bottom: 1px solid var(--glass-border); }
+    .stat:last-child { border-bottom: none; }
+    .request-form { flex-direction: column; }
+    .request-form input, .btn-primary { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="/">
+      <div class="logo-icon">🎮</div>
+      GamezNET
+    </a>
+    <div class="nav-links">
+      <a class="btn-ghost" href="https://github.com/natelook1/gameznet-public" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="badge"><span class="badge-dot"></span>Invite Only</div>
+    <div class="windows-only">🪟 Windows 10 / 11</div>
+    <h1><span class="gradient-text">Your private<br>game network.</span></h1>
+    <p>Secure, invite-only LAN for friend groups. One command to join. No port forwarding. No public IP exposure.</p>
+    <div class="hero-actions">
+      <a href="#request" class="btn-primary">Request Access</a>
+      <a href="https://github.com/natelook1/gameznet-public" target="_blank" rel="noopener" class="btn-secondary">View on GitHub</a>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val">WireGuard</div>
+      <div class="stat-label">VPN Protocol</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">1-Click</div>
+      <div class="stat-label">Connect &amp; Play</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">Zero</div>
+      <div class="stat-label">Open Ports Required</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">P2P</div>
+      <div class="stat-label">Remote Assistance</div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <section class="section">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">Everything your group needs</h2>
+    <p class="section-sub">Built for gamers, not sysadmins.</p>
+    <div class="features-grid">
+
+      <div class="feature-card" style="--glow-color: rgba(108,99,255,0.1)">
+        <div class="feature-icon" style="background:rgba(108,99,255,0.15)">🔒</div>
+        <h3>WireGuard VPN</h3>
+        <p>Join a private encrypted tunnel with one click. Your PC appears on the same local network as the game server — no configuration needed.</p>
+      </div>
+
+      <div class="feature-card" style="--glow-color: rgba(0,212,255,0.08)">
+        <div class="feature-icon" style="background:rgba(0,212,255,0.1)">🎮</div>
+        <h3>Auto Game Detection</h3>
+        <p>GamezNET scans your Steam library and non-Steam launchers automatically. Your current game is broadcast to everyone online — no manual updates.</p>
+      </div>
+
+      <div class="feature-card" style="--glow-color: rgba(34,197,94,0.08)">
+        <div class="feature-icon" style="background:rgba(34,197,94,0.1)">💬</div>
+        <h3>Network Chat</h3>
+        <p>Floating chat panel with tabbed channels and direct messages. Snaps to the edge of the window with an unread badge. No Discord required.</p>
+      </div>
+
+      <div class="feature-card" style="--glow-color: rgba(251,191,36,0.08)">
+        <div class="feature-icon" style="background:rgba(251,191,36,0.1)">🖥️</div>
+        <h3>Remote Assistance</h3>
+        <p>Request help from any online player directly. A peer-to-peer RustDesk session opens automatically over the VPN — no relay servers, no setup.</p>
+      </div>
+
+      <div class="feature-card" style="--glow-color: rgba(59,130,246,0.08)">
+        <div class="feature-icon" style="background:rgba(59,130,246,0.1)">🎙️</div>
+        <h3>Discord Integration</h3>
+        <p>Full embedded Discord — browse channels, read history, send messages with your player name and Steam avatar. No Discord account required.</p>
+      </div>
+
+      <div class="feature-card" style="--glow-color: rgba(239,68,68,0.08)">
+        <div class="feature-icon" style="background:rgba(239,68,68,0.1)">⚡</div>
+        <h3>Steam Profiles</h3>
+        <p>Link your Steam account once to show your avatar, level, game library, and top-played games on your player card visible to everyone online.</p>
+      </div>
+
+      <div class="feature-card" style="--glow-color: rgba(168,139,250,0.08)">
+        <div class="feature-icon" style="background:rgba(168,139,250,0.1)">📅</div>
+        <h3>Session Scheduler</h3>
+        <p>Schedule game nights with a countdown visible to all players. Everyone gets a system tray notification when a session is posted.</p>
+      </div>
+
+      <div class="feature-card" style="--glow-color: rgba(244,114,182,0.08)">
+        <div class="feature-icon" style="background:rgba(244,114,182,0.1)">📁</div>
+        <h3>Shared File Drop</h3>
+        <p>Upload mods, saves, or screenshots up to 500 MB. Set files as public or share privately with specific players. Accessible while connected.</p>
+      </div>
+
+      <div class="feature-card" style="--glow-color: rgba(0,212,255,0.06)">
+        <div class="feature-icon" style="background:rgba(0,212,255,0.08)">📱</div>
+        <h3>Mobile Companion</h3>
+        <p>See who's online, check server status, and chat from your phone — no install required. Works on any browser with your existing invite token.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="section">
+    <div class="section-label">Setup</div>
+    <h2 class="section-title">Up and running in 60 seconds</h2>
+    <p class="section-sub">No Python, Git, or technical knowledge required.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Get an invite</h3>
+        <p>Request access below or get a token from the network admin. Tokens are unique and tied to your VPN identity.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Run one command</h3>
+        <p>Press Win+R, open PowerShell, paste the install command. The installer handles everything silently.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Activate your token</h3>
+        <p>Enter the invite token in the app. Your WireGuard credentials are saved permanently — you'll never need the token again.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Click Connect &amp; play</h3>
+        <p>One click to join the private network. Launch your game. When you're done, click Disconnect or right-click the tray icon.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- CTA / Request Access -->
+<section class="cta-section" id="request">
+  <div class="wrap">
+    <div class="cta-box">
+      <h2>Request Access</h2>
+      <p>GamezNET is invite-only. Leave your name and email and the admin will reach out.</p>
+      <form class="request-form" id="accessForm" onsubmit="submitRequest(event)">
+        <input type="text" id="req-name" placeholder="Your name" required maxlength="64" autocomplete="name">
+        <input type="email" id="req-email" placeholder="Email address" required maxlength="128" autocomplete="email">
+        <button type="submit" class="btn-primary" id="req-btn">Request Access</button>
+      </form>
+      <div class="form-note">No spam. Your info is only seen by the network admin.</div>
+      <div class="form-msg" id="formMsg"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>
+    GamezNET &nbsp;·&nbsp;
+    <a href="https://github.com/natelook1/gameznet-public" target="_blank" rel="noopener">GitHub</a>
+    &nbsp;·&nbsp; Windows Only &nbsp;·&nbsp; MIT License
+  </div>
+</footer>
+
+<script>
+async function submitRequest(e) {
+  e.preventDefault();
+  const name = document.getElementById('req-name').value.trim();
+  const email = document.getElementById('req-email').value.trim();
+  const btn = document.getElementById('req-btn');
+  const msg = document.getElementById('formMsg');
+
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  msg.className = 'form-msg';
+  msg.textContent = '';
+
+  try {
+    const res = await fetch('/api/request-access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      msg.className = 'form-msg success';
+      msg.textContent = '✓ Request received — the admin will be in touch.';
+      document.getElementById('accessForm').reset();
+    } else {
+      msg.className = 'form-msg error';
+      msg.textContent = data.error || 'Something went wrong. Try again.';
+      btn.disabled = false;
+      btn.textContent = 'Request Access';
+    }
+  } catch {
+    msg.className = 'form-msg error';
+    msg.textContent = 'Network error. Try again.';
+    btn.disabled = false;
+    btn.textContent = 'Request Access';
+  }
+}
+</script>
+</body>
+</html>
