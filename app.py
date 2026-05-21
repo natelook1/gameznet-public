@@ -30,40 +30,210 @@ log = logging.getLogger("gameznet")
 
 # ─── Game Detection ───────────────────────────────────────────────────────────
 
-GAME_PROCESSES = {
-    'FactoryGame-Win64-Shipping.exe': 'Satisfactory',
-    'FactoryGameSteam-Win64-Shipping.exe': 'Satisfactory',
-    'WorldOfSeaBattleClient.exe': 'World of Sea Battle',
-    'League of Legends.exe': 'League of Legends',
-    'ProjectZomboid64.exe': 'Project Zomboid',
-    'ProjectZomboid.exe': 'Project Zomboid',
-    'ConanSandbox.exe': 'Conan Exiles',
-    'Enshrouded.exe': 'Enshrouded',
-    'SCUM.exe': 'SCUM',
-    # Blizzard Games
+# Fallback list for non-Steam launchers (Battle.net, Wargaming, EA, Ubisoft, Riot, Epic, Rockstar).
+# Steam games are detected automatically via library scan — no need to add them here.
+NON_STEAM_PROCESSES = {
+    # ── Battle.net / Blizzard ──────────────────────────────────────────────────
     'Wow.exe': 'World of Warcraft',
+    'Wow-64.exe': 'World of Warcraft',
+    'WowClassic.exe': 'World of Warcraft Classic',
+    'WowClassicT.exe': 'World of Warcraft Classic',
     'Overwatch.exe': 'Overwatch 2',
     'Diablo IV.exe': 'Diablo IV',
+    'Diablo Immortal.exe': 'Diablo Immortal',
+    'Diablo III.exe': 'Diablo III',
     'Hearthstone.exe': 'Hearthstone',
     'SC2_x64.exe': 'StarCraft II',
+    'SC2.exe': 'StarCraft II',
+    'HeroesOfTheStorm_x64.exe': 'Heroes of the Storm',
+    'BlackOps6.exe': 'Call of Duty: Black Ops 6',
+    'cod.exe': 'Call of Duty',
+    'ModernWarfare3.exe': 'Call of Duty: Modern Warfare III',
+    'Warzone.exe': 'Call of Duty: Warzone',
+
+    # ── Wargaming ──────────────────────────────────────────────────────────────
+    'WorldOfTanks.exe': 'World of Tanks',
+    'WorldOfWarships.exe': 'World of Warships',
+    'WorldOfWarplanes.exe': 'World of Warplanes',
+    'WorldOfSeaBattleClient.exe': 'World of Sea Battle',
+
+    # ── Riot Games ────────────────────────────────────────────────────────────
+    'League of Legends.exe': 'League of Legends',
+    'VALORANT-Win64-Shipping.exe': 'VALORANT',
+    'TFT.exe': 'Teamfight Tactics',
+    'LeagueofLegends.exe': 'League of Legends',
+    'LegendofRuneterra.exe': 'Legends of Runeterra',
+    'LoR.exe': 'Legends of Runeterra',
+
+    # ── Epic Games ────────────────────────────────────────────────────────────
+    'FortniteClient-Win64-Shipping.exe': 'Fortnite',
+    'RocketLeague.exe': 'Rocket League',           # also on Steam
+    'FallGuys_client_game.exe': 'Fall Guys',
+    'Splitgate.exe': 'Splitgate',
+    'Diabotical.exe': 'Diabotical',
+
+    # ── EA App / Origin ───────────────────────────────────────────────────────
+    'r5apex.exe': 'Apex Legends',
+    'r5apex_dx12.exe': 'Apex Legends',
+    'TS4_x64.exe': 'The Sims 4',
+    'FIFA.exe': 'EA Sports FC',
+    'EASFC25.exe': 'EA Sports FC 25',
+    'EASFC24.exe': 'EA Sports FC 24',
+    'Battlefield2042.exe': 'Battlefield 2042',
+    'bf1.exe': 'Battlefield 1',
+    'bfv.exe': 'Battlefield V',
+    'bf4.exe': 'Battlefield 4',
+    'NeedForSpeedHeat.exe': 'Need for Speed Heat',
+    'NFS24.exe': 'Need for Speed Unbound',
+    'StarWarsBattlefront.exe': 'Star Wars Battlefront II',
+    'SwGame.exe': 'Star Wars Jedi: Survivor',
+    'MassEffectLegendaryEdition.exe': 'Mass Effect Legendary Edition',
+    'DragonAgeLegacy.exe': 'Dragon Age: The Veilguard',
+    'Anthem.exe': 'Anthem',
+
+    # ── Ubisoft Connect ───────────────────────────────────────────────────────
+    'RainbowSix.exe': 'Rainbow Six Siege',
+    'RainbowSix_DX11.exe': 'Rainbow Six Siege',
+    'ACValhalla.exe': "Assassin's Creed Valhalla",
+    'ACOdyssey.exe': "Assassin's Creed Odyssey",
+    'ACOrigins.exe': "Assassin's Creed Origins",
+    'ACMirage.exe': "Assassin's Creed Mirage",
+    'FarCry6.exe': 'Far Cry 6',
+    'FarCry5.exe': 'Far Cry 5',
+    'TheDivision2.exe': 'Tom Clancy\'s The Division 2',
+    'Division.exe': 'Tom Clancy\'s The Division',
+    'Ghost_Recon_Breakpoint.exe': 'Ghost Recon Breakpoint',
+    'GRWildlands.exe': 'Ghost Recon Wildlands',
+    'WatchDogs2.exe': 'Watch Dogs 2',
+    'WatchDogsLegion.exe': 'Watch Dogs: Legion',
+    'ForHonor.exe': 'For Honor',
+    'Crew2.exe': 'The Crew 2',
+    'Crew_Motorfest.exe': 'The Crew Motorfest',
+    'HyperScape.exe': 'Hyper Scape',
+    'XDefiant.exe': 'XDefiant',
+
+    # ── Rockstar Games Launcher ───────────────────────────────────────────────
+    'GTA5.exe': 'Grand Theft Auto V',
+    'GTAV.exe': 'Grand Theft Auto V',
+    'RDR2.exe': 'Red Dead Redemption 2',
+    'MaxPayne3.exe': 'Max Payne 3',
+    'LASD.exe': 'L.A. Noire',
+
+    # ── Minecraft (Microsoft/Mojang) ──────────────────────────────────────────
+    'Minecraft.exe': 'Minecraft',
+    'MinecraftLauncher.exe': 'Minecraft',
+
+    # ── Xbox / Microsoft Store ────────────────────────────────────────────────
+    'Halo-Win64-Shipping.exe': 'Halo Infinite',
+    'haloinfinite.exe': 'Halo Infinite',
+    'HaloInfinite.exe': 'Halo Infinite',
+    'FlightSimulator.exe': 'Microsoft Flight Simulator',
+    'FlightSimulator2024.exe': 'Microsoft Flight Simulator 2024',
+    'Grounded.exe': 'Grounded',
+    'Pentiment.exe': 'Pentiment',
+    'Psychonauts2-WinGDK-Shipping.exe': 'Psychonauts 2',
 }
 
-_GAME_PROCESSES_LOWER = {k.lower(): v for k, v in GAME_PROCESSES.items()}
+_NON_STEAM_LOWER = {k.lower(): v for k, v in NON_STEAM_PROCESSES.items()}
 
-def detect_game():
+# Cache of Steam installdir (lowercase) → game name, built once and refreshed periodically.
+_steam_library_cache: dict = {}
+_steam_library_cache_time: float = 0.0
+
+def _build_steam_library_cache() -> dict:
+    """
+    Scan all Steam library folders for appmanifest_*.acf files and return a
+    mapping of lowercase installdir name → game name. This lets us detect any
+    installed Steam game by checking a process's exe path.
+    """
+    import glob as _glob
+
+    result: dict = {}
+    seen_roots: set = set()
+    steam_roots = []
+
+    def _add_root(p: str) -> None:
+        norm = os.path.normpath(p)
+        if norm not in seen_roots and os.path.isdir(norm):
+            seen_roots.add(norm)
+            steam_roots.append(norm)
+
+    for default in [r"C:\Program Files (x86)\Steam", r"C:\Program Files\Steam"]:
+        _add_root(default)
+        vdf = os.path.join(default, "steamapps", "libraryfolders.vdf")
+        if os.path.isfile(vdf):
+            try:
+                with open(vdf, "r", encoding="utf-8", errors="ignore") as f:
+                    for line in f:
+                        m = re.search(r'"path"\s+"([^"]+)"', line)
+                        if m:
+                            _add_root(m.group(1).replace("\\\\", "\\"))
+            except Exception:
+                pass
+
+    for root in steam_roots:
+        apps_dir = os.path.join(root, "steamapps")
+        for acf in _glob.glob(os.path.join(apps_dir, "appmanifest_*.acf")):
+            try:
+                name = installdir = None
+                with open(acf, "r", encoding="utf-8", errors="ignore") as f:
+                    for line in f:
+                        m = re.search(r'"name"\s+"([^"]+)"', line)
+                        if m:
+                            name = m.group(1)
+                        m2 = re.search(r'"installdir"\s+"([^"]+)"', line)
+                        if m2:
+                            installdir = m2.group(1)
+                        if name and installdir:
+                            break
+                if name and installdir:
+                    result[installdir.lower()] = name
+            except Exception:
+                pass
+
+    return result
+
+def _get_steam_library_cache() -> dict:
+    global _steam_library_cache, _steam_library_cache_time
+    if time.time() - _steam_library_cache_time > 300:  # refresh every 5 min
+        _steam_library_cache = _build_steam_library_cache()
+        _steam_library_cache_time = time.time()
+    return _steam_library_cache
+
+def detect_game() -> str | None:
+    """
+    Detect the currently running game by:
+    1. Checking process exe paths against the local Steam library (any installed game).
+    2. Falling back to the NON_STEAM_PROCESSES list for Battle.net / Wargaming / etc.
+    """
     try:
         import psutil
-        for proc in psutil.process_iter(['name']):
-            name = proc.info.get('name', '') or ''
-            match = GAME_PROCESSES.get(name) or _GAME_PROCESSES_LOWER.get(name.lower())
-            if match:
-                return match
+        steam_lib = _get_steam_library_cache()
+        for proc in psutil.process_iter(['name', 'exe']):
+            try:
+                exe_lower = (proc.info.get('exe') or '').lower().replace('/', '\\')
+                proc_name = proc.info.get('name', '') or ''
+
+                # 1. Steam library path: find "steamapps\common\<installdir>\" in exe path
+                idx = exe_lower.find('steamapps\\common\\')
+                if idx != -1:
+                    rest = exe_lower[idx + len('steamapps\\common\\'):]
+                    installdir = rest.split('\\')[0]
+                    if installdir and installdir in steam_lib:
+                        return steam_lib[installdir]
+
+                # 2. Non-Steam launcher fallback (Battle.net, Wargaming, Riot, Epic)
+                match = NON_STEAM_PROCESSES.get(proc_name) or _NON_STEAM_LOWER.get(proc_name.lower())
+                if match:
+                    return match
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
     except Exception:
         pass
     return None
 
 def detect_game_steam(steam_id):
-    """Query /api/steam/game on WORKER_URL for the player's current game."""
+    """Query /api/steam/game on the backend for the player's current game via Steam API."""
     import urllib.request
     try:
         url = f"{_backend_url()}/api/steam/game?steam_id={urllib.request.quote(steam_id)}"
@@ -79,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.8.4"
+VERSION = "1.8.5"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -93,7 +263,7 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
-RUSTDESK_VERSION = "1.8.4"
+RUSTDESK_VERSION = "1.8.5"
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
 # ─── Single-Instance Protection ───────────────────────────────────────────────
@@ -1658,27 +1828,27 @@ def auth_proxy(subpath):
 def heartbeat_loop():
     """Send presence heartbeat to the Worker every 3 seconds while connected."""
     import urllib.request
-    _steam_counter = 0
-    _last_steam_game = None  # cache last Steam result between poll intervals
+    _steam_counter = 10  # start at threshold so first heartbeat polls Steam immediately
+    _last_steam_game = None
     while True:
         time.sleep(3)
         if _connected and os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
                     cfg = json.load(f)
-                # Game detection: Steam is authoritative when linked.
-                # Poll Steam every 30s and cache the result — process scan is
-                # only used as a fallback when no Steam account is linked.
+                # Local process scan runs every heartbeat — detects any installed Steam game
+                # or non-Steam launcher game instantly without any network call.
+                game = detect_game()
+                # Steam API poll every 30s as a supplement: picks up games running on other
+                # devices or games where local process detection isn't available.
                 steam_id = cfg.get("steam_id")
-                game = None
                 if steam_id:
                     _steam_counter += 1
                     if _steam_counter >= 10:
                         _steam_counter = 0
                         _last_steam_game = detect_game_steam(steam_id)
-                    game = _last_steam_game  # use cached result between polls
-                if game is None:
-                    game = detect_game()  # only runs when no steam_id, or Steam says nothing
+                    if not game:
+                        game = _last_steam_game
                 payload = json.dumps({
                     "name": cfg.get("name", ""),
                     "vpn_ip": cfg.get("vpn_ip", ""),
