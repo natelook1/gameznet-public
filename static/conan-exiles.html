@@ -1162,7 +1162,7 @@
       });
 
       // Prefer self-hosted tiles; fall back to allgamemaps.com on first tile error
-      const localTiles = '/static/map-tiles/ConanExiles/{z}/{x}/{y}.png';
+      const localTiles = `${API_BASE}/static/map-tiles/ConanExiles/{z}/{x}/{y}.png`;
 
       // Tile image is 16128px — fit to that, not Leaflet's internal 16384
       const imgTopLeft = leafletMap.unproject([0, 0], MAX_NATIVE_ZOOM);
