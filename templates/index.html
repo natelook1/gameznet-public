@@ -2724,7 +2724,7 @@
 
   <!-- ── CONAN EXILES ── -->
   <div id="conan-section">
-    <iframe id="conan-iframe" src="" allowfullscreen></iframe>
+    <iframe id="conan-iframe" allowfullscreen></iframe>
   </div>
 
   <!-- ── FACTORY MAP ── -->
@@ -4558,7 +4558,7 @@
     } else if (name === 'conan') {
       conan.classList.add('conan-active');
       const iframe = document.getElementById('conan-iframe');
-      if (!iframe.src) iframe.src = '/conan-exiles';
+      if (!iframe.src || iframe.src === window.location.href + '/') iframe.src = '/conan-exiles';
     } else if (name === 'wow') {
       wow.style.display = 'flex';
       if (!window._wowInitialized) { window._wowInitialized = true; wowLoadAll(); }
