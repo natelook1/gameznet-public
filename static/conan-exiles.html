@@ -850,7 +850,7 @@
       ? 'https://gameznet.looknet.ca'
       : '';
 
-    let serverData = { players: [], guilds: [], buildings: [], placeables: [], thralls: [], teleporters: [], following_thralls: [] };
+    let serverData = { players: [], guilds: [], building_groups: [], buildings: [], placeables: [], thralls: [], teleporters: [], following_thralls: [] };
     let adminAuthenticated = false;
 
     function setActiveNav(viewName) {
@@ -894,6 +894,7 @@
             // Re-draw in case prefetchData resolved while map was hidden
             const allPieces = [...serverData.buildings, ...serverData.placeables];
             if (allPieces.length && cachedClusters && cachedClusters.length === 0) {
+              cachedGroups = serverData.building_groups;
               cachedClusters = clusterBuildings(allPieces);
               cachedTeleporters = serverData.teleporters;
               cachedThralls = serverData.thralls;
@@ -946,6 +947,7 @@
     function prefetchData() {
       fetch(`${API_BASE}/api/conan-exiles/world`).then(r => r.json()).then(data => {
         if (data.error) return;
+        serverData.building_groups = data.building_groups || [];
         serverData.buildings = data.buildings || [];
         serverData.placeables = data.placeables || [];
         serverData.thralls = data.thralls || [];
@@ -960,7 +962,8 @@
         updateWorldStats();
         cachedThralls = serverData.thralls;
         if (leafletMap) {
-          cachedClusters = clusterBuildings([...serverData.buildings, ...serverData.placeables]);
+          cachedGroups = serverData.building_groups;
+        cachedClusters = clusterBuildings([...serverData.buildings, ...serverData.placeables]);
           cachedTeleporters = serverData.teleporters;
           drawBuildings();
           redrawPlayersAndTeleporters();
@@ -1013,6 +1016,7 @@
         try {
           const data = JSON.parse(e.data);
           if (data.error) return;
+          serverData.building_groups = data.building_groups || [];
           serverData.buildings = data.buildings || [];
           serverData.placeables = data.placeables || [];
           serverData.thralls = data.thralls || [];
@@ -1087,7 +1091,7 @@
       updateGuildDetail(guilds);
       updateWorldStats();
       const allPieces = [...(serverData.buildings || []), ...(serverData.placeables || [])];
-      updateMapView(players, allPieces, serverData.teleporters || [], serverData.thralls || []);
+      updateMapView(players, serverData.building_groups || [], allPieces, serverData.teleporters || [], serverData.thralls || []);
     }
 
     function updatePlayersList(players) {
@@ -1204,7 +1208,8 @@
       setTimeout(() => {
         leafletMap.invalidateSize();
         if (serverData.buildings.length > 0) {
-          cachedClusters = clusterBuildings([...serverData.buildings, ...serverData.placeables]);
+          cachedGroups = serverData.building_groups;
+        cachedClusters = clusterBuildings([...serverData.buildings, ...serverData.placeables]);
           cachedTeleporters = serverData.teleporters;
           cachedThralls = serverData.thralls;
           cachedPlayers = serverData.players;
@@ -1216,7 +1221,8 @@
           const waitForData = setInterval(() => {
             if (serverData.buildings.length > 0) {
               clearInterval(waitForData);
-              cachedClusters = clusterBuildings([...serverData.buildings, ...serverData.placeables]);
+              cachedGroups = serverData.building_groups;
+        cachedClusters = clusterBuildings([...serverData.buildings, ...serverData.placeables]);
               cachedTeleporters = serverData.teleporters;
               cachedThralls = serverData.thralls;
               cachedPlayers = serverData.players;
@@ -1276,7 +1282,8 @@
     const CLUSTER_RADIUS = 6000;
     const BLUEPRINT_ZOOM = 4;
 
-    let cachedClusters = null;
+    let cachedGroups = null;   // one entry per building object_id, accurate actor_position coords
+    let cachedClusters = null; // individual pieces for blueprint mode
     let cachedTeleporters = [];
     let cachedPlayers = [];
     let cachedThralls = [];
@@ -1310,21 +1317,17 @@
     function drawBuildings() {
       buildingMarkers.forEach(m => m.remove());
       buildingMarkers = [];
-      if (!cachedClusters) return;
 
       const zoom = leafletMap.getZoom();
 
       if (zoom < BLUEPRINT_ZOOM) {
-        // Cluster mode: one dot per base cluster
-        cachedClusters.forEach(c => {
-          const latlng = worldToLatLng(c.cx, c.cy);
+        // Group mode: one circle per building object_id, sized by piece count, positioned from actor_position
+        if (!cachedGroups) return;
+        if (!layerVisible.foundation) return;
+        cachedGroups.forEach(g => {
+          const latlng = worldToLatLng(g.x, g.y);
           if (!latlng) return;
-          if (!layerVisible.foundation) return; // cluster dot follows foundation toggle
-
-          const owners = [...new Set(c.pieces.map(p => p.owner).filter(Boolean))];
-          const label = owners.length ? owners.join(', ') : 'Unknown';
-          const radius = Math.min(6 + Math.sqrt(c.pieces.length) * 1.5, 22);
-
+          const radius = Math.min(6 + Math.sqrt(g.count) * 1.5, 22);
           const m = L.circleMarker(latlng, {
             radius,
             color: CATEGORIES.foundation.border,
@@ -1332,13 +1335,12 @@
             fillOpacity: 0.75,
             weight: 1.5,
           }).addTo(leafletMap);
-          m.bindTooltip(`${label} (${c.pieces.length} pieces)`, { direction: 'top' });
+          m.bindTooltip(`${g.owner || 'Unknown'} (${g.count} pieces)`, { direction: 'top' });
           buildingMarkers.push(m);
         });
       } else {
         // Blueprint mode: every piece drawn as a rotated square, color by category
-        // half=95 matches the original working implementation — each piece is ~190 Unreal units
-        // which at PX_SCALE 0.02048 = ~3.9px half-width at native zoom, visible as squares when zoomed in
+        if (!cachedClusters) return;
         const half = 95;
         cachedClusters.forEach(c => {
           c.pieces.forEach(b => {
@@ -1456,9 +1458,9 @@
       }
     }
 
-    function updateMapView(players, buildings, teleporters, thralls) {
+    function updateMapView(players, building_groups, buildings, teleporters, thralls) {
       if (!leafletMap) {
-        pendingMapData = { players, buildings, teleporters, thralls };
+        pendingMapData = { players, building_groups, buildings, teleporters, thralls };
         return;
       }
 
@@ -1472,6 +1474,7 @@
       const validTeleporters = (teleporters || []).filter(t => t.x !== null && t.y !== null);
       const validThralls = (thralls || []).filter(t => t.x !== null && t.y !== null);
 
+      cachedGroups = (building_groups || []).filter(g => g.x !== null && g.y !== null);
       cachedClusters = clusterBuildings(validBuildings);
       cachedTeleporters = validTeleporters;
       cachedPlayers = validPlayers;
