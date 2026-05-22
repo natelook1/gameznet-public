@@ -1126,7 +1126,7 @@
     const TILE_SIZE = 256;
     const MAX_NATIVE_ZOOM = 6;
     const LEAFLET_MAP_PX = TILE_SIZE * Math.pow(2, MAX_NATIVE_ZOOM); // 16384 — what Leaflet uses internally
-    const IMAGE_PX = 16128; // actual tile image pixel size
+    const IMAGE_PX = 16384; // tile grid is 64x64 at zoom 6 (256 * 2^6)
 
     // Conan Exiles Exiled Lands coordinate calibration:
     // Map = 400,000 x 400,000 Unreal units across 16128px image
@@ -1136,15 +1136,15 @@
     // Calibrated: world(-29982, 239317) should land near bottom of tile image (~px 16000)
     // ORIGIN = target_px - world_coord * scale
     const PX_SCALE_X = 0.020480;  // least-squares fit from 8 obelisk points
-    const PX_SCALE_Y = 0.020266;  // Y axis negated in worldToLatLng (game Y+ = north = up on tile)
+    const PX_SCALE_Y = 0.020239;
     const ORIGIN_PX_X = 6768;
-    const ORIGIN_PX_Y = 7496;  // recalculated with flipped Y axis
+    const ORIGIN_PX_Y = 8602;
 
     // Convert Unreal world coords to Leaflet LatLng (CRS.Simple)
     // Returns null if the coordinate falls outside the tile image
     function worldToLatLng(wx, wy) {
       const px = ORIGIN_PX_X + wx * PX_SCALE_X;
-      const py = ORIGIN_PX_Y + (-wy) * PX_SCALE_Y;
+      const py = ORIGIN_PX_Y + wy * PX_SCALE_Y;
       if (px < -500 || px > IMAGE_PX + 500 || py < -500 || py > IMAGE_PX + 500) return null;
       return leafletMap.unproject([px, py], MAX_NATIVE_ZOOM);
     }
@@ -1184,7 +1184,7 @@
       leafletMap.on('click', function(e) {
         const pt = leafletMap.project(e.latlng, MAX_NATIVE_ZOOM);
         const wx = (pt.x - ORIGIN_PX_X) / PX_SCALE_X;
-        const wy = -((pt.y - ORIGIN_PX_Y) / PX_SCALE_Y);
+        const wy = (pt.y - ORIGIN_PX_Y) / PX_SCALE_Y;
         document.getElementById('map-coord-debug').textContent =
           `click px:(${Math.round(pt.x)}, ${Math.round(pt.y)})  world:(${Math.round(wx)}, ${Math.round(wy)})`;
       });
