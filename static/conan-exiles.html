@@ -1048,9 +1048,16 @@
         } catch (err) { console.error('[SSE:server-request] Parse error:', err); }
       });
 
+      let _sseFailed = false;
+      sseSource.addEventListener('players', () => { _sseFailed = false; });
       sseSource.onerror = () => {
-        console.warn('[SSE] Connection lost, reconnecting...');
-        document.getElementById('server-status').textContent = 'Reconnecting...';
+        if (_sseFailed) return;
+        _sseFailed = true;
+        console.warn('[SSE] Not available, falling back to polling');
+        sseSource.close();
+        sseSource = null;
+        prefetchData();
+        setInterval(prefetchData, 15000);
       };
     }
 
