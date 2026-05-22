@@ -1135,17 +1135,16 @@
     const UNITS_PER_PX = 400000 / IMAGE_PX;
     // Calibrated: world(-29982, 239317) should land near bottom of tile image (~px 16000)
     // ORIGIN = target_px - world_coord * scale
-    const PX_SCALE_X = 0.02048;  // derived from two ground-truth points
-    const PX_SCALE_Y = 0.02024;  // Y is slightly compressed vs X
-    // Calibrated from two points: (-61557,233780)→px(5508,13327), (-30017,239216)→px(6154,13437)
-    const ORIGIN_PX_X = 6768;  // 5508 - (-61557 * 0.02048)
-    const ORIGIN_PX_Y = 8602;  // 13327 - (233780 * 0.02024)
+    const PX_SCALE_X = 0.020480;  // least-squares fit from 8 obelisk points
+    const PX_SCALE_Y = 0.020266;  // Y axis negated in worldToLatLng (game Y+ = north = up on tile)
+    const ORIGIN_PX_X = 6768;
+    const ORIGIN_PX_Y = 7496;  // recalculated with flipped Y axis
 
     // Convert Unreal world coords to Leaflet LatLng (CRS.Simple)
     // Returns null if the coordinate falls outside the tile image
     function worldToLatLng(wx, wy) {
       const px = ORIGIN_PX_X + wx * PX_SCALE_X;
-      const py = ORIGIN_PX_Y + wy * PX_SCALE_Y;
+      const py = ORIGIN_PX_Y + (-wy) * PX_SCALE_Y;
       if (px < -500 || px > IMAGE_PX + 500 || py < -500 || py > IMAGE_PX + 500) return null;
       return leafletMap.unproject([px, py], MAX_NATIVE_ZOOM);
     }
@@ -1185,7 +1184,7 @@
       leafletMap.on('click', function(e) {
         const pt = leafletMap.project(e.latlng, MAX_NATIVE_ZOOM);
         const wx = (pt.x - ORIGIN_PX_X) / PX_SCALE_X;
-        const wy = (pt.y - ORIGIN_PX_Y) / PX_SCALE_Y;
+        const wy = -((pt.y - ORIGIN_PX_Y) / PX_SCALE_Y);
         document.getElementById('map-coord-debug').textContent =
           `click px:(${Math.round(pt.x)}, ${Math.round(pt.y)})  world:(${Math.round(wx)}, ${Math.round(wy)})`;
       });
