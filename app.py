@@ -1784,6 +1784,7 @@ def api_chat_stream():
     name = request.args.get("name", "")
     url = f"{_backend_url()}/api/chat/stream?name={_ur.quote(name)}"
     def _generate():
+        buf = b""
         try:
             req = _ur.Request(url, headers={"User-Agent": "GamezNET", "Accept": "text/event-stream"})
             with _ur.urlopen(req, timeout=None) as resp:
@@ -1791,7 +1792,27 @@ def api_chat_stream():
                     chunk = resp.read(1024)
                     if not chunk:
                         break
-                    yield chunk
+                    buf += chunk
+                    # Check complete SSE lines for server_state events to tray-notify
+                    while b"\n\n" in buf:
+                        line, buf = buf.split(b"\n\n", 1)
+                        if line.startswith(b"data:"):
+                            try:
+                                msg = json.loads(line[5:].strip())
+                                if msg.get("type") == "server_state":
+                                    _name = msg.get("name", "Server")
+                                    _state = msg.get("state", "")
+                                    _label = "is now online" if _state == "running" else "went offline"
+                                    _icon = icon_holder.get("icon")
+                                    if _icon:
+                                        try: _icon.notify(f"{_name} {_label}", "GamezNET")
+                                        except Exception: pass
+                            except Exception:
+                                pass
+                        yield line + b"\n\n"
+                    if buf:
+                        yield buf
+                        buf = b""
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n".encode()
     return Response(stream_with_context(_generate()), mimetype="text/event-stream",
@@ -2049,7 +2070,7 @@ def run_tray(flask_thread):
                         my_name = json.load(f).get("name", "")
                 req = _ur.Request(f"{_backend_url()}/api/online", headers={"User-Agent": "GamezNET"})
                 with _ur.urlopen(req, timeout=5) as resp:
-                    online = {p["name"] for p in json.loads(resp.read()) if p.get("name") != my_name}
+                    online = {p["name"] for p in json.loads(resp.read()) if p.get("name") != my_name and not p.get("mobile")}
                 if known is None:
                     known = online
                 else:
