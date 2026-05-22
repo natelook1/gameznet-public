@@ -750,7 +750,7 @@
           <div id="map-container" style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
             <div style="position: relative; height: 700px;" id="map-inner">
               <div id="leaflet-map" style="width: 100%; height: 100%; background: #1a1a10;"></div>
-              <div id="map-coord-debug" style="position: absolute; top: 16px; left: 16px; z-index: 1000; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.8); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); color: var(--muted);">Click map to show coords</div>
+              <div id="map-coord-debug" style="display:none; position: absolute; top: 16px; left: 16px; z-index: 1000; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.8); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); color: var(--muted);">Click map to show coords</div>
               <div id="map-legend" style="position: absolute; bottom: 16px; right: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; font-size: 12px; background: rgba(0,0,0,0.85); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); color: var(--text);"></div>
             </div>
           </div>
@@ -1142,7 +1142,7 @@
     const PX_SCALE_X = 0.020480;  // least-squares fit from 8 obelisk points
     const PX_SCALE_Y = 0.020239;
     const ORIGIN_PX_X = 6768;
-    const ORIGIN_PX_Y = 8602;
+    const ORIGIN_PX_Y = 8799;
 
     // Convert Unreal world coords to Leaflet LatLng (CRS.Simple)
     // Returns null if the coordinate falls outside the tile image
