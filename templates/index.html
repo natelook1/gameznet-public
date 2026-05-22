@@ -3357,7 +3357,7 @@
     const btn = document.getElementById('req-btn');
     btn.disabled = true; btn.textContent = 'Sending...';
     try {
-      const res  = await fetch('/api/request-token', {
+      const res  = await fetch('/api/request-access', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ name, email })
       });
