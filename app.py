@@ -1793,26 +1793,23 @@ def api_chat_stream():
                     if not chunk:
                         break
                     buf += chunk
-                    # Check complete SSE lines for server_state events to tray-notify
                     while b"\n\n" in buf:
-                        line, buf = buf.split(b"\n\n", 1)
-                        if line.startswith(b"data:"):
+                        msg_bytes, buf = buf.split(b"\n\n", 1)
+                        if msg_bytes.startswith(b"data:"):
                             try:
-                                msg = json.loads(line[5:].strip())
+                                msg = json.loads(msg_bytes[5:].strip())
                                 if msg.get("type") == "server_state":
                                     _name = msg.get("name", "Server")
                                     _state = msg.get("state", "")
-                                    _label = "is now online" if _state == "running" else "went offline"
-                                    _icon = icon_holder.get("icon")
-                                    if _icon:
-                                        try: _icon.notify(f"{_name} {_label}", "GamezNET")
-                                        except Exception: pass
+                                    if _state in ("running", "stopping"):
+                                        _label = "is now online" if _state == "running" else "is stopping"
+                                        _icon = icon_holder.get("icon")
+                                        if _icon:
+                                            try: _icon.notify(f"{_name} {_label}", "GamezNET")
+                                            except Exception: pass
                             except Exception:
                                 pass
-                        yield line + b"\n\n"
-                    if buf:
-                        yield buf
-                        buf = b""
+                        yield msg_bytes + b"\n\n"
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n".encode()
     return Response(stream_with_context(_generate()), mimetype="text/event-stream",
