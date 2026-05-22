@@ -1211,6 +1211,15 @@
     }
     #youtube-section.yt-active { display: flex; }
 
+#conan-section {
+  display: none; flex-direction: column;
+  flex: 1; overflow: hidden; min-height: 0;
+  margin: -16px -32px;
+}
+#conan-section.conan-active { display: flex; }
+#conan-section iframe { flex: 1; border: none; width: 100%; height: 100%; }
+.tab-btn.conan-tab.active { color: #c47a2b; border-bottom-color: #c47a2b; }
+
 #factory-section {
   display: none; flex-direction: column;
   flex: 1; overflow: hidden; min-height: 0;
@@ -2234,6 +2243,7 @@
       <img src="/static/discord-logo-old.png" class="dc-tab-logo" alt="Discord"><span class="dc-tab-badge" id="tab-dc-online" style="display:none;"></span>
     </button>
     <button class="tab-btn files-tab" onclick="switchTab('files', this)">📁 FILES</button>
+    <button class="tab-btn conan-tab" onclick="switchTab('conan', this)">⚔️ CONAN</button>
     <button class="tab-btn factory-tab" onclick="switchTab('factory', this)">
       <img src="/static/satisfactory.png" class="factory-tab-logo" alt="Map"> MAP
     </button>
@@ -2711,6 +2721,11 @@
         </div>
       </div>
     </div>
+
+  <!-- ── CONAN EXILES ── -->
+  <div id="conan-section">
+    <iframe id="conan-iframe" src="" allowfullscreen></iframe>
+  </div>
 
   <!-- ── FACTORY MAP ── -->
   <div id="factory-section">
@@ -4522,11 +4537,13 @@
     const dc   = document.getElementById('discord-section');
     const files = document.getElementById('files-section');
     const factory = document.getElementById('factory-section');
+    const conan = document.getElementById('conan-section');
     const wow  = document.getElementById('wow-section');
     dash.style.display = 'none';
     dc.classList.remove('dc-active');
     factory.classList.remove('factory-active');
     if (name !== 'factory' && _factoryPollTimer) { clearInterval(_factoryPollTimer); _factoryPollTimer = null; clearInterval(_factoryVersionTimer); _factoryVersionTimer = null; _sfDrag = null; }
+    conan.classList.remove('conan-active');
     files.style.display = 'none';
     wow.style.display = 'none';
     if (name === 'discord') {
@@ -4538,6 +4555,10 @@
     } else if (name === 'factory') {
       factory.classList.add('factory-active');
       factoryInit();
+    } else if (name === 'conan') {
+      conan.classList.add('conan-active');
+      const iframe = document.getElementById('conan-iframe');
+      if (!iframe.src) iframe.src = '/conan-exiles';
     } else if (name === 'wow') {
       wow.style.display = 'flex';
       if (!window._wowInitialized) { window._wowInitialized = true; wowLoadAll(); }

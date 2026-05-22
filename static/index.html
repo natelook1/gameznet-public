@@ -253,7 +253,7 @@
   import { h, render } from 'https://esm.sh/preact@10';
   import { useState, useEffect, useRef } from 'https://esm.sh/preact@10/hooks';
   import htm from 'https://esm.sh/htm@3';
-  import { WowTab } from '/wow.js?v=1.8.5';
+  import { WowTab } from '/wow.js?v=1.8.6';
   const html = htm.bind(h);
 
   const API = 'https://gameznet.looknet.ca';
@@ -970,6 +970,14 @@
   const SF_SCIM_BASE = 'https://satisfactory-calculator.com/en/interactive-map';
   const SF_SCIM_HASH = '#-376193.5,-375000,0.00026';
 
+  function ConanTab() {
+    return html`
+      <div style="display:flex; flex-direction:column; flex:1; overflow:hidden; min-height:0;">
+        <iframe src="/conan-exiles" style="flex:1; border:none; width:100%; height:100%;" allowfullscreen></iframe>
+      </div>
+    `;
+  }
+
   function MapTab() {
     const [status, setStatus] = useState('connecting...');
     const [dot, setDot] = useState('#888');
@@ -1488,6 +1496,7 @@
       { id: 'discord', icon: html`<img src="/discord-mobile.png" style="height:18px; ${tab === 'discord' ? '' : 'opacity:0.5; filter:grayscale(1);'}" alt="Discord" />`, label: 'Discord' },
       { id: 'dms',     icon: '✉️',  label: 'DMs', badge: dmUnread || null },
       { id: 'files',   icon: '📁', label: 'Files' },
+      { id: 'conan',   icon: '⚔️', label: 'Conan' },
       { id: 'map',     icon: html`<img src="/satisfactory.png" style="height:18px; ${tab === 'map' ? '' : 'opacity:0.5; filter:grayscale(1);'}" alt="Map" />`, label: 'Map' },
       { id: 'wow',     icon: html`<img src="/WoW_icon.svg" class="wow-tab-logo" alt="WoW" />`,  label: 'WoW' },
     ];
@@ -1505,6 +1514,7 @@
           ${tab === 'discord' && html`<${DiscordTab} me=${me} />`}
           ${tab === 'dms'     && html`<${DMsTab}     me=${me} onUnreadChange=${setDmUnread} />`}
           ${tab === 'files'   && html`<${FilesTab}   me=${me} />`}
+          ${tab === 'conan'   && html`<${ConanTab} />`}
           ${tab === 'map'     && html`<${MapTab} />`}
           ${tab === 'wow'     && html`<${WowTab}     me=${me} />`}
         </div>
