@@ -845,6 +845,11 @@
   </nav>
 
   <script>
+    // When served from CF Pages (m.gameznet.looknet.ca), API calls must go to the backend directly
+    const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
+      ? 'https://gameznet.looknet.ca'
+      : '';
+
     let serverData = { players: [], guilds: [], buildings: [], placeables: [], thralls: [], teleporters: [], following_thralls: [] };
     let adminAuthenticated = false;
 
@@ -918,7 +923,7 @@
       const password = document.getElementById('admin-password').value;
       if (!password) return;
 
-      fetch('/api/conan-exiles/admin/auth', {
+      fetch(`${API_BASE}/api/conan-exiles/admin/auth`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })
@@ -939,7 +944,7 @@
 
     // Pre-fetch world + players via REST so data is available before SSE first fires
     function prefetchData() {
-      fetch('/api/conan-exiles/world').then(r => r.json()).then(data => {
+      fetch(`${API_BASE}/api/conan-exiles/world`).then(r => r.json()).then(data => {
         if (data.error) return;
         serverData.buildings = data.buildings || [];
         serverData.placeables = data.placeables || [];
@@ -963,7 +968,7 @@
         }
       }).catch(() => {});
 
-      fetch('/api/conan-exiles/players').then(r => r.json()).then(data => {
+      fetch(`${API_BASE}/api/conan-exiles/players`).then(r => r.json()).then(data => {
         if (data.error) return;
         serverData.players = data.players || [];
         serverData.following_thralls = data.following_thralls || [];
@@ -981,7 +986,7 @@
       if (sseSource) { sseSource.close(); }
 
       prefetchData();
-      sseSource = new EventSource('/api/conan-exiles/stream');
+      sseSource = new EventSource(`${API_BASE}/api/conan-exiles/stream`);
 
       // Fast path: players update every 5s
       sseSource.addEventListener('players', (e) => {
@@ -1040,7 +1045,7 @@
           if (type === 'ping') {
             responseData = { clientTime: Date.now(), serverTime: payload?.serverTime, latency: Date.now() - (payload?.serverTime || Date.now()) };
           }
-          fetch('/api/conan-exiles/pong', {
+          fetch(`${API_BASE}/api/conan-exiles/pong`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ requestId, type, data: responseData }),
@@ -1575,7 +1580,7 @@
     }
 
     function loadAdminData() {
-      fetch('/api/conan-exiles/admin/stats').then(r => r.json()).then(data => {
+      fetch(`${API_BASE}/api/conan-exiles/admin/stats`).then(r => r.json()).then(data => {
         if (data.error) return;
         document.getElementById('admin-total-chars').textContent = data.total_characters || '--';
         document.getElementById('admin-deleted-chars').textContent = data.deleted_characters || '--';
@@ -1595,7 +1600,7 @@
       const name = document.getElementById('admin-search-player').value;
       if (!name) return;
 
-      fetch(`/api/conan-exiles/admin/search?name=${encodeURIComponent(name)}`).then(r => r.json()).then(data => {
+      fetch(`${API_BASE}/api/conan-exiles/admin/search?name=${encodeURIComponent(name)}`).then(r => r.json()).then(data => {
         const resultDiv = document.getElementById('admin-search-result');
         if (data.error || !data.player) {
           resultDiv.innerHTML = '<div class="error">Player not found</div>';
