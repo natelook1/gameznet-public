@@ -1158,8 +1158,6 @@
 
       // Prefer self-hosted tiles; fall back to allgamemaps.com on first tile error
       const localTiles = '/static/map-tiles/ConanExiles/{z}/{x}/{y}.png';
-      const remoteTiles = 'https://allgamemaps.com/img/map/ConanExiles/ConanExiles/{z}/{x}/{y}.png';
-      let usedRemote = false;
 
       // Tile image is 16128px — fit to that, not Leaflet's internal 16384
       const imgTopLeft = leafletMap.unproject([0, 0], MAX_NATIVE_ZOOM);
@@ -1173,13 +1171,6 @@
         noWrap: true,
         bounds: mapBounds,
       }).addTo(leafletMap);
-
-      tileLayer.on('tileerror', () => {
-        if (!usedRemote) {
-          usedRemote = true;
-          tileLayer.setUrl(remoteTiles);
-        }
-      });
 
       leafletMap.fitBounds(mapBounds);
 

@@ -1752,6 +1752,17 @@ def api_satisfactory_map_background():
 def conan_exiles():
     return send_from_directory("static", "conan-exiles.html")
 
+@app.route("/static/map-tiles/<path:tile_path>")
+def map_tiles_proxy(tile_path):
+    import urllib.request as _ur
+    try:
+        url = f"{_backend_url()}/static/map-tiles/{tile_path}"
+        req = _ur.Request(url, headers={"User-Agent": "GamezNET"})
+        with _ur.urlopen(req, timeout=10) as resp:
+            return resp.read(), resp.status, {"Content-Type": "image/png"}
+    except Exception:
+        return "", 404
+
 @app.route("/api/alert", methods=["GET"])
 def api_alert():
     """Proxy GET to Worker /api/alert and return the JSON."""
