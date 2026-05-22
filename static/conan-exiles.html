@@ -1139,10 +1139,10 @@
     const UNITS_PER_PX = 400000 / IMAGE_PX;
     // Calibrated: world(-29982, 239317) should land near bottom of tile image (~px 16000)
     // ORIGIN = target_px - world_coord * scale
-    const PX_SCALE_X = 0.020480;  // least-squares fit from 8 obelisk points
-    const PX_SCALE_Y = 0.020239;
-    const ORIGIN_PX_X = 6808;
-    const ORIGIN_PX_Y = 8812;
+    const PX_SCALE_X = 0.020517;
+    const PX_SCALE_Y = 0.020233;
+    const ORIGIN_PX_X = 6809;
+    const ORIGIN_PX_Y = 8814;
 
     // Convert Unreal world coords to Leaflet LatLng (CRS.Simple)
     // Returns null if the coordinate falls outside the tile image
