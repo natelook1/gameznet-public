@@ -1748,6 +1748,10 @@ def api_satisfactory_map_background():
         log.error("satisfactory map background proxy failed: %s", e)
         return "", 502
 
+@app.route("/conan-exiles")
+def conan_exiles():
+    return send_from_directory("static", "conan-exiles.html")
+
 @app.route("/api/alert", methods=["GET"])
 def api_alert():
     """Proxy GET to Worker /api/alert and return the JSON."""
