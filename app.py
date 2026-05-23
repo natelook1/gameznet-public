@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.4"
+VERSION = "1.9.5"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1347,13 +1347,17 @@ def _do_start_host(requester: str, password: str) -> None:
             except Exception:
                 pass
         
-        # Strip old passwords/salts/modes/server to prevent conflicts
+        # Strip old passwords/salts/modes/server/key confirmations to prevent conflicts
         toml_content = re.sub(r"^password\s*=.*$", "", toml_content, flags=re.MULTILINE)
         toml_content = re.sub(r"^salt\s*=.*$", "", toml_content, flags=re.MULTILINE)
         toml_content = re.sub(r"^approve_mode\s*=.*$", "", toml_content, flags=re.MULTILINE)
         toml_content = re.sub(r"^custom_rendezvous_server\s*=.*$", "", toml_content, flags=re.MULTILINE)
         toml_content = re.sub(r"^relay_server\s*=.*$", "", toml_content, flags=re.MULTILINE)
         toml_content = re.sub(r"^key\s*=.*$", "", toml_content, flags=re.MULTILINE)
+        toml_content = re.sub(r"^key_confirmed\s*=.*$", "", toml_content, flags=re.MULTILINE)
+        # Remove [keys_confirmed] section entirely — stale public server confirmations
+        # cause RustDesk to ignore custom_rendezvous_server
+        toml_content = re.sub(r"\[keys_confirmed\][^\[]*", "", toml_content, flags=re.DOTALL)
 
         # Clean empty lines and append our mode + full self-hosted relay config
         toml_content = "\n".join([line for line in toml_content.splitlines() if line.strip()])
@@ -1364,6 +1368,18 @@ def _do_start_host(requester: str, password: str) -> None:
         
         with open(config_path, "w", encoding="utf-8") as f:
             f.write(toml_content)
+
+        # Set server options via IPC before launching the daemon — RustDesk overwrites
+        # the TOML on startup so we must also inject via --option to ensure the
+        # self-hosted relay is used rather than the public server.
+        log.info("[RUSTDESK TRACKER] Setting server options via --option IPC...")
+        for opt_key, opt_val in [
+            ("custom-rendezvous-server", "192.168.30.58"),
+            ("relay-server", "192.168.30.58"),
+            ("api-server", ""),
+            ("key", "SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0="),
+        ]:
+            subprocess.run([rustdesk_exe, "--option", opt_key, opt_val], capture_output=True, creationflags=0x08000000)
 
         si = subprocess.STARTUPINFO()
         si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
@@ -1555,6 +1571,8 @@ def api_remote_start_helper():
         helper_toml = re.sub(r"^custom_rendezvous_server\s*=.*$", "", helper_toml, flags=re.MULTILINE)
         helper_toml = re.sub(r"^relay_server\s*=.*$", "", helper_toml, flags=re.MULTILINE)
         helper_toml = re.sub(r"^key\s*=.*$", "", helper_toml, flags=re.MULTILINE)
+        helper_toml = re.sub(r"^key_confirmed\s*=.*$", "", helper_toml, flags=re.MULTILINE)
+        helper_toml = re.sub(r"\[keys_confirmed\][^\[]*", "", helper_toml, flags=re.DOTALL)
         helper_toml = "\n".join([line for line in helper_toml.splitlines() if line.strip()])
         helper_toml += "\ncustom_rendezvous_server = '192.168.30.58'\n"
         helper_toml += "relay_server = '192.168.30.58'\n"
@@ -1564,6 +1582,17 @@ def api_remote_start_helper():
                 f.write(helper_toml)
         except Exception:
             pass
+
+        # Set server options via IPC — RustDesk overwrites TOML on startup so we
+        # must also inject via --option to ensure self-hosted relay is used.
+        log.info("[RUSTDESK TRACKER] Setting server options via --option IPC...")
+        for opt_key, opt_val in [
+            ("custom-rendezvous-server", "192.168.30.58"),
+            ("relay-server", "192.168.30.58"),
+            ("api-server", ""),
+            ("key", "SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0="),
+        ]:
+            subprocess.run([rustdesk_exe, "--option", opt_key, opt_val], capture_output=True, creationflags=0x08000000)
 
         # Wipe stale peer config so RustDesk doesn't auto-try an old invalid password
         peer_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "peers", f"{target_id}.toml")
