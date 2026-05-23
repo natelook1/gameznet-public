@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.5"
+VERSION = "1.9.6"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1301,7 +1301,29 @@ def _download_rustdesk(rustdesk_exe: str) -> None:
     req = _ur.Request(RUSTDESK_URL, headers={"User-Agent": "GamezNET"})
     with _ur.urlopen(req, timeout=30) as r, open(rustdesk_exe, "wb") as f:
         f.write(r.read())
+    with open(rustdesk_exe + ".version", "w") as f:
+        f.write(RUSTDESK_VERSION)
     log.info("[RUSTDESK TRACKER] RustDesk downloaded.")
+
+
+def _ensure_rustdesk(rustdesk_exe: str) -> None:
+    """Download rustdesk.exe if missing or if cached version stamp doesn't match RUSTDESK_VERSION."""
+    stamp = rustdesk_exe + ".version"
+    cached_version = ""
+    if os.path.exists(stamp):
+        try:
+            with open(stamp) as f:
+                cached_version = f.read().strip()
+        except Exception:
+            pass
+    if not os.path.exists(rustdesk_exe) or cached_version != RUSTDESK_VERSION:
+        if os.path.exists(rustdesk_exe):
+            log.info("[RUSTDESK TRACKER] Cached rustdesk.exe is version '%s', expected '%s' — re-downloading...", cached_version, RUSTDESK_VERSION)
+            try:
+                os.remove(rustdesk_exe)
+            except Exception:
+                pass
+        _download_rustdesk(rustdesk_exe)
 
 
 def _wait_for_rustdesk_daemon(max_wait: float = 10.0) -> bool:
@@ -1325,8 +1347,7 @@ def _do_start_host(requester: str, password: str) -> None:
         rustdesk_exe = os.path.join(install_dir, "rustdesk.exe")
         id_log_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "log", "get-id", "rustdesk_rCURRENT.log")
 
-        if not os.path.exists(rustdesk_exe):
-            _download_rustdesk(rustdesk_exe)
+        _ensure_rustdesk(rustdesk_exe)
 
         subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True, creationflags=0x08000000)
         # Wait for the process to fully die before writing config (event-driven, not fixed sleep)
@@ -1537,8 +1558,7 @@ def api_remote_start_helper():
 
         install_dir = os.path.dirname(os.path.abspath(__file__))
         rustdesk_exe = os.path.join(install_dir, "rustdesk.exe")
-        if not os.path.exists(rustdesk_exe):
-            _download_rustdesk(rustdesk_exe)
+        _ensure_rustdesk(rustdesk_exe)
 
         log.info(f"[RUSTDESK TRACKER] Attempting CLI connect to {target_id}")
         
