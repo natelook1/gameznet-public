@@ -4528,6 +4528,10 @@
          unreads.forEach(u => {
             chatOpenedTabs.add(u.from_name);
             chatUnread[u.from_name] = u.count;
+            if (!chatHistoryLoaded.has(u.from_name)) {
+              loadDMHistory(u.from_name);
+              chatHistoryLoaded.add(u.from_name);
+            }
          });
          renderChatTabs();
          updateGlobalChatBadge();
@@ -4559,7 +4563,12 @@
 
         if (msg.type === 'dm') {
           const otherUser = msg.from_name === state.name ? msg.to_name : msg.from_name;
+          const isNewTab = !chatOpenedTabs.has(otherUser);
           chatOpenedTabs.add(otherUser);
+          if (isNewTab && !chatHistoryLoaded.has(otherUser)) {
+            loadDMHistory(otherUser);
+            chatHistoryLoaded.add(otherUser);
+          }
           if (chatActiveTarget === otherUser) {
             appendDMMessages(otherUser, [msg]);
             if (msg.to_name === state.name) fetch(`/api/chat/dm/read?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(otherUser)}`, {method:'POST'}).catch(()=>{});
