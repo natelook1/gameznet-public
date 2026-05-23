@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.3"
+VERSION = "1.9.4"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1352,11 +1352,15 @@ def _do_start_host(requester: str, password: str) -> None:
         toml_content = re.sub(r"^salt\s*=.*$", "", toml_content, flags=re.MULTILINE)
         toml_content = re.sub(r"^approve_mode\s*=.*$", "", toml_content, flags=re.MULTILINE)
         toml_content = re.sub(r"^custom_rendezvous_server\s*=.*$", "", toml_content, flags=re.MULTILINE)
+        toml_content = re.sub(r"^relay_server\s*=.*$", "", toml_content, flags=re.MULTILINE)
+        toml_content = re.sub(r"^key\s*=.*$", "", toml_content, flags=re.MULTILINE)
 
-        # Clean empty lines and append our mode + self-hosted relay
+        # Clean empty lines and append our mode + full self-hosted relay config
         toml_content = "\n".join([line for line in toml_content.splitlines() if line.strip()])
         toml_content += "\napprove_mode = 'password'\n"
         toml_content += "custom_rendezvous_server = '192.168.30.58'\n"
+        toml_content += "relay_server = '192.168.30.58'\n"
+        toml_content += "key = 'SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0='\n"
         
         with open(config_path, "w", encoding="utf-8") as f:
             f.write(toml_content)
@@ -1549,8 +1553,12 @@ def api_remote_start_helper():
             except Exception:
                 pass
         helper_toml = re.sub(r"^custom_rendezvous_server\s*=.*$", "", helper_toml, flags=re.MULTILINE)
+        helper_toml = re.sub(r"^relay_server\s*=.*$", "", helper_toml, flags=re.MULTILINE)
+        helper_toml = re.sub(r"^key\s*=.*$", "", helper_toml, flags=re.MULTILINE)
         helper_toml = "\n".join([line for line in helper_toml.splitlines() if line.strip()])
         helper_toml += "\ncustom_rendezvous_server = '192.168.30.58'\n"
+        helper_toml += "relay_server = '192.168.30.58'\n"
+        helper_toml += "key = 'SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0='\n"
         try:
             with open(helper_config_path, "w", encoding="utf-8") as f:
                 f.write(helper_toml)
