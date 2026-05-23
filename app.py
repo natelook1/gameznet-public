@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.2"
+VERSION = "1.9.3"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1287,46 +1287,56 @@ def _watch_rustdesk_process(name_to_end):
     threading.Thread(target=watcher, daemon=True).start()
 
 
-_remote_action_lock = threading.Lock()
+_host_lock = threading.Lock()
+_helper_lock = threading.Lock()
 
-@app.route("/api/remote/start-host", methods=["POST"])
-def api_remote_start_host():
-    """
-    Download RustDesk (if needed), set session password securely via CLI, start RustDesk,
-    extract the machine ID from the get-id log, return it to the UI.
-    """
-    # Prevent frontend polling from spawning multiple concurrent start instances
-    if not _remote_action_lock.acquire(blocking=False):
-        log.info("[RUSTDESK TRACKER] Ignoring duplicate start-host request (already running)")
-        return jsonify({"success": True, "ignored": True}), 200
+# Tracks in-progress start-host background threads: requester -> {"status": "running"|"done"|"error", ...}
+_host_start_status: dict = {}
 
+
+def _download_rustdesk(rustdesk_exe: str) -> None:
+    """Download rustdesk.exe with a timeout. Raises on failure."""
+    import urllib.request as _ur
+    log.info("[RUSTDESK TRACKER] Downloading RustDesk from %s...", RUSTDESK_URL)
+    req = _ur.Request(RUSTDESK_URL, headers={"User-Agent": "GamezNET"})
+    with _ur.urlopen(req, timeout=30) as r, open(rustdesk_exe, "wb") as f:
+        f.write(r.read())
+    log.info("[RUSTDESK TRACKER] RustDesk downloaded.")
+
+
+def _wait_for_rustdesk_daemon(max_wait: float = 10.0) -> bool:
+    """Poll psutil until rustdesk.exe appears or timeout expires. Returns True if found."""
+    import psutil
+    deadline = time.monotonic() + max_wait
+    while time.monotonic() < deadline:
+        for proc in psutil.process_iter(['name']):
+            if (proc.info.get('name') or '').lower() == 'rustdesk.exe':
+                return True
+        time.sleep(0.3)
+    return False
+
+
+def _do_start_host(requester: str, password: str) -> None:
+    """Background worker for start-host. Updates _host_start_status[requester] when done."""
+    import urllib.request as _ur2
+    import psutil
     try:
-        data = request.json or {}
-        password = data.get("password", "")
-        
-        log.info(f"[RUSTDESK TRACKER] Local start-host triggered by: {data.get('requester')}")
-        
-        if not password:
-            log.warning("[RUSTDESK TRACKER] Local start-host missing password")
-            return jsonify({"error": "Missing password"}), 400
-
         install_dir = os.path.dirname(os.path.abspath(__file__))
         rustdesk_exe = os.path.join(install_dir, "rustdesk.exe")
         id_log_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "log", "get-id", "rustdesk_rCURRENT.log")
 
-        # Download RustDesk if not cached
         if not os.path.exists(rustdesk_exe):
-            log.info("[RUSTDESK TRACKER] Downloading RustDesk...")
-            import urllib.request as _ur
-            _ur.urlretrieve(RUSTDESK_URL, rustdesk_exe)
-            log.info("[RUSTDESK TRACKER] RustDesk downloaded.")
+            _download_rustdesk(rustdesk_exe)
 
-        # Kill any existing RustDesk so we get a fresh launch
         subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True, creationflags=0x08000000)
-        time.sleep(1)
+        # Wait for the process to fully die before writing config (event-driven, not fixed sleep)
+        kill_deadline = time.monotonic() + 3.0
+        while time.monotonic() < kill_deadline:
+            if not any((p.info.get('name') or '').lower() == 'rustdesk.exe' for p in psutil.process_iter(['name'])):
+                break
+            time.sleep(0.2)
 
-        # 0. Force RustDesk to accept permanent passwords
-        log.info("[RUSTDESK TRACKER] Ensuring approve_mode is set to password in config...")
+        log.info("[RUSTDESK TRACKER] Writing RustDesk config for host...")
         config_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "RustDesk.toml")
         os.makedirs(os.path.dirname(config_path), exist_ok=True)
         toml_content = ""
@@ -1351,20 +1361,18 @@ def api_remote_start_host():
         with open(config_path, "w", encoding="utf-8") as f:
             f.write(toml_content)
 
-        # 1. Start RustDesk minimized
         si = subprocess.STARTUPINFO()
         si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         si.wShowWindow = 6  # SW_MINIMIZE
         log.info("[RUSTDESK TRACKER] Launching rustdesk.exe minimized...")
-        host_proc = subprocess.Popen([rustdesk_exe], startupinfo=si)
-        time.sleep(5)  # Give daemon time to start before sending IPC password
-        
-        # 2. Set permanent password via CLI (natively hashes and stores it properly)
-        log.info("[RUSTDESK TRACKER] Injecting password securely via CLI...")
-        subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
-        time.sleep(1)
+        subprocess.Popen([rustdesk_exe], startupinfo=si)
 
-        # Clear stale ID log so we know any entry we read is fresh
+        if not _wait_for_rustdesk_daemon(max_wait=10.0):
+            raise RuntimeError("RustDesk daemon did not appear within 10s")
+
+        log.info("[RUSTDESK TRACKER] Injecting password via CLI...")
+        subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
+
         os.makedirs(os.path.dirname(id_log_path), exist_ok=True)
         if os.path.exists(id_log_path):
             try:
@@ -1372,22 +1380,30 @@ def api_remote_start_host():
             except Exception:
                 pass
 
-        # 3. Extract ID via --get-id
-        log.info("[RUSTDESK TRACKER] Extracting ID via --get-id")
-        get_id_result = subprocess.run([rustdesk_exe, "--get-id"], capture_output=True, text=True, errors="ignore", timeout=15, creationflags=0x08000000)
+        # Retry --get-id until IPC responds (replaces fixed sleep after --password)
         rustdesk_id = None
-        for line in reversed((get_id_result.stdout + get_id_result.stderr).splitlines()):
-            if re.match(r'^\d{6,12}$', line.strip()):
-                rustdesk_id = line.strip()
+        for attempt in range(20):
+            get_id_result = subprocess.run(
+                [rustdesk_exe, "--get-id"], capture_output=True, text=True,
+                errors="ignore", timeout=15, creationflags=0x08000000
+            )
+            for line in reversed((get_id_result.stdout + get_id_result.stderr).splitlines()):
+                if re.match(r'^\d{6,12}$', line.strip()):
+                    rustdesk_id = line.strip()
+                    break
+            if rustdesk_id:
                 break
+            log.info("[RUSTDESK TRACKER] --get-id attempt %d returned no ID, retrying...", attempt + 1)
+            time.sleep(0.5)
 
-        # Fallback log polling
+        # Fallback: poll log files
         if not rustdesk_id:
-            log.info("[RUSTDESK TRACKER] --get-id failed, polling log files instead...")
+            log.info("[RUSTDESK TRACKER] --get-id exhausted, polling log files...")
             id_log_dir = os.path.dirname(id_log_path)
             for _ in range(20):
                 time.sleep(0.5)
-                if not os.path.exists(id_log_dir): continue
+                if not os.path.exists(id_log_dir):
+                    continue
                 log_files = sorted(
                     [os.path.join(id_log_dir, f) for f in os.listdir(id_log_dir) if f.endswith(".log")],
                     key=os.path.getmtime, reverse=True
@@ -1400,40 +1416,55 @@ def api_remote_start_host():
                                 if m:
                                     rustdesk_id = m.group(1)
                                     break
-                    except Exception: pass
-                    if rustdesk_id: break
-                if rustdesk_id: break
+                    except Exception:
+                        pass
+                    if rustdesk_id:
+                        break
+                if rustdesk_id:
+                    break
 
         if not rustdesk_id:
-            log.error("[RUSTDESK TRACKER] Could not read RustDesk ID.")
-            return jsonify({"error": "Could not read RustDesk ID — try again"}), 500
+            raise RuntimeError("Could not read RustDesk ID after all retries")
 
-        log.info(f"[RUSTDESK TRACKER] RustDesk ID acquired: {rustdesk_id}. Posting /api/remote/ready to server...")
+        log.info(f"[RUSTDESK TRACKER] RustDesk ID acquired: {rustdesk_id}. Posting /api/remote/ready...")
+        _body = json.dumps({"requester": requester, "rustdesk_id": rustdesk_id, "password": password}).encode()
+        _req = _ur2.Request(f"{_backend_url()}/api/remote/ready", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
+        with _ur2.urlopen(_req, timeout=5) as resp:
+            log.info(f"[RUSTDESK TRACKER] /api/remote/ready post success: {resp.status}")
 
-        import urllib.request as _ur2
-        try:
-            _body = json.dumps({
-                "requester": data.get("requester", ""), 
-                "rustdesk_id": rustdesk_id,
-                "password": password
-            }).encode()
-            _req = _ur2.Request(f"{_backend_url()}/api/remote/ready", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
-            with _ur2.urlopen(_req, timeout=5) as resp:
-                log.info(f"[RUSTDESK TRACKER] /api/remote/ready post success: {resp.status}")
-        except Exception as _e:
-            log.error("[RUSTDESK TRACKER] /api/remote/ready post FAILED: %s", repr(_e))
-            return jsonify({"error": f"Failed to notify backend: {repr(_e)}"}), 500
-
-        _watch_rustdesk_process(data.get("requester", ""))
-        
-        log.info("[RUSTDESK TRACKER] RustDesk host started successfully.")
-        return jsonify({"success": True, "rustdesk_id": rustdesk_id})
+        _host_start_status[requester] = {"status": "done", "rustdesk_id": rustdesk_id}
+        _watch_rustdesk_process(requester)
+        log.info("[RUSTDESK TRACKER] Host start complete.")
 
     except Exception as e:
-        log.error("[RUSTDESK TRACKER] remote start-host failed: %s", repr(e), exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        log.error("[RUSTDESK TRACKER] _do_start_host failed: %s", repr(e), exc_info=True)
+        _host_start_status[requester] = {"status": "error", "error": str(e)}
     finally:
-        _remote_action_lock.release()
+        _host_lock.release()
+
+
+@app.route("/api/remote/start-host", methods=["POST"])
+def api_remote_start_host():
+    """
+    Kick off host setup in a background thread and return immediately.
+    The frontend polls /api/remote/status for the 'ready' state transition.
+    """
+    data = request.json or {}
+    password = data.get("password", "")
+    requester = data.get("requester", "")
+
+    log.info(f"[RUSTDESK TRACKER] Local start-host triggered by: {requester}")
+
+    if not password or not requester:
+        return jsonify({"error": "Missing password or requester"}), 400
+
+    if not _host_lock.acquire(blocking=False):
+        log.info("[RUSTDESK TRACKER] Ignoring duplicate start-host request (already running)")
+        return jsonify({"success": True, "queued": True}), 200
+
+    _host_start_status[requester] = {"status": "running"}
+    threading.Thread(target=_do_start_host, args=(requester, password), daemon=True).start()
+    return jsonify({"success": True, "queued": True})
 
 
 @app.route("/api/steam/link", methods=["POST"])
@@ -1468,8 +1499,7 @@ def api_remote_start_helper():
     """
     Download RustDesk (if needed) and attempt to connect to the requester.
     """
-    # Prevent frontend polling from spawning multiple concurrent helper instances
-    if not _remote_action_lock.acquire(blocking=False):
+    if not _helper_lock.acquire(blocking=False):
         log.info("[RUSTDESK TRACKER] Ignoring duplicate start-helper request")
         return jsonify({"success": True, "ignored": True}), 200
 
@@ -1478,9 +1508,9 @@ def api_remote_start_helper():
         target_id = data.get("rustdesk_id", "")
         password = data.get("password", "")
         helper = data.get("helper", "")
-        
+
         log.info(f"[RUSTDESK TRACKER] Local start-helper triggered. Helper: {helper}, Target ID: {target_id}")
-        
+
         if not target_id or not password:
             log.warning("[RUSTDESK TRACKER] Local start-helper missing rustdesk_id or password")
             return jsonify({"error": "Missing rustdesk_id or password"}), 400
@@ -1488,10 +1518,7 @@ def api_remote_start_helper():
         install_dir = os.path.dirname(os.path.abspath(__file__))
         rustdesk_exe = os.path.join(install_dir, "rustdesk.exe")
         if not os.path.exists(rustdesk_exe):
-            log.info("[RUSTDESK TRACKER] Downloading RustDesk...")
-            import urllib.request as _ur
-            _ur.urlretrieve(RUSTDESK_URL, rustdesk_exe)
-            log.info("[RUSTDESK TRACKER] RustDesk downloaded.")
+            _download_rustdesk(rustdesk_exe)
 
         log.info(f"[RUSTDESK TRACKER] Attempting CLI connect to {target_id}")
         
@@ -1502,9 +1529,14 @@ def api_remote_start_helper():
         except Exception:
             pass
 
-        # Kill any existing RustDesk instances to clear memory cache
         subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True, creationflags=0x08000000)
-        time.sleep(1)
+        # Wait for process to fully die before writing config (event-driven, not fixed sleep)
+        import psutil as _psutil
+        kill_deadline = time.monotonic() + 3.0
+        while time.monotonic() < kill_deadline:
+            if not any((p.info.get('name') or '').lower() == 'rustdesk.exe' for p in _psutil.process_iter(['name'])):
+                break
+            time.sleep(0.2)
 
         # Point helper's RustDesk at self-hosted relay
         helper_config_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "RustDesk.toml")
@@ -1533,8 +1565,7 @@ def api_remote_start_helper():
             except Exception:
                 pass
 
-        # Launch connection WITHOUT --password (since it only sets local passwords, not remote)
-        subprocess.Popen([rustdesk_exe, "--connect", target_id])
+        subprocess.Popen([rustdesk_exe, "--connect", target_id, "--password", password])
 
         log.info("[RUSTDESK TRACKER] CLI Connect successfully initiated connection window.")
         _notify_connected(helper)
@@ -1546,7 +1577,7 @@ def api_remote_start_helper():
         log.error("[RUSTDESK TRACKER] remote start-helper failed: %s", repr(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
     finally:
-        _remote_action_lock.release()
+        _helper_lock.release()
 
 
 @app.route("/api/remote/cleanup", methods=["POST"])

@@ -6387,51 +6387,54 @@
         if (remoteState._countdown <= 0) { endRemoteSession(); toast('Request timed out.', 'error'); }
       }, 1000);
 
+      let hostStarted = false;
       remoteState.pollTimer = setInterval(async () => {
+        if (remoteState.ended) return;
         try {
           const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
-          if (sd.status === 'accepted') {
+          if (sd.status === 'accepted' && !hostStarted) {
+            hostStarted = true;
             clearInterval(remoteState._countdownTimer);
             if (cdEl) cdEl.style.display = 'none';
-            _rpStep(2); 
-            await _startRustDeskHost();
-          } else if (sd.status === 'none') {
-            endRemoteSession();
-            toast('Request declined or expired.', 'error');
+            _rpStep(2);
+            _startRustDeskHost();
+          } else if (sd.status === 'ready' || sd.status === 'connected') {
+            // Background thread posted ready; step progression handled inside _startRustDeskHost poll
+          } else if (sd.status === 'none' && hostStarted) {
+            if (!remoteState.ended) { endRemoteSession(); toast('Request declined or expired.', 'error'); }
+          } else if (sd.status === 'none' && !hostStarted) {
+            if (!remoteState.ended) { endRemoteSession(); toast('Request declined or expired.', 'error'); }
           }
         } catch {}
       }, 3000);
     } catch { document.getElementById('remote-send-btn').disabled = false; }
   }
 
-  async function _startRustDeskHost() {
-    try {
-      const pass = Math.random().toString(36).slice(-8);
-      remoteState._sessionPass = pass;
-      const res = await fetch('/api/remote/start-host', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requester: state.name, password: pass })
-      });
-      const data = await res.json();
-      if (!res.ok) { endRemoteSession(); return; }
-      _rpStep(4);
-      
-      // Never stop polling so we can detect when Side B finishes
-      clearInterval(remoteState.pollTimer);
-      remoteState.pollTimer = setInterval(async () => {
-        try {
-          const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
-          if (sd.status === 'ready') {
-              _rpStep(4); // "ID ready"
-          } else if (sd.status === 'connected') { 
-              _rpStep(6, true); // "Active" (100% complete)
-          } else if (sd.status === 'none') { 
-              endRemoteSession(); 
-              toast('Session ended by peer.', true); 
-          }
-        } catch {}
-      }, 3000);
-    } catch { endRemoteSession(); }
+  function _startRustDeskHost() {
+    // Fire-and-forget: start-host returns immediately (background thread on server side).
+    // The server posts /api/remote/ready when the ID is acquired; we poll for that state below.
+    const pass = Math.random().toString(36).slice(-8);
+    remoteState._sessionPass = pass;
+    fetch('/api/remote/start-host', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requester: state.name, password: pass })
+    }).catch(() => { if (!remoteState.ended) endRemoteSession(); });
+
+    // Replace outer poll with one that watches for ready -> connected transitions
+    clearInterval(remoteState.pollTimer);
+    remoteState.pollTimer = setInterval(async () => {
+      if (remoteState.ended) return;
+      try {
+        const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+        if (sd.status === 'ready') {
+          _rpStep(4); // host daemon up, ID obtained, waiting for helper
+        } else if (sd.status === 'connected') {
+          _rpStep(6, true); // helper connected — session active
+        } else if (sd.status === 'none') {
+          if (!remoteState.ended) { endRemoteSession(); toast('Session ended by peer.', true); }
+        }
+      } catch {}
+    }, 3000);
   }
 
   async function pollRemotePending() {
@@ -6479,21 +6482,22 @@
       _rpStep(1); // Set the bar to the first step ("Accepted request") immediately
 
       remoteState.pollTimer = setInterval(async () => {
+        if (remoteState.ended) return;
         try {
           const sd = await fetch(`/api/remote/status?name=${encodeURIComponent(state.name)}`).then(r => r.json());
-          
+
           if (sd.status === 'ready' && !helperLaunched) {
-            helperLaunched = true; // Block repeated launches
-            _rpStep(2); 
-            setTimeout(() => _rpStep(3), 500); 
-            
+            helperLaunched = true; // gate: only launch once when host signals ready
+            _rpStep(2);
+            _rpStep(3); // advance immediately — no timer
+
             const helperRes = await fetch('/api/remote/start-helper', {
               method: 'POST', headers: {'Content-Type':'application/json'},
               body: JSON.stringify({ rustdesk_id: sd.rustdesk_id, password: sd.password, helper: state.name })
             });
 
-            if (helperRes.ok) {
-              // GOLDEN LOGIC: Tell the server we are officially linked
+            if (!remoteState.ended && helperRes.ok) {
+              // Notify server that helper has launched the connection window
               await fetch('/api/remote/connected', {
                 method: 'POST', headers: {'Content-Type':'application/json'},
                 body: JSON.stringify({ helper: state.name })
@@ -6501,10 +6505,9 @@
               _rpStep(4, true);
             }
           } else if (sd.status === 'connected') {
-            _rpStep(4, true); // Connection confirmed by server
-          } else if (sd.status === 'none') { 
-            endRemoteSession(); 
-            toast('Session ended by peer.', true);
+            _rpStep(4, true);
+          } else if (sd.status === 'none') {
+            if (!remoteState.ended) { endRemoteSession(); toast('Session ended by peer.', true); }
           }
         } catch {}
       }, 3000);
@@ -6519,12 +6522,14 @@
   }
 
   async function endRemoteSession() {
+    if (remoteState.ended) return; // idempotent — prevent double-cleanup from race callbacks
+    remoteState.ended = true;
     clearInterval(remoteState.pollTimer);
     clearInterval(remoteState._countdownTimer);
     clearInterval(remoteState._toastTimer);
     fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
     fetch('/api/remote/cleanup', { method: 'POST' });
-    remoteState.active = false; remoteState.requester = null;
+    remoteState.active = false; remoteState.requester = null; remoteState.ended = false; // reset after cleanup
     document.getElementById('remote-overlay').classList.remove('active');
     updateRemoteHelpBtn(true);
   }
