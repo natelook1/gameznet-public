@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.7"
+VERSION = "1.9.8"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1357,11 +1357,48 @@ def _do_start_host(requester: str, password: str) -> None:
                 break
             time.sleep(0.2)
 
-        config_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "RustDesk.toml")
-        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        config_dir = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config")
+        os.makedirs(config_dir, exist_ok=True)
+        config2_path = os.path.join(config_dir, "RustDesk2.toml")
+        config_path = os.path.join(config_dir, "RustDesk.toml")
 
-        # Launch RustDesk first so it performs its startup TOML rewrite,
-        # then we overwrite with our settings after the daemon is running.
+        # Write RustDesk2.toml (server config) BEFORE launch so the daemon picks it up
+        log.info("[RUSTDESK TRACKER] Writing RustDesk2.toml with self-hosted relay...")
+        toml2 = ""
+        if os.path.exists(config2_path):
+            try:
+                with open(config2_path, "r", encoding="utf-8") as f:
+                    toml2 = f.read()
+            except Exception:
+                pass
+        toml2 = re.sub(r"^rendezvous_server\s*=.*$", "", toml2, flags=re.MULTILINE)
+        toml2 = re.sub(r"\[options\][^\[]*", "", toml2, flags=re.DOTALL)
+        toml2 = "\n".join([line for line in toml2.splitlines() if line.strip()])
+        toml2 += "\nrendezvous_server = '192.168.30.58:21116'\n"
+        toml2 += "\n[options]\n"
+        toml2 += "custom-rendezvous-server = '192.168.30.58'\n"
+        toml2 += "relay-server = '192.168.30.58'\n"
+        toml2 += "api-server = ''\n"
+        toml2 += "key = 'SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0='\n"
+        with open(config2_path, "w", encoding="utf-8") as f:
+            f.write(toml2)
+
+        # Also write approve_mode to RustDesk.toml
+        toml_content = ""
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    toml_content = f.read()
+            except Exception:
+                pass
+        toml_content = re.sub(r"^approve_mode\s*=.*$", "", toml_content, flags=re.MULTILINE)
+        toml_content = re.sub(r"^key_confirmed\s*=.*$", "", toml_content, flags=re.MULTILINE)
+        toml_content = re.sub(r"\[keys_confirmed\][^\[]*", "", toml_content, flags=re.DOTALL)
+        toml_content = "\n".join([line for line in toml_content.splitlines() if line.strip()])
+        toml_content += "\napprove_mode = 'password'\n"
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write(toml_content)
+
         si = subprocess.STARTUPINFO()
         si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         si.wShowWindow = 6  # SW_MINIMIZE
@@ -1370,42 +1407,6 @@ def _do_start_host(requester: str, password: str) -> None:
 
         if not _wait_for_rustdesk_daemon(max_wait=10.0):
             raise RuntimeError("RustDesk daemon did not appear within 10s")
-
-        # Now write config AFTER daemon startup rewrite — this is the version that sticks
-        log.info("[RUSTDESK TRACKER] Writing RustDesk config for host (post-startup)...")
-        toml_content = ""
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, "r", encoding="utf-8") as f:
-                    toml_content = f.read()
-            except Exception:
-                pass
-
-        toml_content = re.sub(r"^password\s*=.*$", "", toml_content, flags=re.MULTILINE)
-        toml_content = re.sub(r"^salt\s*=.*$", "", toml_content, flags=re.MULTILINE)
-        toml_content = re.sub(r"^approve_mode\s*=.*$", "", toml_content, flags=re.MULTILINE)
-        toml_content = re.sub(r"^custom_rendezvous_server\s*=.*$", "", toml_content, flags=re.MULTILINE)
-        toml_content = re.sub(r"^relay_server\s*=.*$", "", toml_content, flags=re.MULTILINE)
-        toml_content = re.sub(r"^key\s*=.*$", "", toml_content, flags=re.MULTILINE)
-        toml_content = re.sub(r"^key_confirmed\s*=.*$", "", toml_content, flags=re.MULTILINE)
-        toml_content = re.sub(r"\[keys_confirmed\][^\[]*", "", toml_content, flags=re.DOTALL)
-        toml_content = "\n".join([line for line in toml_content.splitlines() if line.strip()])
-        toml_content += "\napprove_mode = 'password'\n"
-        toml_content += "custom_rendezvous_server = '192.168.30.58'\n"
-        toml_content += "relay_server = '192.168.30.58'\n"
-        toml_content += "key = 'SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0='\n"
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(toml_content)
-
-        # Also inject via --option IPC now that daemon is running and can receive it
-        log.info("[RUSTDESK TRACKER] Setting server options via --option IPC...")
-        for opt_key, opt_val in [
-            ("custom-rendezvous-server", "192.168.30.58"),
-            ("relay-server", "192.168.30.58"),
-            ("api-server", ""),
-            ("key", "SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0="),
-        ]:
-            subprocess.run([rustdesk_exe, "--option", opt_key, opt_val], capture_output=True, creationflags=0x08000000)
 
         log.info("[RUSTDESK TRACKER] Injecting password via CLI...")
         subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
@@ -1575,7 +1576,29 @@ def api_remote_start_helper():
             time.sleep(0.2)
 
         helper_config_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "RustDesk.toml")
-        os.makedirs(os.path.dirname(helper_config_path), exist_ok=True)
+        config_dir = os.path.dirname(helper_config_path)
+        os.makedirs(config_dir, exist_ok=True)
+        config2_path = os.path.join(config_dir, "RustDesk2.toml")
+
+        log.info("[RUSTDESK TRACKER] Writing RustDesk2.toml with self-hosted relay (helper)...")
+        toml2 = ""
+        if os.path.exists(config2_path):
+            try:
+                with open(config2_path, "r", encoding="utf-8") as f:
+                    toml2 = f.read()
+            except Exception:
+                pass
+        toml2 = re.sub(r"^rendezvous_server\s*=.*$", "", toml2, flags=re.MULTILINE)
+        toml2 = re.sub(r"\[options\][^\[]*", "", toml2, flags=re.DOTALL)
+        toml2 = "\n".join([line for line in toml2.splitlines() if line.strip()])
+        toml2 += "\nrendezvous_server = '192.168.30.58:21116'\n"
+        toml2 += "\n[options]\n"
+        toml2 += "custom-rendezvous-server = '192.168.30.58'\n"
+        toml2 += "relay-server = '192.168.30.58'\n"
+        toml2 += "api-server = ''\n"
+        toml2 += "key = 'SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0='\n"
+        with open(config2_path, "w", encoding="utf-8") as f:
+            f.write(toml2)
 
         # Launch bare daemon so RustDesk performs its startup TOML rewrite first,
         # then overwrite config and inject --option while daemon is running.
