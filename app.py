@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.1"
+VERSION = "1.9.2"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1337,14 +1337,16 @@ def api_remote_start_host():
             except Exception:
                 pass
         
-        # Strip old passwords/salts/modes to prevent conflicts
+        # Strip old passwords/salts/modes/server to prevent conflicts
         toml_content = re.sub(r"^password\s*=.*$", "", toml_content, flags=re.MULTILINE)
         toml_content = re.sub(r"^salt\s*=.*$", "", toml_content, flags=re.MULTILINE)
         toml_content = re.sub(r"^approve_mode\s*=.*$", "", toml_content, flags=re.MULTILINE)
-        
-        # Clean empty lines and append our mode
+        toml_content = re.sub(r"^custom_rendezvous_server\s*=.*$", "", toml_content, flags=re.MULTILINE)
+
+        # Clean empty lines and append our mode + self-hosted relay
         toml_content = "\n".join([line for line in toml_content.splitlines() if line.strip()])
         toml_content += "\napprove_mode = 'password'\n"
+        toml_content += "custom_rendezvous_server = '192.168.30.58'\n"
         
         with open(config_path, "w", encoding="utf-8") as f:
             f.write(toml_content)
@@ -1503,7 +1505,26 @@ def api_remote_start_helper():
         # Kill any existing RustDesk instances to clear memory cache
         subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True, creationflags=0x08000000)
         time.sleep(1)
-        
+
+        # Point helper's RustDesk at self-hosted relay
+        helper_config_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "RustDesk.toml")
+        os.makedirs(os.path.dirname(helper_config_path), exist_ok=True)
+        helper_toml = ""
+        if os.path.exists(helper_config_path):
+            try:
+                with open(helper_config_path, "r", encoding="utf-8") as f:
+                    helper_toml = f.read()
+            except Exception:
+                pass
+        helper_toml = re.sub(r"^custom_rendezvous_server\s*=.*$", "", helper_toml, flags=re.MULTILINE)
+        helper_toml = "\n".join([line for line in helper_toml.splitlines() if line.strip()])
+        helper_toml += "\ncustom_rendezvous_server = '192.168.30.58'\n"
+        try:
+            with open(helper_config_path, "w", encoding="utf-8") as f:
+                f.write(helper_toml)
+        except Exception:
+            pass
+
         # Wipe stale peer config so RustDesk doesn't auto-try an old invalid password
         peer_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "peers", f"{target_id}.toml")
         if os.path.exists(peer_path):
