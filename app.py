@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.9"
+VERSION = "1.9.10"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1630,6 +1630,28 @@ def api_remote_start_helper():
                 f.write(helper_toml)
         except Exception:
             pass
+
+        # Re-write RustDesk2.toml after daemon startup (RustDesk overwrites it on launch)
+        log.info("[RUSTDESK TRACKER] Re-writing RustDesk2.toml post-startup (helper)...")
+        toml2 = ""
+        if os.path.exists(config2_path):
+            try:
+                with open(config2_path, "r", encoding="utf-8") as f:
+                    toml2 = f.read()
+            except Exception:
+                pass
+        toml2 = re.sub(r"^rendezvous_server\s*=.*$", "", toml2, flags=re.MULTILINE)
+        toml2 = re.sub(r"\[options\][^\[]*", "", toml2, flags=re.DOTALL)
+        toml2 = "\n".join([line for line in toml2.splitlines() if line.strip()])
+        toml2 += "\nrendezvous_server = '192.168.30.58:21116'\n"
+        toml2 += "\n[options]\n"
+        toml2 += "custom-rendezvous-server = '192.168.30.58'\n"
+        toml2 += "relay-server = '192.168.30.58'\n"
+        toml2 += "api-server = ''\n"
+        toml2 += "key = 'SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0='\n"
+        with open(config2_path, "w", encoding="utf-8") as f:
+            f.write(toml2)
+        log.info("[RUSTDESK TRACKER] RustDesk2.toml post-startup contents:\n%s", toml2)
 
         # Inject via --option IPC now that daemon is running
         log.info("[RUSTDESK TRACKER] Setting server options via --option IPC...")
