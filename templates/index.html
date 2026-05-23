@@ -1570,8 +1570,8 @@
     /* ── Floating Network Chat panel ── */
     .chat-float {
       position: fixed;
-      width: 300px;
-      height: 290px;
+      width: 320px;
+      height: 360px;
       background: #0f1623;
       border: 1px solid var(--border2);
       box-shadow: -4px 0 24px rgba(0,0,0,0.7);
@@ -1660,13 +1660,87 @@
     .chat-float-btn:hover { color: var(--text); }
     .chat-float-body { display: flex; flex-direction: column; gap: 8px; padding: 10px; flex: 1; min-height: 0; }
     .chat-section { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
-    .chat-msg { display: flex; gap: 8px; align-items: baseline; font-size: 12px; line-height: 1.4; }
+    /* ── Messages ── */
+    .chat-msg { display: flex; flex-direction: column; gap: 2px; font-size: 12px; line-height: 1.4; position: relative; padding: 3px 6px; border-radius: 4px; }
+    .chat-msg:hover { background: rgba(255,255,255,0.03); }
+    .chat-msg:hover .chat-msg-actions { opacity: 1; }
+    .chat-msg-header { display: flex; align-items: baseline; gap: 8px; }
     .chat-msg-name { font-family: 'Share Tech Mono', monospace; color: var(--accent); font-size: 11px; white-space: nowrap; flex-shrink: 0; }
     .chat-msg-name.self { color: var(--accent2); }
+    .chat-msg-time { font-size: 10px; color: var(--muted); white-space: nowrap; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
+    .chat-msg:hover .chat-msg-time { opacity: 1; }
     .chat-msg-body { color: var(--text); word-break: break-word; }
-    .chat-msg-time { margin-left: auto; font-size: 10px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+    .chat-msg-body.deleted { color: var(--muted); font-style: italic; }
+    /* ── Hover action buttons ── */
+    .chat-msg-actions { position: absolute; right: 6px; top: 2px; display: flex; gap: 3px; opacity: 0; transition: opacity 0.15s; background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 1px 3px; }
+    .chat-msg-action-btn { background: none; border: none; cursor: pointer; font-size: 12px; padding: 1px 3px; color: var(--text-dim); line-height: 1; border-radius: 3px; }
+    .chat-msg-action-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+    /* ── Reply quote ── */
+    .chat-msg-reply { font-size: 10px; color: var(--text-dim); border-left: 2px solid var(--accent); padding-left: 6px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+    .chat-msg-reply:hover { color: var(--accent); }
+    /* ── Reactions ── */
+    .chat-msg-reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+    .chat-reaction-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border2); border-radius: 10px; padding: 1px 6px; cursor: pointer; transition: background 0.1s; }
+    .chat-reaction-chip:hover { background: rgba(0,212,255,0.12); border-color: var(--accent); }
+    .chat-reaction-chip.mine { background: rgba(0,212,255,0.15); border-color: var(--accent); }
+    .chat-reaction-count { font-size: 10px; color: var(--text-dim); }
+    /* ── Read receipt ── */
+    .chat-msg-read { font-size: 9px; color: var(--accent); opacity: 0.7; text-align: right; }
+    /* ── Date separator ── */
+    .chat-date-sep { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+    .chat-date-sep-line { flex: 1; height: 1px; background: var(--border2); }
+    .chat-date-sep-label { font-size: 10px; color: var(--muted); white-space: nowrap; font-family: 'Share Tech Mono', monospace; letter-spacing: 1px; }
+    /* ── Typing indicator ── */
+    .chat-typing { font-size: 10px; color: var(--text-dim); font-style: italic; padding: 2px 6px; min-height: 16px; flex-shrink: 0; }
+    /* ── Attachment image ── */
+    .chat-msg-img { max-width: 180px; max-height: 140px; border-radius: 4px; cursor: pointer; margin-top: 3px; display: block; }
+    /* ── Link preview ── */
+    .chat-link-preview { display: flex; gap: 8px; margin-top: 4px; border: 1px solid var(--border2); border-radius: 4px; padding: 6px 8px; background: rgba(0,0,0,0.2); max-width: 260px; text-decoration: none; }
+    .chat-link-preview-img { width: 44px; height: 44px; object-fit: cover; border-radius: 3px; flex-shrink: 0; }
+    .chat-link-preview-text { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+    .chat-link-preview-title { font-size: 11px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-link-preview-desc { font-size: 10px; color: var(--text-dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    /* ── Reply compose bar ── */
+    .chat-reply-bar { display: none; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(0,212,255,0.06); border-top: 1px solid var(--border2); font-size: 10px; color: var(--text-dim); flex-shrink: 0; }
+    .chat-reply-bar.visible { display: flex; }
+    .chat-reply-bar-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-reply-close { background: none; border: none; cursor: pointer; color: var(--text-dim); font-size: 14px; padding: 0 2px; line-height: 1; }
+    .chat-reply-close:hover { color: var(--danger); }
+    /* ── Image paste preview ── */
+    .chat-paste-preview { display: none; position: relative; padding: 4px 10px; flex-shrink: 0; border-top: 1px solid var(--border2); }
+    .chat-paste-preview.visible { display: flex; align-items: center; gap: 8px; }
+    .chat-paste-thumb { max-height: 48px; max-width: 80px; border-radius: 3px; object-fit: cover; }
+    .chat-paste-clear { background: none; border: none; cursor: pointer; color: var(--text-dim); font-size: 16px; }
+    /* ── Search panel ── */
+    .chat-search-panel { display: none; flex-direction: column; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border2); background: rgba(0,0,0,0.15); flex-shrink: 0; }
+    .chat-search-panel.visible { display: flex; }
+    .chat-search-input { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 11px; padding: 5px 8px; outline: none; width: 100%; box-sizing: border-box; }
+    .chat-search-input:focus { border-color: var(--accent); }
+    .chat-search-results { display: flex; flex-direction: column; gap: 4px; max-height: 110px; overflow-y: auto; }
+    .chat-search-result { font-size: 11px; padding: 3px 4px; border-radius: 3px; cursor: pointer; color: var(--text-dim); }
+    .chat-search-result:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    .chat-search-result mark { background: rgba(0,212,255,0.25); color: var(--accent); border-radius: 2px; }
+    /* ── Conversation list / inbox ── */
+    .chat-inbox-panel { display: none; flex-direction: column; flex: 1; min-height: 0; }
+    .chat-inbox-panel.visible { display: flex; }
+    .chat-inbox-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    .chat-inbox-row { display: flex; align-items: center; gap: 8px; padding: 7px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .chat-inbox-row:hover { background: rgba(255,255,255,0.04); }
+    .chat-inbox-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-family: 'Share Tech Mono', monospace; color: #000; flex-shrink: 0; position: relative; }
+    .chat-inbox-online-dot { position: absolute; bottom: 0; right: 0; width: 8px; height: 8px; border-radius: 50%; background: #2ecc40; border: 1px solid var(--bg); }
+    .chat-inbox-info { flex: 1; min-width: 0; }
+    .chat-inbox-name { font-size: 11px; font-family: 'Share Tech Mono', monospace; color: var(--text); }
+    .chat-inbox-preview { font-size: 10px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-inbox-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+    .chat-inbox-time { font-size: 9px; color: var(--muted); }
+    .chat-inbox-badge { background: var(--danger); color: #fff; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 8px; }
+    /* ── Emoji picker ── */
+    .chat-emoji-picker { position: absolute; right: 0; bottom: 100%; background: var(--surface); border: 1px solid var(--border2); border-radius: 6px; padding: 6px; display: flex; flex-wrap: wrap; gap: 2px; width: 176px; z-index: 900; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+    .chat-emoji-picker button { background: none; border: none; cursor: pointer; font-size: 16px; padding: 3px 4px; border-radius: 3px; line-height: 1; }
+    .chat-emoji-picker button:hover { background: rgba(255,255,255,0.1); }
+    /* ── Input area ── */
     .chat-empty { color: var(--muted); font-size: 12px; }
-    .chat-input-row { display: flex; gap: 8px; }
+    .chat-input-row { display: flex; align-items: flex-end; gap: 8px; }
     .chat-input {
       flex: 1;
       background: var(--surface);
@@ -1678,6 +1752,12 @@
       padding: 7px 10px;
       outline: none;
       transition: border-color 0.2s;
+      resize: none;
+      min-height: 32px;
+      max-height: 96px;
+      overflow-y: auto;
+      line-height: 1.4;
+      display: block;
     }
     .chat-input:focus { border-color: var(--accent); }
     .chat-input:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -1692,9 +1772,18 @@
       border-radius: 4px;
       cursor: pointer;
       transition: background 0.15s;
+      flex-shrink: 0;
+      align-self: flex-end;
     }
     .chat-send-btn:hover { background: rgba(0,212,255,0.1); }
     .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    /* ── Tab online dot ── */
+    .chat-tab-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #2ecc40; margin-right: 3px; vertical-align: middle; position: relative; top: -1px; }
+    /* ── Toolbar ── */
+    .chat-toolbar { display: flex; align-items: center; gap: 4px; padding: 3px 10px 0; flex-shrink: 0; }
+    .chat-toolbar-btn { background: none; border: none; cursor: pointer; font-size: 13px; color: var(--text-dim); padding: 2px 4px; border-radius: 3px; line-height: 1; }
+    .chat-toolbar-btn:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+    .chat-toolbar-btn.active { color: var(--accent); }
 
     /* ── Compact identity card (col-right) ── */
     .player-identity-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -2336,13 +2425,36 @@
       <div class="chat-tabs" id="chat-tabs-container">
         <div class="chat-tab active" onclick="setChatTarget('global')"># Global</div>
       </div>
+      <div class="chat-toolbar">
+        <button class="chat-toolbar-btn" id="chat-inbox-btn" onclick="toggleChatInbox()" title="Conversations">☰</button>
+        <button class="chat-toolbar-btn" id="chat-search-btn" onclick="toggleChatSearch()" title="Search">🔍</button>
+        <span style="flex:1"></span>
+      </div>
+      <div class="chat-search-panel" id="chat-search-panel">
+        <input class="chat-search-input" id="chat-search-input" placeholder="Search messages..." />
+        <div class="chat-search-results" id="chat-search-results"></div>
+      </div>
+      <div class="chat-inbox-panel" id="chat-inbox-panel">
+        <div class="chat-inbox-list" id="chat-inbox-list"></div>
+      </div>
       <div id="chat-boxes-container" style="flex:1; display:flex; min-height:0; background:var(--surface); position:relative;">
         <div class="chat-scroll-area" id="chat-box-global">
           <div class="chat-empty" id="chat-empty-global">○ No messages yet</div>
         </div>
       </div>
-      <div class="chat-input-row" style="padding:8px 10px; border-top:1px solid var(--border2); background:rgba(0,0,0,0.1);">
-        <input class="chat-input" id="chat-input" type="text" placeholder="Type a message..." maxlength="500" disabled />
+      <div class="chat-typing" id="chat-typing-indicator"></div>
+      <div class="chat-reply-bar" id="chat-reply-bar">
+        <span style="color:var(--accent);font-size:10px;">↩</span>
+        <span class="chat-reply-bar-text" id="chat-reply-text"></span>
+        <button class="chat-reply-close" onclick="clearReply()">✕</button>
+      </div>
+      <div class="chat-paste-preview" id="chat-paste-preview">
+        <img class="chat-paste-thumb" id="chat-paste-thumb" src="" alt="" />
+        <span style="font-size:10px;color:var(--text-dim);flex:1;" id="chat-paste-name"></span>
+        <button class="chat-paste-clear" onclick="clearPasteImage()">✕</button>
+      </div>
+      <div class="chat-input-row" style="padding:8px 10px; border-top:1px solid var(--border2); background:rgba(0,0,0,0.1); position:relative;">
+        <textarea class="chat-input" id="chat-input" placeholder="Type a message..." maxlength="2000" disabled rows="1"></textarea>
         <button class="chat-send-btn" id="chat-send-btn" onclick="sendChat()" disabled>SEND</button>
       </div>
     </div>
@@ -3738,6 +3850,8 @@
       const el     = document.getElementById('online-list-ui');
       const onlinePlayers  = online.filter(p => p.online !== false);
       const offlinePlayers = online.filter(p => p.online === false);
+      onlinePlayerNames = new Set(onlinePlayers.map(p => p.name).filter(Boolean));
+      renderChatTabs();
       if (!online.length) {
         el.innerHTML = '<div class="online-empty">○ No other players online</div>';
         return;
@@ -3826,20 +3940,39 @@
   let chatOpenedTabs = new Set(['global']);
   let chatUnread = {}; // target -> count
   let chatHistoryLoaded = new Set();
+  let chatSince = new Date(Date.now() - 3600000).toISOString();
+  let chatReplyTo = null; // { id, from_name, body }
+  let chatPasteFile = null; // { blob, url, name }
+  let _typingTimers = {}; // target -> clearTimeout handle
+  let _myTypingTimer = null;
+  let onlinePlayerNames = new Set();
 
-  let chatSince = new Date(Date.now() - 3600000).toISOString(); // load last 1hr on init
+  const EMOJI_QUICK = ['👍','❤️','😂','😮','😢','🔥','✅','👀','🎉','💯'];
 
   function chatTimeStr(iso) {
     const d = new Date(iso);
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
+  function chatDateLabel(iso) {
+    const d = new Date(iso);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today - 86400000);
+    const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (msgDay.getTime() === today.getTime()) return 'Today';
+    if (msgDay.getTime() === yesterday.getTime()) return 'Yesterday';
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+  }
+
   function renderChatTabs() {
     const container = document.getElementById('chat-tabs-container');
-    let html = `<div class="chat-tab ${chatActiveTarget === 'global' ? 'active' : ''} ${chatUnread['global'] ? 'unread' : ''}" onclick="setChatTarget('global')"># Global ${chatUnread['global'] ? `(${chatUnread['global']})` : ''}</div>`;
+    let html = `<div class="chat-tab ${chatActiveTarget === 'global' ? 'active' : ''} ${chatUnread['global'] ? 'unread' : ''}" onclick="setChatTarget('global')"># Global ${chatUnread['global'] ? `<span style="font-size:9px">(${chatUnread['global']})</span>` : ''}</div>`;
     chatOpenedTabs.forEach(target => {
       if (target === 'global') return;
-      html += `<div class="chat-tab ${chatActiveTarget === target ? 'active' : ''} ${chatUnread[target] ? 'unread' : ''}" onclick="setChatTarget('${target}')">@${target} ${chatUnread[target] ? `(${chatUnread[target]})` : ''} <span class="chat-tab-close" onclick="event.stopPropagation(); closeChatTab('${target}')">✕</span></div>`;
+      const online = onlinePlayerNames.has(target);
+      const unread = chatUnread[target] || 0;
+      html += `<div class="chat-tab ${chatActiveTarget === target ? 'active' : ''} ${unread ? 'unread' : ''}" onclick="setChatTarget('${target}')">${online ? '<span class="chat-tab-dot"></span>' : ''}@${target} ${unread ? `<span style="font-size:9px">(${unread})</span>` : ''} <span class="chat-tab-close" onclick="event.stopPropagation(); closeChatTab('${target}')">✕</span></div>`;
     });
     container.innerHTML = html;
   }
@@ -3862,27 +3995,32 @@
       const oldBox = document.getElementById(`chat-box-${chatActiveTarget}`);
       if (oldBox) oldBox.style.display = 'none';
     }
+    // Hide inbox panel when switching to a conversation
+    document.getElementById('chat-inbox-panel').classList.remove('visible');
+    document.getElementById('chat-inbox-btn').classList.remove('active');
+
     chatActiveTarget = target;
     chatUnread[target] = 0;
     renderChatTabs();
-    
+
     const newBox = getChatBox(target);
     newBox.style.display = 'flex';
     newBox.scrollTop = newBox.scrollHeight;
-    
+
     const input = document.getElementById('chat-input');
     input.placeholder = target === 'global' ? 'Type a message...' : `Message @${target}...`;
     input.focus();
 
     if (target !== 'global') {
-       fetch(`/api/chat/dm/read?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(target)}`, {method:'POST'}).catch(()=>{});
-       if (!chatHistoryLoaded.has(target)) {
-         loadDMHistory(target);
-         chatHistoryLoaded.add(target);
-       }
+      fetch(`/api/chat/dm/read?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(target)}`, {method:'POST'}).catch(()=>{});
+      if (!chatHistoryLoaded.has(target)) {
+        loadDMHistory(target);
+        chatHistoryLoaded.add(target);
+      }
     }
     updateGlobalChatBadge();
-  }
+    clearReply();
+  };
 
   async function loadDMHistory(target) {
     try {
@@ -3895,12 +4033,13 @@
   window.openChatTab = function(target) {
     chatOpenedTabs.add(target);
     const fl = document.getElementById('chat-float');
-    if (fl.classList.contains('chat-minimized')) toggleChatFloat(); 
+    if (fl.classList.contains('chat-minimized')) toggleChatFloat();
     setChatTarget(target);
   };
 
   window.closeChatTab = function(target) {
     chatOpenedTabs.delete(target);
+    chatHistoryLoaded.delete(target);
     const box = document.getElementById(`chat-box-${target}`);
     if (box) box.remove();
     if (chatActiveTarget === target) setChatTarget('global');
@@ -3917,28 +4056,312 @@
     const empty = document.getElementById(`chat-empty-${target}`);
     if (empty) empty.remove();
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+    let lastDateLabel = box.dataset.lastDate || '';
+
     msgs.forEach(m => {
+      const dedupeKey = `${m.from_name}|${m.sent_at}`;
+      if (box.querySelector(`[data-key="${CSS.escape(dedupeKey)}"]`)) return;
       const isSelf = m.from_name === state.name;
+
+      // Date separator
+      const dateLabel = m.sent_at && !m.sent_at.startsWith(m.from_name) ? chatDateLabel(m.sent_at) : '';
+      if (dateLabel && dateLabel !== lastDateLabel) {
+        const sep = document.createElement('div');
+        sep.className = 'chat-date-sep';
+        sep.innerHTML = `<div class="chat-date-sep-line"></div><div class="chat-date-sep-label">${dateLabel}</div><div class="chat-date-sep-line"></div>`;
+        box.appendChild(sep);
+        lastDateLabel = dateLabel;
+      }
+
       const el = document.createElement('div');
       el.className = 'chat-msg';
-      el.innerHTML = `<span class="chat-msg-name${isSelf ? ' self' : ''}">${m.from_name}</span><span class="chat-msg-body">${m.body.replace(/</g,'&lt;')}</span><span class="chat-msg-time">${chatTimeStr(m.sent_at)}</span>`;
+      el.dataset.key = dedupeKey;
+      if (m.id) el.dataset.msgId = m.id;
+      el.dataset.msgType = target === 'global' ? 'global' : 'dm';
+      el.dataset.fromName = m.from_name;
+
+      // Reply quote
+      let replyHtml = '';
+      if (m.reply_to_id) {
+        const quoted = box.querySelector(`[data-msg-id="${m.reply_to_id}"]`);
+        const quotedBody = quoted ? quoted.querySelector('.chat-msg-body')?.textContent : '…';
+        const quotedName = quoted ? quoted.dataset.fromName : '';
+        replyHtml = `<div class="chat-msg-reply" onclick="scrollToMsg(${m.reply_to_id})">${quotedName ? `<b>${quotedName}</b>: ` : ''}${(quotedBody||'').slice(0,60)}</div>`;
+      }
+
+      // Attachment image
+      let attachHtml = '';
+      if (m.attachment_id) {
+        attachHtml = `<img class="chat-msg-img" src="/api/chat/uploads/${m.attachment_id}" onclick="window.open(this.src)" loading="lazy" />`;
+      }
+
+      // Body (check for URLs for link preview)
+      const safeBody = m.deleted ? '' : m.body.replace(/</g,'&lt;');
+      const bodyClass = m.deleted ? ' deleted' : '';
+
+      el.innerHTML = `
+        <div class="chat-msg-header">
+          <span class="chat-msg-name${isSelf ? ' self' : ''}">${m.from_name}</span>
+          <span class="chat-msg-time" title="${m.sent_at ? new Date(m.sent_at).toLocaleString() : ''}">${m.sent_at && !m.sent_at.includes('optimistic') ? chatTimeStr(m.sent_at) : ''}</span>
+        </div>
+        ${replyHtml}
+        <span class="chat-msg-body${bodyClass}">${m.deleted ? '[deleted]' : safeBody}</span>
+        ${attachHtml}
+        <div class="chat-msg-reactions" id="reactions-${el.dataset.msgId || dedupeKey.replace(/[^a-z0-9]/gi,'_')}"></div>
+        ${isSelf && m.id && target !== 'global' ? `<div class="chat-msg-read" id="read-${m.id}" style="display:none">✓✓ Seen</div>` : ''}
+        <div class="chat-msg-actions">
+          <button class="chat-msg-action-btn" onclick="showEmojiPicker(event, this)" title="React">😊</button>
+          <button class="chat-msg-action-btn" onclick="startReply(this.closest('.chat-msg'))" title="Reply">↩</button>
+          ${isSelf && m.id ? `<button class="chat-msg-action-btn" onclick="deleteMsg(${m.id},'${el.dataset.msgType}')" title="Delete">🗑</button>` : ''}
+        </div>`;
+
       box.appendChild(el);
+
+      // Async link preview (fire and forget)
+      if (!m.deleted && m.body) fetchLinkPreview(m.body, el);
     });
+
+    box.dataset.lastDate = lastDateLabel;
     if (atBottom) box.scrollTop = box.scrollHeight;
   }
-  
+
+  // ── Link preview ────────────────────────────────────────────────────────────
+  const _previewCache = {};
+  async function fetchLinkPreview(text, msgEl) {
+    const urlMatch = text.match(/https?:\/\/[^\s]+/);
+    if (!urlMatch) return;
+    const url = urlMatch[0];
+    if (_previewCache[url] === null) return;
+    try {
+      if (!_previewCache[url]) {
+        const r = await fetch(`/api/chat/link-preview?url=${encodeURIComponent(url)}`);
+        if (!r.ok) { _previewCache[url] = null; return; }
+        _previewCache[url] = await r.json();
+      }
+      const p = _previewCache[url];
+      if (!p || !p.title) return;
+      const a = document.createElement('a');
+      a.className = 'chat-link-preview';
+      a.href = p.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.innerHTML = p.image
+        ? `<img class="chat-link-preview-img" src="${p.image.replace(/"/g,'')}" onerror="this.style.display='none'" /><div class="chat-link-preview-text"><div class="chat-link-preview-title">${p.title.replace(/</g,'&lt;')}</div>${p.description ? `<div class="chat-link-preview-desc">${p.description.replace(/</g,'&lt;')}</div>` : ''}</div>`
+        : `<div class="chat-link-preview-text"><div class="chat-link-preview-title">${p.title.replace(/</g,'&lt;')}</div>${p.description ? `<div class="chat-link-preview-desc">${p.description.replace(/</g,'&lt;')}</div>` : ''}</div>`;
+      const bodyEl = msgEl.querySelector('.chat-msg-body');
+      if (bodyEl) bodyEl.insertAdjacentElement('afterend', a);
+    } catch {}
+  }
+
+  // ── Scroll to quoted message ─────────────────────────────────────────────────
+  window.scrollToMsg = function(id) {
+    const el = document.querySelector(`[data-msg-id="${id}"]`);
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.style.background = 'rgba(0,212,255,0.1)'; setTimeout(() => el.style.background = '', 1000); }
+  };
+
+  // ── Reply compose ────────────────────────────────────────────────────────────
+  window.startReply = function(msgEl) {
+    chatReplyTo = { id: msgEl.dataset.msgId, from_name: msgEl.dataset.fromName, body: msgEl.querySelector('.chat-msg-body')?.textContent || '' };
+    const bar = document.getElementById('chat-reply-bar');
+    const txt = document.getElementById('chat-reply-text');
+    txt.textContent = `${chatReplyTo.from_name}: ${chatReplyTo.body.slice(0, 60)}`;
+    bar.classList.add('visible');
+    document.getElementById('chat-input').focus();
+  };
+
+  window.clearReply = function() {
+    chatReplyTo = null;
+    document.getElementById('chat-reply-bar').classList.remove('visible');
+  };
+
+  // ── Delete message ───────────────────────────────────────────────────────────
+  window.deleteMsg = async function(id, type) {
+    if (!confirm('Delete this message?')) return;
+    try {
+      const r = await fetch('/api/chat/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ from_name: state.name, msg_id: id, msg_type: type }) });
+      if (!r.ok) { toast('Could not delete message', 'danger'); return; }
+      const el = document.querySelector(`[data-msg-id="${id}"]`);
+      if (el) { el.querySelector('.chat-msg-body').textContent = '[deleted]'; el.querySelector('.chat-msg-body').className = 'chat-msg-body deleted'; el.querySelector('.chat-msg-actions').remove(); }
+    } catch { toast('Could not delete message', 'danger'); }
+  };
+
+  // ── Emoji picker ─────────────────────────────────────────────────────────────
+  let _activeEmojiPicker = null;
+  window.showEmojiPicker = function(e, btn) {
+    e.stopPropagation();
+    if (_activeEmojiPicker) { _activeEmojiPicker.remove(); _activeEmojiPicker = null; return; }
+    const msgEl = btn.closest('.chat-msg');
+    const picker = document.createElement('div');
+    picker.className = 'chat-emoji-picker';
+    EMOJI_QUICK.forEach(em => {
+      const b = document.createElement('button');
+      b.textContent = em;
+      b.onclick = (ev) => { ev.stopPropagation(); sendReaction(msgEl, em); picker.remove(); _activeEmojiPicker = null; };
+      picker.appendChild(b);
+    });
+    btn.closest('.chat-msg-actions').appendChild(picker);
+    _activeEmojiPicker = picker;
+  };
+  document.addEventListener('click', () => { if (_activeEmojiPicker) { _activeEmojiPicker.remove(); _activeEmojiPicker = null; } });
+
+  async function sendReaction(msgEl, emoji) {
+    const id = msgEl.dataset.msgId;
+    const type = msgEl.dataset.msgType;
+    if (!id) return;
+    try {
+      const r = await fetch('/api/chat/react', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ from_name: state.name, msg_id: id, msg_type: type, emoji }) });
+      if (r.ok) { const d = await r.json(); renderReactions(id, d.reactions); }
+    } catch {}
+  }
+
+  function renderReactions(msgId, reactions) {
+    const el = document.querySelector(`[data-msg-id="${msgId}"]`);
+    if (!el) return;
+    const container = el.querySelector('.chat-msg-reactions');
+    if (!container) return;
+    // Group by emoji
+    const groups = {};
+    reactions.forEach(r => { if (!groups[r.emoji]) groups[r.emoji] = []; groups[r.emoji].push(r.from_name); });
+    container.innerHTML = '';
+    Object.entries(groups).forEach(([emoji, names]) => {
+      const mine = names.includes(state.name);
+      const chip = document.createElement('span');
+      chip.className = `chat-reaction-chip${mine ? ' mine' : ''}`;
+      chip.title = names.join(', ');
+      chip.innerHTML = `${emoji}<span class="chat-reaction-count">${names.length}</span>`;
+      chip.onclick = () => sendReaction(el, emoji);
+      container.appendChild(chip);
+    });
+  }
+
+  // ── Typing indicators ────────────────────────────────────────────────────────
+  function showTyping(from_name, to_name) {
+    const target = to_name && to_name !== state.name ? to_name : (to_name ? 'global' : 'global');
+    const dmTarget = to_name ? (from_name === state.name ? to_name : from_name) : 'global';
+    const effectiveTarget = to_name ? dmTarget : 'global';
+    if (effectiveTarget !== chatActiveTarget) return;
+    const ind = document.getElementById('chat-typing-indicator');
+    if (ind) ind.textContent = `${from_name} is typing…`;
+    clearTimeout(_typingTimers[effectiveTarget]);
+    _typingTimers[effectiveTarget] = setTimeout(() => { if (ind) ind.textContent = ''; }, 3000);
+  }
+
+  function emitTyping() {
+    if (!state.name) return;
+    const to_name = chatActiveTarget !== 'global' ? chatActiveTarget : undefined;
+    fetch('/api/chat/typing', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ from_name: state.name, ...(to_name ? { to_name } : {}) }) }).catch(()=>{});
+  }
+
+  // ── Read receipts ────────────────────────────────────────────────────────────
+  function markDMSeen(reader, sender) {
+    if (sender !== state.name) return;
+    // Show "Seen" on the last sent message in the conversation with reader
+    const box = document.getElementById(`chat-box-${reader}`);
+    if (!box) return;
+    const sentMsgs = [...box.querySelectorAll('.chat-msg')].filter(el => el.dataset.fromName === state.name && el.querySelector('.chat-msg-read'));
+    sentMsgs.forEach((el, i) => {
+      const readEl = el.querySelector('.chat-msg-read');
+      if (readEl) readEl.style.display = i === sentMsgs.length - 1 ? '' : 'none';
+    });
+  }
+
+  // ── Image paste / attach ─────────────────────────────────────────────────────
+  document.getElementById('chat-input').addEventListener('paste', e => {
+    const items = [...(e.clipboardData?.items || [])];
+    const imageItem = items.find(i => i.type.startsWith('image/'));
+    if (!imageItem) return;
+    e.preventDefault();
+    const blob = imageItem.getAsFile();
+    if (!blob) return;
+    chatPasteFile = { blob, name: `image.${blob.type.split('/')[1] || 'png'}` };
+    const url = URL.createObjectURL(blob);
+    document.getElementById('chat-paste-thumb').src = url;
+    document.getElementById('chat-paste-name').textContent = chatPasteFile.name;
+    document.getElementById('chat-paste-preview').classList.add('visible');
+  });
+
+  window.clearPasteImage = function() {
+    chatPasteFile = null;
+    const thumb = document.getElementById('chat-paste-thumb');
+    if (thumb.src.startsWith('blob:')) URL.revokeObjectURL(thumb.src);
+    thumb.src = '';
+    document.getElementById('chat-paste-preview').classList.remove('visible');
+  };
+
+  // ── Search ───────────────────────────────────────────────────────────────────
+  window.toggleChatSearch = function() {
+    const panel = document.getElementById('chat-search-panel');
+    const btn = document.getElementById('chat-search-btn');
+    const visible = panel.classList.toggle('visible');
+    btn.classList.toggle('active', visible);
+    if (visible) document.getElementById('chat-search-input').focus();
+    else document.getElementById('chat-search-results').innerHTML = '';
+  };
+
+  let _searchDebounce = null;
+  document.getElementById('chat-search-input').addEventListener('input', e => {
+    clearTimeout(_searchDebounce);
+    const q = e.target.value.trim();
+    if (q.length < 2) { document.getElementById('chat-search-results').innerHTML = ''; return; }
+    _searchDebounce = setTimeout(async () => {
+      try {
+        const isGlobal = chatActiveTarget === 'global';
+        const qs = isGlobal ? `q=${encodeURIComponent(q)}` : `q=${encodeURIComponent(q)}&user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(chatActiveTarget)}`;
+        const r = await fetch(`/api/chat/search?${qs}`);
+        const results = await r.json();
+        const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+        document.getElementById('chat-search-results').innerHTML = results.length
+          ? results.map(m => `<div class="chat-search-result" onclick="scrollToMsg(${m.id})"><b>${m.from_name}</b>: ${m.body.replace(/</g,'&lt;').replace(re, '<mark>$1</mark>')}</div>`).join('')
+          : `<div class="chat-search-result" style="cursor:default">No results</div>`;
+      } catch {}
+    }, 300);
+  });
+
+  // ── Conversation inbox ───────────────────────────────────────────────────────
+  window.toggleChatInbox = async function() {
+    const panel = document.getElementById('chat-inbox-panel');
+    const btn = document.getElementById('chat-inbox-btn');
+    const visible = panel.classList.toggle('visible');
+    btn.classList.toggle('active', visible);
+    document.getElementById('chat-boxes-container').style.display = visible ? 'none' : '';
+    if (visible) await loadInbox();
+  };
+
+  async function loadInbox() {
+    if (!state.name) return;
+    try {
+      const r = await fetch(`/api/chat/conversations?name=${encodeURIComponent(state.name)}`);
+      const convos = await r.json();
+      const list = document.getElementById('chat-inbox-list');
+      if (!convos.length) { list.innerHTML = '<div style="padding:12px;font-size:11px;color:var(--muted)">No conversations yet</div>'; return; }
+      list.innerHTML = convos.map(c => {
+        const online = onlinePlayerNames.has(c.other);
+        const unread = chatUnread[c.other] || 0;
+        const initials = (c.other || '?')[0].toUpperCase();
+        const timeStr = c.last_at ? chatTimeStr(c.last_at) : '';
+        return `<div class="chat-inbox-row" onclick="openChatTab('${c.other}')">
+          <div class="chat-inbox-avatar">${initials}${online ? '<div class="chat-inbox-online-dot"></div>' : ''}</div>
+          <div class="chat-inbox-info">
+            <div class="chat-inbox-name">@${c.other}</div>
+            <div class="chat-inbox-preview">${(c.last_body||'').replace(/</g,'&lt;').slice(0,40)}</div>
+          </div>
+          <div class="chat-inbox-meta">
+            <div class="chat-inbox-time">${timeStr}</div>
+            ${unread ? `<div class="chat-inbox-badge">${unread}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    } catch {}
+  }
+
   function updateGlobalChatBadge() {
     const badge    = document.getElementById('chat-float-badge');
     const dmBadge  = document.getElementById('chat-float-dm-badge');
     const titleEl  = document.getElementById('chat-float-title');
-    const toggleBtn = document.getElementById('chat-toggle-btn');
     const minimized = document.getElementById('chat-float').classList.contains('chat-minimized');
-
     const globalUnread = chatUnread['global'] || 0;
     const dmUnread = Object.entries(chatUnread).filter(([k]) => k !== 'global').reduce((a, [, v]) => a + v, 0);
-
-    if (titleEl)   titleEl.textContent   = minimized ? 'CHAT' : '⬡ Network Chat';
-
+    if (titleEl) titleEl.textContent = minimized ? 'CHAT' : '⬡ Network Chat';
     if (minimized) {
       if (globalUnread > 0) { badge.textContent = globalUnread; badge.style.display = ''; }
       else badge.style.display = 'none';
@@ -3965,19 +4388,64 @@
   async function sendChat() {
     const input = document.getElementById('chat-input');
     const body = input.value.trim();
-    if (!body || !state.name) return;
+    if ((!body && !chatPasteFile) || !state.name) return;
+
+    // Upload image first if pasted
+    let attachment_id = null;
+    if (chatPasteFile) {
+      try {
+        const r = await fetch('/api/chat/upload', { method: 'POST', headers: { 'Content-Type': chatPasteFile.blob.type, 'X-Player-Name': state.name }, body: chatPasteFile.blob });
+        if (r.ok) { const d = await r.json(); attachment_id = d.id; }
+      } catch {}
+      clearPasteImage();
+    }
+
+    if (!body && !attachment_id) return;
+    const sendBody = body || '📎';
     input.value = '';
+    autoResizeTextarea(input);
+
+    const optimisticKey = `${state.name}|optimistic-${Date.now()}`;
+    const target = chatActiveTarget;
+    const optimisticMsg = { from_name: state.name, body: sendBody, sent_at: optimisticKey, reply_to_id: chatReplyTo?.id || null, attachment_id };
+    appendDMMessages(target === 'global' ? 'global' : target, [optimisticMsg]);
+    clearReply();
+
     try {
-      if (chatActiveTarget === 'global') {
-        await fetch('/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name, body }) });
+      let res;
+      const replyId = chatReplyTo?.id ? parseInt(chatReplyTo.id) : undefined;
+      if (target === 'global') {
+        res = await fetch('/api/chat/send', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name: state.name, body: sendBody, reply_to_id: replyId, attachment_id }) });
       } else {
-        await fetch('/api/chat/dm/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_name: state.name, to_name: chatActiveTarget, body }) });
+        res = await fetch('/api/chat/dm/send', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ from_name: state.name, to_name: target, body: sendBody, reply_to_id: replyId, attachment_id }) });
       }
-    } catch {}
+      if (!res.ok) throw new Error();
+      const { sent_at, id: msgId } = await res.json();
+      const box = document.getElementById(`chat-box-${target}`);
+      if (box && sent_at) {
+        const el = box.querySelector(`[data-key="${CSS.escape(optimisticKey)}"]`);
+        if (el) { el.dataset.key = `${state.name}|${sent_at}`; if (msgId) el.dataset.msgId = msgId; }
+        if (target === 'global' && sent_at > chatSince) chatSince = sent_at;
+      }
+    } catch {
+      toast('Message failed to send', 'danger');
+    }
+  }
+
+  function autoResizeTextarea(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 96) + 'px';
   }
 
   document.getElementById('chat-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') sendChat();
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); return; }
+    // Typing indicator — debounced
+    clearTimeout(_myTypingTimer);
+    _myTypingTimer = setTimeout(emitTyping, 400);
+  });
+
+  document.getElementById('chat-input').addEventListener('input', e => {
+    autoResizeTextarea(e.target);
   });
 
   function setChatEnabled(enabled) {
@@ -4071,7 +4539,24 @@
       try {
         const msg = JSON.parse(e.data);
         if (msg.type === 'discord') { if (typeof handleDiscordSSE === 'function') handleDiscordSSE(msg); return; }
-        
+
+        if (msg.type === 'typing') { showTyping(msg.from_name, msg.to_name); return; }
+
+        if (msg.type === 'dm_read') { markDMSeen(msg.reader, msg.sender); return; }
+
+        if (msg.type === 'reaction') { renderReactions(msg.msg_id, msg.reactions); return; }
+
+        if (msg.type === 'msg_deleted') {
+          const el = document.querySelector(`[data-msg-id="${msg.msg_id}"]`);
+          if (el) {
+            const b = el.querySelector('.chat-msg-body');
+            if (b) { b.textContent = '[deleted]'; b.className = 'chat-msg-body deleted'; }
+            const acts = el.querySelector('.chat-msg-actions');
+            if (acts) acts.remove();
+          }
+          return;
+        }
+
         if (msg.type === 'dm') {
           const otherUser = msg.from_name === state.name ? msg.to_name : msg.from_name;
           chatOpenedTabs.add(otherUser);
@@ -4079,19 +4564,22 @@
             appendDMMessages(otherUser, [msg]);
             if (msg.to_name === state.name) fetch(`/api/chat/dm/read?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(otherUser)}`, {method:'POST'}).catch(()=>{});
           } else if (msg.to_name === state.name) {
+            appendDMMessages(otherUser, [msg]);
             chatUnread[otherUser] = (chatUnread[otherUser] || 0) + 1;
-            chatBeep();
+            playNotificationSound();
             updateGlobalChatBadge();
+          } else if (msg.from_name === state.name) {
+            appendDMMessages(otherUser, [msg]);
           }
           renderChatTabs();
           return;
         }
-        
+
         if (chatActiveTarget === 'global') {
           appendMessages([msg]);
         } else {
           chatUnread['global'] = (chatUnread['global'] || 0) + 1;
-          appendMessages([msg]); // background append
+          appendMessages([msg]);
           chatBeep();
           updateGlobalChatBadge();
           renderChatTabs();
