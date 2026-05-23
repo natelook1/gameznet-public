@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.11"
+VERSION = "1.9.12"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1605,8 +1605,16 @@ def api_remote_start_helper():
         si_h = subprocess.STARTUPINFO()
         si_h.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         si_h.wShowWindow = 6
-        subprocess.Popen([rustdesk_exe], startupinfo=si_h)
-        _wait_for_rustdesk_daemon(max_wait=10.0)
+        daemon_proc = subprocess.Popen([rustdesk_exe], startupinfo=si_h)
+        # Wait for this specific PID to appear in psutil, then give it 2s to finish startup writes
+        launched_pid = daemon_proc.pid
+        import psutil as _psutil2
+        deadline_d = time.monotonic() + 10.0
+        while time.monotonic() < deadline_d:
+            if any(p.pid == launched_pid for p in _psutil2.process_iter(['pid'])):
+                break
+            time.sleep(0.2)
+        time.sleep(2.0)  # Let RustDesk finish its startup TOML rewrite before we overwrite
 
         # Write config after startup rewrite
         helper_toml = ""
