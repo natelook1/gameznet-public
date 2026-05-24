@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.10.3"
+VERSION = "1.10.4"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -855,18 +855,6 @@ def api_launch_game():
             steam_exe = winreg.QueryValueEx(key, "SteamExe")[0]
     except Exception:
         steam_exe = r"C:\Program Files (x86)\Steam\steam.exe"
-
-    # Conan Exiles (440900): use steam://connect so Steam handles the session properly,
-    # allowing server favourites and direct in-game connect. The -applaunch path broke
-    # after the Enhanced edition migration.
-    if str(appid) == "440900":
-        try:
-            import os
-            os.startfile(f"steam://connect/{ip}:{port}")
-            return jsonify({"success": True})
-        except Exception as e:
-            log.error("Game launch failed: %s", e)
-            return jsonify({"error": str(e)}), 500
 
     args = [steam_exe, "-applaunch", str(appid)]
 
