@@ -531,6 +531,7 @@ _player_status = ""
 _full_route = False
 _update_required = False
 _updating = False  # Set during update to suppress heartbeat auto-disconnect
+_heartbeat_fail_count = 0
 
 def cleanup_stale_tunnel():
     """
@@ -734,6 +735,7 @@ PersistentKeepalive = 25
 
         with _lock:
             _connected = True
+            _heartbeat_fail_count = 0
         log.info("Connected successfully")
         return jsonify({"success": True, "connected": True})
     except Exception as e:
@@ -2188,11 +2190,10 @@ def auth_proxy(subpath):
 def heartbeat_loop():
     """Send presence heartbeat to the Worker every 3 seconds while connected."""
     import urllib.request
-    global _connected
+    global _connected, _heartbeat_fail_count
     _steam_counter = 10  # start at threshold so first heartbeat polls Steam immediately
     _last_steam_game = None
-    _fail_count = 0
-    _MAX_FAILS = 5  # ~15s of consecutive failures triggers auto-disconnect (handles sleep/wake)
+    _MAX_FAILS = 10  # ~30s of consecutive failures before checking if tunnel is actually dead
     while True:
         time.sleep(3)
         if _connected and os.path.exists(CONFIG_FILE):
@@ -2229,25 +2230,53 @@ def heartbeat_loop():
                     method="POST"
                 )
                 urllib.request.urlopen(req, timeout=5)
-                _fail_count = 0
+                _heartbeat_fail_count = 0
             except Exception as e:
-                _fail_count += 1
-                log.warning("Heartbeat failed (%d/%d): %s", _fail_count, _MAX_FAILS, e)
-                if _fail_count >= _MAX_FAILS and not _updating:
-                    log.warning("Heartbeat failed %d times consecutively — tunnel likely lost after sleep, auto-disconnecting", _MAX_FAILS)
-                    _fail_count = 0
+                _heartbeat_fail_count += 1
+                log.warning("Heartbeat failed (%d/%d): %s", _heartbeat_fail_count, _MAX_FAILS, e)
+                if _heartbeat_fail_count >= _MAX_FAILS and not _updating:
+                    # Before auto-disconnecting, verify the tunnel is actually dead.
+                    # A healthy tunnel with a recent handshake means routing is just
+                    # temporarily unstable (e.g. just connected, transient packet loss).
+                    # Only auto-disconnect if the interface is gone or handshake is stale.
+                    tunnel_dead = True
                     try:
-                        urllib.request.urlopen(
-                            urllib.request.Request(
-                                f"http://127.0.0.1:{PORT}/api/disconnect",
-                                method="POST"
-                            ), timeout=5
-                        )
-                    except Exception as de:
-                        log.warning("Auto-disconnect failed: %s", de)
-                        _connected = False
+                        wg = wg_cli()
+                        if wg:
+                            CREATE_NO_WINDOW = 0x08000000
+                            out = subprocess.check_output(
+                                [wg, "show", TUNNEL_NAME],
+                                text=True, creationflags=CREATE_NO_WINDOW, timeout=5
+                            )
+                            h_match = re.search(r"latest handshake: (.+)", out)
+                            if h_match:
+                                hs = h_match.group(1).strip().lower()
+                                # Handshake within 3 minutes = tunnel is alive
+                                if "second" in hs or ("minute" in hs and not any(
+                                    f"{n} minute" in hs for n in ["4","5","6","7","8","9"]
+                                )):
+                                    tunnel_dead = False
+                                    log.info("Heartbeat failed but tunnel handshake is recent (%s) — routing unstable, not disconnecting", hs)
+                    except Exception as we:
+                        log.debug("wg show during heartbeat check failed: %s", we)
+
+                    if tunnel_dead:
+                        log.warning("Heartbeat failed %d times and tunnel is dead — auto-disconnecting", _MAX_FAILS)
+                        _heartbeat_fail_count = 0
+                        try:
+                            urllib.request.urlopen(
+                                urllib.request.Request(
+                                    f"http://127.0.0.1:{PORT}/api/disconnect",
+                                    method="POST"
+                                ), timeout=5
+                            )
+                        except Exception as de:
+                            log.warning("Auto-disconnect failed: %s", de)
+                            _connected = False
+                    else:
+                        _heartbeat_fail_count = 0
         else:
-            _fail_count = 0
+            _heartbeat_fail_count = 0
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 
