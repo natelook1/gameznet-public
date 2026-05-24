@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.15"
+VERSION = "1.9.16"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1650,14 +1650,6 @@ def api_remote_start_helper():
         ]:
             subprocess.run([rustdesk_exe, "--option", opt_key, opt_val], capture_output=True, creationflags=0x08000000)
 
-        # Kill the bare daemon — --connect will relaunch and read our persisted config
-        subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True, creationflags=0x08000000)
-        kill_deadline2 = time.monotonic() + 3.0
-        while time.monotonic() < kill_deadline2:
-            if not any((p.info.get('name') or '').lower() == 'rustdesk.exe' for p in _psutil.process_iter(['name'])):
-                break
-            time.sleep(0.2)
-
         # Wipe stale peer config so RustDesk doesn't auto-try an old invalid password
         peer_path = os.path.join(config_dir, "peers", f"{target_id}.toml")
         if os.path.exists(peer_path):
@@ -1666,7 +1658,9 @@ def api_remote_start_helper():
             except Exception:
                 pass
 
-        log.info("[RUSTDESK TRACKER] RustDesk2.toml at --connect launch:\n%s", toml2)
+        # Call --connect on the already-running daemon (do NOT kill and relaunch —
+        # relaunching triggers another startup TOML overwrite that reverts our server config)
+        log.info("[RUSTDESK TRACKER] Sending --connect to running daemon...")
         subprocess.Popen([rustdesk_exe, "--connect", target_id, "--password", password])
 
         log.info("[RUSTDESK TRACKER] CLI Connect successfully initiated connection window.")
