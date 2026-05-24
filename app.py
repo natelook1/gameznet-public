@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.26"
+VERSION = "1.9.27"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1424,39 +1424,8 @@ def _do_start_host(requester: str, password: str) -> None:
         ]:
             subprocess.run([rustdesk_exe, "--option", opt_key, opt_val], capture_output=True, creationflags=0x08000000)
 
-        # Write approve_mode after config is written
-        toml_content = ""
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, "r", encoding="utf-8") as f:
-                    toml_content = f.read()
-            except Exception:
-                pass
-        toml_content = re.sub(r"^approve_mode\s*=.*$", "", toml_content, flags=re.MULTILINE)
-        toml_content = re.sub(r"^key_confirmed\s*=.*$", "", toml_content, flags=re.MULTILINE)
-        toml_content = re.sub(r"\[keys_confirmed\][^\[]*", "", toml_content, flags=re.DOTALL)
-        toml_content = "\n".join([line for line in toml_content.splitlines() if line.strip()])
-        toml_content += "\napprove_mode = 'password'\n"
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(toml_content)
-        log.info("[RUSTDESK TRACKER] approve_mode written to RustDesk.toml")
-
         log.info("[RUSTDESK TRACKER] Injecting password via CLI...")
         subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
-
-        # Re-write approve_mode after --password (which may trigger another RustDesk.toml flush)
-        try:
-            toml_content = ""
-            if os.path.exists(config_path):
-                with open(config_path, "r", encoding="utf-8") as f:
-                    toml_content = f.read()
-            toml_content = re.sub(r"^approve_mode\s*=.*$", "", toml_content, flags=re.MULTILINE)
-            toml_content = "\n".join([line for line in toml_content.splitlines() if line.strip()])
-            toml_content += "\napprove_mode = 'password'\n"
-            with open(config_path, "w", encoding="utf-8") as f:
-                f.write(toml_content)
-        except Exception:
-            pass
 
         os.makedirs(os.path.dirname(id_log_path), exist_ok=True)
         if os.path.exists(id_log_path):
