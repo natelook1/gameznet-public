@@ -5008,7 +5008,7 @@
         b1.className = 'srv-modal-port-btn';
         b1.textContent = ipPort + ' ⧉';
         b1.onclick = () => copyText(ipPort, 'IP:Port copied!');
-        const dcCmd = 'directconnect ' + ipPort + ' natewinz';
+        const dcCmd = 'open ' + s.host + ':' + s.port + '?password=natewinz';
         const b2 = document.createElement('button');
         b2.className = 'srv-modal-port-btn';
         b2.style.cssText = 'font-size:10px;font-family:monospace;';
