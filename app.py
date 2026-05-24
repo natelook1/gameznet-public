@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.21"
+VERSION = "1.9.22"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1540,8 +1540,30 @@ def _do_start_host(requester: str, password: str) -> None:
         if not rustdesk_id:
             raise RuntimeError("Could not read RustDesk ID after all retries")
 
-        # Re-inject password and approve_mode now that daemon is fully registered.
-        # RustDesk flushes RustDesk.toml on server connect, clearing both fields.
+        # Wait for hbbs to confirm registration via update_pk — this is the definitive signal
+        # that the host is reachable via the relay before we tell the helper to connect.
+        log.info(f"[RUSTDESK TRACKER] Waiting for hbbs update_pk confirmation for ID {rustdesk_id}...")
+        try:
+            hbbs_confirmed = False
+            hbbs_deadline = time.monotonic() + 15.0
+            while time.monotonic() < hbbs_deadline and not hbbs_confirmed:
+                r = subprocess.run(
+                    ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=3",
+                     "administrator@192.168.30.58",
+                     f"docker logs rustdesk-hbbs --since 30s 2>&1 | grep 'update_pk {rustdesk_id}'"],
+                    capture_output=True, text=True, timeout=8
+                )
+                if rustdesk_id in r.stdout:
+                    hbbs_confirmed = True
+                    log.info("[RUSTDESK TRACKER] hbbs update_pk confirmed — host is registered.")
+                else:
+                    time.sleep(0.5)
+            if not hbbs_confirmed:
+                log.warning("[RUSTDESK TRACKER] hbbs update_pk not seen within 15s — proceeding anyway.")
+        except Exception as e:
+            log.warning("[RUSTDESK TRACKER] hbbs confirmation check failed: %s", e)
+
+        # Re-inject password and approve_mode after server registration is confirmed.
         subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
         try:
             toml_content = ""
@@ -1555,7 +1577,7 @@ def _do_start_host(requester: str, password: str) -> None:
                 f.write(toml_content)
         except Exception:
             pass
-        log.info("[RUSTDESK TRACKER] Password and approve_mode re-injected after ID acquired.")
+        log.info("[RUSTDESK TRACKER] Password and approve_mode re-injected after hbbs confirmation.")
 
         log.info(f"[RUSTDESK TRACKER] RustDesk ID acquired: {rustdesk_id}. Posting /api/remote/ready...")
         _body = json.dumps({"requester": requester, "rustdesk_id": rustdesk_id, "password": password}).encode()
