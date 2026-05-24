@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.32"
+VERSION = "1.9.33"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1442,35 +1442,21 @@ def _do_start_host(requester: str, password: str) -> None:
         if not _wait_for_rustdesk_daemon(max_wait=10.0):
             raise RuntimeError("RustDesk daemon did not appear within 10s")
 
-        # RustDesk overwrites RustDesk2.toml on startup — wait for that write then restore our server config.
-        toml2_deadline = time.monotonic() + 10.0
-        last_size = -1
-        stable_count = 0
-        while time.monotonic() < toml2_deadline:
-            time.sleep(0.3)
+        # Aggressively hold RustDesk2.toml to our server config for 5s after launch.
+        # RustDesk writes its default (public) server on startup — we restore instantly
+        # so it never registers with the public hbbs.
+        toml2_hold_deadline = time.monotonic() + 5.0
+        while time.monotonic() < toml2_hold_deadline:
+            time.sleep(0.05)
             try:
-                size = os.path.getsize(config2_path)
-                if size > 0 and size == last_size:
-                    stable_count += 1
-                    if stable_count >= 2:
-                        break
-                else:
-                    stable_count = 0
-                last_size = size
+                current2 = open(config2_path, "r", encoding="utf-8").read()
+                if "192.168.30.58" not in current2:
+                    with open(config2_path, "w", encoding="utf-8") as f:
+                        f.write(toml2)
+                    log.debug("[RUSTDESK TRACKER] RustDesk2.toml restored to self-hosted server.")
             except OSError:
                 pass
-        with open(config2_path, "w", encoding="utf-8") as f:
-            f.write(toml2)
-        log.info("[RUSTDESK TRACKER] RustDesk2.toml restored after startup write.")
-
-        # Send --option IPC to apply server settings to the running daemon's runtime state.
-        for opt_key, opt_val in [
-            ("custom-rendezvous-server", "192.168.30.58"),
-            ("relay-server", "192.168.30.58"),
-            ("api-server", ""),
-            ("key", "SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0="),
-        ]:
-            subprocess.run([rustdesk_exe, "--option", opt_key, opt_val], capture_output=True, creationflags=0x08000000)
+        log.info("[RUSTDESK TRACKER] RustDesk2.toml hold complete.")
 
         os.makedirs(os.path.dirname(id_log_path), exist_ok=True)
         if os.path.exists(id_log_path):
