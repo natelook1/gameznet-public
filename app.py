@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.28"
+VERSION = "1.9.29"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1293,20 +1293,50 @@ _helper_lock = threading.Lock()
 # Tracks in-progress start-host background threads: requester -> {"status": "running"|"done"|"error", ...}
 _host_start_status: dict = {}
 
+def _rustdesk_encrypt_password(plaintext: str) -> str:
+    """Encrypt a plaintext password the same way RustDesk does for RustDesk.toml storage.
+    RustDesk uses XSalsa20-Poly1305 (libsodium secretbox) with:
+      key  = machine UUID bytes, zero-padded to 32 bytes
+      nonce = 24 zero bytes
+    Output format: '00' + base64(ciphertext)
+    """
+    import nacl.secret
+    import base64
+    import winreg
+    reg = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Cryptography")
+    uuid_str, _ = winreg.QueryValueEx(reg, "MachineGuid")
+    winreg.CloseKey(reg)
+    uuid_bytes = uuid_str.encode("utf-8")
+    keybuf = (uuid_bytes + b"\x00" * 32)[:32]
+    box = nacl.secret.SecretBox(keybuf)
+    nonce = b"\x00" * 24
+    ct = box.encrypt(plaintext.encode("utf-8"), nonce=nonce)
+    return "00" + base64.b64encode(ct[24:]).decode()
+
+
 # Event set by cleanup/session-end to stop the approve_mode guardian thread
 _approve_mode_stop = threading.Event()
 
 
-def _approve_mode_guardian(rustdesk_exe: str, password: str) -> None:
-    """Periodically re-send approve-mode and password via IPC to keep them alive in RustDesk's
-    runtime state. File-based writes race with RustDesk's own flushes; IPC wins."""
+def _approve_mode_guardian(config_path: str, enc_password: str) -> None:
+    """Watch RustDesk.toml and restore password + approve_mode if RustDesk flushes them."""
     _approve_mode_stop.clear()
     log.info("[RUSTDESK TRACKER] approve_mode guardian started.")
-    while not _approve_mode_stop.wait(timeout=2.0):
+    while not _approve_mode_stop.wait(timeout=1.0):
         try:
-            subprocess.run([rustdesk_exe, "--option", "approve-mode", "password"],
-                           capture_output=True, creationflags=0x08000000)
-            log.debug("[RUSTDESK TRACKER] guardian re-sent approve-mode via IPC")
+            with open(config_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            needs_fix = (
+                f"password = '{enc_password}'" not in content or
+                "approve_mode = 'password'" not in content
+            )
+            if needs_fix:
+                content = re.sub(r"^password\s*=.*\n?", "", content, flags=re.MULTILINE)
+                content = re.sub(r"^approve_mode\s*=.*\n?", "", content, flags=re.MULTILINE)
+                content = content.rstrip("\n") + f"\npassword = '{enc_password}'\napprove_mode = 'password'\n"
+                with open(config_path, "w", encoding="utf-8") as f:
+                    f.write(content)
+                log.debug("[RUSTDESK TRACKER] guardian restored password + approve_mode in RustDesk.toml")
         except Exception:
             pass
     log.info("[RUSTDESK TRACKER] approve_mode guardian stopped.")
@@ -1418,36 +1448,24 @@ def _do_start_host(requester: str, password: str) -> None:
             ("relay-server", "192.168.30.58"),
             ("api-server", ""),
             ("key", "SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0="),
-            ("approve-mode", "password"),
         ]:
             subprocess.run([rustdesk_exe, "--option", opt_key, opt_val], capture_output=True, creationflags=0x08000000)
 
-        log.info("[RUSTDESK TRACKER] Injecting password via CLI...")
-        pre_mtime = os.path.getmtime(config_path) if os.path.exists(config_path) else 0
-        subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
-        # Wait for RustDesk to flush RustDesk.toml after --password, then patch approve_mode in
-        flush_deadline = time.monotonic() + 3.0
-        while time.monotonic() < flush_deadline:
-            time.sleep(0.1)
-            try:
-                if os.path.getmtime(config_path) != pre_mtime:
-                    break
-            except OSError:
-                pass
-        # Patch approve_mode into the file immediately after the flush settles
-        for _ in range(3):
-            try:
-                with open(config_path, "r", encoding="utf-8") as f:
-                    toml_content = f.read()
-                toml_content = re.sub(r"^approve_mode\s*=.*\n?", "", toml_content, flags=re.MULTILINE)
-                toml_content = toml_content.rstrip("\n") + "\napprove_mode = 'password'\n"
-                with open(config_path, "w", encoding="utf-8") as f:
-                    f.write(toml_content)
-                log.info("[RUSTDESK TRACKER] approve_mode patched into RustDesk.toml after --password flush.")
-                break
-            except Exception as e:
-                log.warning("[RUSTDESK TRACKER] approve_mode patch attempt failed: %s", e)
-                time.sleep(0.1)
+        # Encrypt password and write directly into RustDesk.toml (avoids --password IPC
+        # which requires elevation when RustDesk is not the installed instance).
+        log.info("[RUSTDESK TRACKER] Encrypting password and writing config directly...")
+        enc_password = _rustdesk_encrypt_password(password)
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                toml_content = f.read()
+        except OSError:
+            toml_content = ""
+        toml_content = re.sub(r"^password\s*=.*\n?", "", toml_content, flags=re.MULTILINE)
+        toml_content = re.sub(r"^approve_mode\s*=.*\n?", "", toml_content, flags=re.MULTILINE)
+        toml_content = toml_content.rstrip("\n") + f"\npassword = '{enc_password}'\napprove_mode = 'password'\n"
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write(toml_content)
+        log.info("[RUSTDESK TRACKER] Password and approve_mode written to RustDesk.toml.")
 
         os.makedirs(os.path.dirname(id_log_path), exist_ok=True)
         if os.path.exists(id_log_path):
@@ -1513,7 +1531,7 @@ def _do_start_host(requester: str, password: str) -> None:
 
         # Snapshot the full RustDesk.toml now (password hashed + approve_mode set) and pass to
         # guardian so it restores the whole file atomically if RustDesk flushes it again.
-        threading.Thread(target=_approve_mode_guardian, args=(rustdesk_exe, password), daemon=True).start()
+        threading.Thread(target=_approve_mode_guardian, args=(config_path, enc_password), daemon=True).start()
 
         _host_start_status[requester] = {"status": "done", "rustdesk_id": rustdesk_id}
         _watch_rustdesk_process(requester)
