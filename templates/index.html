@@ -3940,6 +3940,7 @@
     } catch {}
   }
   setInterval(refreshOnline, 30000);
+  let _remoteStream = null;
   startRemoteStream();
 
   // ── Chat ───────────────────────────────────────────────────────────────────
@@ -6464,7 +6465,6 @@
     }, 3000);
   }
 
-  let _remoteStream = null;
   function startRemoteStream() {
     if (_remoteStream) { _remoteStream.close(); _remoteStream = null; }
     if (!state.name) return;
