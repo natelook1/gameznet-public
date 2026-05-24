@@ -858,22 +858,14 @@ def api_launch_game():
         steam_path = r"C:\Program Files (x86)\Steam"
         steam_exe = os.path.join(steam_path, "steam.exe")
 
-    # Ensure Steam is running before applaunch — if not, start it and wait
-    import psutil
-    steam_running = any(p.name().lower() == "steam.exe" for p in psutil.process_iter(["name"]))
-    if not steam_running:
-        subprocess.Popen([steam_exe])
-        import time; time.sleep(6)
-
-    args = [steam_exe, "-applaunch", str(appid)]
-
-    if str(appid) == "526870":  # Satisfactory
-        args.extend(["+open", f"{ip}:{port}"])
-    else:
-        args.extend(["+connect", f"{ip}:{port}"])
-
+    # Use steam:// URL via Windows shell — this correctly signals the running Steam
+    # instance regardless of how app.py was launched (subprocess.Popen spawns a new
+    # steam.exe child that doesn't IPC to the existing instance).
     try:
-        subprocess.Popen(args)
+        if str(appid) == "526870":  # Satisfactory uses +open
+            os.startfile(f"steam://run/{appid}//+open {ip}:{port}/")
+        else:
+            os.startfile(f"steam://run/{appid}//+connect {ip}:{port}/")
         return jsonify({"success": True})
     except Exception as e:
         log.error("Game launch failed: %s", e)
