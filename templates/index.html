@@ -3947,6 +3947,29 @@
   setInterval(refreshOnline, 30000);
   var _remoteStream = null;
   startRemoteStream();
+  setInterval(async () => {
+    if (!state.name || remoteState.active || document.getElementById('remote-incoming').classList.contains('active')) return;
+    try {
+      const data = await fetch(`/api/remote/pending?name=${encodeURIComponent(state.name)}`).then(r => r.json());
+      const req = data[0];
+      if (req && req.requester && req.requester !== remoteState.requester) {
+        remoteState.requester = req.requester;
+        document.getElementById('remote-incoming-requester').textContent = `${req.requester} needs help`;
+        const msgEl = document.getElementById('remote-incoming-msg');
+        if (req.message) { msgEl.textContent = `"${req.message}"`; msgEl.style.display = 'block'; } else { msgEl.style.display = 'none'; }
+        document.getElementById('remote-incoming').classList.add('active');
+        playNotificationSound();
+        remoteState._countdown = 60;
+        clearInterval(remoteState._toastTimer);
+        remoteState._toastTimer = setInterval(() => {
+          remoteState._countdown--;
+          const el = document.getElementById('remote-incoming-timer');
+          if (el) el.textContent = `${remoteState._countdown}s`;
+          if (remoteState._countdown <= 0) { declineRemoteRequest(); }
+        }, 1000);
+      }
+    } catch {}
+  }, 3000);
 
   // ── Chat ───────────────────────────────────────────────────────────────────
   let chatActiveTarget = 'global';
