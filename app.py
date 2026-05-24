@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.33"
+VERSION = "1.9.34"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1333,7 +1333,12 @@ def _approve_mode_guardian(config_path: str, enc_password: str) -> None:
             if needs_fix:
                 content = re.sub(r"^password\s*=.*\n?", "", content, flags=re.MULTILINE)
                 content = re.sub(r"^approve_mode\s*=.*\n?", "", content, flags=re.MULTILINE)
-                content = content.rstrip("\n") + f"\npassword = '{enc_password}'\napprove_mode = 'password'\n"
+                inject = f"password = '{enc_password}'\napprove_mode = 'password'\n"
+                fs = re.search(r"^\[", content, flags=re.MULTILINE)
+                if fs:
+                    content = content[:fs.start()] + inject + "\n" + content[fs.start():]
+                else:
+                    content = content.rstrip("\n") + "\n" + inject
                 with open(config_path, "w", encoding="utf-8") as f:
                     f.write(content)
                 log.debug("[RUSTDESK TRACKER] guardian restored password + approve_mode in RustDesk.toml")
@@ -1427,7 +1432,13 @@ def _do_start_host(requester: str, password: str) -> None:
             toml_content = ""
         toml_content = re.sub(r"^password\s*=.*\n?", "", toml_content, flags=re.MULTILINE)
         toml_content = re.sub(r"^approve_mode\s*=.*\n?", "", toml_content, flags=re.MULTILINE)
-        toml_content = toml_content.rstrip("\n") + f"\npassword = '{enc_password}'\napprove_mode = 'password'\n"
+        # Insert at top-level (before any [section]) so TOML parses them as global fields
+        first_section = re.search(r"^\[", toml_content, flags=re.MULTILINE)
+        inject = f"password = '{enc_password}'\napprove_mode = 'password'\n"
+        if first_section:
+            toml_content = toml_content[:first_section.start()] + inject + "\n" + toml_content[first_section.start():]
+        else:
+            toml_content = toml_content.rstrip("\n") + "\n" + inject
         with open(config_path, "w", encoding="utf-8") as f:
             f.write(toml_content)
         log.info("[RUSTDESK TRACKER] Password and approve_mode written to RustDesk.toml before launch.")
@@ -1522,7 +1533,12 @@ def _do_start_host(requester: str, password: str) -> None:
                     break
                 current = re.sub(r"^password\s*=.*\n?", "", current, flags=re.MULTILINE)
                 current = re.sub(r"^approve_mode\s*=.*\n?", "", current, flags=re.MULTILINE)
-                current = current.rstrip("\n") + f"\npassword = '{enc_password}'\napprove_mode = 'password'\n"
+                inject = f"password = '{enc_password}'\napprove_mode = 'password'\n"
+                fs = re.search(r"^\[", current, flags=re.MULTILINE)
+                if fs:
+                    current = current[:fs.start()] + inject + "\n" + current[fs.start():]
+                else:
+                    current = current.rstrip("\n") + "\n" + inject
                 with open(config_path, "w", encoding="utf-8") as f:
                     f.write(current)
                 log.info("[RUSTDESK TRACKER] Config restored (attempt %d), re-verifying...", attempt + 1)
