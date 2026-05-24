@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.44"
+VERSION = "1.9.45"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -2010,14 +2010,41 @@ def api_alert():
         return jsonify({"alert": None})
 
 
+_beep_alert_stop = threading.Event()
+_beep_alert_thread = None
+
+def _beep_alert_loop():
+    import winsound
+    while not _beep_alert_stop.is_set():
+        winsound.Beep(880, 200)
+        winsound.Beep(660, 200)
+        _beep_alert_stop.wait(timeout=2.6)
+
+def _start_beep_alert():
+    global _beep_alert_thread
+    _beep_alert_stop.clear()
+    if _beep_alert_thread and _beep_alert_thread.is_alive():
+        return
+    _beep_alert_thread = threading.Thread(target=_beep_alert_loop, daemon=True)
+    _beep_alert_thread.start()
+
+def _stop_beep_alert():
+    _beep_alert_stop.set()
+
+@app.route("/api/remote/stop-beep", methods=["POST"])
+def api_remote_stop_beep():
+    _stop_beep_alert()
+    return jsonify({"ok": True})
+
 @app.route("/api/remote/stream")
 def api_remote_stream():
-    """SSE proxy for real-time remote assistance events."""
+    """SSE proxy for real-time remote assistance events. Triggers winsound beep on pending requests."""
     import urllib.request as _ur
     from flask import Response, stream_with_context
     name = request.args.get("name", "")
     url = f"{_backend_url()}/api/remote/stream?name={_ur.quote(name)}"
     def _generate():
+        buf = b""
         try:
             req = _ur.Request(url, headers={"User-Agent": "GamezNET", "Accept": "text/event-stream"})
             with _ur.urlopen(req, timeout=None) as resp:
@@ -2025,8 +2052,22 @@ def api_remote_stream():
                     chunk = resp.read(1024)
                     if not chunk:
                         break
+                    buf += chunk
+                    # Parse SSE events to trigger local beep without browser autoplay restrictions
+                    while b"\n\n" in buf:
+                        msg_bytes, buf = buf.split(b"\n\n", 1)
+                        if msg_bytes.startswith(b"data:"):
+                            try:
+                                ev = json.loads(msg_bytes[5:].strip())
+                                if ev.get("status") == "pending":
+                                    _start_beep_alert()
+                                elif ev.get("status") in ("none", "accepted", "connected"):
+                                    _stop_beep_alert()
+                            except Exception:
+                                pass
                     yield chunk
         except Exception as e:
+            _stop_beep_alert()
             yield f"data: {json.dumps({'error': str(e)})}\n\n".encode()
     return Response(stream_with_context(_generate()), mimetype="text/event-stream",
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
