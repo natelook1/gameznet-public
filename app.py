@@ -884,12 +884,23 @@ def api_launch_game():
                 game_ini = os.path.join(_sp2, "steamapps", "common", "Conan Exiles",
                                         "ConanSandbox", "Saved", "Config", "Windows", "Game.ini")
             if os.path.exists(game_ini):
-                import configparser, re as _re2
+                import re as _re2
                 with open(game_ini, "r", encoding="utf-8") as _f2:
                     content = _f2.read()
-                content = _re2.sub(r'(?m)^LastConnected=.*$', f'LastConnected={ip}:{port}', content)
-                content = _re2.sub(r'(?m)^AutoConnect=.*$', 'AutoConnect=True', content)
-                content = _re2.sub(r'(?m)^LastPassword=.*$', 'LastPassword=natewinz', content)
+                # Update fields inside [SavedServers] section only
+                def _set_saved(key, val, txt):
+                    # Replace existing key inside [SavedServers]
+                    txt = _re2.sub(
+                        r'(?m)(\[SavedServers\][^\[]*?)^' + key + r'=.*$',
+                        lambda m: m.group(1) + key + '=' + val,
+                        txt, flags=_re2.DOTALL | _re2.MULTILINE)
+                    # If key not present in section, insert after [SavedServers] header
+                    if not _re2.search(r'(?m)^\[SavedServers\].*?' + key + r'=', txt, _re2.DOTALL):
+                        txt = _re2.sub(r'(?m)^\[SavedServers\]', '[SavedServers]\n' + key + '=' + val, txt)
+                    return txt
+                content = _set_saved('LastConnected', f'{ip}:{port}', content)
+                content = _set_saved('LastPassword', 'natewinz', content)
+                content = _set_saved('AutoConnect', 'True', content)
                 with open(game_ini, "w", encoding="utf-8") as _f2:
                     _f2.write(content)
                 log.info("Conan Game.ini updated: LastConnected=%s:%s AutoConnect=True", ip, port)
@@ -914,8 +925,8 @@ def api_launch_game():
             if not _conan_bin:
                 return jsonify({"error": "Conan Exiles not found in any Steam library"}), 500
             _shipping_exe = os.path.join(_conan_bin, "ConanSandbox-Win64-Shipping.exe")
-            log.info("Launching Conan shipping exe: %s", _shipping_exe)
-            subprocess.Popen([_shipping_exe], cwd=_conan_bin)
+            log.info("Launching Conan shipping exe: %s +connect %s:%s", _shipping_exe, ip, port)
+            subprocess.Popen([_shipping_exe, f'+connect {ip}:{port}', '+password', 'natewinz'], cwd=_conan_bin)
         else:
             os.startfile(f"steam://run/{appid}//+connect {ip}:{port}/")
         return jsonify({"success": True})
