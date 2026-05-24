@@ -3939,7 +3939,7 @@
     } catch {}
   }
   setInterval(refreshOnline, 30000);
-  setInterval(pollRemotePending, 5000);
+  setInterval(pollRemotePending, 1500);
 
   // ── Chat ───────────────────────────────────────────────────────────────────
   let chatActiveTarget = 'global';
@@ -4480,6 +4480,13 @@
   }
 
   let _audioCtx = null;
+  // Pre-warm AudioContext on first interaction so notification sounds play instantly
+  document.addEventListener('click', function _warmAudio() {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    document.removeEventListener('click', _warmAudio);
+  }, { once: true });
+
   function chatBeep() {
     if (chatMuted) return;
     try {
