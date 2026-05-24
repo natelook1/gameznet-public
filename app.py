@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.13"
+VERSION = "1.9.14"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1362,28 +1362,48 @@ def _do_start_host(requester: str, password: str) -> None:
         config2_path = os.path.join(config_dir, "RustDesk2.toml")
         config_path = os.path.join(config_dir, "RustDesk.toml")
 
-        # Write RustDesk2.toml (server config) BEFORE launch so the daemon picks it up
-        log.info("[RUSTDESK TRACKER] Writing RustDesk2.toml with self-hosted relay...")
-        toml2 = ""
-        if os.path.exists(config2_path):
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        si.wShowWindow = 6  # SW_MINIMIZE
+        log.info("[RUSTDESK TRACKER] Launching rustdesk.exe minimized...")
+        subprocess.Popen([rustdesk_exe], startupinfo=si)
+
+        if not _wait_for_rustdesk_daemon(max_wait=10.0):
+            raise RuntimeError("RustDesk daemon did not appear within 10s")
+
+        # Poll until RustDesk2.toml stabilizes (RustDesk finished its startup write)
+        toml2_deadline = time.monotonic() + 10.0
+        last_size = -1
+        stable_count = 0
+        while time.monotonic() < toml2_deadline:
+            time.sleep(0.3)
             try:
-                with open(config2_path, "r", encoding="utf-8") as f:
-                    toml2 = f.read()
-            except Exception:
+                size = os.path.getsize(config2_path)
+                if size > 0 and size == last_size:
+                    stable_count += 1
+                    if stable_count >= 2:
+                        break
+                else:
+                    stable_count = 0
+                last_size = size
+            except OSError:
                 pass
-        toml2 = re.sub(r"^rendezvous_server\s*=.*$", "", toml2, flags=re.MULTILINE)
-        toml2 = re.sub(r"\[options\][^\[]*", "", toml2, flags=re.DOTALL)
-        toml2 = "\n".join([line for line in toml2.splitlines() if line.strip()])
-        toml2 += "\nrendezvous_server = '192.168.30.58:21116'\n"
-        toml2 += "\n[options]\n"
-        toml2 += "custom-rendezvous-server = '192.168.30.58'\n"
-        toml2 += "relay-server = '192.168.30.58'\n"
-        toml2 += "api-server = ''\n"
-        toml2 += "key = 'SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0='\n"
+        log.info("[RUSTDESK TRACKER] RustDesk startup write done. Overwriting RustDesk2.toml with self-hosted relay...")
+
+        toml2 = "rendezvous_server = '192.168.30.58:21116'\nnat_type = 1\nserial = 0\n\n[options]\ncustom-rendezvous-server = '192.168.30.58'\nrelay-server = '192.168.30.58'\napi-server = ''\nkey = 'SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0='\n"
         with open(config2_path, "w", encoding="utf-8") as f:
             f.write(toml2)
 
-        # Also write approve_mode to RustDesk.toml
+        # Inject via --option IPC so the running daemon also picks up the new server
+        for opt_key, opt_val in [
+            ("custom-rendezvous-server", "192.168.30.58"),
+            ("relay-server", "192.168.30.58"),
+            ("api-server", ""),
+            ("key", "SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0="),
+        ]:
+            subprocess.run([rustdesk_exe, "--option", opt_key, opt_val], capture_output=True, creationflags=0x08000000)
+
+        # Write approve_mode to RustDesk.toml
         toml_content = ""
         if os.path.exists(config_path):
             try:
@@ -1398,15 +1418,6 @@ def _do_start_host(requester: str, password: str) -> None:
         toml_content += "\napprove_mode = 'password'\n"
         with open(config_path, "w", encoding="utf-8") as f:
             f.write(toml_content)
-
-        si = subprocess.STARTUPINFO()
-        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        si.wShowWindow = 6  # SW_MINIMIZE
-        log.info("[RUSTDESK TRACKER] Launching rustdesk.exe minimized...")
-        subprocess.Popen([rustdesk_exe], startupinfo=si)
-
-        if not _wait_for_rustdesk_daemon(max_wait=10.0):
-            raise RuntimeError("RustDesk daemon did not appear within 10s")
 
         log.info("[RUSTDESK TRACKER] Injecting password via CLI...")
         subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
@@ -1575,34 +1586,71 @@ def api_remote_start_helper():
                 break
             time.sleep(0.2)
 
-        helper_config_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "RustDesk.toml")
-        config_dir = os.path.dirname(helper_config_path)
+        config_dir = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config")
         os.makedirs(config_dir, exist_ok=True)
         config2_path = os.path.join(config_dir, "RustDesk2.toml")
 
-        # Write RustDesk2.toml (the actual server config file) with our self-hosted relay.
-        # Do NOT launch a bare daemon first — RustDesk rewrites this file on every startup,
-        # so we write it just before --connect and let --connect's own startup read it fresh.
-        log.info("[RUSTDESK TRACKER] Writing RustDesk2.toml with self-hosted relay (helper)...")
+        # Launch bare daemon so RustDesk performs its startup TOML rewrite first.
+        # We must wait until RustDesk finishes writing before we overwrite.
+        log.info("[RUSTDESK TRACKER] Launching bare daemon to trigger startup TOML write...")
+        si_h = subprocess.STARTUPINFO()
+        si_h.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        si_h.wShowWindow = 6
+        subprocess.Popen([rustdesk_exe], startupinfo=si_h)
+
+        # Poll until RustDesk2.toml has content (i.e. RustDesk finished its startup write)
+        import psutil as _psutil
+        toml2_deadline = time.monotonic() + 10.0
+        last_size = -1
+        stable_count = 0
+        while time.monotonic() < toml2_deadline:
+            time.sleep(0.3)
+            try:
+                size = os.path.getsize(config2_path)
+                if size > 0 and size == last_size:
+                    stable_count += 1
+                    if stable_count >= 2:  # stable for 0.6s — write is done
+                        break
+                else:
+                    stable_count = 0
+                last_size = size
+            except OSError:
+                pass
+        log.info("[RUSTDESK TRACKER] RustDesk startup write done. Overwriting with self-hosted relay...")
+
+        # Now overwrite with our server settings
         toml2 = "rendezvous_server = '192.168.30.58:21116'\nnat_type = 1\nserial = 0\n\n[options]\ncustom-rendezvous-server = '192.168.30.58'\nrelay-server = '192.168.30.58'\napi-server = ''\nkey = 'SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0='\n"
         with open(config2_path, "w", encoding="utf-8") as f:
             f.write(toml2)
-        log.info("[RUSTDESK TRACKER] RustDesk2.toml written:\n%s", toml2)
+        log.info("[RUSTDESK TRACKER] RustDesk2.toml overwritten:\n%s", toml2)
+
+        # Inject via --option IPC so settings are also applied to the running daemon
+        log.info("[RUSTDESK TRACKER] Injecting server options via --option IPC...")
+        for opt_key, opt_val in [
+            ("custom-rendezvous-server", "192.168.30.58"),
+            ("relay-server", "192.168.30.58"),
+            ("api-server", ""),
+            ("key", "SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0="),
+        ]:
+            subprocess.run([rustdesk_exe, "--option", opt_key, opt_val], capture_output=True, creationflags=0x08000000)
+
+        # Kill the bare daemon — --connect will relaunch and read our persisted config
+        subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True, creationflags=0x08000000)
+        kill_deadline2 = time.monotonic() + 3.0
+        while time.monotonic() < kill_deadline2:
+            if not any((p.info.get('name') or '').lower() == 'rustdesk.exe' for p in _psutil.process_iter(['name'])):
+                break
+            time.sleep(0.2)
 
         # Wipe stale peer config so RustDesk doesn't auto-try an old invalid password
-        peer_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "peers", f"{target_id}.toml")
+        peer_path = os.path.join(config_dir, "peers", f"{target_id}.toml")
         if os.path.exists(peer_path):
             try:
                 os.remove(peer_path)
             except Exception:
                 pass
 
-        try:
-            with open(config2_path, "r", encoding="utf-8") as f:
-                log.info("[RUSTDESK TRACKER] RustDesk2.toml at --connect launch:\n%s", f.read())
-        except Exception as _e:
-            log.warning("[RUSTDESK TRACKER] Could not read RustDesk2.toml before --connect: %s", _e)
-
+        log.info("[RUSTDESK TRACKER] RustDesk2.toml at --connect launch:\n%s", toml2)
         subprocess.Popen([rustdesk_exe, "--connect", target_id, "--password", password])
 
         log.info("[RUSTDESK TRACKER] CLI Connect successfully initiated connection window.")
