@@ -863,8 +863,36 @@ def api_launch_game():
     try:
         if str(appid) == "526870":  # Satisfactory uses +open
             os.startfile(f"steam://run/{appid}//+open {ip}:{port}/")
-        elif str(appid) == "440900":  # Conan Exiles Enhanced — args swallowed by launcher
-            os.startfile(f"steam://run/{appid}")
+        elif str(appid) == "440900":  # Conan Exiles Enhanced — bypass Funcom launcher
+            import psutil, time
+            steam_running = any(p.name().lower() == "steam.exe" for p in psutil.process_iter(["name"]))
+            if not steam_running:
+                os.startfile("steam://run/440900")
+                time.sleep(6)
+            # Launch shipping exe directly — avoids the Funcom launcher intermediary
+            import winreg as _wr
+            try:
+                with _wr.OpenKey(_wr.HKEY_CURRENT_USER, r"Software\Valve\Steam") as _k:
+                    _sp = os.path.dirname(_wr.QueryValueEx(_k, "SteamExe")[0])
+            except Exception:
+                _sp = r"C:\Program Files (x86)\Steam"
+            conan_bin = os.path.join(_sp, "steamapps", "common", "Conan Exiles",
+                                     "ConanSandbox", "Binaries", "Win64")
+            # Search all library folders
+            vdf = os.path.join(_sp, "steamapps", "libraryfolders.vdf")
+            if os.path.exists(vdf):
+                import re as _re
+                with open(vdf, "r", encoding="utf-8") as _f:
+                    for _p in _re.findall(r'"path"\s+"([^"]+)"', _f.read()):
+                        _candidate = os.path.join(_p, "steamapps", "common", "Conan Exiles",
+                                                  "ConanSandbox", "Binaries", "Win64")
+                        if os.path.exists(_candidate):
+                            conan_bin = _candidate
+                            break
+            shipping_exe = os.path.join(conan_bin, "ConanSandbox-Win64-Shipping.exe")
+            if not os.path.exists(shipping_exe):
+                return jsonify({"error": f"Conan exe not found: {shipping_exe}"}), 500
+            subprocess.Popen([shipping_exe, f"+connect {ip}:{port}"], cwd=conan_bin)
         else:
             os.startfile(f"steam://run/{appid}//+connect {ip}:{port}/")
         return jsonify({"success": True})
