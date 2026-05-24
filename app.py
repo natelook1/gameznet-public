@@ -858,6 +858,13 @@ def api_launch_game():
         steam_path = r"C:\Program Files (x86)\Steam"
         steam_exe = os.path.join(steam_path, "steam.exe")
 
+    # Ensure Steam is running before applaunch — if not, start it and wait
+    import psutil
+    steam_running = any(p.name().lower() == "steam.exe" for p in psutil.process_iter(["name"]))
+    if not steam_running:
+        subprocess.Popen([steam_exe])
+        import time; time.sleep(6)
+
     args = [steam_exe, "-applaunch", str(appid)]
 
     if str(appid) == "526870":  # Satisfactory
@@ -866,8 +873,7 @@ def api_launch_game():
         args.extend(["+connect", f"{ip}:{port}"])
 
     try:
-        # CREATE_NO_WINDOW to prevent a brief command prompt flash
-        subprocess.Popen(args, creationflags=0x08000000)
+        subprocess.Popen(args)
         return jsonify({"success": True})
     except Exception as e:
         log.error("Game launch failed: %s", e)
