@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.10.0"
+VERSION = "1.10.1"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -2185,8 +2185,11 @@ def auth_proxy(subpath):
 def heartbeat_loop():
     """Send presence heartbeat to the Worker every 3 seconds while connected."""
     import urllib.request
+    global _connected
     _steam_counter = 10  # start at threshold so first heartbeat polls Steam immediately
     _last_steam_game = None
+    _fail_count = 0
+    _MAX_FAILS = 5  # ~15s of consecutive failures triggers auto-disconnect (handles sleep/wake)
     while True:
         time.sleep(3)
         if _connected and os.path.exists(CONFIG_FILE):
@@ -2223,8 +2226,25 @@ def heartbeat_loop():
                     method="POST"
                 )
                 urllib.request.urlopen(req, timeout=5)
+                _fail_count = 0
             except Exception as e:
-                log.warning("Heartbeat failed: %s", e)
+                _fail_count += 1
+                log.warning("Heartbeat failed (%d/%d): %s", _fail_count, _MAX_FAILS, e)
+                if _fail_count >= _MAX_FAILS:
+                    log.warning("Heartbeat failed %d times consecutively — tunnel likely lost after sleep, auto-disconnecting", _MAX_FAILS)
+                    _fail_count = 0
+                    try:
+                        urllib.request.urlopen(
+                            urllib.request.Request(
+                                f"http://127.0.0.1:{PORT}/api/disconnect",
+                                method="POST"
+                            ), timeout=5
+                        )
+                    except Exception as de:
+                        log.warning("Auto-disconnect failed: %s", de)
+                        _connected = False
+        else:
+            _fail_count = 0
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 
@@ -2332,6 +2352,20 @@ def run_tray(flask_thread):
                 pass
             refresh_icon()
 
+    def on_connect(icon, item):
+        if not _connected:
+            try:
+                import urllib.request
+                urllib.request.urlopen(
+                    urllib.request.Request(
+                        f"http://127.0.0.1:{PORT}/api/connect",
+                        method="POST"
+                    ), timeout=15
+                )
+            except Exception:
+                pass
+            refresh_icon()
+
     def on_exit(icon, item):
         cleanup_tunnel()
         icon.stop()
@@ -2343,7 +2377,8 @@ def run_tray(flask_thread):
             pystray.MenuItem(status, None, enabled=False),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Open GamezNET", on_open, default=True),
-            pystray.MenuItem("Disconnect", on_disconnect),
+            pystray.MenuItem("Connect", on_connect, visible=lambda item: not _connected),
+            pystray.MenuItem("Disconnect", on_disconnect, visible=lambda item: _connected),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Exit", on_exit),
         )
