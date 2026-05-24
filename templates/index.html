@@ -3516,9 +3516,14 @@
 
   // ── Connect / Disconnect ───────────────────────────────────────────────────
   async function toggleConnect() {
-    // Initialize and resume audio context to allow notification sounds
+    // Unlock AudioContext with a silent buffer — must happen inside a user gesture
     if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    try {
+      const buf = _audioCtx.createBuffer(1, 1, 22050);
+      const src = _audioCtx.createBufferSource();
+      src.buffer = buf; src.connect(_audioCtx.destination); src.start();
+    } catch {};
     
     if (state.busy) return;
     
