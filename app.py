@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.17"
+VERSION = "1.9.18"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1491,9 +1491,22 @@ def _do_start_host(requester: str, password: str) -> None:
         if not rustdesk_id:
             raise RuntimeError("Could not read RustDesk ID after all retries")
 
-        # Re-inject password now that daemon is fully registered (server reconnect may reset it)
+        # Re-inject password and approve_mode now that daemon is fully registered.
+        # RustDesk flushes RustDesk.toml on server connect, clearing both fields.
         subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
-        log.info("[RUSTDESK TRACKER] Password re-injected after ID acquired.")
+        try:
+            toml_content = ""
+            if os.path.exists(config_path):
+                with open(config_path, "r", encoding="utf-8") as f:
+                    toml_content = f.read()
+            toml_content = re.sub(r"^approve_mode\s*=.*$", "", toml_content, flags=re.MULTILINE)
+            toml_content = "\n".join([line for line in toml_content.splitlines() if line.strip()])
+            toml_content += "\napprove_mode = 'password'\n"
+            with open(config_path, "w", encoding="utf-8") as f:
+                f.write(toml_content)
+        except Exception:
+            pass
+        log.info("[RUSTDESK TRACKER] Password and approve_mode re-injected after ID acquired.")
 
         log.info(f"[RUSTDESK TRACKER] RustDesk ID acquired: {rustdesk_id}. Posting /api/remote/ready...")
         _body = json.dumps({"requester": requester, "rustdesk_id": rustdesk_id, "password": password}).encode()
