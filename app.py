@@ -852,9 +852,40 @@ def api_launch_game():
     try:
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam") as key:
-            steam_exe = winreg.QueryValueEx(key, "SteamExe")[0]
+            steam_path = os.path.dirname(winreg.QueryValueEx(key, "SteamExe")[0])
+            steam_exe = os.path.join(steam_path, "steam.exe")
     except Exception:
-        steam_exe = r"C:\Program Files (x86)\Steam\steam.exe"
+        steam_path = r"C:\Program Files (x86)\Steam"
+        steam_exe = os.path.join(steam_path, "steam.exe")
+
+    # Conan Exiles Enhanced: the Funcom launcher swallows +connect args, so invoke
+    # the BattlEye launcher directly. Search all Steam library folders.
+    if str(appid) == "440900":
+        conan_bin_rel = os.path.join("steamapps", "common", "Conan Exiles",
+                                     "ConanSandbox", "Binaries", "Win64")
+        library_paths = [steam_path]
+        vdf = os.path.join(steam_path, "steamapps", "libraryfolders.vdf")
+        if os.path.exists(vdf):
+            import re
+            with open(vdf, "r", encoding="utf-8") as f:
+                library_paths += re.findall(r'"path"\s+"([^"]+)"', f.read())
+        steamapps = next(
+            (os.path.join(p, conan_bin_rel) for p in library_paths
+             if os.path.exists(os.path.join(p, conan_bin_rel))),
+            None
+        )
+        if not steamapps:
+            return jsonify({"error": "Conan Exiles not found in any Steam library"}), 500
+        be_exe = os.path.join(steamapps, "ConanSandbox_BE.exe")
+        if not os.path.exists(be_exe):
+            return jsonify({"error": f"Conan executable not found: {be_exe}"}), 500
+        args = [be_exe, "+connect", f"{ip}:{port}"]
+        try:
+            subprocess.Popen(args, cwd=steamapps, creationflags=0x08000000)
+            return jsonify({"success": True})
+        except Exception as e:
+            log.error("Game launch failed: %s", e)
+            return jsonify({"error": str(e)}), 500
 
     args = [steam_exe, "-applaunch", str(appid)]
 
