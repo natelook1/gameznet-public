@@ -5008,15 +5008,23 @@
         b1.className = 'srv-modal-port-btn';
         b1.textContent = ipPort + ' ⧉';
         b1.onclick = () => copyText(ipPort, 'IP:Port copied!');
+        const dcCmd = 'open ' + ipPort + '?password=natewinz';
+        const b2 = document.createElement('button');
+        b2.className = 'srv-modal-port-btn';
+        b2.style.cssText = 'font-size:10px;font-family:monospace;';
+        b2.textContent = dcCmd + ' ⧉';
+        b2.onclick = () => copyText(dcCmd, 'Direct-connect command copied!');
         const details = document.createElement('details');
         details.style.cssText = 'width:100%;margin-top:4px;';
-        details.innerHTML = '<summary style="font-size:10px;color:var(--text-dim);cursor:pointer;letter-spacing:1px;text-transform:uppercase;">How to connect ▾</summary>'
+        details.innerHTML = '<summary style="font-size:10px;color:var(--text-dim);cursor:pointer;letter-spacing:1px;text-transform:uppercase;">How to connect manually ▾</summary>'
           + '<div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.7;padding:6px 8px;background:var(--bg2);border-radius:3px;">'
-          + 'Click <b style="color:var(--text);">LAUNCH GAME</b> — the game will auto-connect on startup.<br>'
-          + 'If prompted: Play Online → Direct Connect → <code>' + ipPort + '</code> / password: <code>natewinz</code>'
+          + '1. Click <b style="color:var(--text);">LAUNCH GAME</b> — auto-connects on startup.<br>'
+          + '2. If that fails: press <code>~</code> in-game to open the console, then run:<br>'
+          + '<code style="display:block;margin-top:4px;padding:3px 5px;background:var(--bg3,#111);border-radius:2px;">' + dcCmd + '</code>'
           + '</div>';
         ports.innerHTML = '';
         ports.appendChild(b1);
+        ports.appendChild(b2);
         ports.appendChild(details);
       } else {
         ports.innerHTML = `<button class="srv-modal-port-btn" onclick="copyText('${s.host}:${s.port}','IP:Port copied!')">:${s.port} ⧉</button>`;

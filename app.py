@@ -893,7 +893,29 @@ def api_launch_game():
                 with open(game_ini, "w", encoding="utf-8") as _f2:
                     _f2.write(content)
                 log.info("Conan Game.ini updated: LastConnected=%s:%s AutoConnect=True", ip, port)
-            os.startfile("steam://run/440900")
+            # Find shipping exe — Funcom Launcher swallows all args so we skip it entirely
+            try:
+                import winreg as _wr3
+                with _wr3.OpenKey(_wr3.HKEY_CURRENT_USER, r"Software\Valve\Steam") as _k3:
+                    _sp3 = os.path.dirname(_wr3.QueryValueEx(_k3, "SteamExe")[0])
+            except Exception:
+                _sp3 = r"C:\Program Files (x86)\Steam"
+            _conan_rel = os.path.join("steamapps", "common", "Conan Exiles",
+                                      "ConanSandbox", "Binaries", "Win64")
+            _lib_paths = [_sp3]
+            _vdf_path = os.path.join(_sp3, "steamapps", "libraryfolders.vdf")
+            if os.path.exists(_vdf_path):
+                import re as _re3
+                with open(_vdf_path, "r", encoding="utf-8") as _vf:
+                    _lib_paths += _re3.findall(r'"path"\s+"([^"]+)"', _vf.read())
+            _conan_bin = next(
+                (os.path.join(p, _conan_rel) for p in _lib_paths
+                 if os.path.exists(os.path.join(p, _conan_rel))), None)
+            if not _conan_bin:
+                return jsonify({"error": "Conan Exiles not found in any Steam library"}), 500
+            _shipping_exe = os.path.join(_conan_bin, "ConanSandbox-Win64-Shipping.exe")
+            log.info("Launching Conan shipping exe: %s", _shipping_exe)
+            subprocess.Popen([_shipping_exe], cwd=_conan_bin)
         else:
             os.startfile(f"steam://run/{appid}//+connect {ip}:{port}/")
         return jsonify({"success": True})
