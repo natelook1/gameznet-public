@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.36"
+VERSION = "1.9.37"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1987,6 +1987,28 @@ def api_alert():
     except Exception as e:
         log.debug("api_alert proxy failed: %s", e)
         return jsonify({"alert": None})
+
+
+@app.route("/api/remote/stream")
+def api_remote_stream():
+    """SSE proxy for real-time remote assistance events."""
+    import urllib.request as _ur
+    from flask import Response, stream_with_context
+    name = request.args.get("name", "")
+    url = f"{_backend_url()}/api/remote/stream?name={_ur.quote(name)}"
+    def _generate():
+        try:
+            req = _ur.Request(url, headers={"User-Agent": "GamezNET", "Accept": "text/event-stream"})
+            with _ur.urlopen(req, timeout=None) as resp:
+                while True:
+                    chunk = resp.read(1024)
+                    if not chunk:
+                        break
+                    yield chunk
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n".encode()
+    return Response(stream_with_context(_generate()), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @app.route("/api/chat/stream")
