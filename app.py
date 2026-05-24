@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.24"
+VERSION = "1.9.25"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1297,36 +1297,22 @@ _host_start_status: dict = {}
 _approve_mode_stop = threading.Event()
 
 
-def _approve_mode_guardian(config_path: str, password: str, rustdesk_exe: str) -> None:
-    """Keep approve_mode='password' and password alive until cleanup stops it.
-    RustDesk flushes RustDesk.toml on server connect AND on incoming connection."""
+def _approve_mode_guardian(config_path: str, good_state: str) -> None:
+    """Restore the full known-good RustDesk.toml whenever RustDesk flushes it.
+    good_state is a snapshot taken after password and approve_mode were confirmed set."""
     _approve_mode_stop.clear()
     log.info("[RUSTDESK TRACKER] approve_mode guardian started.")
-    _last_pw_inject = 0.0
     while not _approve_mode_stop.wait(timeout=0.5):
         try:
-            content = ""
+            current = ""
             if os.path.exists(config_path):
                 with open(config_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-            needs_write = False
-            if "approve_mode = 'password'" not in content:
-                content = re.sub(r"^approve_mode\s*=.*$", "", content, flags=re.MULTILINE)
-                content = "\n".join(line for line in content.splitlines() if line.strip())
-                content += "\napprove_mode = 'password'\n"
-                needs_write = True
-            # Re-inject password only if cleared AND enough time has passed since last inject
-            now = time.monotonic()
-            if re.search(r"^password\s*=\s*''", content, flags=re.MULTILINE) and (now - _last_pw_inject) > 2.0:
-                subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
-                _last_pw_inject = now
-                log.debug("[RUSTDESK TRACKER] guardian re-injected password via IPC")
-                time.sleep(1.0)  # give RustDesk time to flush the new password before we re-read
-                needs_write = False  # skip file write this cycle; IPC will update the file
-            if needs_write:
+                    current = f.read()
+            # If RustDesk flushed the file and lost our settings, restore the whole thing
+            if "approve_mode = 'password'" not in current or re.search(r"^password\s*=\s*''", current, flags=re.MULTILINE):
                 with open(config_path, "w", encoding="utf-8") as f:
-                    f.write(content)
-                log.debug("[RUSTDESK TRACKER] guardian re-wrote approve_mode")
+                    f.write(good_state)
+                log.debug("[RUSTDESK TRACKER] guardian restored full RustDesk.toml snapshot")
         except Exception:
             pass
     log.info("[RUSTDESK TRACKER] approve_mode guardian stopped.")
@@ -1554,9 +1540,14 @@ def _do_start_host(requester: str, password: str) -> None:
         with _ur2.urlopen(_req, timeout=5) as resp:
             log.info(f"[RUSTDESK TRACKER] /api/remote/ready post success: {resp.status}")
 
-        # Start guardian to keep approve_mode='password' alive while waiting for helper to connect.
-        # RustDesk flushes RustDesk.toml again on incoming connection, clearing approve_mode.
-        threading.Thread(target=_approve_mode_guardian, args=(config_path, password, rustdesk_exe), daemon=True).start()
+        # Snapshot the full RustDesk.toml now (password hashed + approve_mode set) and pass to
+        # guardian so it restores the whole file atomically if RustDesk flushes it again.
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                good_state = f.read()
+        except Exception:
+            good_state = ""
+        threading.Thread(target=_approve_mode_guardian, args=(config_path, good_state), daemon=True).start()
 
         _host_start_status[requester] = {"status": "done", "rustdesk_id": rustdesk_id}
         _watch_rustdesk_process(requester)
