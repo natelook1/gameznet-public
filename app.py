@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.41"
+VERSION = "1.9.42"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1746,15 +1746,19 @@ def api_remote_cleanup():
     log.info("[RUSTDESK TRACKER] Local cleanup triggered. Killing processes...")
     _approve_mode_stop.set()  # Stop the approve_mode guardian if running
     config_path = os.path.join(os.path.expanduser("~"), "AppData", "Roaming", "RustDesk", "config", "RustDesk.toml")
+    killed = []
     try:
         import psutil
-        for proc in psutil.process_iter(['name']):
+        for proc in psutil.process_iter(['name', 'pid']):
             if (proc.info.get('name') or '').lower() == 'rustdesk.exe':
                 proc.kill()
-    except Exception:
-        pass
+                killed.append(proc.info.get('pid'))
+    except Exception as e:
+        log.warning("[RUSTDESK TRACKER] psutil kill error: %s", e)
+    log.info("[RUSTDESK TRACKER] psutil killed PIDs: %s", killed)
     # Fallback: taskkill catches any processes psutil missed
-    subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True, creationflags=0x08000000)
+    result = subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True, creationflags=0x08000000)
+    log.info("[RUSTDESK TRACKER] taskkill exit=%d stdout=%s stderr=%s", result.returncode, result.stdout.decode(errors='replace').strip(), result.stderr.decode(errors='replace').strip())
     # Clear password from config
     try:
         if os.path.exists(config_path):

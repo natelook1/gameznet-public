@@ -1969,12 +1969,17 @@
     .rp-cancel-btn { padding:5px 16px; background:none; border:1px solid var(--danger); border-radius:3px; color:var(--danger); font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:1px; cursor:pointer; transition:all 0.15s; }
     .rp-cancel-btn:hover { background:var(--danger); color:white; }
     /* Incoming request toast */
+    @keyframes remote-pulse {
+      0%   { box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 0 0 rgba(0,200,255,0.6); border-color: var(--accent); }
+      50%  { box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 0 10px rgba(0,200,255,0); border-color: #00e5ff; }
+      100% { box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 0 0 rgba(0,200,255,0); border-color: var(--accent); }
+    }
     #remote-incoming {
       display:none; position:fixed; bottom:24px; right:24px; z-index:2000;
-      background:var(--bg2); border:1px solid var(--accent); border-radius:4px;
+      background:var(--bg2); border:2px solid var(--accent); border-radius:4px;
       padding:16px 18px; min-width:280px; box-shadow:0 4px 24px rgba(0,0,0,0.5);
     }
-    #remote-incoming.active { display:block; }
+    #remote-incoming.active { display:block; animation: remote-pulse 1.2s ease-in-out infinite; }
     .remote-incoming-title { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--accent); letter-spacing:1px; margin-bottom:6px; }
     .remote-incoming-requester { font-size:14px; color:var(--text); font-weight:bold; margin-bottom:4px; }
     .remote-incoming-msg { font-size:12px; color:var(--text-dim); font-style:italic; margin-bottom:12px; padding:6px 8px; background:var(--bg); border-left:2px solid var(--accent); border-radius:0 3px 3px 0; }
@@ -3958,7 +3963,7 @@
         const msgEl = document.getElementById('remote-incoming-msg');
         if (req.message) { msgEl.textContent = `"${req.message}"`; msgEl.style.display = 'block'; } else { msgEl.style.display = 'none'; }
         document.getElementById('remote-incoming').classList.add('active');
-        playNotificationSound();
+        _startRemoteAlert(req.requester);
         remoteState._countdown = 60;
         clearInterval(remoteState._toastTimer);
         remoteState._toastTimer = setInterval(() => {
@@ -4555,6 +4560,44 @@
       const play = () => { beep(660, 0); beep(880, 0.18); };
       if (_audioCtx.state === 'suspended') _audioCtx.resume().then(play).catch(() => {}); else play();
     } catch(e) {}
+  }
+
+  let _remoteAlertTimer = null;
+  let _remoteAlertTitleTimer = null;
+  const _origTitle = document.title;
+
+  function _startRemoteAlert(requesterName) {
+    _stopRemoteAlert();
+    // System notification (bypasses AudioContext restriction)
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification('🛟 Help Request', { body: `${requesterName} needs your help`, icon: '/static/gameznet.ico', tag: 'remote-help', requireInteraction: true });
+      } else if (Notification.permission === 'default') {
+        Notification.requestPermission().then(p => {
+          if (p === 'granted') new Notification('🛟 Help Request', { body: `${requesterName} needs your help`, icon: '/static/gameznet.ico', tag: 'remote-help', requireInteraction: true });
+        });
+      }
+    }
+    // Tab title flash
+    let _titleFlip = false;
+    _remoteAlertTitleTimer = setInterval(() => {
+      document.title = _titleFlip ? `🛟 HELP REQUEST` : _origTitle;
+      _titleFlip = !_titleFlip;
+    }, 800);
+    // Looping beep (plays every 3s, stops when dismissed)
+    const _loopBeep = () => {
+      if (!_remoteAlertTimer) return;
+      playNotificationSound();
+      _remoteAlertTimer = setTimeout(_loopBeep, 3000);
+    };
+    playNotificationSound();
+    _remoteAlertTimer = setTimeout(_loopBeep, 3000);
+  }
+
+  function _stopRemoteAlert() {
+    clearTimeout(_remoteAlertTimer); _remoteAlertTimer = null;
+    clearInterval(_remoteAlertTitleTimer); _remoteAlertTitleTimer = null;
+    document.title = _origTitle;
   }
 
   let _chatStream = null;
@@ -6507,7 +6550,7 @@
           const msgEl = document.getElementById('remote-incoming-msg');
           if (ev.message) { msgEl.textContent = `"${ev.message}"`; msgEl.style.display = 'block'; } else { msgEl.style.display = 'none'; }
           document.getElementById('remote-incoming').classList.add('active');
-          playNotificationSound();
+          _startRemoteAlert(ev.requester);
           remoteState._countdown = 60;
           clearInterval(remoteState._toastTimer);
           remoteState._toastTimer = setInterval(() => {
@@ -6531,6 +6574,7 @@
   }
 
   async function acceptRemoteRequest() {
+    _stopRemoteAlert();
     clearInterval(remoteState._toastTimer);
     document.getElementById('remote-incoming').classList.remove('active');
     const target = remoteState.requester;
@@ -6590,6 +6634,7 @@
   }
 
   function declineRemoteRequest() {
+    _stopRemoteAlert();
     clearInterval(remoteState._toastTimer);
     document.getElementById('remote-incoming').classList.remove('active');
     fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
@@ -6599,6 +6644,7 @@
   async function endRemoteSession() {
     if (remoteState.ended) return;
     remoteState.ended = true;
+    _stopRemoteAlert();
     clearInterval(remoteState.pollTimer);
     clearInterval(remoteState._countdownTimer);
     clearInterval(remoteState._toastTimer);
