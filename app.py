@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.42"
+VERSION = "1.9.43"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1264,20 +1264,34 @@ def _watch_rustdesk_process(name_to_end):
             # Give RustDesk time to fully launch and spawn its child processes
             time.sleep(5)
 
-            # Poll for ANY running rustdesk.exe process
-            while True:
-                is_running = False
-                for proc in psutil.process_iter(['name']):
-                    if (proc.info.get('name') or '').lower() == 'rustdesk.exe':
-                        is_running = True
-                        break
-                
-                if not is_running:
-                    break  # RustDesk has been completely closed
-                
+            # Wait until we see at least 2 rustdesk.exe processes (base + connection window)
+            # then watch for the count to drop — when connection window closes, kill the remaining base window
+            peak_count = 0
+            for _ in range(20):  # wait up to 60s for multi-process state
+                procs = [p for p in psutil.process_iter(['name']) if (p.info.get('name') or '').lower() == 'rustdesk.exe']
+                peak_count = max(peak_count, len(procs))
+                if peak_count >= 2:
+                    break
                 time.sleep(3)
-            
-            log.info(f"[RUSTDESK TRACKER] RustDesk completely exited. Ending session for '{name_to_end}'...")
+
+            log.info(f"[RUSTDESK TRACKER] Peak rustdesk.exe count: {peak_count}. Now watching for session close...")
+
+            # Poll until count drops below peak (connection window closed), then kill all remaining
+            while True:
+                procs = [p for p in psutil.process_iter(['name']) if (p.info.get('name') or '').lower() == 'rustdesk.exe']
+                count = len(procs)
+                if count == 0:
+                    break  # already fully gone
+                if peak_count >= 2 and count < peak_count:
+                    # Connection window closed — kill the remaining base window(s)
+                    log.info(f"[RUSTDESK TRACKER] Count dropped {peak_count}->{count}. Killing remaining rustdesk.exe...")
+                    for p in procs:
+                        try: p.kill()
+                        except Exception: pass
+                    break
+                time.sleep(3)
+
+            log.info(f"[RUSTDESK TRACKER] RustDesk session ended. Ending session for '{name_to_end}'...")
             _body = json.dumps({"name": name_to_end}).encode()
             _req = urllib.request.Request(f"{_backend_url()}/api/remote/end", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
             urllib.request.urlopen(_req, timeout=5)
