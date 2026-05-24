@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.45"
+VERSION = "1.9.46"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1281,7 +1281,7 @@ def _watch_rustdesk_process(name_to_end):
                 procs = [p for p in psutil.process_iter(['name']) if (p.info.get('name') or '').lower() == 'rustdesk.exe']
                 count = len(procs)
                 if count == 0:
-                    break  # already fully gone
+                    break  # fully gone
                 if peak_count >= 2 and count < peak_count:
                     # Connection window closed — kill the remaining base window(s)
                     log.info(f"[RUSTDESK TRACKER] Count dropped {peak_count}->{count}. Killing remaining rustdesk.exe...")
@@ -1289,6 +1289,10 @@ def _watch_rustdesk_process(name_to_end):
                         try: p.kill()
                         except Exception: pass
                     break
+                if peak_count < 2:
+                    # Never saw multi-process state — fall back to waiting for zero
+                    time.sleep(3)
+                    continue
                 time.sleep(3)
 
             log.info(f"[RUSTDESK TRACKER] RustDesk session ended. Ending session for '{name_to_end}'...")
@@ -1787,6 +1791,12 @@ def api_remote_cleanup():
     return jsonify({"success": True})
 
 
+@app.route("/api/remote/stop-beep", methods=["POST"])
+def api_remote_stop_beep():
+    _stop_beep_alert()
+    return jsonify({"ok": True})
+
+
 @app.route("/api/remote/<path:endpoint>", methods=["GET", "POST"])
 def proxy_remote_api(endpoint):
     """
@@ -2030,11 +2040,6 @@ def _start_beep_alert():
 
 def _stop_beep_alert():
     _beep_alert_stop.set()
-
-@app.route("/api/remote/stop-beep", methods=["POST"])
-def api_remote_stop_beep():
-    _stop_beep_alert()
-    return jsonify({"ok": True})
 
 @app.route("/api/remote/stream")
 def api_remote_stream():
