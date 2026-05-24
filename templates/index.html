@@ -471,6 +471,31 @@
       gap: 10px;
       flex-shrink: 0;
     }
+    .telemetry-locked {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 18px 12px;
+      text-align: center;
+      color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1px;
+      flex-shrink: 0;
+    }
+    .online-teaser {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 18px 12px;
+      text-align: center;
+      color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+    .online-teaser .teaser-count { font-size: 22px; color: var(--text); display: block; margin-bottom: 6px; }
+    .srv-chip.locked { opacity: 0.6; cursor: default; pointer-events: none; }
     .tel-card {
       background: rgba(255,255,255,0.02);
       border: 1px solid var(--border);
@@ -2635,7 +2660,7 @@
 
         <div class="net-collapsible">
           <div class="section-label">Telemetry</div>
-          <div class="telemetry-grid">
+          <div class="telemetry-grid" id="telemetry-grid">
             <div class="tel-card">
               <span class="tel-label">Latency</span>
               <span class="tel-val highlight" id="tel-ping">---</span>
@@ -2653,6 +2678,7 @@
               <span class="tel-val" id="tel-tx">0 B</span>
             </div>
           </div>
+          <div class="telemetry-locked" id="telemetry-locked" style="display:none;">○ CONNECT TO VIEW TELEMETRY</div>
         </div>
 
       </div>
@@ -2699,6 +2725,10 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
             <div class="section-label" style="margin-bottom:0;">Who's Online</div>
             <button class="help-icon-btn" id="remote-help-btn" onclick="openRemote()" disabled title="Request remote desktop help from a player">🛟 HELP</button>
+          </div>
+          <div class="online-teaser" id="online-teaser" style="display:none;">
+            <span class="teaser-count" id="online-teaser-count">—</span>
+            PLAYERS ONLINE · CONNECT TO SEE
           </div>
           <div class="online-list" id="online-list-ui">
             <div class="online-empty">○ Checking...</div>
@@ -3281,6 +3311,12 @@
       updateFullRouteBtn();
       updateRemoteHelpBtn(true);
       startRemoteStream();
+      document.getElementById('telemetry-grid').style.display = '';
+      document.getElementById('telemetry-locked').style.display = 'none';
+      document.getElementById('online-teaser').style.display = 'none';
+      document.getElementById('online-list-ui').style.display = '';
+      document.getElementById('schedule-trigger').style.display = state.provisioned ? 'flex' : 'none';
+      document.querySelectorAll('.srv-chip').forEach(c => c.classList.remove('locked'));
     } else if (statusKey === 'connecting') {
       icon.textContent = '◌';
       main.textContent = 'Connecting...';
@@ -3328,7 +3364,25 @@
       setChatEnabled(false);
       updateFullRouteBtn();
       updateRemoteHelpBtn(false);
+      document.getElementById('telemetry-grid').style.display = 'none';
+      document.getElementById('telemetry-locked').style.display = '';
+      document.getElementById('online-list-ui').style.display = 'none';
+      document.getElementById('online-teaser').style.display = '';
+      document.getElementById('schedule-trigger').style.display = 'none';
+      document.querySelectorAll('.srv-chip').forEach(c => c.classList.add('locked'));
+      fetchOnlineTeaser();
     }
+  }
+
+  async function fetchOnlineTeaser() {
+    try {
+      const res = await fetch('/api/online');
+      if (!res.ok) return;
+      const players = await res.json();
+      const count = players.filter(p => !p.mobile && p.online !== false).length;
+      const el = document.getElementById('online-teaser-count');
+      if (el) el.textContent = count;
+    } catch (e) {}
   }
 
   // ── Telemetry ──────────────────────────────────────────────────────────────
@@ -3651,7 +3705,7 @@
     if (_sessionCountdownInterval) { clearInterval(_sessionCountdownInterval); _sessionCountdownInterval = null; }
     if (!session) {
       card.style.display = 'none';
-      trigger.style.display = state.provisioned ? 'flex' : 'none';
+      trigger.style.display = (state.provisioned && state.connected) ? 'flex' : 'none';
       return;
     }
     card.style.display = 'block';
@@ -6836,16 +6890,16 @@
   // ── Column drag reorder ────────────────────────────────────────────────────
   (function initColumnDrag() {
     const cols = Array.from(document.querySelectorAll('#dashboard-section > .col'));
-    // Default order: Steam Social | Network | Your Session
+    // Default order: Your Session | Network | Steam Social
     const DEFAULT_ORDER = { 'col-right': 1, 'col-left': 2, 'col-steam': 3 };
-    const saved = JSON.parse(localStorage.getItem('gz-col-order3') || 'null');
+    const saved = JSON.parse(localStorage.getItem('gz-col-order4') || 'null');
     const order = saved || DEFAULT_ORDER;
     cols.forEach(c => { if (order[c.id] != null) c.style.order = order[c.id]; });
 
     function saveOrder() {
       const map = {};
       cols.forEach(c => { map[c.id] = c.style.order || getComputedStyle(c).order; });
-      localStorage.setItem('gz-col-order3', JSON.stringify(map));
+      localStorage.setItem('gz-col-order4', JSON.stringify(map));
     }
 
     let dragging = null;
