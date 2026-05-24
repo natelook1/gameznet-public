@@ -460,12 +460,6 @@ def update_telemetry():
                 session_timer = 15
             session_timer -= 1
 
-            # 1d. Check Version every ~60 seconds
-            if version_timer <= 0:
-                check_version()
-                version_timer = 30
-            version_timer -= 1
-
         if _connected:
             # 2. Ping Latency (Targeting internal VPN Gateway to prove tunnel works)
             try:
@@ -515,6 +509,12 @@ def update_telemetry():
             _telemetry["received"] = "0 B"
             _telemetry["sent"] = "0 B"
 
+        # Version check runs every ~60s regardless of connection state
+        if version_timer <= 0:
+            check_version()
+            version_timer = 30
+        version_timer -= 1
+
         time.sleep(2)
 
 # ─── Flask App ────────────────────────────────────────────────────────────────
@@ -530,6 +530,7 @@ icon_holder = {"icon": None}
 _player_status = ""
 _full_route = False
 _update_required = False
+_updating = False  # Set during update to suppress heartbeat auto-disconnect
 
 def cleanup_stale_tunnel():
     """
@@ -742,6 +743,8 @@ PersistentKeepalive = 25
 @app.route("/api/disconnect", methods=["POST"])
 def api_disconnect():
     global _connected
+    with _lock:
+        _connected = False  # Stop heartbeat failure counter immediately
     try:
         wg = wg_exe()
         CREATE_NO_WINDOW = 0x08000000
@@ -823,8 +826,6 @@ def api_disconnect():
         except Exception as flush_err:
             log.debug("DNS flush failed: %s", flush_err)
 
-        with _lock:
-            _connected = False
         return jsonify({"success": True, "connected": False})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1867,6 +1868,8 @@ INSTALLER_URL = "https://github.com/natelook1/gameznet-public/releases/latest/do
 def api_update():
     """Update GamezNET. Exe builds download the installer directly; bat/dev builds
     pull the latest source zip first so the new bat can bootstrap the installer."""
+    global _updating
+    _updating = True
     import urllib.request
     import ssl
     import tempfile
@@ -2230,7 +2233,7 @@ def heartbeat_loop():
             except Exception as e:
                 _fail_count += 1
                 log.warning("Heartbeat failed (%d/%d): %s", _fail_count, _MAX_FAILS, e)
-                if _fail_count >= _MAX_FAILS:
+                if _fail_count >= _MAX_FAILS and not _updating:
                     log.warning("Heartbeat failed %d times consecutively — tunnel likely lost after sleep, auto-disconnecting", _MAX_FAILS)
                     _fail_count = 0
                     try:

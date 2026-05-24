@@ -3265,9 +3265,9 @@
       icon.textContent = '⬡';
       main.textContent = 'Connected';
       main.className   = 'status-main connected';
-      sub.textContent  = state.updateRequired ? '⚠ Update available' : (state.clientIp || 'VPN Active');
-      btn.textContent  = state.updateRequired ? 'Update Required' : 'Disconnect';
-      btn.className    = state.updateRequired ? 'connect-btn action-update' : 'connect-btn action-disconnect';
+      sub.textContent  = state.updateRequired ? '⚠ Update available — click version badge to update' : (state.clientIp || 'VPN Active');
+      btn.textContent  = 'Disconnect';
+      btn.className    = 'connect-btn action-disconnect';
       btn.disabled     = false;
       footer.textContent = `ACTIVE · ${state.name.toUpperCase()}`;
       startSessionTimer();
@@ -3531,11 +3531,7 @@
     } catch {};
     
     if (state.busy) return;
-    
-    if (state.updateRequired) {
-      await triggerUpdate();
-      return;
-    }
+
 
     state.busy = true;
 
