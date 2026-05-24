@@ -190,7 +190,7 @@ Players can request remote help directly from other online players — no admin 
 
 When you need help, click **Get Help from a Player** in the Your Session card. Select who you want help from, add an optional message describing the issue, and send the request. The other player gets a sound notification and can accept or decline.
 
-If they accept, a progress modal walks both sides through the connection. A secure remote desktop session is established automatically over the WireGuard VPN using **RustDesk** — a free, open-source remote desktop tool. RustDesk is downloaded on first use and cached locally. The connection is direct and peer-to-peer; no traffic passes through a relay server.
+If they accept, a progress modal walks both sides through the connection. A secure remote desktop session is established automatically over the WireGuard VPN using **RustDesk** — a free, open-source remote desktop tool bundled with GamezNET. No extra software required. The connection is peer-to-peer over the private VPN; no traffic passes through an external relay server.
 
 Either player can cancel at any time using the **CANCEL** button in the modal. When one side ends the session, the other side's modal closes automatically.
 
