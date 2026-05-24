@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.31"
+VERSION = "1.9.32"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1525,6 +1525,26 @@ def _do_start_host(requester: str, password: str) -> None:
         if not rustdesk_id:
             raise RuntimeError("Could not read RustDesk ID after all retries")
 
+        # Ensure password + approve_mode are in the file right now before posting ready.
+        # RustDesk's startup write may have wiped them; restore and verify before Nikki connects.
+        for attempt in range(10):
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    current = f.read()
+                if f"password = '{enc_password}'" in current and "approve_mode = 'password'" in current:
+                    log.info("[RUSTDESK TRACKER] Config verified: password + approve_mode present.")
+                    break
+                current = re.sub(r"^password\s*=.*\n?", "", current, flags=re.MULTILINE)
+                current = re.sub(r"^approve_mode\s*=.*\n?", "", current, flags=re.MULTILINE)
+                current = current.rstrip("\n") + f"\npassword = '{enc_password}'\napprove_mode = 'password'\n"
+                with open(config_path, "w", encoding="utf-8") as f:
+                    f.write(current)
+                log.info("[RUSTDESK TRACKER] Config restored (attempt %d), re-verifying...", attempt + 1)
+                time.sleep(0.3)
+            except Exception as e:
+                log.warning("[RUSTDESK TRACKER] Config verify/restore failed: %s", e)
+                time.sleep(0.3)
+
         # Brief wait for RustDesk to re-register with hbbs after the --option server switch.
         time.sleep(2)
 
@@ -1534,8 +1554,6 @@ def _do_start_host(requester: str, password: str) -> None:
         with _ur2.urlopen(_req, timeout=5) as resp:
             log.info(f"[RUSTDESK TRACKER] /api/remote/ready post success: {resp.status}")
 
-        # Snapshot the full RustDesk.toml now (password hashed + approve_mode set) and pass to
-        # guardian so it restores the whole file atomically if RustDesk flushes it again.
         threading.Thread(target=_approve_mode_guardian, args=(config_path, enc_password), daemon=True).start()
 
         _host_start_status[requester] = {"status": "done", "rustdesk_id": rustdesk_id}
