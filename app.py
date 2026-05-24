@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.22"
+VERSION = "1.9.23"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1297,25 +1297,14 @@ _host_start_status: dict = {}
 _approve_mode_stop = threading.Event()
 
 
-def _approve_mode_guardian(config_path: str, password: str, rustdesk_exe: str, requester: str) -> None:
-    """Keep approve_mode='password' alive between ready and connected.
-    Stops automatically once the helper connects (no more incoming connection flush expected)."""
-    import urllib.request as _ur
+def _approve_mode_guardian(config_path: str, password: str, rustdesk_exe: str) -> None:
+    """Keep approve_mode='password' and password alive until cleanup stops it.
+    RustDesk flushes RustDesk.toml on server connect AND on incoming connection."""
     _approve_mode_stop.clear()
     log.info("[RUSTDESK TRACKER] approve_mode guardian started.")
     _last_pw_inject = 0.0
     while not _approve_mode_stop.wait(timeout=0.5):
         try:
-            # Stop as soon as session is connected — no more RustDesk.toml flushes expected
-            try:
-                resp = _ur.urlopen(f"{_backend_url()}/api/remote/status?name={requester}", timeout=2)
-                sd = json.loads(resp.read())
-                if sd.get("status") in ("connected", "none"):
-                    log.info("[RUSTDESK TRACKER] approve_mode guardian auto-stopping (status=%s)", sd.get("status"))
-                    break
-            except Exception:
-                pass
-
             content = ""
             if os.path.exists(config_path):
                 with open(config_path, "r", encoding="utf-8") as f:
@@ -1540,30 +1529,11 @@ def _do_start_host(requester: str, password: str) -> None:
         if not rustdesk_id:
             raise RuntimeError("Could not read RustDesk ID after all retries")
 
-        # Wait for hbbs to confirm registration via update_pk — this is the definitive signal
-        # that the host is reachable via the relay before we tell the helper to connect.
-        log.info(f"[RUSTDESK TRACKER] Waiting for hbbs update_pk confirmation for ID {rustdesk_id}...")
-        try:
-            hbbs_confirmed = False
-            hbbs_deadline = time.monotonic() + 15.0
-            while time.monotonic() < hbbs_deadline and not hbbs_confirmed:
-                r = subprocess.run(
-                    ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=3",
-                     "administrator@192.168.30.58",
-                     f"docker logs rustdesk-hbbs --since 30s 2>&1 | grep 'update_pk {rustdesk_id}'"],
-                    capture_output=True, text=True, timeout=8
-                )
-                if rustdesk_id in r.stdout:
-                    hbbs_confirmed = True
-                    log.info("[RUSTDESK TRACKER] hbbs update_pk confirmed — host is registered.")
-                else:
-                    time.sleep(0.5)
-            if not hbbs_confirmed:
-                log.warning("[RUSTDESK TRACKER] hbbs update_pk not seen within 15s — proceeding anyway.")
-        except Exception as e:
-            log.warning("[RUSTDESK TRACKER] hbbs confirmation check failed: %s", e)
+        # Brief wait for RustDesk to re-register with hbbs after the --option server switch.
+        # --get-id returns the cached ID immediately; hbbs registration takes ~2s.
+        time.sleep(2)
 
-        # Re-inject password and approve_mode after server registration is confirmed.
+        # Re-inject password and approve_mode after hbbs registration settles.
         subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
         try:
             toml_content = ""
@@ -1587,7 +1557,7 @@ def _do_start_host(requester: str, password: str) -> None:
 
         # Start guardian to keep approve_mode='password' alive while waiting for helper to connect.
         # RustDesk flushes RustDesk.toml again on incoming connection, clearing approve_mode.
-        threading.Thread(target=_approve_mode_guardian, args=(config_path, password, rustdesk_exe, requester), daemon=True).start()
+        threading.Thread(target=_approve_mode_guardian, args=(config_path, password, rustdesk_exe), daemon=True).start()
 
         _host_start_status[requester] = {"status": "done", "rustdesk_id": rustdesk_id}
         _watch_rustdesk_process(requester)
