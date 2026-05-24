@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.30"
+VERSION = "1.9.31"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1410,6 +1410,29 @@ def _do_start_host(requester: str, password: str) -> None:
         config2_path = os.path.join(config_dir, "RustDesk2.toml")
         config_path = os.path.join(config_dir, "RustDesk.toml")
 
+        # Encrypt password before launch so we can write full config pre-launch.
+        log.info("[RUSTDESK TRACKER] Encrypting password and writing config before launch...")
+        enc_password = _rustdesk_encrypt_password(password)
+
+        # Write RustDesk2.toml (server config) before launch.
+        toml2 = "rendezvous_server = '192.168.30.58:21116'\nnat_type = 1\nserial = 0\n\n[options]\ncustom-rendezvous-server = '192.168.30.58'\nrelay-server = '192.168.30.58'\napi-server = ''\nkey = 'SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0='\n"
+        with open(config2_path, "w", encoding="utf-8") as f:
+            f.write(toml2)
+
+        # Patch RustDesk.toml with password + approve_mode before launch so RustDesk reads them at startup.
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                toml_content = f.read()
+        except OSError:
+            toml_content = ""
+        toml_content = re.sub(r"^password\s*=.*\n?", "", toml_content, flags=re.MULTILINE)
+        toml_content = re.sub(r"^approve_mode\s*=.*\n?", "", toml_content, flags=re.MULTILINE)
+        toml_content = toml_content.rstrip("\n") + f"\npassword = '{enc_password}'\napprove_mode = 'password'\n"
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write(toml_content)
+        log.info("[RUSTDESK TRACKER] Password and approve_mode written to RustDesk.toml before launch.")
+
+        # Launch RustDesk — it reads both TOMLs fresh with our settings already in place.
         si = subprocess.STARTUPINFO()
         si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         si.wShowWindow = 6  # SW_MINIMIZE
@@ -1419,7 +1442,7 @@ def _do_start_host(requester: str, password: str) -> None:
         if not _wait_for_rustdesk_daemon(max_wait=10.0):
             raise RuntimeError("RustDesk daemon did not appear within 10s")
 
-        # Poll until RustDesk2.toml stabilizes (RustDesk finished its startup write)
+        # RustDesk overwrites RustDesk2.toml on startup — wait for that write then restore our server config.
         toml2_deadline = time.monotonic() + 10.0
         last_size = -1
         stable_count = 0
@@ -1436,13 +1459,11 @@ def _do_start_host(requester: str, password: str) -> None:
                 last_size = size
             except OSError:
                 pass
-        log.info("[RUSTDESK TRACKER] RustDesk startup write done. Overwriting RustDesk2.toml with self-hosted relay...")
-
-        toml2 = "rendezvous_server = '192.168.30.58:21116'\nnat_type = 1\nserial = 0\n\n[options]\ncustom-rendezvous-server = '192.168.30.58'\nrelay-server = '192.168.30.58'\napi-server = ''\nkey = 'SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0='\n"
         with open(config2_path, "w", encoding="utf-8") as f:
             f.write(toml2)
+        log.info("[RUSTDESK TRACKER] RustDesk2.toml restored after startup write.")
 
-        # Send --option IPC to switch the running daemon to our server and trigger re-registration.
+        # Send --option IPC to apply server settings to the running daemon's runtime state.
         for opt_key, opt_val in [
             ("custom-rendezvous-server", "192.168.30.58"),
             ("relay-server", "192.168.30.58"),
@@ -1450,22 +1471,6 @@ def _do_start_host(requester: str, password: str) -> None:
             ("key", "SxmcYEwpZmrBiOTTkmuyZnaGAfh3nyMJ69FU+mjZtQ0="),
         ]:
             subprocess.run([rustdesk_exe, "--option", opt_key, opt_val], capture_output=True, creationflags=0x08000000)
-
-        # Encrypt password and write directly into RustDesk.toml (avoids --password IPC
-        # which requires elevation when RustDesk is not the installed instance).
-        log.info("[RUSTDESK TRACKER] Encrypting password and writing config directly...")
-        enc_password = _rustdesk_encrypt_password(password)
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                toml_content = f.read()
-        except OSError:
-            toml_content = ""
-        toml_content = re.sub(r"^password\s*=.*\n?", "", toml_content, flags=re.MULTILINE)
-        toml_content = re.sub(r"^approve_mode\s*=.*\n?", "", toml_content, flags=re.MULTILINE)
-        toml_content = toml_content.rstrip("\n") + f"\npassword = '{enc_password}'\napprove_mode = 'password'\n"
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(toml_content)
-        log.info("[RUSTDESK TRACKER] Password and approve_mode written to RustDesk.toml.")
 
         os.makedirs(os.path.dirname(id_log_path), exist_ok=True)
         if os.path.exists(id_log_path):
