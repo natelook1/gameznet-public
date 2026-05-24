@@ -532,6 +532,7 @@ _full_route = False
 _update_required = False
 _updating = False  # Set during update to suppress heartbeat auto-disconnect
 _heartbeat_fail_count = 0
+_connecting = False  # True while api_connect is in progress — blocks auto-disconnect
 
 def cleanup_stale_tunnel():
     """
@@ -618,7 +619,8 @@ def api_status():
 
 @app.route("/api/connect", methods=["POST"])
 def api_connect():
-    global _connected
+    global _connected, _connecting
+    _connecting = True
     log.info("Connect requested")
     if not os.path.exists(CONFIG_FILE):
         log.error("No config file found at %s", CONFIG_FILE)
@@ -741,10 +743,15 @@ PersistentKeepalive = 25
     except Exception as e:
         log.exception("Unhandled error in api_connect")
         return jsonify({"error": str(e)}), 500
+    finally:
+        _connecting = False
 
 @app.route("/api/disconnect", methods=["POST"])
 def api_disconnect():
     global _connected
+    if _connecting:
+        log.warning("Disconnect requested while connect is in progress — ignoring")
+        return jsonify({"error": "Connect in progress"}), 409
     with _lock:
         _connected = False  # Stop heartbeat failure counter immediately
     try:
@@ -2234,7 +2241,7 @@ def heartbeat_loop():
             except Exception as e:
                 _heartbeat_fail_count += 1
                 log.warning("Heartbeat failed (%d/%d): %s", _heartbeat_fail_count, _MAX_FAILS, e)
-                if _heartbeat_fail_count >= _MAX_FAILS and not _updating:
+                if _heartbeat_fail_count >= _MAX_FAILS and not _updating and not _connecting:
                     # Before auto-disconnecting, verify the tunnel is actually dead.
                     # A healthy tunnel with a recent handshake means routing is just
                     # temporarily unstable (e.g. just connected, transient packet loss).
