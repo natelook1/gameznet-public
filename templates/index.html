@@ -5002,6 +5002,8 @@
         ports.innerHTML = `
           <button class="srv-modal-port-btn" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('Java port copied!','success'))">Java :${s.port} ⧉</button>
           <button class="srv-modal-port-btn" onclick="navigator.clipboard.writeText('${s.host}:${bp}').then(()=>toast('Bedrock port copied!','success'))">Bedrock :${bp} ⧉</button>`;
+      } else if (s.steam_appid == 440900) {
+        ports.innerHTML = `<button class="srv-modal-port-btn" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('Copied!','success'))">${s.host}:${s.port} ⧉</button>`;
       } else {
         ports.innerHTML = `<button class="srv-modal-port-btn" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('IP:Port copied!','success'))">:${s.port} ⧉</button>`;
       }
