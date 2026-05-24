@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.39"
+VERSION = "1.9.40"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1281,6 +1281,9 @@ def _watch_rustdesk_process(name_to_end):
             _body = json.dumps({"name": name_to_end}).encode()
             _req = urllib.request.Request(f"{_backend_url()}/api/remote/end", data=_body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
             urllib.request.urlopen(_req, timeout=5)
+            # Also run local cleanup in case the UI didn't (e.g. RustDesk closed without CANCEL)
+            _approve_mode_stop.set()
+            subprocess.run(["taskkill", "/F", "/IM", "rustdesk.exe"], capture_output=True, creationflags=0x08000000)
         except Exception as e:
             log.debug(f"[RUSTDESK TRACKER] Watcher finished or failed: {e}")
 
