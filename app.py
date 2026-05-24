@@ -863,36 +863,37 @@ def api_launch_game():
     try:
         if str(appid) == "526870":  # Satisfactory uses +open
             os.startfile(f"steam://run/{appid}//+open {ip}:{port}/")
-        elif str(appid) == "440900":  # Conan Exiles Enhanced — bypass Funcom launcher
-            import psutil, time
-            steam_running = any(p.name().lower() == "steam.exe" for p in psutil.process_iter(["name"]))
-            if not steam_running:
-                os.startfile("steam://run/440900")
-                time.sleep(6)
-            # Launch shipping exe directly — avoids the Funcom launcher intermediary
-            import winreg as _wr
-            try:
-                with _wr.OpenKey(_wr.HKEY_CURRENT_USER, r"Software\Valve\Steam") as _k:
-                    _sp = os.path.dirname(_wr.QueryValueEx(_k, "SteamExe")[0])
-            except Exception:
-                _sp = r"C:\Program Files (x86)\Steam"
-            conan_bin = os.path.join(_sp, "steamapps", "common", "Conan Exiles",
-                                     "ConanSandbox", "Binaries", "Win64")
-            # Search all library folders
-            vdf = os.path.join(_sp, "steamapps", "libraryfolders.vdf")
-            if os.path.exists(vdf):
-                import re as _re
-                with open(vdf, "r", encoding="utf-8") as _f:
-                    for _p in _re.findall(r'"path"\s+"([^"]+)"', _f.read()):
-                        _candidate = os.path.join(_p, "steamapps", "common", "Conan Exiles",
-                                                  "ConanSandbox", "Binaries", "Win64")
-                        if os.path.exists(_candidate):
-                            conan_bin = _candidate
-                            break
-            shipping_exe = os.path.join(conan_bin, "ConanSandbox-Win64-Shipping.exe")
-            if not os.path.exists(shipping_exe):
-                return jsonify({"error": f"Conan exe not found: {shipping_exe}"}), 500
-            subprocess.Popen([shipping_exe, f"+connect {ip}:{port}"], cwd=conan_bin)
+        elif str(appid) == "440900":  # Conan Exiles Enhanced
+            # Game.ini stores LastConnected and AutoConnect — set them before launch
+            # so the game auto-joins the server on startup without any manual steps.
+            game_ini = os.path.join(os.path.expanduser("~"), "AppData", "Local",
+                                    "Conan Exiles", "Saved", "Config", "Windows", "Game.ini")
+            # Also check Steam install path
+            if not os.path.exists(game_ini):
+                game_ini = os.path.join(
+                    os.environ.get("LOCALAPPDATA", ""),
+                    "Conan Exiles", "Saved", "Config", "Windows", "Game.ini")
+            # Fall back to Steam common path
+            if not os.path.exists(game_ini):
+                try:
+                    import winreg as _wr2
+                    with _wr2.OpenKey(_wr2.HKEY_CURRENT_USER, r"Software\Valve\Steam") as _k2:
+                        _sp2 = os.path.dirname(_wr2.QueryValueEx(_k2, "SteamExe")[0])
+                except Exception:
+                    _sp2 = r"C:\Program Files (x86)\Steam"
+                game_ini = os.path.join(_sp2, "steamapps", "common", "Conan Exiles",
+                                        "ConanSandbox", "Saved", "Config", "Windows", "Game.ini")
+            if os.path.exists(game_ini):
+                import configparser, re as _re2
+                with open(game_ini, "r", encoding="utf-8") as _f2:
+                    content = _f2.read()
+                content = _re2.sub(r'(?m)^LastConnected=.*$', f'LastConnected={ip}:{port}', content)
+                content = _re2.sub(r'(?m)^AutoConnect=.*$', 'AutoConnect=True', content)
+                content = _re2.sub(r'(?m)^LastPassword=.*$', 'LastPassword=natewinz', content)
+                with open(game_ini, "w", encoding="utf-8") as _f2:
+                    _f2.write(content)
+                log.info("Conan Game.ini updated: LastConnected=%s:%s AutoConnect=True", ip, port)
+            os.startfile("steam://run/440900")
         else:
             os.startfile(f"steam://run/{appid}//+connect {ip}:{port}/")
         return jsonify({"success": True})
