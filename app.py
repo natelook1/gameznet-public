@@ -858,12 +858,13 @@ def api_launch_game():
         steam_path = r"C:\Program Files (x86)\Steam"
         steam_exe = os.path.join(steam_path, "steam.exe")
 
-    # Use steam:// URL via Windows shell — this correctly signals the running Steam
-    # instance regardless of how app.py was launched (subprocess.Popen spawns a new
-    # steam.exe child that doesn't IPC to the existing instance).
+    # Use steam:// URL via Windows shell — correctly signals the running Steam instance.
+    # Conan Exiles Enhanced: launch clean with no args, Funcom launcher swallows them.
     try:
         if str(appid) == "526870":  # Satisfactory uses +open
             os.startfile(f"steam://run/{appid}//+open {ip}:{port}/")
+        elif str(appid) == "440900":  # Conan Exiles Enhanced — args swallowed by launcher
+            os.startfile(f"steam://run/{appid}")
         else:
             os.startfile(f"steam://run/{appid}//+connect {ip}:{port}/")
         return jsonify({"success": True})
