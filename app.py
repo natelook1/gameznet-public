@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.46"
+VERSION = "1.9.47"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1790,6 +1790,28 @@ def api_remote_cleanup():
     log.info("[RUSTDESK TRACKER] RustDesk session cleaned up.")
     return jsonify({"success": True})
 
+
+@app.route("/api/remote/pending")
+def api_remote_pending():
+    """Proxy /api/remote/pending and trigger beep if a pending request exists for this user."""
+    import urllib.request as _ur
+    name = request.args.get("name", "")
+    url = f"{_backend_url()}/api/remote/pending?name={_ur.quote(name)}"
+    try:
+        req = _ur.Request(url, headers={"User-Agent": "GamezNET"})
+        with _ur.urlopen(req, timeout=5) as resp:
+            body = resp.read()
+            try:
+                items = json.loads(body)
+                if any(i.get("status") == "pending" for i in items):
+                    _start_beep_alert()
+                else:
+                    _stop_beep_alert()
+            except Exception:
+                pass
+            return body, resp.status, {"Content-Type": "application/json"}
+    except Exception as e:
+        return jsonify([]), 200
 
 @app.route("/api/remote/stop-beep", methods=["POST"])
 def api_remote_stop_beep():
