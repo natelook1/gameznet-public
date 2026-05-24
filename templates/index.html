@@ -6478,7 +6478,7 @@
       try {
         const ev = JSON.parse(e.data);
         // Incoming help request for helper side
-        if (!remoteState.active && ev.status === 'pending' && ev.helper === state.name && ev.requester !== remoteState.requester) {
+        if (!remoteState.active && ev.status === 'pending' && ev.requester && ev.requester !== remoteState.requester) {
           remoteState.requester = ev.requester;
           document.getElementById('remote-incoming-requester').textContent = `${ev.requester} needs help`;
           const msgEl = document.getElementById('remote-incoming-msg');
