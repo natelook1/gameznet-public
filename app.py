@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.27"
+VERSION = "1.9.28"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1306,9 +1306,7 @@ def _approve_mode_guardian(rustdesk_exe: str, password: str) -> None:
         try:
             subprocess.run([rustdesk_exe, "--option", "approve-mode", "password"],
                            capture_output=True, creationflags=0x08000000)
-            subprocess.run([rustdesk_exe, "--password", password],
-                           capture_output=True, creationflags=0x08000000)
-            log.debug("[RUSTDESK TRACKER] guardian re-sent approve-mode + password via IPC")
+            log.debug("[RUSTDESK TRACKER] guardian re-sent approve-mode via IPC")
         except Exception:
             pass
     log.info("[RUSTDESK TRACKER] approve_mode guardian stopped.")
@@ -1425,7 +1423,31 @@ def _do_start_host(requester: str, password: str) -> None:
             subprocess.run([rustdesk_exe, "--option", opt_key, opt_val], capture_output=True, creationflags=0x08000000)
 
         log.info("[RUSTDESK TRACKER] Injecting password via CLI...")
+        pre_mtime = os.path.getmtime(config_path) if os.path.exists(config_path) else 0
         subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
+        # Wait for RustDesk to flush RustDesk.toml after --password, then patch approve_mode in
+        flush_deadline = time.monotonic() + 3.0
+        while time.monotonic() < flush_deadline:
+            time.sleep(0.1)
+            try:
+                if os.path.getmtime(config_path) != pre_mtime:
+                    break
+            except OSError:
+                pass
+        # Patch approve_mode into the file immediately after the flush settles
+        for _ in range(3):
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    toml_content = f.read()
+                toml_content = re.sub(r"^approve_mode\s*=.*\n?", "", toml_content, flags=re.MULTILINE)
+                toml_content = toml_content.rstrip("\n") + "\napprove_mode = 'password'\n"
+                with open(config_path, "w", encoding="utf-8") as f:
+                    f.write(toml_content)
+                log.info("[RUSTDESK TRACKER] approve_mode patched into RustDesk.toml after --password flush.")
+                break
+            except Exception as e:
+                log.warning("[RUSTDESK TRACKER] approve_mode patch attempt failed: %s", e)
+                time.sleep(0.1)
 
         os.makedirs(os.path.dirname(id_log_path), exist_ok=True)
         if os.path.exists(id_log_path):
@@ -1481,13 +1503,7 @@ def _do_start_host(requester: str, password: str) -> None:
             raise RuntimeError("Could not read RustDesk ID after all retries")
 
         # Brief wait for RustDesk to re-register with hbbs after the --option server switch.
-        # --get-id returns the cached ID immediately; hbbs registration takes ~2s.
         time.sleep(2)
-
-        # Re-inject password and approve-mode via IPC after hbbs registration settles.
-        subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
-        subprocess.run([rustdesk_exe, "--option", "approve-mode", "password"], capture_output=True, creationflags=0x08000000)
-        log.info("[RUSTDESK TRACKER] Password and approve-mode re-injected via IPC.")
 
         log.info(f"[RUSTDESK TRACKER] RustDesk ID acquired: {rustdesk_id}. Posting /api/remote/ready...")
         _body = json.dumps({"requester": requester, "rustdesk_id": rustdesk_id, "password": password}).encode()
