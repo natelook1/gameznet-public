@@ -3275,6 +3275,7 @@
       setChatEnabled(true);
       updateFullRouteBtn();
       updateRemoteHelpBtn(true);
+      startRemoteStream();
     } else if (statusKey === 'connecting') {
       icon.textContent = '◌';
       main.textContent = 'Connecting...';
@@ -3939,7 +3940,7 @@
     } catch {}
   }
   setInterval(refreshOnline, 30000);
-  setInterval(pollRemotePending, 1500);
+  startRemoteStream();
 
   // ── Chat ───────────────────────────────────────────────────────────────────
   let chatActiveTarget = 'global';
@@ -6463,30 +6464,42 @@
     }, 3000);
   }
 
-  async function pollRemotePending() {
-    if (!state.name || remoteState.active) return;
-    try {
-      const data = await fetch(`/api/remote/pending?name=${encodeURIComponent(state.name)}`).then(r => r.json());
-      const req = data[0];
-      if (req && req.requester !== remoteState.requester) {
-        remoteState.requester = req.requester;
-        document.getElementById('remote-incoming-requester').textContent = `${req.requester} needs help`;
-        const msgEl = document.getElementById('remote-incoming-msg');
-        if (req.message) { msgEl.textContent = `"${req.message}"`; msgEl.style.display = 'block'; } else { msgEl.style.display = 'none'; }
-        document.getElementById('remote-incoming').classList.add('active');
-        playNotificationSound();
-        
-        // Start 60s Helper Countdown
-        remoteState._countdown = 60;
-        clearInterval(remoteState._toastTimer);
-        remoteState._toastTimer = setInterval(() => {
-          remoteState._countdown--;
-          const el = document.getElementById('remote-incoming-timer');
-          if (el) el.textContent = `${remoteState._countdown}s`;
-          if (remoteState._countdown <= 0) { declineRemoteRequest(); }
-        }, 1000);
-      }
-    } catch {}
+  let _remoteStream = null;
+  function startRemoteStream() {
+    if (_remoteStream) { _remoteStream.close(); _remoteStream = null; }
+    if (!state.name) return;
+    _remoteStream = new EventSource(`/api/remote/stream?name=${encodeURIComponent(state.name)}`);
+    _remoteStream.onmessage = (e) => {
+      try {
+        const ev = JSON.parse(e.data);
+        // Incoming help request for helper side
+        if (!remoteState.active && ev.status === 'pending' && ev.helper === state.name && ev.requester !== remoteState.requester) {
+          remoteState.requester = ev.requester;
+          document.getElementById('remote-incoming-requester').textContent = `${ev.requester} needs help`;
+          const msgEl = document.getElementById('remote-incoming-msg');
+          if (ev.message) { msgEl.textContent = `"${ev.message}"`; msgEl.style.display = 'block'; } else { msgEl.style.display = 'none'; }
+          document.getElementById('remote-incoming').classList.add('active');
+          playNotificationSound();
+          remoteState._countdown = 60;
+          clearInterval(remoteState._toastTimer);
+          remoteState._toastTimer = setInterval(() => {
+            remoteState._countdown--;
+            const el = document.getElementById('remote-incoming-timer');
+            if (el) el.textContent = `${remoteState._countdown}s`;
+            if (remoteState._countdown <= 0) { declineRemoteRequest(); }
+          }, 1000);
+        }
+        // Session ended by peer (while active)
+        if (remoteState.active && ev.status === 'none') {
+          if (!remoteState.ended) { endRemoteSession(); toast('Session ended by peer.', true); }
+        }
+      } catch {}
+    };
+    _remoteStream.onerror = () => {
+      // Reconnect after 3s on error
+      if (_remoteStream) { _remoteStream.close(); _remoteStream = null; }
+      setTimeout(startRemoteStream, 3000);
+    };
   }
 
   async function acceptRemoteRequest() {
@@ -6556,16 +6569,21 @@
   }
 
   async function endRemoteSession() {
-    if (remoteState.ended) return; // idempotent — prevent double-cleanup from race callbacks
+    if (remoteState.ended) return;
     remoteState.ended = true;
     clearInterval(remoteState.pollTimer);
     clearInterval(remoteState._countdownTimer);
     clearInterval(remoteState._toastTimer);
     fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
     fetch('/api/remote/cleanup', { method: 'POST' });
-    remoteState.active = false; remoteState.requester = null; remoteState.ended = false; remoteState.overlayDismissed = false;
     document.getElementById('remote-overlay').classList.remove('active');
     updateRemoteHelpBtn(true);
+    // Reset state after a short delay so concurrent SSE/poll callbacks don't re-trigger cleanup
+    setTimeout(() => {
+      remoteState.active = false; remoteState.requester = null;
+      remoteState.ended = false; remoteState.overlayDismissed = false;
+      startRemoteStream(); // Reconnect SSE for next session
+    }, 2000);
   }
   let _ytSession = null, _ytSubs = [];
 
