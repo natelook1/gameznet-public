@@ -6438,7 +6438,11 @@
         if (sd.status === 'ready') {
           _rpStep(4); // host daemon up, ID obtained, waiting for helper
         } else if (sd.status === 'connected') {
-          _rpStep(6, true); // helper connected — session active
+          if (!remoteState.overlayDismissed) {
+            remoteState.overlayDismissed = true;
+            _rpStep(6, true);
+            setTimeout(() => document.getElementById('remote-overlay').classList.remove('active'), 1500);
+          }
         } else if (sd.status === 'none') {
           if (!remoteState.ended) { endRemoteSession(); toast('Session ended by peer.', true); }
         }
@@ -6512,9 +6516,17 @@
                 body: JSON.stringify({ helper: state.name })
               });
               _rpStep(4, true);
+              if (!remoteState.overlayDismissed) {
+                remoteState.overlayDismissed = true;
+                setTimeout(() => document.getElementById('remote-overlay').classList.remove('active'), 1500);
+              }
             }
           } else if (sd.status === 'connected') {
-            _rpStep(4, true);
+            if (!remoteState.overlayDismissed) {
+              remoteState.overlayDismissed = true;
+              _rpStep(4, true);
+              setTimeout(() => document.getElementById('remote-overlay').classList.remove('active'), 1500);
+            }
           } else if (sd.status === 'none') {
             if (!remoteState.ended) { endRemoteSession(); toast('Session ended by peer.', true); }
           }
@@ -6538,7 +6550,7 @@
     clearInterval(remoteState._toastTimer);
     fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
     fetch('/api/remote/cleanup', { method: 'POST' });
-    remoteState.active = false; remoteState.requester = null; remoteState.ended = false; // reset after cleanup
+    remoteState.active = false; remoteState.requester = null; remoteState.ended = false; remoteState.overlayDismissed = false;
     document.getElementById('remote-overlay').classList.remove('active');
     updateRemoteHelpBtn(true);
   }
