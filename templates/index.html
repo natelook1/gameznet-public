@@ -6580,7 +6580,7 @@
     clearInterval(remoteState._countdownTimer);
     clearInterval(remoteState._toastTimer);
     fetch('/api/remote/end', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
-    fetch('/api/remote/cleanup', { method: 'POST' });
+    try { await fetch('/api/remote/cleanup', { method: 'POST' }); } catch {}
     document.getElementById('remote-overlay').classList.remove('active');
     updateRemoteHelpBtn(true);
     // Reset state after a short delay so concurrent SSE/poll callbacks don't re-trigger cleanup
