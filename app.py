@@ -904,6 +904,14 @@ def api_launch_game():
                 with open(game_ini, "w", encoding="utf-8") as _f2:
                     _f2.write(content)
                 log.info("Conan Game.ini updated: LastConnected=%s:%s AutoConnect=True", ip, port)
+            # Also write WindowsNoEditor\Game.ini — FuncomLauncher reads this path
+            _wne_ini = os.path.join(os.path.dirname(game_ini).replace("Windows", "WindowsNoEditor"), "Game.ini") if "Windows" in game_ini else None
+            if _wne_ini:
+                os.makedirs(os.path.dirname(_wne_ini), exist_ok=True)
+                _wne_content = f"[SavedServers]\nAutoConnect=True\nLastPassword=natewinz\nLastConnected={ip}:{port}\n"
+                with open(_wne_ini, "w", encoding="utf-8") as _fwne:
+                    _fwne.write(_wne_content)
+                log.info("Conan WindowsNoEditor Game.ini updated")
             # Find shipping exe — Funcom Launcher swallows all args so we skip it entirely
             try:
                 import winreg as _wr3
@@ -925,8 +933,8 @@ def api_launch_game():
             if not _conan_bin:
                 return jsonify({"error": "Conan Exiles not found in any Steam library"}), 500
             _shipping_exe = os.path.join(_conan_bin, "ConanSandbox-Win64-Shipping.exe")
-            log.info("Launching Conan shipping exe: %s +connect %s:%s", _shipping_exe, ip, port)
-            subprocess.Popen([_shipping_exe, f'+connect {ip}:{port}', '+password', 'natewinz'], cwd=_conan_bin)
+            log.info("Launching Conan shipping exe: %s", _shipping_exe)
+            subprocess.Popen([_shipping_exe], cwd=_conan_bin)
         else:
             os.startfile(f"steam://run/{appid}//+connect {ip}:{port}/")
         return jsonify({"success": True})

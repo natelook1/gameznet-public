@@ -5008,7 +5008,7 @@
         b1.className = 'srv-modal-port-btn';
         b1.textContent = ipPort + ' ⧉';
         b1.onclick = () => copyText(ipPort, 'IP:Port copied!');
-        const dcCmd = 'open ' + s.host + ':' + s.port + '?password=natewinz';
+        const dcCmd = 'directconnect ' + s.host + ' ' + s.port + ' natewinz';
         const b2 = document.createElement('button');
         b2.className = 'srv-modal-port-btn';
         b2.style.cssText = 'font-size:10px;font-family:monospace;';
@@ -5018,8 +5018,8 @@
         details.style.cssText = 'width:100%;margin-top:4px;';
         details.innerHTML = '<summary style="font-size:10px;color:var(--text-dim);cursor:pointer;letter-spacing:1px;text-transform:uppercase;">How to connect manually ▾</summary>'
           + '<div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.7;padding:6px 8px;background:var(--bg2);border-radius:3px;">'
-          + '1. Click <b style="color:var(--text);">LAUNCH GAME</b> — auto-connects on startup.<br>'
-          + '2. If that fails: press <code>~</code> in-game to open the console, then run:<br>'
+          + '1. Click <b style="color:var(--text);">LAUNCH GAME</b> then wait at the main menu.<br>'
+          + '2. Press <code>~</code> to open the console and paste:<br>'
           + '<code style="display:block;margin-top:4px;padding:3px 5px;background:var(--bg3,#111);border-radius:2px;">' + dcCmd + '</code>'
           + '</div>';
         ports.innerHTML = '';
