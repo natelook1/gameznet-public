@@ -4574,31 +4574,11 @@
       document.title = _titleFlip ? `🛟 HELP REQUEST` : _origTitle;
       _titleFlip = !_titleFlip;
     }, 800);
-    // Looping beep — start immediately if AudioContext already unlocked, else wait for first click
-    const _loopBeep = () => {
-      if (!_remoteAlertTimer) return;
-      playNotificationSound();
-      _remoteAlertTimer = setTimeout(_loopBeep, 3000);
-    };
-    const _tryStartBeep = () => {
-      if (_audioCtx && _audioCtx.state === 'running') {
-        _loopBeep();
-      } else {
-        // AudioContext not yet unlocked — resume it now (works if called inside a gesture, no-op otherwise)
-        if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        _audioCtx.resume().then(() => { if (_remoteAlertTimer !== null || _remoteAlertTitleTimer !== null) _loopBeep(); });
-      }
-    };
-    _remoteAlertTimer = 1; // non-null sentinel so _loopBeep guards work
-    _tryStartBeep();
-    // System notification — clicking it focuses window (user gesture) which unlocks AudioContext
+    // System notification
     if ('Notification' in window) {
       const _showNotif = () => {
         const n = new Notification('Help Request', { body: `${requesterName} needs your help`, icon: '/static/gameznet.ico', tag: 'remote-help', requireInteraction: true });
-        n.onclick = () => {
-          window.focus();
-          if (_audioCtx && _audioCtx.state !== 'running') _audioCtx.resume();
-        };
+        n.onclick = () => { window.focus(); };
       };
       if (Notification.permission === 'granted') {
         _showNotif();
@@ -4606,12 +4586,14 @@
         Notification.requestPermission().then(p => { if (p === 'granted') _showNotif(); });
       }
     }
+    // Beep is handled by app.py via winsound (no browser autoplay restrictions)
   }
 
   function _stopRemoteAlert() {
     clearTimeout(_remoteAlertTimer); _remoteAlertTimer = null;
     clearInterval(_remoteAlertTitleTimer); _remoteAlertTitleTimer = null;
     document.title = _origTitle;
+    fetch('/api/remote/stop-beep', { method: 'POST' }).catch(() => {});
   }
 
   let _chatStream = null;
