@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.23"
+VERSION = "1.9.24"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1432,7 +1432,7 @@ def _do_start_host(requester: str, password: str) -> None:
         with open(config2_path, "w", encoding="utf-8") as f:
             f.write(toml2)
 
-        # Inject via --option IPC so the running daemon also picks up the new server
+        # Send --option IPC to switch the running daemon to our server and trigger re-registration.
         for opt_key, opt_val in [
             ("custom-rendezvous-server", "192.168.30.58"),
             ("relay-server", "192.168.30.58"),
@@ -1441,8 +1441,7 @@ def _do_start_host(requester: str, password: str) -> None:
         ]:
             subprocess.run([rustdesk_exe, "--option", opt_key, opt_val], capture_output=True, creationflags=0x08000000)
 
-        # Write approve_mode after --option IPC calls (which trigger RustDesk to flush its config)
-        # This write is last so it won't be overwritten again until RustDesk restarts
+        # Write approve_mode after config is written
         toml_content = ""
         if os.path.exists(config_path):
             try:
