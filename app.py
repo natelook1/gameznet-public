@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.9.19"
+VERSION = "1.9.20"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1297,9 +1297,9 @@ _host_start_status: dict = {}
 _approve_mode_stop = threading.Event()
 
 
-def _approve_mode_guardian(config_path: str) -> None:
-    """Background thread that re-writes approve_mode='password' every 500ms until stopped.
-    RustDesk flushes RustDesk.toml on server connect and on incoming connection, clearing it."""
+def _approve_mode_guardian(config_path: str, password: str, rustdesk_exe: str) -> None:
+    """Background thread that keeps approve_mode='password' and the session password alive.
+    RustDesk flushes RustDesk.toml on server connect and on incoming connection, clearing both."""
     _approve_mode_stop.clear()
     log.info("[RUSTDESK TRACKER] approve_mode guardian started.")
     while not _approve_mode_stop.wait(timeout=0.5):
@@ -1308,13 +1308,22 @@ def _approve_mode_guardian(config_path: str) -> None:
             if os.path.exists(config_path):
                 with open(config_path, "r", encoding="utf-8") as f:
                     content = f.read()
+            needs_write = False
+            # Check if approve_mode is missing or wrong
             if "approve_mode = 'password'" not in content:
                 content = re.sub(r"^approve_mode\s*=.*$", "", content, flags=re.MULTILINE)
                 content = "\n".join(line for line in content.splitlines() if line.strip())
                 content += "\napprove_mode = 'password'\n"
+                needs_write = True
+            # Check if password was cleared by RustDesk
+            if re.search(r"^password\s*=\s*''", content, flags=re.MULTILINE):
+                subprocess.run([rustdesk_exe, "--password", password], capture_output=True, creationflags=0x08000000)
+                log.debug("[RUSTDESK TRACKER] guardian re-injected password via IPC")
+                needs_write = True  # re-read after IPC in next iteration
+            if needs_write:
                 with open(config_path, "w", encoding="utf-8") as f:
                     f.write(content)
-                log.debug("[RUSTDESK TRACKER] approve_mode guardian re-wrote RustDesk.toml")
+                log.debug("[RUSTDESK TRACKER] guardian re-wrote RustDesk.toml")
         except Exception:
             pass
     log.info("[RUSTDESK TRACKER] approve_mode guardian stopped.")
@@ -1542,7 +1551,7 @@ def _do_start_host(requester: str, password: str) -> None:
 
         # Start guardian to keep approve_mode='password' alive while waiting for helper to connect.
         # RustDesk flushes RustDesk.toml again on incoming connection, clearing approve_mode.
-        threading.Thread(target=_approve_mode_guardian, args=(config_path,), daemon=True).start()
+        threading.Thread(target=_approve_mode_guardian, args=(config_path, password, rustdesk_exe), daemon=True).start()
 
         _host_start_status[requester] = {"status": "done", "rustdesk_id": rustdesk_id}
         _watch_rustdesk_process(requester)
