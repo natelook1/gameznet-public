@@ -3134,7 +3134,7 @@
     <div class="srv-modal-body">
       <div class="srv-modal-host" id="srv-modal-host" style="display:none;">
         <span class="srv-modal-host-label">SERVER IP</span>
-        <span class="srv-modal-host-val" id="srv-modal-host-val" onclick="navigator.clipboard.writeText(this.dataset.ip).then(()=>toast('IP copied!','success'))"></span>
+        <span class="srv-modal-host-val" id="srv-modal-host-val" onclick="copyText(this.dataset.ip,'IP copied!')"></span>
       </div>
       <div class="srv-modal-stats" id="srv-modal-stats" style="display:none;"></div>
       <div class="srv-modal-ports" id="srv-modal-ports"></div>
@@ -5000,19 +5000,19 @@
       if (_isMinecraft(s.name)) {
         const bp = s.extra_ports?.[0] || 19132;
         ports.innerHTML = `
-          <button class="srv-modal-port-btn" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('Java port copied!','success'))">Java :${s.port} ⧉</button>
-          <button class="srv-modal-port-btn" onclick="navigator.clipboard.writeText('${s.host}:${bp}').then(()=>toast('Bedrock port copied!','success'))">Bedrock :${bp} ⧉</button>`;
+          <button class="srv-modal-port-btn" onclick="copyText('${s.host}:${s.port}','Java port copied!')">Java :${s.port} ⧉</button>
+          <button class="srv-modal-port-btn" onclick="copyText('${s.host}:${bp}','Bedrock port copied!')">Bedrock :${bp} ⧉</button>`;
       } else if (s.steam_appid == 440900) {
         const ipPort = s.host + ':' + s.port;
         const consoleCmd = 'open ' + ipPort;
         const b1 = document.createElement('button');
         b1.className = 'srv-modal-port-btn';
         b1.textContent = ipPort + ' ⧉';
-        b1.onclick = () => navigator.clipboard.writeText(ipPort).then(() => toast('IP:Port copied!', 'success'));
+        b1.onclick = () => copyText(ipPort, 'IP:Port copied!');
         const b2 = document.createElement('button');
         b2.className = 'srv-modal-port-btn';
         b2.innerHTML = '<kbd style="background:var(--bg3);padding:1px 4px;border-radius:2px;font-size:9px;">~</kbd> ' + consoleCmd + ' ⧉';
-        b2.onclick = () => navigator.clipboard.writeText(consoleCmd).then(() => toast('Console command copied!', 'success'));
+        b2.onclick = () => copyText(consoleCmd, 'Console command copied!');
         const details = document.createElement('details');
         details.style.cssText = 'width:100%;margin-top:4px;';
         details.innerHTML = '<summary style="font-size:10px;color:var(--text-dim);cursor:pointer;letter-spacing:1px;text-transform:uppercase;">How to connect ▾</summary>'
@@ -5025,7 +5025,7 @@
         ports.appendChild(b2);
         ports.appendChild(details);
       } else {
-        ports.innerHTML = `<button class="srv-modal-port-btn" onclick="navigator.clipboard.writeText('${s.host}:${s.port}').then(()=>toast('IP:Port copied!','success'))">:${s.port} ⧉</button>`;
+        ports.innerHTML = `<button class="srv-modal-port-btn" onclick="copyText('${s.host}:${s.port}','IP:Port copied!')">:${s.port} ⧉</button>`;
       }
     } else {
       ports.innerHTML = '';
@@ -6514,8 +6514,20 @@
     document.getElementById('remote-overlay').classList.remove('active');
   }
 
-  function copyText(text) {
-    navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard!', 'success'));
+  function copyText(text, msg) {
+    const label = msg || 'Copied to clipboard!';
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => toast(label, 'success'));
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast(label, 'success');
+    }
   }
 
   async function submitRemoteRequest() {
