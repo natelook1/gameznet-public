@@ -1370,6 +1370,19 @@ def api_invisible():
     if request.method == "POST":
         data = request.json or {}
         new_val = bool(data.get("invisible", False))
+        try:
+            with open(CONFIG_FILE) as f:
+                cfg = json.load(f)
+            token = cfg.get("token")
+            if token:
+                import urllib.request as _ur
+                body = json.dumps({"invisible": new_val, "token": token}).encode()
+                req = _ur.Request(f"{_backend_url()}/api/invisible", data=body,
+                                  headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
+                                  method="POST")
+                _ur.urlopen(req, timeout=5)
+        except Exception as e:
+            log.warning("Invisible proxy failed: %s", e)
         _invisible = new_val
         log.info("Invisible mode set to: %s", _invisible)
         return jsonify({"invisible": _invisible})
