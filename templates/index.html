@@ -3586,6 +3586,10 @@
     
     if (state.busy) return;
 
+    if (state.updateRequired && !state.connected) {
+      triggerUpdate();
+      return;
+    }
 
     state.busy = true;
 
