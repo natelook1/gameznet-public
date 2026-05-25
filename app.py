@@ -1042,18 +1042,28 @@ def api_launch_game():
                 _dn_enter = _INPUT(type=1); _dn_enter.ki.wVk = 0x0D; _dn_enter.ki.wScan = 0x1C; _dn_enter.ki.dwFlags = 0x0008; _dn_enter.ki.dwExtraInfo = 0
                 _up_enter = _INPUT(type=1); _up_enter.ki.wVk = 0x0D; _up_enter.ki.wScan = 0x1C; _up_enter.ki.dwFlags = 0x000A; _up_enter.ki.dwExtraInfo = 0
 
-                # Retry F9+Enter every 3s until PS_Wasteland appears in log (confirms connect)
+                # F key — opens/confirms Direct Connect dialog
+                _dn_f = _INPUT(type=1); _dn_f.ki.wVk = 0x46; _dn_f.ki.wScan = 0x21; _dn_f.ki.dwFlags = 0x0008; _dn_f.ki.dwExtraInfo = 0
+                _up_f = _INPUT(type=1); _up_f.ki.wVk = 0x46; _up_f.ki.wScan = 0x21; _up_f.ki.dwFlags = 0x000A; _up_f.ki.dwExtraInfo = 0
+
+                # Sequence: F9 (fill fields) → F (open dialog) → Enter (connect)
+                # Retry every 6s until PS_Wasteland confirms connect
                 _connect_deadline = time.time() + 30
                 while time.time() < _connect_deadline:
                     _user32.SendInput(1, ctypes.byref(_dn), ctypes.sizeof(_INPUT))
                     time.sleep(0.05)
                     _user32.SendInput(1, ctypes.byref(_up), ctypes.sizeof(_INPUT))
-                    log.info("Conan: F9 sent, waiting for dialog...")
-                    time.sleep(0.5)
+                    log.info("Conan: F9 sent (fill fields)")
+                    time.sleep(1.5)
+                    _user32.SendInput(1, ctypes.byref(_dn_f), ctypes.sizeof(_INPUT))
+                    time.sleep(0.05)
+                    _user32.SendInput(1, ctypes.byref(_up_f), ctypes.sizeof(_INPUT))
+                    log.info("Conan: F sent (open dialog)")
+                    time.sleep(1.0)
                     _user32.SendInput(1, ctypes.byref(_dn_enter), ctypes.sizeof(_INPUT))
                     time.sleep(0.05)
                     _user32.SendInput(1, ctypes.byref(_up_enter), ctypes.sizeof(_INPUT))
-                    log.info("Conan: Enter sent to confirm connect")
+                    log.info("Conan: Enter sent (confirm connect)")
                     time.sleep(3)
                     try:
                         with open(_log_path, "r", encoding="utf-8", errors="ignore") as _lf:
