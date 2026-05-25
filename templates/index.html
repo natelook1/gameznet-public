@@ -3826,6 +3826,14 @@
 
   setInterval(loadSession, 30000);
 
+  // ── Quit signal poll — closes tab when tray Exit is clicked ───────────────
+  setInterval(async () => {
+    try {
+      const r = await fetch('/api/quit');
+      if (r.ok) { const d = await r.json(); if (d.quitting) window.close(); }
+    } catch {}
+  }, 500);
+
   // ── Status poll ────────────────────────────────────────────────────────────
   setInterval(async () => {
     if (!state.provisioned || state.busy) return;

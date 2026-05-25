@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.10.4"
+VERSION = "1.10.5"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -526,6 +526,7 @@ app.config['MAX_CONTENT_LENGTH'] = 550 * 1024 * 1024  # 550MB max upload
 _lock = threading.Lock()
 _connected = False
 _invisible = False
+_quitting = False
 icon_holder = {"icon": None}
 _player_status = ""
 _full_route = False
@@ -616,6 +617,10 @@ def api_status():
         "full_route": _full_route,
         "player_status": _player_status
     })
+
+@app.route("/api/quit", methods=["GET"])
+def api_quit():
+    return jsonify({"quitting": _quitting})
 
 @app.route("/api/connect", methods=["POST"])
 def api_connect():
@@ -864,77 +869,201 @@ def api_launch_game():
         if str(appid) == "526870":  # Satisfactory uses +open
             os.startfile(f"steam://run/{appid}//+open {ip}:{port}/")
         elif str(appid) == "440900":  # Conan Exiles Enhanced
-            # Game.ini stores LastConnected and AutoConnect — set them before launch
-            # so the game auto-joins the server on startup without any manual steps.
-            game_ini = os.path.join(os.path.expanduser("~"), "AppData", "Local",
-                                    "Conan Exiles", "Saved", "Config", "Windows", "Game.ini")
-            # Also check Steam install path
-            if not os.path.exists(game_ini):
-                game_ini = os.path.join(
-                    os.environ.get("LOCALAPPDATA", ""),
-                    "Conan Exiles", "Saved", "Config", "Windows", "Game.ini")
-            # Fall back to Steam common path
-            if not os.path.exists(game_ini):
-                try:
-                    import winreg as _wr2
-                    with _wr2.OpenKey(_wr2.HKEY_CURRENT_USER, r"Software\Valve\Steam") as _k2:
-                        _sp2 = os.path.dirname(_wr2.QueryValueEx(_k2, "SteamExe")[0])
-                except Exception:
-                    _sp2 = r"C:\Program Files (x86)\Steam"
-                game_ini = os.path.join(_sp2, "steamapps", "common", "Conan Exiles",
-                                        "ConanSandbox", "Saved", "Config", "Windows", "Game.ini")
-            if os.path.exists(game_ini):
-                import re as _re2
-                with open(game_ini, "r", encoding="utf-8") as _f2:
-                    content = _f2.read()
-                # Update fields inside [SavedServers] section only
-                def _set_saved(key, val, txt):
-                    # Replace existing key inside [SavedServers]
-                    txt = _re2.sub(
-                        r'(?m)(\[SavedServers\][^\[]*?)^' + key + r'=.*$',
-                        lambda m: m.group(1) + key + '=' + val,
-                        txt, flags=_re2.DOTALL | _re2.MULTILINE)
-                    # If key not present in section, insert after [SavedServers] header
-                    if not _re2.search(r'(?m)^\[SavedServers\].*?' + key + r'=', txt, _re2.DOTALL):
-                        txt = _re2.sub(r'(?m)^\[SavedServers\]', '[SavedServers]\n' + key + '=' + val, txt)
-                    return txt
-                content = _set_saved('LastConnected', f'{ip}:{port}', content)
-                content = _set_saved('LastPassword', 'natewinz', content)
-                content = _set_saved('AutoConnect', 'True', content)
-                with open(game_ini, "w", encoding="utf-8") as _f2:
-                    _f2.write(content)
-                log.info("Conan Game.ini updated: LastConnected=%s:%s AutoConnect=True", ip, port)
-            # Also write WindowsNoEditor\Game.ini — FuncomLauncher reads this path
-            _wne_ini = os.path.join(os.path.dirname(game_ini).replace("Windows", "WindowsNoEditor"), "Game.ini") if "Windows" in game_ini else None
-            if _wne_ini:
-                os.makedirs(os.path.dirname(_wne_ini), exist_ok=True)
-                _wne_content = f"[SavedServers]\nAutoConnect=True\nLastPassword=natewinz\nLastConnected={ip}:{port}\n"
-                with open(_wne_ini, "w", encoding="utf-8") as _fwne:
-                    _fwne.write(_wne_content)
-                log.info("Conan WindowsNoEditor Game.ini updated")
-            # Find shipping exe — Funcom Launcher swallows all args so we skip it entirely
+            # FLS auth requires FuncomLauncher to be running. Strategy:
+            # 1. Launch launcher via Steam (-applaunch) so FLS session initializes
+            # 2. Once launcher window is visible, launch Shipping exe directly
+            # 3. Watch ConanSandbox.log for PS_MainMenu, then PostMessage directconnect
             try:
-                import winreg as _wr3
-                with _wr3.OpenKey(_wr3.HKEY_CURRENT_USER, r"Software\Valve\Steam") as _k3:
-                    _sp3 = os.path.dirname(_wr3.QueryValueEx(_k3, "SteamExe")[0])
+                import winreg as _wr2
+                with _wr2.OpenKey(_wr2.HKEY_CURRENT_USER, r"Software\Valve\Steam") as _k2:
+                    _steam_exe = _wr2.QueryValueEx(_k2, "SteamExe")[0]
             except Exception:
-                _sp3 = r"C:\Program Files (x86)\Steam"
-            _conan_rel = os.path.join("steamapps", "common", "Conan Exiles",
-                                      "ConanSandbox", "Binaries", "Win64")
-            _lib_paths = [_sp3]
-            _vdf_path = os.path.join(_sp3, "steamapps", "libraryfolders.vdf")
-            if os.path.exists(_vdf_path):
-                import re as _re3
-                with open(_vdf_path, "r", encoding="utf-8") as _vf:
-                    _lib_paths += _re3.findall(r'"path"\s+"([^"]+)"', _vf.read())
-            _conan_bin = next(
-                (os.path.join(p, _conan_rel) for p in _lib_paths
-                 if os.path.exists(os.path.join(p, _conan_rel))), None)
-            if not _conan_bin:
-                return jsonify({"error": "Conan Exiles not found in any Steam library"}), 500
-            _shipping_exe = os.path.join(_conan_bin, "ConanSandbox-Win64-Shipping.exe")
-            log.info("Launching Conan shipping exe: %s", _shipping_exe)
-            subprocess.Popen([_shipping_exe], cwd=_conan_bin)
+                _steam_exe = r"C:\Program Files (x86)\Steam\steam.exe"
+            try:
+                import winreg as _wr2b
+                with _wr2b.OpenKey(_wr2b.HKEY_CURRENT_USER, r"Software\Valve\Steam") as _k2b:
+                    _sp2b = os.path.dirname(_wr2b.QueryValueEx(_k2b, "SteamExe")[0])
+            except Exception:
+                _sp2b = r"C:\Program Files (x86)\Steam"
+            _shipping_exe = os.path.join(_sp2b, "steamapps", "common", "Conan Exiles",
+                                         "ConanSandbox", "Binaries", "Win64",
+                                         "ConanSandbox-Win64-Shipping.exe")
+            _dc_cmd = f"directconnect {ip} {port} natewinz"
+            _conan_base = os.path.join(_sp2b, "steamapps", "common", "Conan Exiles", "ConanSandbox")
+            _config_dir = os.path.join(_conan_base, "Saved", "Config", "Windows")
+
+            # Write Command1 text to Game.ini
+            _game_ini = os.path.join(_config_dir, "Game.ini")
+            import re as _re4
+            if os.path.exists(_game_ini):
+                with open(_game_ini, "r", encoding="utf-8") as _f:
+                    _gc = _f.read()
+                if re.search(r"(?m)^Command1=", _gc):
+                    _gc = re.sub(r"(?m)^Command1=.*$", f"Command1={_dc_cmd}", _gc)
+                else:
+                    _gc += f"\nCommand1={_dc_cmd}\n"
+                with open(_game_ini, "w", encoding="utf-8") as _f:
+                    _f.write(_gc)
+
+            # Write Command1 key binding to Input.ini (F9, replacing any existing Command1 binding)
+            _input_ini = os.path.join(_config_dir, "Input.ini")
+            _new_binding = 'ActionMappings=(ActionName="Command1",bShift=False,bCtrl=False,bAlt=False,bCmd=False,Key=F9,bLongPress=False)'
+            if os.path.exists(_input_ini):
+                with open(_input_ini, "r", encoding="utf-8") as _f:
+                    _ic = _f.read()
+                if re.search(r'ActionName="Command1"', _ic):
+                    _ic = re.sub(r'(?m)^.*ActionName="Command1".*$', _new_binding, _ic)
+                else:
+                    _ic += f"\n{_new_binding}\n"
+                with open(_input_ini, "w", encoding="utf-8") as _f:
+                    _f.write(_ic)
+
+            log.info("Conan: wrote Command1=%s bound to F9", _dc_cmd)
+            log.info("Launching FuncomLauncher via Steam for FLS auth")
+            subprocess.Popen([_steam_exe, "-applaunch", "440900"])
+
+            def _conan_autoconnect():
+                import time, ctypes, os as _os
+                _user32 = ctypes.windll.user32
+                _log_path = _os.path.join(_sp2b, "steamapps", "common", "Conan Exiles",
+                                          "ConanSandbox", "Saved", "Logs", "ConanSandbox.log")
+
+                # Step 1: wait for launcher window (confirms FLS session is active)
+                log.info("Conan: waiting for FuncomLauncher window...")
+                _deadline = time.time() + 30
+                while time.time() < _deadline:
+                    time.sleep(1)
+                    _lp = next((p for p in __import__('psutil').process_iter(['name', 'pid'])
+                                if p.info['name'] == 'FuncomLauncher.exe'), None)
+                    if _lp and _user32.FindWindowW(None, "Funcom Launcher"):
+                        break
+                log.info("Conan: launcher visible, launching Shipping exe")
+
+                # Step 2: launch Shipping exe, then wait for new log session to start
+                __import__('subprocess').Popen([_shipping_exe], cwd=_os.path.dirname(_shipping_exe))
+
+                # Wait for old log to be replaced: size must drop then grow past 0
+                log.info("Conan: waiting for new log session...")
+                _old_size = 0
+                try:
+                    _old_size = _os.path.getsize(_log_path)
+                except Exception:
+                    pass
+                _deadline2 = time.time() + 60
+                while time.time() < _deadline2:
+                    time.sleep(0.5)
+                    try:
+                        _sz = _os.path.getsize(_log_path)
+                        if _sz < _old_size and _sz > 0:
+                            break  # log was recreated fresh
+                    except Exception:
+                        pass
+
+                # Step 3: tail log for PS_MainMenu from beginning of new session
+                _last_size = 0
+                log.info("Conan: watching log for PS_MainMenu (fresh session)...")
+                _deadline = time.time() + 180
+                _ready = False
+                while time.time() < _deadline:
+                    time.sleep(0.5)
+                    try:
+                        _sz = _os.path.getsize(_log_path)
+                        if _sz <= _last_size:
+                            continue
+                        with open(_log_path, "r", encoding="utf-8", errors="ignore") as _lf:
+                            _lf.seek(_last_size)
+                            _chunk = _lf.read()
+                        _last_size = _sz
+                        if 'Presence: "" => "PS_MainMenu"' in _chunk:
+                            _ready = True
+                            break
+                    except Exception:
+                        pass
+
+                if not _ready:
+                    log.warning("Conan: PS_MainMenu not detected within timeout")
+                    return
+
+                log.info("Conan: main menu ready, sending F9 now")
+
+                # Step 5: send F9 via PostMessage — triggers Command1 = directconnect
+                # Find window by process name since title may vary
+                _pid = None
+                for _proc in __import__('psutil').process_iter(['name', 'pid']):
+                    if _proc.info['name'] == 'ConanSandbox-Win64-Shipping.exe':
+                        _pid = _proc.info['pid']
+                        break
+                if not _pid:
+                    log.warning("Conan: game process not found")
+                    return
+
+                _hwnds = []
+                def _cb(hwnd, _):
+                    _p = __import__('ctypes').wintypes.DWORD()
+                    _user32.GetWindowThreadProcessId(hwnd, __import__('ctypes').byref(_p))
+                    if _p.value == _pid and _user32.IsWindowVisible(hwnd):
+                        _hwnds.append(hwnd)
+                    return True
+                import ctypes.wintypes
+                _WNDENUMPROC = __import__('ctypes').WINFUNCTYPE(
+                    __import__('ctypes').c_bool,
+                    __import__('ctypes').wintypes.HWND,
+                    __import__('ctypes').wintypes.LPARAM)
+                _user32.EnumWindows(_WNDENUMPROC(_cb), 0)
+                if not _hwnds:
+                    log.warning("Conan: game window not found")
+                    return
+
+                _hwnd = _hwnds[0]
+                # UE4 requires hardware-level SendInput — dwExtraInfo must be ULONG_PTR (c_size_t)
+                _user32.SetForegroundWindow(_hwnd)
+                # Poll until the game window is actually foreground before sending
+                for _ in range(20):
+                    time.sleep(0.1)
+                    if _user32.GetForegroundWindow() == _hwnd:
+                        break
+                time.sleep(0.3)  # give UE4 input system time to settle after focus
+
+                class _KEYBDINPUT(ctypes.Structure):
+                    _fields_ = [('wVk', ctypes.c_ushort), ('wScan', ctypes.c_ushort),
+                                 ('dwFlags', ctypes.c_ulong), ('time', ctypes.c_ulong),
+                                 ('dwExtraInfo', ctypes.c_size_t)]
+                class _INPUT(ctypes.Structure):
+                    class _U(ctypes.Union):
+                        _fields_ = [('ki', _KEYBDINPUT), ('padding', ctypes.c_byte * 28)]
+                    _anonymous_ = ('_u',)
+                    _fields_ = [('type', ctypes.c_ulong), ('_u', _U)]
+
+                _dn = _INPUT(type=1); _dn.ki.wVk = 0x78; _dn.ki.wScan = 0x43; _dn.ki.dwFlags = 0x0008; _dn.ki.dwExtraInfo = 0  # F9
+                _up = _INPUT(type=1); _up.ki.wVk = 0x78; _up.ki.wScan = 0x43; _up.ki.dwFlags = 0x000A; _up.ki.dwExtraInfo = 0
+
+                # Send F9 then Enter — F9 opens Direct Connect dialog with data, Enter confirms it
+                _dn_enter = _INPUT(type=1); _dn_enter.ki.wVk = 0x0D; _dn_enter.ki.wScan = 0x1C; _dn_enter.ki.dwFlags = 0x0008; _dn_enter.ki.dwExtraInfo = 0
+                _up_enter = _INPUT(type=1); _up_enter.ki.wVk = 0x0D; _up_enter.ki.wScan = 0x1C; _up_enter.ki.dwFlags = 0x000A; _up_enter.ki.dwExtraInfo = 0
+
+                # Retry F9+Enter every 3s until PS_Wasteland appears in log (confirms connect)
+                _connect_deadline = time.time() + 30
+                while time.time() < _connect_deadline:
+                    _user32.SendInput(1, ctypes.byref(_dn), ctypes.sizeof(_INPUT))
+                    time.sleep(0.05)
+                    _user32.SendInput(1, ctypes.byref(_up), ctypes.sizeof(_INPUT))
+                    log.info("Conan: F9 sent, waiting for dialog...")
+                    time.sleep(0.5)
+                    _user32.SendInput(1, ctypes.byref(_dn_enter), ctypes.sizeof(_INPUT))
+                    time.sleep(0.05)
+                    _user32.SendInput(1, ctypes.byref(_up_enter), ctypes.sizeof(_INPUT))
+                    log.info("Conan: Enter sent to confirm connect")
+                    time.sleep(3)
+                    try:
+                        with open(_log_path, "r", encoding="utf-8", errors="ignore") as _lf:
+                            if 'PS_Wasteland' in _lf.read():
+                                log.info("Conan: PS_Wasteland confirmed — connected!")
+                                break
+                    except Exception:
+                        pass
+
+            import threading
+            threading.Thread(target=_conan_autoconnect, daemon=True).start()
         else:
             os.startfile(f"steam://run/{appid}//+connect {ip}:{port}/")
         return jsonify({"success": True})
@@ -2477,6 +2606,9 @@ def run_tray(flask_thread):
             refresh_icon()
 
     def on_exit(icon, item):
+        global _quitting
+        _quitting = True
+        time.sleep(0.3)  # give the frontend one poll cycle to see quitting=true
         cleanup_tunnel()
         icon.stop()
         os._exit(0)
