@@ -4004,15 +4004,17 @@
               <div class="op-name">${esc(p.name)}</div>
               ${!isOffline && p.mobile ? `<div class="op-status" style="color:var(--accent);opacity:0.8;">📱 Mobile</div>` : ''}
               ${!isOffline && !p.mobile && p.status ? `<div class="op-status">${esc(p.status)}</div>` : ''}
-              ${!isOffline && p.connected_at ? `<div class="op-status" style="color:var(--muted);margin-left:auto;">online for ${fmtOnlineFor(p.connected_at)}</div>` : ''}
               ${lastSeenHtml}
             </div>
             ${steamSub}
             ${gamesStrip}
           </div>
-          <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;margin-left:auto;">
-            ${pingHtml}
-            ${!isOffline ? `<div class="op-ip" style="text-align:right;">${p.vpn_ip}</div>` : ''}
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;margin-left:auto;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              ${pingHtml}
+              ${!isOffline ? `<div class="op-ip" style="text-align:right;">${p.vpn_ip}</div>` : ''}
+            </div>
+            ${!isOffline && p.connected_at ? `<div style="font-size:10px;color:var(--muted);font-family:monospace;">${fmtOnlineFor(p.connected_at)}</div>` : ''}
           </div>
         </div>`;
       }
