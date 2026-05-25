@@ -974,6 +974,9 @@ def api_launch_game():
                             _lf.seek(_last_size)
                             _chunk = _lf.read()
                         _last_size = _sz
+                        if 'FlsOfflineMode' in _chunk:
+                            log.warning("Conan: FLS offline mode — aborting autoconnect")
+                            return
                         if 'Presence: "" => "PS_MainMenu"' in _chunk:
                             _ready = True
                             break
