@@ -905,20 +905,7 @@ def api_launch_game():
                 with open(_game_ini, "w", encoding="utf-8") as _f:
                     _f.write(_gc)
 
-            # Write Command1 key binding to Input.ini (F9, replacing any existing Command1 binding)
-            _input_ini = os.path.join(_config_dir, "Input.ini")
-            _new_binding = 'ActionMappings=(ActionName="Command1",bShift=False,bCtrl=False,bAlt=False,bCmd=False,Key=F9,bLongPress=False)'
-            if os.path.exists(_input_ini):
-                with open(_input_ini, "r", encoding="utf-8") as _f:
-                    _ic = _f.read()
-                if re.search(r'ActionName="Command1"', _ic):
-                    _ic = re.sub(r'(?m)^.*ActionName="Command1".*$', _new_binding, _ic)
-                else:
-                    _ic += f"\n{_new_binding}\n"
-                with open(_input_ini, "w", encoding="utf-8") as _f:
-                    _f.write(_ic)
-
-            log.info("Conan: wrote Command1=%s bound to F9", _dc_cmd)
+            log.info("Conan: wrote Command1=%s to Game.ini", _dc_cmd)
             log.info("Launching FuncomLauncher via Steam for FLS auth")
             subprocess.Popen([_steam_exe, "-applaunch", "440900"])
 
@@ -928,7 +915,7 @@ def api_launch_game():
                 _log_path = _os.path.join(_sp2b, "steamapps", "common", "Conan Exiles",
                                           "ConanSandbox", "Saved", "Logs", "ConanSandbox.log")
 
-                # Step 1: wait for launcher window (confirms FLS session is active)
+                # Step 1: wait for FuncomLauncher window then FLS online confirmation in its log
                 log.info("Conan: waiting for FuncomLauncher window...")
                 _deadline = time.time() + 30
                 while time.time() < _deadline:
@@ -937,35 +924,55 @@ def api_launch_game():
                                 if p.info['name'] == 'FuncomLauncher.exe'), None)
                     if _lp and _user32.FindWindowW(None, "Funcom Launcher"):
                         break
-                log.info("Conan: launcher visible, launching Shipping exe")
+
+                # Wait for FLS to finish loading before launching game
+                _launcher_log = _os.path.join(_os.path.expanduser("~"), "AppData", "Roaming",
+                                              "FuncomLauncher", "logs", "main.log")
+                log.info("Conan: waiting for FLS ready in launcher log...")
+                _deadline = time.time() + 20
+                while time.time() < _deadline:
+                    time.sleep(0.5)
+                    try:
+                        with open(_launcher_log, "r", encoding="utf-8", errors="ignore") as _lf:
+                            if "Finished loading web view" in _lf.read():
+                                break
+                    except Exception:
+                        pass
+                log.info("Conan: FLS ready, launching Shipping exe")
 
                 # Step 2: launch Shipping exe, then wait for new log session to start
                 __import__('subprocess').Popen([_shipping_exe], cwd=_os.path.dirname(_shipping_exe))
 
-                # Wait for old log to be replaced: size must drop then grow past 0
-                log.info("Conan: waiting for new log session...")
-                _old_size = 0
-                try:
-                    _old_size = _os.path.getsize(_log_path)
-                except Exception:
-                    pass
-                _deadline2 = time.time() + 60
-                while time.time() < _deadline2:
-                    time.sleep(0.5)
-                    try:
-                        _sz = _os.path.getsize(_log_path)
-                        if _sz < _old_size and _sz > 0:
-                            break  # log was recreated fresh
-                    except Exception:
-                        pass
+                # Keep rewriting Input.ini every second until PS_MainMenu fires
+                # UE4 may overwrite it during startup, so we keep hammering it
+                _input_ini = _os.path.join(_config_dir, "Input.ini")
+                _new_binding = 'ActionMappings=(ActionName="Command1",bShift=False,bCtrl=False,bAlt=False,bCmd=False,Key=F9,bLongPress=False)'
+                import re as _re_input
 
-                # Step 3: tail log for PS_MainMenu from beginning of new session
+                # Step 3: tail log for PS_MainMenu, rewriting Input.ini every second
                 _last_size = 0
-                log.info("Conan: watching log for PS_MainMenu (fresh session)...")
+                log.info("Conan: watching log for PS_MainMenu, hammering Input.ini...")
                 _deadline = time.time() + 180
                 _ready = False
+                _ini_write_counter = 0
                 while time.time() < _deadline:
                     time.sleep(0.5)
+                    # Rewrite Input.ini every 2s to survive UE4 overwriting it during startup
+                    _ini_write_counter += 1
+                    if _ini_write_counter % 4 == 0:
+                        try:
+                            _ic = ""
+                            if _os.path.exists(_input_ini):
+                                with open(_input_ini, "r", encoding="utf-8") as _f:
+                                    _ic = _f.read()
+                            if _re_input.search(r'ActionName="Command1"', _ic):
+                                _ic = _re_input.sub(r'(?m)^.*ActionName="Command1".*$', _new_binding, _ic)
+                            else:
+                                _ic += f"\n{_new_binding}\n"
+                            with open(_input_ini, "w", encoding="utf-8") as _f:
+                                _f.write(_ic)
+                        except Exception:
+                            pass
                     try:
                         _sz = _os.path.getsize(_log_path)
                         if _sz <= _last_size:
