@@ -1,5 +1,81 @@
 # Changelog
 
+## v1.10.9 — 2026-05-24
+
+### Added
+- **Admin roster status badges** — each row now shows an explicit text badge alongside the dot: `ONLINE` (green, heartbeating), `ZOMBIE` (amber, heartbeating but session > 24h — old client that never properly disconnected), or no badge for inactive peers. `OFFLINE` badge moved from the identity column into the status cell for consistency
+- **ZOMBIE detection** — clients heartbeating with a `connected_at` older than 24 hours are flagged as ZOMBIE, identifying pre-sweeper clients stuck in a broken session state that need a reconnect + update
+- **Roster sorted by status then version** — ONLINE first, inactive peers middle, ZOMBIE last; within each group sorted by version descending so newest clients appear at the top
+- **Admin HIDE/UNHIDE works reliably** — visibility is now server-authoritative. `/api/invisible` is a dedicated endpoint (token-authenticated); app.py proxies the VISIBLE button to the backend instead of piggybacking on the heartbeat. The heartbeat no longer overwrites the `hidden` flag, so admin toggles stick
+
+### Fixed
+- **Update Required button** — was triggering connect flow instead of launching the updater; now correctly triggers the in-app update
+- **Admin roster card-title accent bar** — fixed `|` rendering artifact at lower zoom levels by switching from fixed `14px` height to `1em` so it scales with font size
+- **vprobe/test player rows** — purged from DB on server startup; filtered from all admin roster queries so test runs don't litter the 30-day offline section
+
+### Changed
+- **Admin roster offline history** — extended from 2 hours to 30 days; dimmed offline section with separator row appended below live peers
+
+---
+
+## v1.10.5 — 2026-05-24
+
+### Added
+- **Conan Exiles Enhanced one-click auto-connect** — clicking LAUNCH in the Conan modal starts the game via Steam, watches the log for `PS_MainMenu`, then sends `F9 → F → Enter` via PostMessage to auto-connect to the server. First-time only: writes the F9 keybind to `Input.ini` under `[/Script/Engine.InputSettings]`
+- **Conan modal** — copyable `directconnect` console command, how-to dropdown, and rename button added to the Conan server detail modal
+
+### Fixed
+- **Conan auto-connect robustness** — aborts if FLS offline mode is detected; guards against UE4 overwriting `Input.ini` by re-writing every 2s during load; delays F9 3s after `PS_MainMenu` to let UI settle
+- **Disconnect flow hardening** — blocked auto-disconnect and manual disconnect during active connect; precise tunnel-state check before heartbeat auto-disconnect triggers
+- **Auto-disconnect on sleep/wake** — correctly detects tunnel death after system sleep and disconnects cleanly
+- **Chat SSE null guard** — guarded `_chatStream` null before close in onerror handler
+
+---
+
+## v1.9.1 — 2026-05-23
+
+### Added
+- **Commercial-grade chat/DM upgrade** — full message threading, reactions, edit/delete, read receipts, and typing indicators
+- **Remote assistance fully working end-to-end** — complete RustDesk negotiation flow: event-driven state machine, SSE replacing poll for incoming requests, system notification + tab flash + looping beep for help requests, automatic cleanup on both sides
+- **Self-hosted RustDesk relay** — hbbs+hbbr running as standalone host-network compose on the backend VM, bypassing the public RustDesk server login requirement
+- **Tray notifications for game server start/stop** — SSE stream delivers `server_state` events; tray fires when a running server stops or an offline server starts
+
+### Fixed
+- **RustDesk TOML injection** — writes server options via `--option` IPC after daemon startup; strips `key_confirmed` and `[keys_confirmed]` from both sides to prevent stale auth state
+- **Remote SSE + poll fallback** — restored poll alongside SSE so requests aren't missed when the stream isn't yet open
+- **AudioContext unlock** — unlocked with a silent buffer on connect click for reliable notification sound
+- **Chat message purge** — hard-deletes test messages by `from_name` during cleanup; excluded deleted messages from GET `/api/chat` and DM history
+
+---
+
+## v1.8.7 — 2026-05-21
+
+### Added
+- **Conan Exiles tab** — added to both desktop and mobile; live player/building map, guild roster, server stats via SSE stream from the Conan game DB
+- **Conan map** — Leaflet tiled map with player markers, building clusters (from `actor_position`/`building_instances`), teleporters, and a toggleable legend; buildings drawn as rotated rectangles from quaternion transform data; map tiles rsync'd to the server separately from git
+- **Landing page** — public `/` now shows a request-access form for prospective players instead of a bare 404
+- **Dynamic Steam library detection** — expanded non-Steam process list; Steam library scanned for installed game detection
+
+### Fixed
+- **Map tile proxy** — tiles proxied through the desktop app Flask server; CF Pages mobile map prefixes API base URL correctly
+- **Conan DB access** — opened with `immutable=1` to handle WAL mode on read-only Docker volume mount; building ownership joined via `guilds` table (not char ID directly)
+- **SSE polling fallback** — falls back to polling when SSE is unavailable (Cloudflare strips SSE on CF Pages)
+- **VPN disconnect cleanup** — proper heartbeat routing on disconnect, DNS flush, and stale tunnel detection
+
+---
+
+## v1.8.4 — 2026-05-12
+
+### Added
+- **Conan Exiles live map (initial)** — interactive canvas/Leaflet map with player positions and building markers pulled from the Conan game DB mounted as a Docker volume; coordinate calibration from ground-truth in-game positions
+- **SSE fast/slow split** — players pushed every 5s, world data (buildings, thralls) every 60s on separate event types over one connection
+
+### Fixed
+- Multiple coordinate calibration passes to align world units to tile pixel space
+- Building queries corrected to use `actor_position` for coordinates and `guilds` join for ownership
+
+---
+
 ## v1.6.3 — 2026-04-29
 
 ### Added
