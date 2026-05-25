@@ -5024,10 +5024,12 @@
         b2.onclick = () => copyText(dcCmd, 'Direct-connect command copied!');
         const details = document.createElement('details');
         details.style.cssText = 'width:100%;margin-top:4px;';
-        details.innerHTML = '<summary style="font-size:10px;color:var(--text-dim);cursor:pointer;letter-spacing:1px;text-transform:uppercase;">How to connect manually ▾</summary>'
+        details.innerHTML = '<summary style="font-size:10px;color:var(--text-dim);cursor:pointer;letter-spacing:1px;text-transform:uppercase;">How to connect ▾</summary>'
           + '<div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.7;padding:6px 8px;background:var(--bg2);border-radius:3px;">'
-          + '1. Click <b style="color:var(--text);">LAUNCH GAME</b> then wait at the main menu.<br>'
-          + '2. Press <code>~</code> to open the console and paste:<br>'
+          + '1. Click <b style="color:var(--text);">LAUNCH GAME</b> and wait at the main menu.<br>'
+          + '2. Press <b style="color:var(--text);">F9</b> to connect automatically.<br>'
+          + '<span style="color:var(--text-dim2,#556);font-size:10px;">First time only: go to Settings → Keybindings → find <b>Command1</b> → bind it to F9.</span><br>'
+          + '<br>Or connect manually — press <code>~</code> and paste:<br>'
           + '<code style="display:block;margin-top:4px;padding:3px 5px;background:var(--bg3,#111);border-radius:2px;">' + dcCmd + '</code>'
           + '</div>';
         ports.innerHTML = '';

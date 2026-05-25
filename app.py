@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.10.5"
+VERSION = "1.10.6"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -943,38 +943,13 @@ def api_launch_game():
                 # Step 2: launch Shipping exe, then wait for new log session to start
                 __import__('subprocess').Popen([_shipping_exe], cwd=_os.path.dirname(_shipping_exe))
 
-                # Keep rewriting Input.ini every second until PS_MainMenu fires
-                # UE4 may overwrite it during startup, so we keep hammering it
-                _input_ini = _os.path.join(_config_dir, "Input.ini")
-                _new_binding = 'ActionMappings=(ActionName="Command1",bShift=False,bCtrl=False,bAlt=False,bCmd=False,Key=F9,bLongPress=False)'
-                import re as _re_input
-
-                # Step 3: tail log for PS_MainMenu, rewriting Input.ini every second
+                # Step 3: tail log for PS_MainMenu
                 _last_size = 0
-                log.info("Conan: watching log for PS_MainMenu, hammering Input.ini...")
+                log.info("Conan: watching log for PS_MainMenu...")
                 _deadline = time.time() + 180
                 _ready = False
-                _ini_write_counter = 0
                 while time.time() < _deadline:
                     time.sleep(0.5)
-                    # Rewrite Input.ini every 2s to survive UE4 overwriting it during startup
-                    _ini_write_counter += 1
-                    if _ini_write_counter % 4 == 0:
-                        try:
-                            _ic = ""
-                            if _os.path.exists(_input_ini):
-                                with open(_input_ini, "r", encoding="utf-8") as _f:
-                                    _ic = _f.read()
-                            if _re_input.search(r'ActionName="Command1"', _ic):
-                                _ic = _re_input.sub(r'(?m)^.*ActionName="Command1".*$', _new_binding, _ic)
-                            elif '[/Script/Engine.InputSettings]' in _ic:
-                                _ic = _ic.replace('[/Script/Engine.InputSettings]', f'[/Script/Engine.InputSettings]\n{_new_binding}')
-                            else:
-                                _ic += f"\n[/Script/Engine.InputSettings]\n{_new_binding}\n"
-                            with open(_input_ini, "w", encoding="utf-8") as _f:
-                                _f.write(_ic)
-                        except Exception:
-                            pass
                     try:
                         _sz = _os.path.getsize(_log_path)
                         if _sz <= _last_size:
