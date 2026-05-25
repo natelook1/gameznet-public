@@ -984,7 +984,8 @@ def api_launch_game():
                     log.warning("Conan: PS_MainMenu not detected within timeout")
                     return
 
-                log.info("Conan: main menu ready, sending F9 now")
+                log.info("Conan: main menu ready, waiting 3s for UI to settle...")
+                time.sleep(3)
 
                 # Step 5: send F9 via PostMessage — triggers Command1 = directconnect
                 # Find window by process name since title may vary
