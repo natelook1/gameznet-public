@@ -3948,6 +3948,14 @@
         if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
         return `${Math.floor(diff / 86400)}d ago`;
       }
+      function fmtOnlineFor(iso) {
+        if (!iso) return null;
+        const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+        if (s < 60) return `${s}s`;
+        if (s < 3600) return `${Math.floor(s / 60)}m`;
+        const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+        return m ? `${h}h ${m}m` : `${h}h`;
+      }
       function renderPlayer(p) {
         const isOffline = p.online === false;
         const avatar = p.steam_avatar
@@ -3996,6 +4004,7 @@
               <div class="op-name">${esc(p.name)}</div>
               ${!isOffline && p.mobile ? `<div class="op-status" style="color:var(--accent);opacity:0.8;">📱 Mobile</div>` : ''}
               ${!isOffline && !p.mobile && p.status ? `<div class="op-status">${esc(p.status)}</div>` : ''}
+              ${!isOffline && p.connected_at ? `<div class="op-status" style="color:var(--muted);margin-left:auto;">online for ${fmtOnlineFor(p.connected_at)}</div>` : ''}
               ${lastSeenHtml}
             </div>
             ${steamSub}
