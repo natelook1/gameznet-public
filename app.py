@@ -967,8 +967,10 @@ def api_launch_game():
                                     _ic = _f.read()
                             if _re_input.search(r'ActionName="Command1"', _ic):
                                 _ic = _re_input.sub(r'(?m)^.*ActionName="Command1".*$', _new_binding, _ic)
+                            elif '[/Script/Engine.InputSettings]' in _ic:
+                                _ic = _ic.replace('[/Script/Engine.InputSettings]', f'[/Script/Engine.InputSettings]\n{_new_binding}')
                             else:
-                                _ic += f"\n{_new_binding}\n"
+                                _ic += f"\n[/Script/Engine.InputSettings]\n{_new_binding}\n"
                             with open(_input_ini, "w", encoding="utf-8") as _f:
                                 _f.write(_ic)
                         except Exception:

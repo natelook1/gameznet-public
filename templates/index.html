@@ -4737,7 +4737,7 @@
       } catch(err) {}
     };
     // If connection drops, close and let the interval retry it automatically
-    _chatStream.onerror = () => { _chatStream.close(); _chatStream = null; };
+    _chatStream.onerror = () => { if (_chatStream) { _chatStream.close(); _chatStream = null; } };
   }
   
   setInterval(startChat, 5000);
