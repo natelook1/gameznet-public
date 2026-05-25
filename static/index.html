@@ -253,7 +253,7 @@
   import { h, render } from 'https://esm.sh/preact@10';
   import { useState, useEffect, useRef } from 'https://esm.sh/preact@10/hooks';
   import htm from 'https://esm.sh/htm@3';
-  import { WowTab } from '/wow.js?v=1.10.10';
+  import { WowTab } from '/wow.js?v=1.10.11';
   const html = htm.bind(h);
 
   const API = 'https://gameznet.looknet.ca';
@@ -283,6 +283,15 @@
     if (h > 0) return `${h}h ${m}m`;
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
+  }
+
+  function fmtOnlineFor(iso) {
+    if (!iso) return null;
+    const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (s < 60) return `${s}s`;
+    if (s < 3600) return `${Math.floor(s / 60)}m`;
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return m ? `${h}h ${m}m` : `${h}h`;
   }
 
   function parsePing(ping) {
@@ -486,7 +495,10 @@
                   <div class="player-name">${p.name}${p.name === me.name ? ' (you)' : ''}</div>
                   <div class="player-sub">${p.mobile ? 'Mobile' : (p.game || p.status || 'Online')}</div>
                 </div>
-                ${parsePing(p.ping) !== null && html`<div class="ping">${parsePing(p.ping)}ms</div>`}
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;">
+                  ${parsePing(p.ping) !== null && html`<div class="ping">${parsePing(p.ping)}ms</div>`}
+                  ${p.connected_at && html`<div style="font-size:10px;color:var(--muted);font-family:monospace;">${fmtOnlineFor(p.connected_at)}</div>`}
+                </div>
               </div>
             `)
           }
