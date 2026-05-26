@@ -2241,6 +2241,10 @@ def api_satisfactory_map_background():
 def conan_exiles():
     return send_from_directory("static", "conan-exiles.html")
 
+@app.route("/zomboid")
+def zomboid():
+    return send_from_directory("static", "zomboid.html")
+
 @app.route("/static/map-tiles/<path:tile_path>")
 def map_tiles_proxy(tile_path):
     import urllib.request as _ur
