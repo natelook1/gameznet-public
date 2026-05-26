@@ -586,18 +586,18 @@
     // ── Map ──────────────────────────────────────────────────────────────────
 
     // PZ world coords -> Leaflet latlng (CRS.Simple, tileSize=256)
-    // Tiles cover cx=30-50 (x=9000-15000), cy=0-16 (y=0-4800), PZ_SCALE=20
+    // Tiles cover cx=16-28 (x=4800-8400), cy=16-28 (y=4800-8400), PZ_SCALE=20
     // At zoom 4: Leaflet tile (tx,ty) covers lng=[tx*16,(tx+1)*16], lat=[-ty*16,-(ty+1)*16]
-    // Our file (0,0) starts at x=9000,y=0 → lng=450,lat=0 → Leaflet tile (28,0) at zoom 4
+    // Our file (0,0) starts at x=4800,y=4800 → lng=240,lat=-240 → Leaflet tile (15,15) at zoom 4
     const PZ_SCALE = 20;
-    const TILE_CELL_X_MIN = 30;  // cx of file tile (0,*)
-    const TILE_CELL_Y_MIN = 0;   // cy of file tile (*,0)
+    const TILE_CELL_X_MIN = 16;  // cx of file tile (0,*)
+    const TILE_CELL_Y_MIN = 16;  // cy of file tile (*,0)
     const TILE_ZOOM_MAX = 4;
-    const TILE_COLS = 20;        // CELL_X_MAX - CELL_X_MIN
-    const TILE_ROWS = 16;        // CELL_Y_MAX - CELL_Y_MIN
-    // Offsets at zoom 4: floor(CELL_MIN * 300 / PZ_SCALE / (256/16))
-    const TILE_OFFSET_X = Math.floor(TILE_CELL_X_MIN * 300 / PZ_SCALE / 16);  // = 28
-    const TILE_OFFSET_Y = Math.floor(TILE_CELL_Y_MIN * 300 / PZ_SCALE / 16);  // = 0
+    const TILE_COLS = 12;        // CELL_X_MAX - CELL_X_MIN
+    const TILE_ROWS = 12;        // CELL_Y_MAX - CELL_Y_MIN
+    // Offsets at zoom 4: floor(CELL_MIN * 300 / PZ_SCALE / 16) = floor(16*300/20/16) = 15
+    const TILE_OFFSET_X = Math.floor(TILE_CELL_X_MIN * 300 / PZ_SCALE / 16);  // = 15
+    const TILE_OFFSET_Y = Math.floor(TILE_CELL_Y_MIN * 300 / PZ_SCALE / 16);  // = 15
 
     function pzToLatLng(x, y) { return [-y / PZ_SCALE, x / PZ_SCALE]; }
 
