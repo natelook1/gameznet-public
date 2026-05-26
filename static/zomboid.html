@@ -273,7 +273,7 @@
           <div id="map-inner">
             <div id="leaflet-map"></div>
           </div>
-          <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">No map tiles — coordinate grid only. Positions are accurate. 🟢 alive &nbsp;🔴 infected &nbsp;⬜ working vehicle &nbsp;◼ destroyed</p>
+          <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ working vehicle &nbsp;◼ destroyed</p>
         </div>
 
       </div>
@@ -639,7 +639,6 @@
         pzToLatLng(TILE_CELL_X_MIN * 300, (TILE_CELL_Y_MIN + TILE_ROWS) * 300),
         pzToLatLng((TILE_CELL_X_MIN + TILE_COLS) * 300, TILE_CELL_Y_MIN * 300)
       );
-      leafletMap.setMaxBounds(mapBounds.pad(0.2));
       leafletMap.fitBounds(mapBounds);
       redrawPlayers();
     }
