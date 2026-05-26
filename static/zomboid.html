@@ -583,13 +583,16 @@
         attributionControl: false,
       });
 
-      // PZ Muldraugh map is roughly 10800x10800 tiles at 1:1
-      // We'll use a simple coord grid — no map tiles available on server
-      const bounds = leafletMap.options.crs.latLngBoundsToContainerPixelBounds
-        ? null
-        : L.latLngBounds([[-300, -300], [300, 300]]);
-      leafletMap.setView([0, 0], 0);
+      // Draw a grid to show this is a coordinate space, not a broken tile map
+      const gridColor = 'rgba(34,197,94,0.12)';
+      const worldBounds = [[-540, -540], [540, 540]];
+      L.rectangle(worldBounds, { color: 'rgba(34,197,94,0.35)', weight: 1, fill: false }).addTo(leafletMap);
+      for (let i = -480; i <= 480; i += 120) {
+        L.polyline([[-540, i], [540, i]], { color: gridColor, weight: 0.5 }).addTo(leafletMap);
+        L.polyline([[i, -540], [i, 540]], { color: gridColor, weight: 0.5 }).addTo(leafletMap);
+      }
 
+      leafletMap.setView([0, 0], 0);
       redrawPlayers();
     }
 

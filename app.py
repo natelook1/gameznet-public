@@ -2473,12 +2473,18 @@ def heartbeat_loop():
                             h_match = re.search(r"latest handshake: (.+)", out)
                             if h_match:
                                 hs = h_match.group(1).strip().lower()
-                                # Handshake within 3 minutes = tunnel is alive
-                                if "second" in hs or ("minute" in hs and not any(
-                                    f"{n} minute" in hs for n in ["4","5","6","7","8","9"]
-                                )):
+                                # Parse handshake age into seconds.
+                                # wg show format: "2 minutes, 14 seconds ago" / "47 seconds ago" / "1 minute, 3 seconds ago"
+                                # PersistentKeepalive=25s — live tunnel handshakes every ~25s.
+                                # Anything under 3 minutes means the peer is still responding.
+                                age_s = 0
+                                m = re.search(r"(\d+)\s+minute", hs)
+                                if m: age_s += int(m.group(1)) * 60
+                                m = re.search(r"(\d+)\s+second", hs)
+                                if m: age_s += int(m.group(1))
+                                if age_s < 180:
                                     tunnel_dead = False
-                                    log.info("Heartbeat failed but tunnel handshake is recent (%s) — routing unstable, not disconnecting", hs)
+                                    log.info("Heartbeat failed but tunnel handshake is recent (%s, %ds) — routing unstable, not disconnecting", hs, age_s)
                     except Exception as we:
                         log.debug("wg show during heartbeat check failed: %s", we)
 
