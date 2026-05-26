@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Zomboid</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a21;
+      --surface2: #22222c;
+      --border: #2e2e3a;
+      --accent: #ef4444;
+      --accent-dim: #3a1414;
+      --green: #22c55e;
+      --red: #ef4444;
+      --orange: #f97316;
+      --yellow: #eab308;
+      --text: #e2e2e8;
+      --muted: #6b6b7a;
+    }
+    html, body { height: 100%; height: 100dvh; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; overflow: hidden; }
+    .container { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+
+    /* Sidebar */
+    .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; padding: 20px; gap: 20px; flex-shrink: 0; }
+    .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+    .logo span { color: var(--accent); }
+    .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+    .nav-item { padding: 9px 11px; border-radius: 7px; cursor: pointer; transition: background 0.2s; font-size: 13px; color: var(--muted); }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--accent-dim); color: var(--accent); }
+    .sidebar-stat { font-size: 12px; color: var(--muted); line-height: 1.7; }
+    .sidebar-stat strong { color: var(--text); }
+
+    /* Infection alert in sidebar */
+    .infection-alert { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.4); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #fca5a5; display: none; }
+    .infection-alert.visible { display: block; }
+
+    /* Main */
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .header-title { font-size: 20px; font-weight: 700; }
+    .content { flex: 1; overflow-y: auto; padding: 22px 28px; display: flex; flex-direction: column; gap: 20px; }
+    .view { display: none; flex-direction: column; gap: 20px; }
+    .view.active { display: flex; }
+
+    /* Stats grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--accent); }
+
+    /* Player cards */
+    .player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+    .player-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .player-card.infected { border-color: rgba(239,68,68,0.6); }
+    .player-card.dead { opacity: 0.55; }
+    .player-name { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .player-name .username { font-size: 12px; color: var(--muted); font-weight: 400; }
+    .infection-badge { background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.5px; }
+    .dead-badge { background: #374151; color: #9ca3af; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+
+    /* Skills bar */
+    .skills-section { display: flex; flex-direction: column; gap: 5px; }
+    .skill-row { display: flex; align-items: center; gap: 8px; }
+    .skill-name { font-size: 11px; color: var(--muted); width: 90px; flex-shrink: 0; }
+    .skill-bar-wrap { flex: 1; background: var(--surface2); border-radius: 3px; height: 6px; overflow: hidden; }
+    .skill-bar { height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.3s; }
+    .skill-level { font-size: 11px; color: var(--text); width: 18px; text-align: right; flex-shrink: 0; }
+
+    /* Gear / wounds / traits */
+    .tags-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+    .tag { font-size: 11px; padding: 3px 8px; border-radius: 4px; background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .tag.wound { background: rgba(239,68,68,0.12); color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+    .tag.bite { background: rgba(239,68,68,0.25); color: #fca5a5; border-color: rgba(239,68,68,0.6); font-weight: 700; }
+    .tag.trait-neg { background: rgba(239,68,68,0.08); color: #fda4af; border-color: rgba(239,68,68,0.2); }
+    .tag.trait-pos { background: rgba(34,197,94,0.08); color: #86efac; border-color: rgba(34,197,94,0.2); }
+
+    /* Kills table */
+    .kills-row { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+    .kills-row:last-child { border-bottom: none; }
+
+    /* Table */
+    .table-container { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .table-header { display: grid; padding: 12px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; gap: 12px; }
+    .table-rows { overflow-y: auto; max-height: 400px; }
+    .table-row { display: grid; padding: 10px 16px; border-bottom: 1px solid var(--border); align-items: center; font-size: 13px; gap: 12px; }
+    .table-row:hover { background: var(--surface2); }
+    .table-row:last-child { border-bottom: none; }
+
+    /* Vehicle cards */
+    .vehicle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .vehicle-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .vehicle-type { font-size: 14px; font-weight: 600; }
+    .parts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+    .part-row { display: flex; align-items: center; gap: 6px; }
+    .part-name { font-size: 11px; color: var(--muted); width: 72px; flex-shrink: 0; }
+    .part-bar-wrap { flex: 1; background: var(--surface2); border-radius: 3px; height: 5px; overflow: hidden; }
+    .part-bar { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+    /* Map */
+    #map-inner { height: 600px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+    #leaflet-map { width: 100%; height: 100%; background: #0f1a0f; }
+    .player-label { background: transparent; border: none; box-shadow: none; color: #22c55e; font-size: 11px; font-weight: 700; text-shadow: 0 0 3px #000, 0 0 3px #000; white-space: nowrap; }
+
+    .loading { text-align: center; padding: 40px; color: var(--muted); }
+    .error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 14px; color: #fca5a5; font-size: 13px; }
+
+    /* Mobile */
+    .mobile-nav { display: none; }
+    .mobile-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; cursor: pointer; color: var(--muted); font-size: 10px; gap: 3px; transition: color 0.15s; -webkit-tap-highlight-color: transparent; user-select: none; }
+    .mobile-nav-item .tab-icon { font-size: 20px; line-height: 1; }
+    .mobile-nav-item.active { color: var(--accent); }
+
+    @media (max-width: 768px) {
+      .container { flex-direction: column; overflow: visible; }
+      .sidebar { display: none; }
+      .header { padding: 10px 14px; }
+      .header-title { font-size: 16px; }
+      .content { padding: 12px 12px; gap: 12px; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .stat-value { font-size: 22px; }
+      .player-grid { grid-template-columns: 1fr; }
+      .vehicle-grid { grid-template-columns: 1fr; }
+      .mobile-nav { display: flex; flex-shrink: 0; background: var(--surface); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom, 0px); height: calc(58px + env(safe-area-inset-bottom, 0px)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <div class="logo">Project <span>Zomboid</span></div>
+
+      <div>
+        <div class="section-title">Views</div>
+        <div class="nav-item active" data-view="overview">📊 Overview</div>
+        <div class="nav-item" data-view="players">🧟 Players</div>
+        <div class="nav-item" data-view="stats">📈 Stats</div>
+        <div class="nav-item" data-view="vehicles">🚗 Vehicles</div>
+        <div class="nav-item" data-view="map">🗺️ Map</div>
+      </div>
+
+      <div>
+        <div class="section-title">Server</div>
+        <div class="sidebar-stat">
+          <div><strong>Status:</strong> <span id="sidebar-status" style="color: var(--muted);">Loading...</span></div>
+          <div><strong>Players:</strong> <span id="sidebar-players">--</span></div>
+          <div><strong>Updated:</strong> <span id="sidebar-updated">--</span></div>
+        </div>
+      </div>
+
+      <div id="sidebar-infection" class="infection-alert"></div>
+    </div>
+
+    <div class="main-content">
+      <div class="header">
+        <div class="header-title" id="page-title">Overview</div>
+      </div>
+
+      <div class="content">
+
+        <!-- Overview -->
+        <div class="view active" id="view-overview">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Players</div>
+              <div class="stat-value" id="stat-players">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Infected Risk</div>
+              <div class="stat-value" id="stat-infected" style="color: var(--green);">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Vehicles</div>
+              <div class="stat-value" id="stat-vehicles">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Last Update</div>
+              <div class="stat-value" id="stat-updated" style="font-size: 14px;">--</div>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom: 14px; font-size: 15px; font-weight: 600;">Players</h3>
+            <div class="table-container">
+              <div class="table-header" style="grid-template-columns: 2fr 1fr 1fr 1fr;">
+                <div>Character</div>
+                <div>Hours</div>
+                <div>Deaths</div>
+                <div>Status</div>
+              </div>
+              <div class="table-rows" id="overview-players">
+                <div class="table-row" style="grid-column:1/-1; text-align:center; color:var(--muted);">Loading...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Players -->
+        <div class="view" id="view-players">
+          <div class="player-grid" id="players-list">
+            <div class="loading">Loading player data...</div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="view" id="view-stats">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total Deaths</div>
+              <div class="stat-value" id="stats-total-deaths">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Most Hours Survived</div>
+              <div class="stat-value" id="stats-top-hours" style="font-size: 18px;">--</div>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom: 14px; font-size: 15px; font-weight: 600;">Death Leaderboard</h3>
+            <div class="table-container">
+              <div class="table-header" style="grid-template-columns: 2fr 1fr 1fr;">
+                <div>Player</div>
+                <div>Deaths</div>
+                <div>Hours (current life)</div>
+              </div>
+              <div class="table-rows" id="stats-deaths-table">
+                <div class="table-row" style="grid-column:1/-1; text-align:center; color:var(--muted);">Loading...</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom: 14px; font-size: 15px; font-weight: 600;">Skill Leaders</h3>
+            <div id="skill-leaders-grid" class="stats-grid"></div>
+          </div>
+        </div>
+
+        <!-- Vehicles -->
+        <div class="view" id="view-vehicles">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total Vehicles</div>
+              <div class="stat-value" id="veh-count">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Critical Condition</div>
+              <div class="stat-value" id="veh-critical" style="color: var(--orange);">--</div>
+            </div>
+          </div>
+          <div class="vehicle-grid" id="vehicles-list">
+            <div class="loading">Loading vehicles...</div>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div class="view" id="view-map">
+          <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">Player Positions</h3>
+          <div id="map-inner">
+            <div id="leaflet-map"></div>
+          </div>
+          <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">PZ world map tiles not available — showing coordinate grid. Player dots are accurate positions.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <nav class="mobile-nav">
+    <div class="mobile-nav-item active" data-view="overview"><span class="tab-icon">📊</span><span>Overview</span></div>
+    <div class="mobile-nav-item" data-view="players"><span class="tab-icon">🧟</span><span>Players</span></div>
+    <div class="mobile-nav-item" data-view="stats"><span class="tab-icon">📈</span><span>Stats</span></div>
+    <div class="mobile-nav-item" data-view="vehicles"><span class="tab-icon">🚗</span><span>Vehicles</span></div>
+    <div class="mobile-nav-item" data-view="map"><span class="tab-icon">🗺️</span><span>Map</span></div>
+  </nav>
+
+  <script>
+    const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
+      ? 'https://gameznet.looknet.ca' : '';
+
+    let pzData = { players: [], vehicles: [], stats: {} };
+    let leafletMap = null;
+    let playerMarkers = [];
+
+    // ── Navigation ───────────────────────────────────────────────────────────
+
+    function setView(name) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-' + name).classList.add('active');
+      document.querySelectorAll('.nav-item[data-view], .mobile-nav-item[data-view]').forEach(i => {
+        i.classList.toggle('active', i.dataset.view === name);
+      });
+      const titles = { overview:'Overview', players:'Players', stats:'Stats', vehicles:'Vehicles', map:'Map' };
+      document.getElementById('page-title').textContent = titles[name] || name;
+      if (name === 'map') setTimeout(() => { if (!leafletMap) initMap(); else { leafletMap.invalidateSize(); redrawPlayers(); } }, 50);
+    }
+
+    document.querySelectorAll('.nav-item[data-view], .mobile-nav-item[data-view]').forEach(el => {
+      el.addEventListener('click', () => setView(el.dataset.view));
+    });
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function formatHours(h) {
+      if (h == null || isNaN(h)) return '--';
+      h = parseFloat(h);
+      if (h < 1) return Math.round(h * 60) + 'm';
+      return h.toFixed(1) + 'h';
+    }
+
+    function formatLastConn(ts) {
+      if (!ts) return 'Never';
+      try {
+        const d = new Date(ts);
+        const diff = Date.now() - d.getTime();
+        const m = Math.floor(diff / 60000);
+        const hr = Math.floor(m / 60);
+        const dy = Math.floor(hr / 24);
+        if (dy > 0) return dy + 'd ago';
+        if (hr > 0) return hr + 'h ago';
+        if (m > 0) return m + 'm ago';
+        return 'Just now';
+      } catch { return 'Unknown'; }
+    }
+
+    function partColor(v) {
+      if (v == null) return '#4b5563';
+      if (v > 0.6) return '#22c55e';
+      if (v > 0.3) return '#eab308';
+      return '#ef4444';
+    }
+
+    function skillColor(level) {
+      if (level >= 8) return '#a855f7';
+      if (level >= 6) return '#22c55e';
+      if (level >= 3) return '#3b82f6';
+      return '#ef4444';
+    }
+
+    const NEG_TRAITS = new Set(['Deaf','Blind','Conspicuous','ProneToIllness','WeakStomach','Clumsy','SundayDriver','Obese','Underweight','Overweight','Cowardly','Hypochondriac','Unlucky','Pacifist','HardOfHearing','RestrictedDiet']);
+    const SKILL_DISPLAY = { Axe:'Axe', Blunt:'Blunt', LongBlade:'L.Blade', SmallBlade:'S.Blade', Spear:'Spear', Maintenance:'Maint.', Aiming:'Aiming', Reloading:'Reload', Fitness:'Fitness', Strength:'Strength', Sprinting:'Sprint', Nimble:'Nimble', Lightfoot:'Lightfoot', Sneak:'Sneak', Doctor:'Doctor', Mechanics:'Mech.', Electricity:'Electric', MetalWelding:'Welding', Tailoring:'Tailoring', Farming:'Farming', Fishing:'Fishing', Woodwork:'Woodwork', Cooking:'Cooking' };
+
+    function prettifyItem(id) {
+      return id.replace(/^Base\./, '').replace(/_/g, ' ').replace(/TINT|TEXTURE|Random|Default/gi, '').replace(/\s+/g, ' ').trim();
+    }
+
+    function prettifyWound(id) {
+      return id.replace(/^Base\.Wound_/, '').replace(/_/g, ' ').replace(/Male|Female/g, '').trim();
+    }
+
+    // ── Render functions ─────────────────────────────────────────────────────
+
+    function renderOverview() {
+      const players = pzData.players || [];
+      const stats = pzData.stats || {};
+      const infected = players.filter(p => p.infected_risk);
+
+      document.getElementById('stat-players').textContent = players.length;
+      document.getElementById('stat-infected').textContent = infected.length > 0 ? infected.length + ' ⚠️' : '0';
+      document.getElementById('stat-infected').style.color = infected.length > 0 ? 'var(--red)' : 'var(--green)';
+      document.getElementById('stat-vehicles').textContent = (pzData.vehicles || []).length;
+      document.getElementById('stat-updated').textContent = new Date().toLocaleTimeString();
+      document.getElementById('sidebar-players').textContent = players.length;
+      document.getElementById('sidebar-updated').textContent = new Date().toLocaleTimeString();
+      document.getElementById('sidebar-status').textContent = 'Online';
+      document.getElementById('sidebar-status').style.color = 'var(--green)';
+
+      // Infection sidebar alert
+      const alert = document.getElementById('sidebar-infection');
+      if (infected.length > 0) {
+        alert.textContent = '⚠️ Possible infection: ' + infected.map(p => p.name).join(', ');
+        alert.classList.add('visible');
+      } else {
+        alert.classList.remove('visible');
+      }
+
+      const rows = players.map(p => {
+        const hours = stats.hours?.[p.username] ?? p.hours ?? 0;
+        const deaths = stats.deaths?.[p.username] ?? 0;
+        const statusHtml = p.isDead
+          ? '<span style="color:var(--muted)">Dead</span>'
+          : p.infected_risk
+            ? '<span style="color:var(--red);font-weight:700">⚠ Bitten</span>'
+            : '<span style="color:var(--green)">Alive</span>';
+        return `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr;">
+          <div style="font-weight:600">${p.name} <span style="color:var(--muted);font-size:11px">${p.username}</span></div>
+          <div>${formatHours(hours)}</div>
+          <div>${deaths}</div>
+          <div>${statusHtml}</div>
+        </div>`;
+      }).join('') || '<div class="table-row" style="grid-column:1/-1;text-align:center;color:var(--muted);">No players</div>';
+
+      document.getElementById('overview-players').innerHTML = rows;
+    }
+
+    function renderPlayers() {
+      const players = pzData.players || [];
+      const stats = pzData.stats || {};
+
+      if (!players.length) {
+        document.getElementById('players-list').innerHTML = '<div class="loading">No player data available</div>';
+        return;
+      }
+
+      const cards = players.map(p => {
+        const hours = stats.hours?.[p.username] ?? 0;
+        const deaths = stats.deaths?.[p.username] ?? 0;
+        const skills = stats.current_skills?.[p.username] ?? p.skills ?? {};
+        const bites = p.bite_wounds || [];
+        const wounds = (p.wounds || []).filter(w => !w.includes('Bite'));
+        const traits = p.traits || [];
+        const clothing = p.clothing || [];
+
+        const skillRows = Object.entries(skills)
+          .filter(([, v]) => v > 0)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8)
+          .map(([skill, level]) => `
+            <div class="skill-row">
+              <span class="skill-name">${SKILL_DISPLAY[skill] || skill}</span>
+              <div class="skill-bar-wrap"><div class="skill-bar" style="width:${Math.min(level/10*100,100)}%;background:${skillColor(level)}"></div></div>
+              <span class="skill-level">${level}</span>
+            </div>`).join('');
+
+        const biteTagsHtml = bites.map(w => `<span class="tag bite">🩸 ${prettifyWound(w)}</span>`).join('');
+        const woundTagsHtml = wounds.map(w => `<span class="tag wound">${prettifyWound(w)}</span>`).join('');
+        const traitTagsHtml = traits.map(t => `<span class="tag ${NEG_TRAITS.has(t) ? 'trait-neg' : 'trait-pos'}">${t}</span>`).join('');
+        const gearTagsHtml = clothing.slice(0, 8).map(g => `<span class="tag">${prettifyItem(g)}</span>`).join('');
+
+        const killTotal = Object.values(p.kills || {}).reduce((s, v) => s + v, 0);
+        const killBreakdown = Object.entries(p.kills || {})
+          .filter(([, v]) => v > 0)
+          .sort((a, b) => b[1] - a[1])
+          .map(([cat, count]) => `<div class="kills-row"><span>${cat}</span><span>${count}</span></div>`).join('');
+
+        return `<div class="player-card${p.infected_risk ? ' infected' : ''}${p.isDead ? ' dead' : ''}">
+          <div class="player-name">
+            ${p.name}
+            <span class="username">${p.username}</span>
+            ${p.infected_risk ? '<span class="infection-badge">BITTEN</span>' : ''}
+            ${p.isDead ? '<span class="dead-badge">DEAD</span>' : ''}
+          </div>
+
+          <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);">
+            <span>⏱ ${formatHours(hours)} survived</span>
+            <span>💀 ${deaths} death${deaths !== 1 ? 's' : ''}</span>
+            ${killTotal > 0 ? `<span>🔪 ${killTotal} kills</span>` : ''}
+            ${p.lastConnection ? `<span>🕐 ${formatLastConn(p.lastConnection)}</span>` : ''}
+          </div>
+
+          ${bites.length || wounds.length ? `
+          <div>
+            <div class="section-title" style="margin-bottom:5px;">Wounds</div>
+            <div class="tags-wrap">${biteTagsHtml}${woundTagsHtml}</div>
+          </div>` : ''}
+
+          ${skillRows ? `
+          <div>
+            <div class="section-title" style="margin-bottom:5px;">Skills</div>
+            <div class="skills-section">${skillRows}</div>
+          </div>` : ''}
+
+          ${traits.length ? `
+          <div>
+            <div class="section-title" style="margin-bottom:5px;">Traits</div>
+            <div class="tags-wrap">${traitTagsHtml}</div>
+          </div>` : ''}
+
+          ${clothing.length ? `
+          <div>
+            <div class="section-title" style="margin-bottom:5px;">Equipped</div>
+            <div class="tags-wrap">${gearTagsHtml}</div>
+          </div>` : ''}
+
+          ${killBreakdown ? `
+          <div>
+            <div class="section-title" style="margin-bottom:5px;">Kill Breakdown</div>
+            ${killBreakdown}
+          </div>` : ''}
+        </div>`;
+      }).join('');
+
+      document.getElementById('players-list').innerHTML = cards;
+    }
+
+    function renderStats() {
+      const stats = pzData.stats || {};
+      const players = pzData.players || [];
+      const deaths = stats.deaths || {};
+      const hours = stats.hours || {};
+      const skills = stats.current_skills || {};
+
+      const totalDeaths = Object.values(deaths).reduce((s, v) => s + v, 0);
+      document.getElementById('stats-total-deaths').textContent = totalDeaths;
+
+      const topHoursEntry = Object.entries(hours).sort((a, b) => b[1] - a[1])[0];
+      document.getElementById('stats-top-hours').textContent = topHoursEntry
+        ? `${topHoursEntry[0]}: ${formatHours(topHoursEntry[1])}`
+        : '--';
+
+      // Death leaderboard — merge with player names
+      const nameMap = {};
+      players.forEach(p => { nameMap[p.username] = p.name; });
+
+      const allUsernames = new Set([...Object.keys(deaths), ...Object.keys(hours)]);
+      const deathRows = [...allUsernames]
+        .sort((a, b) => (deaths[b] || 0) - (deaths[a] || 0))
+        .map(u => `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr;">
+          <div>${nameMap[u] || u}</div>
+          <div>${deaths[u] || 0}</div>
+          <div>${formatHours(hours[u])}</div>
+        </div>`).join('') || '<div class="table-row" style="grid-column:1/-1;text-align:center;color:var(--muted);">No data yet</div>';
+
+      document.getElementById('stats-deaths-table').innerHTML = deathRows;
+
+      // Skill leaders — for each skill, find the player with the highest level
+      const skillLeaders = {};
+      Object.entries(skills).forEach(([username, playerSkills]) => {
+        Object.entries(playerSkills).forEach(([skill, level]) => {
+          if (!skillLeaders[skill] || level > skillLeaders[skill].level) {
+            skillLeaders[skill] = { username, name: nameMap[username] || username, level };
+          }
+        });
+      });
+
+      const leaderCards = Object.entries(skillLeaders)
+        .filter(([, d]) => d.level > 0)
+        .sort((a, b) => b[1].level - a[1].level)
+        .slice(0, 12)
+        .map(([skill, d]) => `<div class="stat-card">
+          <div class="stat-label">${SKILL_DISPLAY[skill] || skill}</div>
+          <div class="stat-value" style="font-size:20px;color:${skillColor(d.level)}">${d.level}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;">${d.name}</div>
+        </div>`).join('');
+
+      document.getElementById('skill-leaders-grid').innerHTML = leaderCards || '<div style="color:var(--muted);font-size:13px;">No skill data yet</div>';
+    }
+
+    function renderVehicles() {
+      const vehicles = pzData.vehicles || [];
+      document.getElementById('veh-count').textContent = vehicles.length;
+
+      const PART_LABELS = { Engine:'Engine', Battery:'Battery', GasTank:'Fuel', TireFrontLeft:'FL Tire', TireFrontRight:'FR Tire', TireRearLeft:'RL Tire', TireRearRight:'RR Tire', Windshield:'Windshield', Muffler:'Muffler' };
+
+      let critical = 0;
+      const cards = vehicles.map(v => {
+        const keyParts = Object.entries(PART_LABELS)
+          .map(([key, label]) => {
+            const val = v.parts?.[key];
+            if (val != null && val < 0.3) critical++;
+            return val != null ? `<div class="part-row">
+              <span class="part-name">${label}</span>
+              <div class="part-bar-wrap"><div class="part-bar" style="width:${Math.round(val*100)}%;background:${partColor(val)}"></div></div>
+              <span style="font-size:10px;color:var(--muted);width:28px;text-align:right">${Math.round(val*100)}%</span>
+            </div>` : '';
+          }).join('');
+
+        return `<div class="vehicle-card">
+          <div class="vehicle-type">${v.type.replace(/_/g,' ')} <span style="font-size:11px;color:var(--muted);">#${v.id}</span></div>
+          <div style="font-size:11px;color:var(--muted);">📍 (${Math.round(v.x)}, ${Math.round(v.y)})</div>
+          ${v.radio ? `<div style="font-size:11px;color:var(--muted);">📻 ${v.radio}</div>` : ''}
+          <div class="parts-grid">${keyParts}</div>
+        </div>`;
+      }).join('') || '<div class="loading">No vehicle data</div>';
+
+      document.getElementById('veh-critical').textContent = critical;
+      document.getElementById('vehicles-list').innerHTML = cards;
+    }
+
+    // ── Map ──────────────────────────────────────────────────────────────────
+
+    function initMap() {
+      if (leafletMap) return;
+      leafletMap = L.map('leaflet-map', {
+        crs: L.CRS.Simple,
+        minZoom: -3,
+        maxZoom: 4,
+        zoomSnap: 0.5,
+        attributionControl: false,
+      });
+
+      // PZ Muldraugh map is roughly 10800x10800 tiles at 1:1
+      // We'll use a simple coord grid — no map tiles available on server
+      const bounds = leafletMap.options.crs.latLngBoundsToContainerPixelBounds
+        ? null
+        : L.latLngBounds([[-300, -300], [300, 300]]);
+      leafletMap.setView([0, 0], 0);
+
+      redrawPlayers();
+    }
+
+    // PZ world coords are ~5000–7000 range based on our sample data
+    // CRS.Simple: treat x as lng, -y as lat so north is up
+    function pzToLatLng(x, y) {
+      return [(y - 6000) / -20, (x - 6000) / 20];
+    }
+
+    function redrawPlayers() {
+      if (!leafletMap) return;
+      playerMarkers.forEach(m => m.remove());
+      playerMarkers = [];
+      const players = pzData.players || [];
+      players.forEach(p => {
+        if (p.x == null || p.y == null) return;
+        const latlng = pzToLatLng(p.x, p.y);
+        const color = p.infected_risk ? '#ef4444' : p.isDead ? '#6b7280' : '#22c55e';
+        const m = L.marker(latlng, {
+          icon: L.divIcon({
+            className: '',
+            html: `<div style="width:10px;height:10px;background:${color};border:2px solid #000;border-radius:50%;box-shadow:0 0 4px ${color}88"></div>`,
+            iconSize: [10, 10], iconAnchor: [5, 5],
+          }),
+        }).addTo(leafletMap);
+        m.bindTooltip(p.name + (p.infected_risk ? ' ⚠' : ''), { permanent: true, direction: 'top', offset: [0, -6], className: 'player-label' });
+        playerMarkers.push(m);
+      });
+      if (players.length) {
+        const latlngs = players.filter(p => p.x != null).map(p => pzToLatLng(p.x, p.y));
+        if (latlngs.length) leafletMap.fitBounds(L.latLngBounds(latlngs).pad(0.3));
+      }
+    }
+
+    // ── Data loading ─────────────────────────────────────────────────────────
+
+    let sseSource = null;
+
+    function prefetch() {
+      fetch(`${API_BASE}/api/pz/status`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.error || !d.available) { document.getElementById('sidebar-status').textContent = 'Offline'; return; }
+          pzData.players = d.players || [];
+          renderOverview(); renderPlayers(); renderStats();
+          if (leafletMap) redrawPlayers();
+        }).catch(() => { document.getElementById('sidebar-status').textContent = 'Offline'; });
+
+      fetch(`${API_BASE}/api/pz/vehicles`)
+        .then(r => r.json())
+        .then(d => { if (!d.error) { pzData.vehicles = d.vehicles || []; renderVehicles(); renderOverview(); } })
+        .catch(() => {});
+    }
+
+    function startSSE() {
+      if (sseSource) sseSource.close();
+      prefetch();
+      sseSource = new EventSource(`${API_BASE}/api/pz/stream`);
+
+      sseSource.addEventListener('players', e => {
+        try {
+          const d = JSON.parse(e.data);
+          if (d.error) return;
+          pzData.players = d.players || [];
+          renderOverview(); renderPlayers();
+          if (leafletMap) redrawPlayers();
+        } catch {}
+      });
+
+      sseSource.addEventListener('vehicles', e => {
+        try {
+          const d = JSON.parse(e.data);
+          if (d.error) return;
+          pzData.vehicles = d.vehicles || [];
+          renderVehicles(); renderOverview();
+        } catch {}
+      });
+
+      sseSource.addEventListener('stats', e => {
+        try {
+          const d = JSON.parse(e.data);
+          if (d.error) return;
+          pzData.stats = d;
+          renderOverview(); renderPlayers(); renderStats();
+        } catch {}
+      });
+
+      let _failed = false;
+      sseSource.addEventListener('players', () => { _failed = false; });
+      sseSource.onerror = () => {
+        if (_failed) return;
+        _failed = true;
+        sseSource.close(); sseSource = null;
+        prefetch();
+        setInterval(prefetch, 15000);
+      };
+    }
+
+    window.addEventListener('load', startSSE);
+  </script>
+</body>
+</html>
