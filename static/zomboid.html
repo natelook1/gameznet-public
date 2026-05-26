@@ -252,6 +252,11 @@
               <div class="stat-value" id="veh-critical" style="color: var(--orange);">--</div>
             </div>
           </div>
+          <div style="margin-bottom:10px;">
+            <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" id="veh-show-destroyed" onchange="renderVehicles()"> Show destroyed vehicles
+            </label>
+          </div>
           <div class="vehicle-grid" id="vehicles-list">
             <div class="loading">Loading vehicles...</div>
           </div>
@@ -268,7 +273,7 @@
           <div id="map-inner">
             <div id="leaflet-map"></div>
           </div>
-          <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">PZ world map tiles not available — showing coordinate grid. Player dots are accurate positions.</p>
+          <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">No map tiles — coordinate grid only. Positions are accurate. 🟢 alive &nbsp;🔴 infected &nbsp;⬜ working vehicle &nbsp;◼ destroyed</p>
         </div>
 
       </div>
@@ -546,8 +551,10 @@
     }
 
     function renderVehicles() {
-      const vehicles = pzData.vehicles || [];
-      document.getElementById('veh-count').textContent = vehicles.length;
+      const allVehicles = pzData.vehicles || [];
+      const showDestroyed = document.getElementById('veh-show-destroyed')?.checked;
+      const vehicles = showDestroyed ? allVehicles : allVehicles.filter(v => !isVehicleDestroyed(v));
+      document.getElementById('veh-count').textContent = showDestroyed ? allVehicles.length : `${vehicles.length} / ${allVehicles.length}`;
 
       const PART_LABELS = { Engine:'Engine', Battery:'Battery', GasTank:'Fuel', TireFrontLeft:'FL Tire', TireFrontRight:'FR Tire', TireRearLeft:'RL Tire', TireRearRight:'RR Tire', Windshield:'Windshield', Muffler:'Muffler' };
 
@@ -578,33 +585,64 @@
 
     // ── Map ──────────────────────────────────────────────────────────────────
 
+    // PZ world coords -> Leaflet latlng (CRS.Simple, tileSize=256)
+    // Tiles cover cx=30-50 (x=9000-15000), cy=0-16 (y=0-4800), PZ_SCALE=20
+    // At zoom 4: Leaflet tile (tx,ty) covers lng=[tx*16,(tx+1)*16], lat=[-ty*16,-(ty+1)*16]
+    // Our file (0,0) starts at x=9000,y=0 → lng=450,lat=0 → Leaflet tile (28,0) at zoom 4
+    const PZ_SCALE = 20;
+    const TILE_CELL_X_MIN = 30;  // cx of file tile (0,*)
+    const TILE_CELL_Y_MIN = 0;   // cy of file tile (*,0)
+    const TILE_ZOOM_MAX = 4;
+    const TILE_COLS = 20;        // CELL_X_MAX - CELL_X_MIN
+    const TILE_ROWS = 16;        // CELL_Y_MAX - CELL_Y_MIN
+    // Offsets at zoom 4: floor(CELL_MIN * 300 / PZ_SCALE / (256/16))
+    const TILE_OFFSET_X = Math.floor(TILE_CELL_X_MIN * 300 / PZ_SCALE / 16);  // = 28
+    const TILE_OFFSET_Y = Math.floor(TILE_CELL_Y_MIN * 300 / PZ_SCALE / 16);  // = 0
+
+    function pzToLatLng(x, y) { return [-y / PZ_SCALE, x / PZ_SCALE]; }
+
     function initMap() {
       if (leafletMap) return;
       leafletMap = L.map('leaflet-map', {
         crs: L.CRS.Simple,
-        minZoom: -3,
-        maxZoom: 4,
+        minZoom: 0,
+        maxZoom: TILE_ZOOM_MAX,
         zoomSnap: 0.5,
         attributionControl: false,
       });
 
-      // Draw a grid to show this is a coordinate space, not a broken tile map
-      const gridColor = 'rgba(34,197,94,0.12)';
-      const worldBounds = [[-540, -540], [540, 540]];
-      L.rectangle(worldBounds, { color: 'rgba(34,197,94,0.35)', weight: 1, fill: false }).addTo(leafletMap);
-      for (let i = -480; i <= 480; i += 120) {
-        L.polyline([[-540, i], [540, i]], { color: gridColor, weight: 0.5 }).addTo(leafletMap);
-        L.polyline([[i, -540], [i, 540]], { color: gridColor, weight: 0.5 }).addTo(leafletMap);
-      }
+      // Custom tile layer: map Leaflet tile coords to our /static/map-tiles/Zomboid/{z}/{x}/{y}.png
+      const pzTileLayer = L.GridLayer.extend({
+        createTile(coords, done) {
+          const img = document.createElement('img');
+          const scale = Math.pow(2, coords.z - TILE_ZOOM_MAX);
+          const ox = Math.floor(TILE_OFFSET_X * scale);
+          const oy = Math.floor(TILE_OFFSET_Y * scale);
+          const tx = coords.x - ox;
+          const ty = coords.y - oy;
+          const maxX = Math.ceil(TILE_COLS * scale) - 1;
+          const maxY = Math.ceil(TILE_ROWS * scale) - 1;
+          if (tx < 0 || ty < 0 || tx > maxX || ty > maxY) {
+            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+            done(null, img);
+            return img;
+          }
+          img.src = `/static/map-tiles/Zomboid/${coords.z}/${tx}/${ty}.png`;
+          img.onload = () => done(null, img);
+          img.onerror = () => { img.src = ''; done(null, img); };
+          return img;
+        }
+      });
+      new pzTileLayer({ tileSize: 256, opacity: 0.9 }).addTo(leafletMap);
 
-      leafletMap.setView([0, 0], 0);
+      const mapBounds = L.latLngBounds(
+        pzToLatLng(TILE_CELL_X_MIN * 300, (TILE_CELL_Y_MIN + TILE_ROWS) * 300),
+        pzToLatLng((TILE_CELL_X_MIN + TILE_COLS) * 300, TILE_CELL_Y_MIN * 300)
+      );
+      leafletMap.setMaxBounds(mapBounds.pad(0.2));
+      leafletMap.fitBounds(mapBounds);
       redrawPlayers();
     }
-
-    // PZ world coords: players ~5400-6500, vehicles ~3600-12400, center ~8000
-    // CRS.Simple: lat=-y/20, lng=x/20 so north is up
-    const PZ_SCALE = 20;
-    function pzToLatLng(x, y) { return [-y / PZ_SCALE, x / PZ_SCALE]; }
 
     let vehicleMarkers = [];
 
