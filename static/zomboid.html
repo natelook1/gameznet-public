@@ -259,7 +259,12 @@
 
         <!-- Map -->
         <div class="view" id="view-map">
-          <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">Player Positions</h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <h3 style="font-size: 15px; font-weight: 600;">Player &amp; Vehicle Positions</h3>
+            <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" id="map-show-destroyed" onchange="redrawVehicles()"> Show destroyed vehicles
+            </label>
+          </div>
           <div id="map-inner">
             <div id="leaflet-map"></div>
           </div>
@@ -596,11 +601,12 @@
       redrawPlayers();
     }
 
-    // PZ world coords are ~5000–7000 range based on our sample data
-    // CRS.Simple: treat x as lng, -y as lat so north is up
-    function pzToLatLng(x, y) {
-      return [(y - 6000) / -20, (x - 6000) / 20];
-    }
+    // PZ world coords: players ~5400-6500, vehicles ~3600-12400, center ~8000
+    // CRS.Simple: lat=-y/20, lng=x/20 so north is up
+    const PZ_SCALE = 20;
+    function pzToLatLng(x, y) { return [-y / PZ_SCALE, x / PZ_SCALE]; }
+
+    let vehicleMarkers = [];
 
     function redrawPlayers() {
       if (!leafletMap) return;
@@ -614,17 +620,48 @@
         const m = L.marker(latlng, {
           icon: L.divIcon({
             className: '',
-            html: `<div style="width:10px;height:10px;background:${color};border:2px solid #000;border-radius:50%;box-shadow:0 0 4px ${color}88"></div>`,
+            html: `<div style="width:10px;height:10px;background:${color};border:2px solid #000;border-radius:50%;box-shadow:0 0 4px ${color}88;z-index:1000"></div>`,
             iconSize: [10, 10], iconAnchor: [5, 5],
           }),
         }).addTo(leafletMap);
         m.bindTooltip(p.name + (p.infected_risk ? ' ⚠' : ''), { permanent: true, direction: 'top', offset: [0, -6], className: 'player-label' });
         playerMarkers.push(m);
       });
-      if (players.length) {
-        const latlngs = players.filter(p => p.x != null).map(p => pzToLatLng(p.x, p.y));
-        if (latlngs.length) leafletMap.fitBounds(L.latLngBounds(latlngs).pad(0.3));
-      }
+      redrawVehicles();
+      // Fit to all markers if we have players
+      const allPoints = players.filter(p => p.x != null).map(p => pzToLatLng(p.x, p.y));
+      if (allPoints.length) leafletMap.fitBounds(L.latLngBounds(allPoints).pad(0.5));
+    }
+
+    function isVehicleDestroyed(v) {
+      const parts = v.parts || {};
+      const vals = Object.values(parts);
+      return vals.length === 0 || vals.every(c => c === 0);
+    }
+
+    function redrawVehicles() {
+      if (!leafletMap) return;
+      vehicleMarkers.forEach(m => m.remove());
+      vehicleMarkers = [];
+      const showDestroyed = document.getElementById('map-show-destroyed')?.checked;
+      const vehicles = pzData.vehicles || [];
+      vehicles.forEach(v => {
+        if (v.x == null || v.y == null) return;
+        const destroyed = isVehicleDestroyed(v);
+        if (destroyed && !showDestroyed) return;
+        const engine = v.parts?.Engine ?? 0;
+        const color = destroyed ? '#4b5563' : engine > 0.6 ? '#22c55e' : engine > 0.3 ? '#f59e0b' : '#ef4444';
+        const m = L.marker(pzToLatLng(v.x, v.y), {
+          icon: L.divIcon({
+            className: '',
+            html: `<div style="width:7px;height:7px;background:${color};border:1px solid #000;border-radius:2px;opacity:${destroyed ? 0.5 : 0.85}"></div>`,
+            iconSize: [7, 7], iconAnchor: [3, 3],
+          }),
+          zIndexOffset: -100,
+        }).addTo(leafletMap);
+        m.bindTooltip(`${v.type} (${destroyed ? 'destroyed' : Math.round(engine * 100) + '% engine'})`, { direction: 'top', offset: [0, -4], className: 'player-label' });
+        vehicleMarkers.push(m);
+      });
     }
 
     // ── Data loading ─────────────────────────────────────────────────────────
@@ -641,9 +678,14 @@
           if (leafletMap) redrawPlayers();
         }).catch(() => { document.getElementById('sidebar-status').textContent = 'Offline'; });
 
+      fetch(`${API_BASE}/api/pz/stats`)
+        .then(r => r.json())
+        .then(d => { if (!d.error) { pzData.stats = d; renderOverview(); renderPlayers(); renderStats(); } })
+        .catch(() => {});
+
       fetch(`${API_BASE}/api/pz/vehicles`)
         .then(r => r.json())
-        .then(d => { if (!d.error) { pzData.vehicles = d.vehicles || []; renderVehicles(); renderOverview(); } })
+        .then(d => { if (!d.error) { pzData.vehicles = d.vehicles || []; renderVehicles(); renderOverview(); if (leafletMap) redrawVehicles(); } })
         .catch(() => {});
     }
 
@@ -667,7 +709,7 @@
           const d = JSON.parse(e.data);
           if (d.error) return;
           pzData.vehicles = d.vehicles || [];
-          renderVehicles(); renderOverview();
+          renderVehicles(); renderOverview(); if (leafletMap) redrawVehicles();
         } catch {}
       });
 
