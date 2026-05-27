@@ -264,16 +264,21 @@
 
         <!-- Map -->
         <div class="view" id="view-map">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
             <h3 style="font-size: 15px; font-weight: 600;">Player &amp; Vehicle Positions</h3>
-            <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;">
-              <input type="checkbox" id="map-show-destroyed" onchange="redrawVehicles()"> Show destroyed vehicles
-            </label>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);">
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-destroyed" onchange="redrawVehicles()"> Wrecked vehicles</label>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-campfires" checked onchange="redrawOverlays()"> Campfires</label>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-farming" checked onchange="redrawOverlays()"> Farming</label>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-traps" checked onchange="redrawOverlays()"> Traps</label>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-dead" checked onchange="redrawOverlays()"> Dead players</label>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-density" onchange="redrawOverlays()"> Zombie density</label>
+            </div>
           </div>
           <div id="map-inner">
             <div id="leaflet-map"></div>
           </div>
-          <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ working vehicle &nbsp;◼ destroyed</p>
+          <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap</p>
         </div>
 
       </div>
@@ -292,7 +297,7 @@
     const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
       ? 'https://gameznet.looknet.ca' : '';
 
-    let pzData = { players: [], vehicles: [], stats: {} };
+    let pzData = { players: [], vehicles: [], stats: {}, overlays: {} };
     let leafletMap = null;
     let playerMarkers = [];
 
@@ -644,9 +649,11 @@
       leafletMap.setMaxBounds(mapBounds);
       redrawPlayers();
       redrawVehicles();
+      redrawOverlays();
     }
 
     let vehicleMarkers = [];
+    let overlayMarkers = [];
 
     function redrawPlayers() {
       if (!leafletMap) return;
@@ -700,6 +707,76 @@
         m.bindTooltip(`${v.type} (${destroyed ? 'destroyed' : Math.round(engine * 100) + '% engine'})`, { direction: 'top', offset: [0, -4], className: 'player-label' });
         vehicleMarkers.push(m);
       });
+    }
+
+    function redrawOverlays() {
+      if (!leafletMap) return;
+      overlayMarkers.forEach(m => m.remove());
+      overlayMarkers = [];
+
+      const showCampfires = document.getElementById('map-show-campfires')?.checked;
+      const showFarming   = document.getElementById('map-show-farming')?.checked;
+      const showTraps     = document.getElementById('map-show-traps')?.checked;
+      const showDead      = document.getElementById('map-show-dead')?.checked;
+      const showDensity   = document.getElementById('map-show-density')?.checked;
+
+      const ovl = pzData.overlays || {};
+
+      function addPointMarkers(list, emoji, label, show) {
+        if (!show || !list) return;
+        list.forEach(pt => {
+          if (pt.x < MAP_MIN || pt.x > MAP_MAX || pt.y < MAP_MIN || pt.y > MAP_MAX) return;
+          const m = L.marker(pzToLatLng(pt.x, pt.y), {
+            icon: L.divIcon({
+              className: '',
+              html: `<div style="font-size:14px;line-height:1;text-shadow:0 0 3px #000,0 0 3px #000;">${emoji}</div>`,
+              iconSize: [16, 16], iconAnchor: [8, 8],
+            }),
+            zIndexOffset: -50,
+          }).addTo(leafletMap);
+          m.bindTooltip(label + (pt.name ? ': ' + pt.name : ''), { direction: 'top', offset: [0, -6], className: 'player-label' });
+          overlayMarkers.push(m);
+        });
+      }
+
+      addPointMarkers(ovl.campfires, '🔥', 'Campfire', showCampfires);
+      addPointMarkers(ovl.farming,   '🌿', 'Farm plot', showFarming);
+      addPointMarkers(ovl.traps,     '🕷', 'Trap', showTraps);
+      addPointMarkers(ovl.drums,     '🛢', 'Metal drum', showCampfires);
+      addPointMarkers(ovl.barrels,   '💧', 'Rain barrel', showCampfires);
+
+      if (showDead && ovl.dead) {
+        ovl.dead.forEach(pt => {
+          if (pt.x < MAP_MIN || pt.x > MAP_MAX || pt.y < MAP_MIN || pt.y > MAP_MAX) return;
+          const m = L.marker(pzToLatLng(pt.x, pt.y), {
+            icon: L.divIcon({
+              className: '',
+              html: `<div style="width:10px;height:10px;background:#6b7280;border:2px solid #000;border-radius:50%;opacity:0.8;"></div>`,
+              iconSize: [10, 10], iconAnchor: [5, 5],
+            }),
+            zIndexOffset: -200,
+          }).addTo(leafletMap);
+          m.bindTooltip('💀 ' + (pt.name || 'Dead player'), { direction: 'top', offset: [0, -6], className: 'player-label' });
+          overlayMarkers.push(m);
+        });
+      }
+
+      if (showDensity && ovl.density && ovl.density.length > 0) {
+        const maxScore = Math.max(...ovl.density.map(d => d.score));
+        ovl.density.forEach(d => {
+          const cx = d.cx, cy = d.cy;
+          if (cx < CELL_MIN || cx >= CELL_MAX || cy < CELL_MIN || cy >= CELL_MAX) return;
+          const x0 = cx * 300, y0 = cy * 300;
+          const x1 = x0 + 300, y1 = y0 + 300;
+          const opacity = 0.15 + 0.55 * (d.score / maxScore);
+          const rect = L.rectangle(
+            [pzToLatLng(x0, y1), pzToLatLng(x1, y0)],
+            { color: 'transparent', fillColor: '#ef4444', fillOpacity: opacity, weight: 0 }
+          ).addTo(leafletMap);
+          rect.bindTooltip(`Zombie density: ${d.score}`, { direction: 'center', className: 'player-label' });
+          overlayMarkers.push(rect);
+        });
+      }
     }
 
     // ── Data loading ─────────────────────────────────────────────────────────
@@ -757,6 +834,15 @@
           if (d.error) return;
           pzData.stats = d;
           renderOverview(); renderPlayers(); renderStats();
+        } catch {}
+      });
+
+      sseSource.addEventListener('overlays', e => {
+        try {
+          const d = JSON.parse(e.data);
+          if (d.error) return;
+          pzData.overlays = d;
+          if (leafletMap) redrawOverlays();
         } catch {}
       });
 
