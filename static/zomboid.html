@@ -103,8 +103,14 @@
     .part-bar { height: 100%; border-radius: 3px; transition: width 0.3s; }
 
     /* Map */
-    #map-inner { height: 600px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+    #map-inner { position: relative; height: 600px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+    #map-inner:-webkit-full-screen { height: 100vh; border-radius: 0; }
+    #map-inner:-moz-full-screen    { height: 100vh; border-radius: 0; }
+    #map-inner:fullscreen          { height: 100vh; border-radius: 0; }
     #leaflet-map { width: 100%; height: 100%; background: #0f1a0f; }
+    #map-controls { position: absolute; bottom: 12px; left: 12px; z-index: 1000; background: rgba(15,15,19,0.85); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--text); backdrop-filter: blur(4px); }
+    #map-controls label { color: var(--text); }
+    #map-fullscreen-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 3px 8px; border-radius: 5px; cursor: pointer; font-size: 14px; line-height: 1; }
     .player-label { background: transparent; border: none; box-shadow: none; color: #22c55e; font-size: 11px; font-weight: 700; text-shadow: 0 0 3px #000, 0 0 3px #000; white-space: nowrap; }
 
     .loading { text-align: center; padding: 40px; color: var(--muted); }
@@ -264,21 +270,21 @@
 
         <!-- Map -->
         <div class="view" id="view-map">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-            <h3 style="font-size: 15px; font-weight: 600;">Player &amp; Vehicle Positions</h3>
-            <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);">
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-destroyed" onchange="redrawVehicles()"> Wrecked vehicles</label>
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-campfires" checked onchange="redrawOverlays()"> Campfires</label>
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-farming" checked onchange="redrawOverlays()"> Farming</label>
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-traps" checked onchange="redrawOverlays()"> Traps</label>
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-dead" checked onchange="redrawOverlays()"> Dead players</label>
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-density" onchange="redrawOverlays()"> Zombie density</label>
-            </div>
-          </div>
           <div id="map-inner">
             <div id="leaflet-map"></div>
+            <div id="map-controls">
+              <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-destroyed" onchange="redrawVehicles()"> Wrecked</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-campfires" checked onchange="redrawOverlays()"> Campfires</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-farming" checked onchange="redrawOverlays()"> Farming</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-traps" checked onchange="redrawOverlays()"> Traps</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-dead" checked onchange="redrawOverlays()"> Dead</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-density" onchange="redrawOverlays()"> Density</label>
+                <button id="map-fullscreen-btn" onclick="toggleMapFullscreen()">⛶</button>
+              </div>
+              <div style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap</div>
+            </div>
           </div>
-          <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap</p>
         </div>
 
       </div>
@@ -596,16 +602,18 @@
     // Use PZ_SCALE = 300/16 = 18.75 so 1 world unit = 18.75 game tiles.
     // Then at zoom 4: 1 tile = 256/16 world units * 18.75 game tiles/unit = 300 game tiles = 1 cell. ✓
     // pzToLatLng: lat = -y/PZ_SCALE, lng = x/PZ_SCALE
-    // Our file (0,0) at zoom 4 = PZ cell (16,16) = game (4800,4800)
-    //   lng = 4800/18.75 = 256, lat = -256 → Leaflet tile x = floor(256/16) = 16, y = 16 ✓
-    // So offset = CELL_MIN = 16 at zoom 4, and scales as CELL_MIN * 2^(z-4) at other zooms.
+    // Tile offsets are separate for X and Y since the grid is not square.
 
     const PZ_SCALE = 300 / 16;    // 18.75 game tiles per world unit
-    const CELL_MIN = 16;
-    const CELL_MAX = 28;
+    const CELL_MIN_X = 8;
+    const CELL_MAX_X = 43;
+    const CELL_MIN_Y = 11;
+    const CELL_MAX_Y = 37;
     const TILE_ZOOM_MAX = 4;
-    const MAP_MIN = CELL_MIN * 300;  // 4800 game tiles
-    const MAP_MAX = CELL_MAX * 300;  // 8400 game tiles
+    const MAP_MIN_X = CELL_MIN_X * 300;
+    const MAP_MAX_X = CELL_MAX_X * 300;
+    const MAP_MIN_Y = CELL_MIN_Y * 300;
+    const MAP_MAX_Y = CELL_MAX_Y * 300;
 
     function pzToLatLng(x, y) { return L.latLng(-y / PZ_SCALE, x / PZ_SCALE); }
 
@@ -622,13 +630,14 @@
       const PzTileLayer = L.GridLayer.extend({
         createTile(coords, done) {
           const img = document.createElement('img');
-          // At zoom z, offset = CELL_MIN * 2^(z-4). File index = Leaflet coord - offset.
-          const ox = Math.round(CELL_MIN * Math.pow(2, coords.z - TILE_ZOOM_MAX));
-          const oy = Math.round(CELL_MIN * Math.pow(2, coords.z - TILE_ZOOM_MAX));
+          const scale = Math.pow(2, coords.z - TILE_ZOOM_MAX);
+          const ox = Math.round(CELL_MIN_X * scale);
+          const oy = Math.round(CELL_MIN_Y * scale);
           const ftx = coords.x - ox;
           const fty = coords.y - oy;
-          const tilesPerDim = (CELL_MAX - CELL_MIN) * Math.pow(2, coords.z - TILE_ZOOM_MAX);
-          if (ftx < 0 || fty < 0 || ftx >= tilesPerDim || fty >= tilesPerDim) {
+          const tilesX = (CELL_MAX_X - CELL_MIN_X) * scale;
+          const tilesY = (CELL_MAX_Y - CELL_MIN_Y) * scale;
+          if (ftx < 0 || fty < 0 || ftx >= tilesX || fty >= tilesY) {
             img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
             done(null, img); return img;
           }
@@ -642,8 +651,8 @@
       new PzTileLayer({ tileSize: 256, opacity: 0.9 }).addTo(leafletMap);
 
       const mapBounds = L.latLngBounds(
-        pzToLatLng(CELL_MIN * 300, CELL_MAX * 300),
-        pzToLatLng(CELL_MAX * 300, CELL_MIN * 300)
+        pzToLatLng(MAP_MIN_X, MAP_MAX_Y),
+        pzToLatLng(MAP_MAX_X, MAP_MIN_Y)
       );
       leafletMap.fitBounds(mapBounds);
       leafletMap.setMaxBounds(mapBounds);
@@ -662,7 +671,7 @@
       const players = pzData.players || [];
       players.forEach(p => {
         if (p.x == null || p.y == null) return;
-        if (p.x < MAP_MIN || p.x > MAP_MAX || p.y < MAP_MIN || p.y > MAP_MAX) return;
+        if (p.x < MAP_MIN_X || p.x > MAP_MAX_X || p.y < MAP_MIN_Y || p.y > MAP_MAX_Y) return;
         const latlng = pzToLatLng(p.x, p.y);
         const color = p.infected_risk ? '#ef4444' : p.isDead ? '#6b7280' : '#22c55e';
         const m = L.marker(latlng, {
@@ -691,7 +700,7 @@
       const vehicles = pzData.vehicles || [];
       vehicles.forEach(v => {
         if (v.x == null || v.y == null) return;
-        if (v.x < MAP_MIN || v.x > MAP_MAX || v.y < MAP_MIN || v.y > MAP_MAX) return;
+        if (v.x < MAP_MIN_X || v.x > MAP_MAX_X || v.y < MAP_MIN_Y || v.y > MAP_MAX_Y) return;
         const destroyed = isVehicleDestroyed(v);
         if (destroyed && !showDestroyed) return;
         const engine = v.parts?.Engine ?? 0;
@@ -725,7 +734,7 @@
       function addPointMarkers(list, emoji, label, show) {
         if (!show || !list) return;
         list.forEach(pt => {
-          if (pt.x < MAP_MIN || pt.x > MAP_MAX || pt.y < MAP_MIN || pt.y > MAP_MAX) return;
+          if (pt.x < MAP_MIN_X || pt.x > MAP_MAX_X || pt.y < MAP_MIN_Y || pt.y > MAP_MAX_Y) return;
           const m = L.marker(pzToLatLng(pt.x, pt.y), {
             icon: L.divIcon({
               className: '',
@@ -747,7 +756,7 @@
 
       if (showDead && ovl.dead) {
         ovl.dead.forEach(pt => {
-          if (pt.x < MAP_MIN || pt.x > MAP_MAX || pt.y < MAP_MIN || pt.y > MAP_MAX) return;
+          if (pt.x < MAP_MIN_X || pt.x > MAP_MAX_X || pt.y < MAP_MIN_Y || pt.y > MAP_MAX_Y) return;
           const m = L.marker(pzToLatLng(pt.x, pt.y), {
             icon: L.divIcon({
               className: '',
@@ -765,7 +774,7 @@
         const maxScore = Math.max(...ovl.density.map(d => d.score));
         ovl.density.forEach(d => {
           const cx = d.cx, cy = d.cy;
-          if (cx < CELL_MIN || cx >= CELL_MAX || cy < CELL_MIN || cy >= CELL_MAX) return;
+          if (cx < CELL_MIN_X || cx >= CELL_MAX_X || cy < CELL_MIN_Y || cy >= CELL_MAX_Y) return;
           const x0 = cx * 300, y0 = cy * 300;
           const x1 = x0 + 300, y1 = y0 + 300;
           const opacity = 0.15 + 0.55 * (d.score / maxScore);
@@ -778,6 +787,21 @@
         });
       }
     }
+
+    function toggleMapFullscreen() {
+      const el = document.getElementById('map-inner');
+      if (!document.fullscreenElement) {
+        el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.();
+      } else {
+        document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.();
+      }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      const btn = document.getElementById('map-fullscreen-btn');
+      if (btn) btn.textContent = document.fullscreenElement ? '✕ Exit fullscreen' : '⛶ Fullscreen';
+      if (leafletMap) leafletMap.invalidateSize();
+    });
 
     // ── Data loading ─────────────────────────────────────────────────────────
 
