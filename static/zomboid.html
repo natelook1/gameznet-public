@@ -185,6 +185,11 @@
               <div class="stat-value" id="stat-vehicles">--</div>
             </div>
             <div class="stat-card">
+              <div class="stat-label">In-Game Time</div>
+              <div class="stat-value" id="stat-gametime" style="font-size: 18px;">--</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="stat-gameday"></div>
+            </div>
+            <div class="stat-card">
               <div class="stat-label">Last Update</div>
               <div class="stat-value" id="stat-updated" style="font-size: 14px;">--</div>
             </div>
@@ -223,6 +228,20 @@
             <div class="stat-card">
               <div class="stat-label">Most Hours Survived</div>
               <div class="stat-value" id="stats-top-hours" style="font-size: 18px;">--</div>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom: 14px; font-size: 15px; font-weight: 600;">Kill Leaderboard</h3>
+            <div class="table-container">
+              <div class="table-header" style="grid-template-columns: 2fr 1fr 1fr;">
+                <div>Player</div>
+                <div>Total Kills</div>
+                <div>Breakdown</div>
+              </div>
+              <div class="table-rows" id="stats-kills-table">
+                <div class="table-row" style="grid-column:1/-1; text-align:center; color:var(--muted);">Loading...</div>
+              </div>
             </div>
           </div>
 
@@ -303,7 +322,7 @@
     const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
       ? 'https://gameznet.looknet.ca' : '';
 
-    let pzData = { players: [], vehicles: [], stats: {}, overlays: {} };
+    let pzData = { players: [], vehicles: [], stats: {}, overlays: {}, gametime: {} };
     let leafletMap = null;
     let playerMarkers = [];
 
@@ -385,6 +404,14 @@
       document.getElementById('stat-infected').style.color = infected.length > 0 ? 'var(--red)' : 'var(--green)';
       document.getElementById('stat-vehicles').textContent = (pzData.vehicles || []).length;
       document.getElementById('stat-updated').textContent = new Date().toLocaleTimeString();
+
+      const gt = pzData.gametime || {};
+      if (gt.time_str) {
+        document.getElementById('stat-gametime').textContent = gt.time_str;
+        const periodIcons = { Dawn: '🌅', Morning: '☀️', Afternoon: '🌤', Dusk: '🌆', Night: '🌙' };
+        const icon = periodIcons[gt.period] || '';
+        document.getElementById('stat-gameday').textContent = `${icon} ${gt.period} · Day ${gt.day} (${gt.start_month} ${gt.start_day})`;
+      }
       document.getElementById('sidebar-players').textContent = players.length;
       document.getElementById('sidebar-updated').textContent = new Date().toLocaleTimeString();
       document.getElementById('sidebar-status').textContent = 'Online';
@@ -537,6 +564,30 @@
         </div>`).join('') || '<div class="table-row" style="grid-column:1/-1;text-align:center;color:var(--muted);">No data yet</div>';
 
       document.getElementById('stats-deaths-table').innerHTML = deathRows;
+
+      // Kill leaderboard — aggregate from live player data
+      const killMap = {};
+      const killBreakdownMap = {};
+      (pzData.players || []).forEach(p => {
+        if (!p.kills) return;
+        const total = Object.values(p.kills).reduce((s, v) => s + v, 0);
+        if (total > 0) {
+          killMap[p.name] = total;
+          killBreakdownMap[p.name] = Object.entries(p.kills)
+            .filter(([, v]) => v > 0)
+            .sort((a, b) => b[1] - a[1])
+            .map(([cat, n]) => `${cat}: ${n}`)
+            .join(', ');
+        }
+      });
+      const killRows = Object.entries(killMap)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, total]) => `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr;">
+          <div style="font-weight:600">${name}</div>
+          <div>${total}</div>
+          <div style="font-size:11px;color:var(--muted)">${killBreakdownMap[name] || ''}</div>
+        </div>`).join('') || '<div class="table-row" style="grid-column:1/-1;text-align:center;color:var(--muted);">No kill data</div>';
+      document.getElementById('stats-kills-table').innerHTML = killRows;
 
       // Skill leaders — for each skill, find the player with the highest level
       const skillLeaders = {};
@@ -838,7 +889,7 @@
           const d = JSON.parse(e.data);
           if (d.error) return;
           pzData.players = d.players || [];
-          renderOverview(); renderPlayers();
+          renderOverview(); renderPlayers(); renderStats();
           if (leafletMap) redrawPlayers();
         } catch {}
       });
@@ -858,6 +909,15 @@
           if (d.error) return;
           pzData.stats = d;
           renderOverview(); renderPlayers(); renderStats();
+        } catch {}
+      });
+
+      sseSource.addEventListener('gametime', e => {
+        try {
+          const d = JSON.parse(e.data);
+          if (d.error) return;
+          pzData.gametime = d;
+          renderOverview();
         } catch {}
       });
 
