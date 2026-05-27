@@ -292,6 +292,7 @@
           <div id="map-inner">
             <div id="leaflet-map"></div>
             <div id="map-controls">
+              <div id="map-gametime" style="font-size:12px;margin-bottom:8px;color:var(--text);opacity:0.9;display:none;"></div>
               <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-destroyed" onchange="redrawVehicles()"> Wrecked</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-campfires" checked onchange="redrawOverlays()"> Campfires</label>
@@ -710,6 +711,7 @@
       redrawPlayers();
       redrawVehicles();
       redrawOverlays();
+      updateMapGameTime();
     }
 
     let vehicleMarkers = [];
@@ -767,6 +769,16 @@
         m.bindTooltip(`${v.type} (${destroyed ? 'destroyed' : Math.round(engine * 100) + '% engine'})`, { direction: 'top', offset: [0, -4], className: 'player-label' });
         vehicleMarkers.push(m);
       });
+    }
+
+    function updateMapGameTime() {
+      const gt = pzData.gametime || {};
+      const el = document.getElementById('map-gametime');
+      if (!el || !gt.time_str) return;
+      const periodIcons = { Dawn: '🌅', Morning: '☀️', Afternoon: '🌤', Dusk: '🌆', Night: '🌙' };
+      const icon = periodIcons[gt.period] || '';
+      el.textContent = `${icon} ${gt.time_str} · ${gt.period} · Day ${gt.day}`;
+      el.style.display = 'block';
     }
 
     function redrawOverlays() {
@@ -918,6 +930,7 @@
           if (d.error) return;
           pzData.gametime = d;
           renderOverview();
+          updateMapGameTime();
         } catch {}
       });
 
