@@ -599,6 +599,8 @@
     const CELL_MIN = 16;
     const CELL_MAX = 28;
     const TILE_ZOOM_MAX = 4;
+    const MAP_MIN = CELL_MIN * 300;  // 4800 game tiles
+    const MAP_MAX = CELL_MAX * 300;  // 8400 game tiles
 
     function pzToLatLng(x, y) { return L.latLng(-y / PZ_SCALE, x / PZ_SCALE); }
 
@@ -606,7 +608,7 @@
       if (leafletMap) return;
       leafletMap = L.map('leaflet-map', {
         crs: L.CRS.Simple,
-        minZoom: 0,
+        minZoom: 1,
         maxZoom: TILE_ZOOM_MAX,
         zoomSnap: 0.5,
         attributionControl: false,
@@ -622,15 +624,13 @@
           const fty = coords.y - oy;
           const tilesPerDim = (CELL_MAX - CELL_MIN) * Math.pow(2, coords.z - TILE_ZOOM_MAX);
           if (ftx < 0 || fty < 0 || ftx >= tilesPerDim || fty >= tilesPerDim) {
-            console.log(`[PZ tile] z=${coords.z} leaf=(${coords.x},${coords.y}) ox=${ox} → OUT OF RANGE ftx=${ftx} fty=${fty}`);
             img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
             done(null, img); return img;
           }
           const url = `/static/map-tiles/Zomboid/${coords.z}/${ftx}/${fty}.png`;
-          console.log(`[PZ tile] z=${coords.z} leaf=(${coords.x},${coords.y}) ox=${ox} → ${url}`);
           img.src = url;
           img.onload = () => done(null, img);
-          img.onerror = () => done(null, img);
+          img.onerror = () => { console.warn(`[PZ] tile 404: ${url}`); done(null, img); };
           return img;
         }
       });
@@ -641,6 +641,7 @@
         pzToLatLng(CELL_MAX * 300, CELL_MIN * 300)
       );
       leafletMap.fitBounds(mapBounds);
+      leafletMap.setMaxBounds(mapBounds);
       redrawPlayers();
     }
 
@@ -653,8 +654,11 @@
       const players = pzData.players || [];
       players.forEach(p => {
         if (p.x == null || p.y == null) return;
+        if (p.x < MAP_MIN || p.x > MAP_MAX || p.y < MAP_MIN || p.y > MAP_MAX) {
+          console.warn(`[PZ] player out of map bounds: ${p.name} pz=(${p.x},${p.y})`);
+          return;
+        }
         const latlng = pzToLatLng(p.x, p.y);
-        console.log(`[PZ player] ${p.name} pz=(${p.x.toFixed(0)},${p.y.toFixed(0)}) cell=(${(p.x/300).toFixed(2)},${(p.y/300).toFixed(2)}) latlng=(${latlng.lat.toFixed(3)},${latlng.lng.toFixed(3)})`);
         const color = p.infected_risk ? '#ef4444' : p.isDead ? '#6b7280' : '#22c55e';
         const m = L.marker(latlng, {
           icon: L.divIcon({
@@ -683,6 +687,10 @@
       const vehicles = pzData.vehicles || [];
       vehicles.forEach(v => {
         if (v.x == null || v.y == null) return;
+        if (v.x < MAP_MIN || v.x > MAP_MAX || v.y < MAP_MIN || v.y > MAP_MAX) {
+          console.warn(`[PZ] vehicle out of map bounds: ${v.type}#${v.id} pz=(${v.x},${v.y})`);
+          return;
+        }
         const destroyed = isVehicleDestroyed(v);
         if (destroyed && !showDestroyed) return;
         const engine = v.parts?.Engine ?? 0;
