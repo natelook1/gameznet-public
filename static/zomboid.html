@@ -643,6 +643,7 @@
       leafletMap.fitBounds(mapBounds);
       leafletMap.setMaxBounds(mapBounds);
       redrawPlayers();
+      redrawVehicles();
     }
 
     let vehicleMarkers = [];
@@ -654,10 +655,7 @@
       const players = pzData.players || [];
       players.forEach(p => {
         if (p.x == null || p.y == null) return;
-        if (p.x < MAP_MIN || p.x > MAP_MAX || p.y < MAP_MIN || p.y > MAP_MAX) {
-          console.warn(`[PZ] player out of map bounds: ${p.name} pz=(${p.x},${p.y})`);
-          return;
-        }
+        if (p.x < MAP_MIN || p.x > MAP_MAX || p.y < MAP_MIN || p.y > MAP_MAX) return;
         const latlng = pzToLatLng(p.x, p.y);
         const color = p.infected_risk ? '#ef4444' : p.isDead ? '#6b7280' : '#22c55e';
         const m = L.marker(latlng, {
@@ -670,7 +668,6 @@
         m.bindTooltip(p.name + (p.infected_risk ? ' ⚠' : ''), { permanent: true, direction: 'top', offset: [0, -6], className: 'player-label' });
         playerMarkers.push(m);
       });
-      redrawVehicles();
     }
 
     function isVehicleDestroyed(v) {
@@ -687,10 +684,7 @@
       const vehicles = pzData.vehicles || [];
       vehicles.forEach(v => {
         if (v.x == null || v.y == null) return;
-        if (v.x < MAP_MIN || v.x > MAP_MAX || v.y < MAP_MIN || v.y > MAP_MAX) {
-          console.warn(`[PZ] vehicle out of map bounds: ${v.type}#${v.id} pz=(${v.x},${v.y})`);
-          return;
-        }
+        if (v.x < MAP_MIN || v.x > MAP_MAX || v.y < MAP_MIN || v.y > MAP_MAX) return;
         const destroyed = isVehicleDestroyed(v);
         if (destroyed && !showDestroyed) return;
         const engine = v.parts?.Engine ?? 0;
