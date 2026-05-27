@@ -585,59 +585,75 @@
 
     // ── Map ──────────────────────────────────────────────────────────────────
 
-    // PZ world coords -> Leaflet latlng (CRS.Simple, tileSize=256)
-    // Tiles cover cx=16-28 (x=4800-8400), cy=16-28 (y=4800-8400), PZ_SCALE=20
-    // At zoom 4: Leaflet tile (tx,ty) covers lng=[tx*16,(tx+1)*16], lat=[-ty*16,-(ty+1)*16]
-    // Our file (0,0) starts at x=4800,y=4800 → lng=240,lat=-240 → Leaflet tile (15,15) at zoom 4
-    const PZ_SCALE = 20;
-    const TILE_CELL_X_MIN = 16;  // cx of file tile (0,*)
-    const TILE_CELL_Y_MIN = 16;  // cy of file tile (*,0)
-    const TILE_ZOOM_MAX = 4;
-    const TILE_COLS = 12;        // CELL_X_MAX - CELL_X_MIN
-    const TILE_ROWS = 12;        // CELL_Y_MAX - CELL_Y_MIN
-    // Offsets at zoom 4: floor(CELL_MIN * 300 / PZ_SCALE / 16) = floor(16*300/20/16) = 15
-    const TILE_OFFSET_X = Math.floor(TILE_CELL_X_MIN * 300 / PZ_SCALE / 16);  // = 15
-    const TILE_OFFSET_Y = Math.floor(TILE_CELL_Y_MIN * 300 / PZ_SCALE / 16);  // = 15
+    // PZ coordinate system:
+    //   game tile (x, y): x right, y down, origin top-left
+    //   each cell = 300 game tiles; tile files cover cx=16-28, cy=16-28
+    //   file tile (tx, ty) at zoom 4 = PZ cell (16+tx, 16+ty)
+    //   file tile (tx, ty) at zoom z = covers 2^(4-z) cells in each direction
+    //
+    // CRS: we use a custom CRS where 1 CRS unit = 1 PZ game tile.
+    //   latlng maps as: lat = -y (y flipped so north=up), lng = x
+    //   At zoom 4, tileSize=300px means 1 tile = 1 cell = 300 game tiles exactly.
+    //   Leaflet tile (tx, ty) at zoom 4 covers PZ x=[tx*300,(tx+1)*300], y=[ty*300,(ty+1)*300]
+    //   Our file tile (ftx, fty) covers PZ cell (16+ftx, 16+fty)
+    //   So Leaflet tile tx at zoom 4 = file tile (tx - 16), ty = file tile (ty - 16)
 
-    function pzToLatLng(x, y) { return [-y / PZ_SCALE, x / PZ_SCALE]; }
+    const CELL_PX = 300;           // game tiles per cell
+    const CELL_MIN = 16;           // first cell in our tile files
+    const CELL_MAX = 28;           // last cell (exclusive)
+    const TILE_ZOOM_MAX = 4;
+
+    // Custom CRS: 1 unit = 1 PZ game tile, y-axis flipped
+    const PzCRS = L.extend({}, L.CRS.Simple, {
+      transformation: new L.Transformation(1, 0, -1, 0),
+    });
+
+    // Convert PZ game coords to Leaflet latlng
+    function pzToLatLng(x, y) { return L.latLng(-y, x); }
 
     function initMap() {
       if (leafletMap) return;
       leafletMap = L.map('leaflet-map', {
-        crs: L.CRS.Simple,
+        crs: PzCRS,
         minZoom: 0,
         maxZoom: TILE_ZOOM_MAX,
         zoomSnap: 0.5,
         attributionControl: false,
       });
 
-      // Custom tile layer: map Leaflet tile coords to our /static/map-tiles/Zomboid/{z}/{x}/{y}.png
-      const pzTileLayer = L.GridLayer.extend({
-        createTile(coords, done) {
-          const img = document.createElement('img');
-          const scale = Math.pow(2, coords.z - TILE_ZOOM_MAX);
-          const ox = Math.floor(TILE_OFFSET_X * scale);
-          const oy = Math.floor(TILE_OFFSET_Y * scale);
-          const tx = coords.x - ox;
-          const ty = coords.y - oy;
-          const maxX = Math.ceil(TILE_COLS * scale) - 1;
-          const maxY = Math.ceil(TILE_ROWS * scale) - 1;
-          if (tx < 0 || ty < 0 || tx > maxX || ty > maxY) {
-            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-            done(null, img);
-            return img;
+      // TileLayer with tileSize=300 so each tile = exactly 1 PZ cell at zoom 4.
+      // Leaflet tile (tx, ty) at zoom z covers PZ cells starting at:
+      //   cellX = tx * 2^(4-z),  cellY = ty * 2^(4-z)
+      // Our file index: ftx = cellX - CELL_MIN,  fty = cellY - CELL_MIN
+      const PzTileLayer = L.TileLayer.extend({
+        getTileUrl(coords) {
+          const cellsPerTile = Math.pow(2, TILE_ZOOM_MAX - coords.z);
+          const ftx = coords.x * cellsPerTile - CELL_MIN;
+          const fty = coords.y * cellsPerTile - CELL_MIN;
+          const maxIdx = (CELL_MAX - CELL_MIN) / cellsPerTile - 1;
+          if (ftx < 0 || fty < 0 || ftx > maxIdx || fty > maxIdx) {
+            console.log(`[PZ tile] z=${coords.z} leaf=(${coords.x},${coords.y}) → OUT OF RANGE (ftx=${ftx},fty=${fty})`);
+            return '';
           }
-          img.src = `/static/map-tiles/Zomboid/${coords.z}/${tx}/${ty}.png`;
+          const url = `/static/map-tiles/Zomboid/${coords.z}/${ftx}/${fty}.png`;
+          console.log(`[PZ tile] z=${coords.z} leaf=(${coords.x},${coords.y}) → ${url}`);
+          return url;
+        },
+        createTile(coords, done) {
+          const url = this.getTileUrl(coords);
+          const img = document.createElement('img');
+          if (!url) { done(null, img); return img; }
+          img.src = url;
           img.onload = () => done(null, img);
-          img.onerror = () => { img.src = ''; done(null, img); };
+          img.onerror = () => done(null, img);
           return img;
         }
       });
-      new pzTileLayer({ tileSize: 256, opacity: 0.9 }).addTo(leafletMap);
+      new PzTileLayer('', { tileSize: CELL_PX, opacity: 0.9, zoomOffset: 0 }).addTo(leafletMap);
 
       const mapBounds = L.latLngBounds(
-        pzToLatLng(TILE_CELL_X_MIN * 300, (TILE_CELL_Y_MIN + TILE_ROWS) * 300),
-        pzToLatLng((TILE_CELL_X_MIN + TILE_COLS) * 300, TILE_CELL_Y_MIN * 300)
+        pzToLatLng(CELL_MIN * CELL_PX, CELL_MAX * CELL_PX),
+        pzToLatLng(CELL_MAX * CELL_PX, CELL_MIN * CELL_PX)
       );
       leafletMap.fitBounds(mapBounds);
       redrawPlayers();
@@ -653,6 +669,7 @@
       players.forEach(p => {
         if (p.x == null || p.y == null) return;
         const latlng = pzToLatLng(p.x, p.y);
+        console.log(`[PZ player] ${p.name} pz=(${p.x.toFixed(0)},${p.y.toFixed(0)}) cell=(${(p.x/300).toFixed(2)},${(p.y/300).toFixed(2)}) latlng=(${latlng.lat.toFixed(1)},${latlng.lng.toFixed(1)})`);
         const color = p.infected_risk ? '#ef4444' : p.isDead ? '#6b7280' : '#22c55e';
         const m = L.marker(latlng, {
           icon: L.divIcon({
