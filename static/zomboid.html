@@ -606,9 +606,9 @@
 
     const PZ_SCALE = 300 / 16;    // 18.75 game tiles per world unit
     const CELL_MIN_X = 8;
-    const CELL_MAX_X = 43;
-    const CELL_MIN_Y = 11;
-    const CELL_MAX_Y = 37;
+    const CELL_MAX_X = 48;
+    const CELL_MIN_Y = 8;
+    const CELL_MAX_Y = 40;
     const TILE_ZOOM_MAX = 4;
     const MAP_MIN_X = CELL_MIN_X * 300;
     const MAP_MAX_X = CELL_MAX_X * 300;
@@ -631,8 +631,8 @@
         createTile(coords, done) {
           const img = document.createElement('img');
           const scale = Math.pow(2, coords.z - TILE_ZOOM_MAX);
-          const ox = Math.round(CELL_MIN_X * scale);
-          const oy = Math.round(CELL_MIN_Y * scale);
+          const ox = Math.floor(CELL_MIN_X * scale);
+          const oy = Math.floor(CELL_MIN_Y * scale);
           const ftx = coords.x - ox;
           const fty = coords.y - oy;
           const tilesX = (CELL_MAX_X - CELL_MIN_X) * scale;
