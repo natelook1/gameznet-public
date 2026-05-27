@@ -585,75 +585,60 @@
 
     // ── Map ──────────────────────────────────────────────────────────────────
 
-    // PZ coordinate system:
-    //   game tile (x, y): x right, y down, origin top-left
-    //   each cell = 300 game tiles; tile files cover cx=16-28, cy=16-28
-    //   file tile (tx, ty) at zoom 4 = PZ cell (16+tx, 16+ty)
-    //   file tile (tx, ty) at zoom z = covers 2^(4-z) cells in each direction
-    //
-    // CRS: we use a custom CRS where 1 CRS unit = 1 PZ game tile.
-    //   latlng maps as: lat = -y (y flipped so north=up), lng = x
-    //   At zoom 4, tileSize=300px means 1 tile = 1 cell = 300 game tiles exactly.
-    //   Leaflet tile (tx, ty) at zoom 4 covers PZ x=[tx*300,(tx+1)*300], y=[ty*300,(ty+1)*300]
-    //   Our file tile (ftx, fty) covers PZ cell (16+ftx, 16+fty)
-    //   So Leaflet tile tx at zoom 4 = file tile (tx - 16), ty = file tile (ty - 16)
+    // CRS.Simple: 1 unit = 1/PZ_SCALE PZ game tiles. tileSize=256.
+    // At zoom 4: each Leaflet tile = 256/16 = 16 world units = 16*PZ_SCALE = 320 game tiles.
+    // Wait — we want 1 tile = 1 PZ cell = 300 game tiles at zoom 4.
+    // Use PZ_SCALE = 300/16 = 18.75 so 1 world unit = 18.75 game tiles.
+    // Then at zoom 4: 1 tile = 256/16 world units * 18.75 game tiles/unit = 300 game tiles = 1 cell. ✓
+    // pzToLatLng: lat = -y/PZ_SCALE, lng = x/PZ_SCALE
+    // Our file (0,0) at zoom 4 = PZ cell (16,16) = game (4800,4800)
+    //   lng = 4800/18.75 = 256, lat = -256 → Leaflet tile x = floor(256/16) = 16, y = 16 ✓
+    // So offset = CELL_MIN = 16 at zoom 4, and scales as CELL_MIN * 2^(z-4) at other zooms.
 
-    const CELL_PX = 300;           // game tiles per cell
-    const CELL_MIN = 16;           // first cell in our tile files
-    const CELL_MAX = 28;           // last cell (exclusive)
+    const PZ_SCALE = 300 / 16;    // 18.75 game tiles per world unit
+    const CELL_MIN = 16;
+    const CELL_MAX = 28;
     const TILE_ZOOM_MAX = 4;
 
-    // Custom CRS: 1 unit = 1 PZ game tile, y-axis flipped
-    const PzCRS = L.extend({}, L.CRS.Simple, {
-      transformation: new L.Transformation(1, 0, -1, 0),
-    });
-
-    // Convert PZ game coords to Leaflet latlng
-    function pzToLatLng(x, y) { return L.latLng(-y, x); }
+    function pzToLatLng(x, y) { return L.latLng(-y / PZ_SCALE, x / PZ_SCALE); }
 
     function initMap() {
       if (leafletMap) return;
       leafletMap = L.map('leaflet-map', {
-        crs: PzCRS,
+        crs: L.CRS.Simple,
         minZoom: 0,
         maxZoom: TILE_ZOOM_MAX,
         zoomSnap: 0.5,
         attributionControl: false,
       });
 
-      // TileLayer with tileSize=300 so each tile = exactly 1 PZ cell at zoom 4.
-      // Leaflet tile (tx, ty) at zoom z covers PZ cells starting at:
-      //   cellX = tx * 2^(4-z),  cellY = ty * 2^(4-z)
-      // Our file index: ftx = cellX - CELL_MIN,  fty = cellY - CELL_MIN
-      const PzTileLayer = L.TileLayer.extend({
-        getTileUrl(coords) {
-          const cellsPerTile = Math.pow(2, TILE_ZOOM_MAX - coords.z);
-          const ftx = coords.x * cellsPerTile - CELL_MIN;
-          const fty = coords.y * cellsPerTile - CELL_MIN;
-          const maxIdx = (CELL_MAX - CELL_MIN) / cellsPerTile - 1;
-          if (ftx < 0 || fty < 0 || ftx > maxIdx || fty > maxIdx) {
-            console.log(`[PZ tile] z=${coords.z} leaf=(${coords.x},${coords.y}) → OUT OF RANGE (ftx=${ftx},fty=${fty})`);
-            return '';
+      const PzTileLayer = L.GridLayer.extend({
+        createTile(coords, done) {
+          const img = document.createElement('img');
+          // At zoom z, offset = CELL_MIN * 2^(z-4). File index = Leaflet coord - offset.
+          const ox = Math.round(CELL_MIN * Math.pow(2, coords.z - TILE_ZOOM_MAX));
+          const oy = Math.round(CELL_MIN * Math.pow(2, coords.z - TILE_ZOOM_MAX));
+          const ftx = coords.x - ox;
+          const fty = coords.y - oy;
+          const tilesPerDim = (CELL_MAX - CELL_MIN) * Math.pow(2, coords.z - TILE_ZOOM_MAX);
+          if (ftx < 0 || fty < 0 || ftx >= tilesPerDim || fty >= tilesPerDim) {
+            console.log(`[PZ tile] z=${coords.z} leaf=(${coords.x},${coords.y}) ox=${ox} → OUT OF RANGE ftx=${ftx} fty=${fty}`);
+            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+            done(null, img); return img;
           }
           const url = `/static/map-tiles/Zomboid/${coords.z}/${ftx}/${fty}.png`;
-          console.log(`[PZ tile] z=${coords.z} leaf=(${coords.x},${coords.y}) → ${url}`);
-          return url;
-        },
-        createTile(coords, done) {
-          const url = this.getTileUrl(coords);
-          const img = document.createElement('img');
-          if (!url) { done(null, img); return img; }
+          console.log(`[PZ tile] z=${coords.z} leaf=(${coords.x},${coords.y}) ox=${ox} → ${url}`);
           img.src = url;
           img.onload = () => done(null, img);
           img.onerror = () => done(null, img);
           return img;
         }
       });
-      new PzTileLayer('', { tileSize: CELL_PX, opacity: 0.9, zoomOffset: 0 }).addTo(leafletMap);
+      new PzTileLayer({ tileSize: 256, opacity: 0.9 }).addTo(leafletMap);
 
       const mapBounds = L.latLngBounds(
-        pzToLatLng(CELL_MIN * CELL_PX, CELL_MAX * CELL_PX),
-        pzToLatLng(CELL_MAX * CELL_PX, CELL_MIN * CELL_PX)
+        pzToLatLng(CELL_MIN * 300, CELL_MAX * 300),
+        pzToLatLng(CELL_MAX * 300, CELL_MIN * 300)
       );
       leafletMap.fitBounds(mapBounds);
       redrawPlayers();
@@ -669,7 +654,7 @@
       players.forEach(p => {
         if (p.x == null || p.y == null) return;
         const latlng = pzToLatLng(p.x, p.y);
-        console.log(`[PZ player] ${p.name} pz=(${p.x.toFixed(0)},${p.y.toFixed(0)}) cell=(${(p.x/300).toFixed(2)},${(p.y/300).toFixed(2)}) latlng=(${latlng.lat.toFixed(1)},${latlng.lng.toFixed(1)})`);
+        console.log(`[PZ player] ${p.name} pz=(${p.x.toFixed(0)},${p.y.toFixed(0)}) cell=(${(p.x/300).toFixed(2)},${(p.y/300).toFixed(2)}) latlng=(${latlng.lat.toFixed(3)},${latlng.lng.toFixed(3)})`);
         const color = p.infected_risk ? '#ef4444' : p.isDead ? '#6b7280' : '#22c55e';
         const m = L.marker(latlng, {
           icon: L.divIcon({
