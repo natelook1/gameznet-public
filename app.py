@@ -2415,7 +2415,9 @@ def heartbeat_loop():
     global _connected, _heartbeat_fail_count
     _steam_counter = 10  # start at threshold so first heartbeat polls Steam immediately
     _last_steam_game = None
-    _MAX_FAILS = 10  # ~30s of consecutive failures before checking if tunnel is actually dead
+    _MAX_FAILS = 10       # ~30s of consecutive failures before checking if tunnel is actually dead
+    _stale_tunnel_count = 0  # times we've seen "tunnel alive but heartbeat failing"
+    _MAX_STALE = 10       # ~5min of stale state before forcing a reconnect
     while True:
         time.sleep(3)
         if _connected and os.path.exists(CONFIG_FILE):
@@ -2491,6 +2493,7 @@ def heartbeat_loop():
                     if tunnel_dead:
                         log.warning("Heartbeat failed %d times and tunnel is dead — auto-disconnecting", _MAX_FAILS)
                         _heartbeat_fail_count = 0
+                        _stale_tunnel_count = 0
                         try:
                             urllib.request.urlopen(
                                 urllib.request.Request(
@@ -2502,9 +2505,27 @@ def heartbeat_loop():
                             log.warning("Auto-disconnect failed: %s", de)
                             _connected = False
                     else:
+                        # Tunnel is alive but backend unreachable — likely post-sleep routing lag.
+                        # Reset fail count to keep retrying, but if this persists too long it means
+                        # the tunnel is stale (handshake frozen, no actual traffic) — force reconnect.
                         _heartbeat_fail_count = 0
+                        _stale_tunnel_count += 1
+                        if _stale_tunnel_count >= _MAX_STALE:
+                            log.warning("Tunnel handshake present but heartbeat failing for %d cycles — forcing reconnect", _stale_tunnel_count)
+                            _stale_tunnel_count = 0
+                            try:
+                                urllib.request.urlopen(
+                                    urllib.request.Request(
+                                        f"http://127.0.0.1:{PORT}/api/disconnect",
+                                        method="POST"
+                                    ), timeout=5
+                                )
+                            except Exception as de:
+                                log.warning("Stale tunnel force-reconnect failed: %s", de)
+                                _connected = False
         else:
             _heartbeat_fail_count = 0
+            _stale_tunnel_count = 0
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 
