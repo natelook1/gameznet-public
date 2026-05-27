@@ -667,9 +667,6 @@
         playerMarkers.push(m);
       });
       redrawVehicles();
-      // Fit to all markers if we have players
-      const allPoints = players.filter(p => p.x != null).map(p => pzToLatLng(p.x, p.y));
-      if (allPoints.length) leafletMap.fitBounds(L.latLngBounds(allPoints).pad(0.5));
     }
 
     function isVehicleDestroyed(v) {
