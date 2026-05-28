@@ -103,7 +103,7 @@
     // pzmap2dzi iso params: sqr=300 (squares per cell), scale is read from DZI
     // Game coords (x,y) in squares. Cell origin: cx*300, cy*300.
     const MAP_CONF = {
-      cx0: 19, cy0: 17, cw: 4, ch: 5,
+      cx0: 8, cy0: 16, cw: 40, ch: 24,
       sqr: 300,       // squares per cell edge
     };
 
@@ -147,12 +147,15 @@
     // Convert game square coords to DZI image pixel coords (0..1 viewport fraction)
     function squareToViewport(sx, sy, layer) {
       if (!dziInfo || !viewer) return null;
-      const { cw, ch, sqr } = MAP_CONF;
+      const { cx0, cy0, ch, sqr } = MAP_CONF;
       const x0 = ch * sqr;
       const y0 = 0;
+      // offset to canvas-relative squares
+      const rx = sx - cx0 * sqr;
+      const ry = sy - cy0 * sqr;
       // iso projection
-      const px = x0 + (sx - sy) * sqr / 2;
-      const py = y0 + (sx + sy) * sqr / 4 + layer * 1.5 * sqr;
+      const px = x0 + (rx - ry) * sqr / 2;
+      const py = y0 + (rx + ry) * sqr / 4 + layer * 1.5 * sqr;
       // normalize to [0,1] image fraction
       const imgFracX = px / dziInfo.width;
       const imgFracY = py / dziInfo.height;
@@ -344,12 +347,15 @@
         const item = viewer.world.getItemAt(0);
         if (!item) return;
         const img = item.viewportToImageCoordinates(vp);
-        const { cw, ch, sqr } = MAP_CONF;
+        const { cx0, cy0, ch, sqr } = MAP_CONF;
         const x0 = ch * sqr, y0 = 0;
-        // invert iso projection
+        // invert iso projection to canvas-relative squares
         const px = img.x, py = img.y;
-        const sx = (2 * (px - x0) / sqr + 4 * (py - y0) / sqr) / 2;
-        const sy = (4 * (py - y0) / sqr - 2 * (px - x0) / sqr) / 2;
+        const rx = (2 * (px - x0) / sqr + 4 * (py - y0) / sqr) / 2;
+        const ry = (4 * (py - y0) / sqr - 2 * (px - x0) / sqr) / 2;
+        // add canvas origin to get absolute game squares
+        const sx = rx + cx0 * sqr;
+        const sy = ry + cy0 * sqr;
         document.getElementById('coords-display').textContent =
           `X: ${Math.round(sx)}  Y: ${Math.round(sy)}`;
       });
