@@ -1,0 +1,20 @@
+{
+  "route": {
+    "default": "/static/map-tiles/iso/"
+  },
+  "features": {
+    "map": false,
+    "grid": true,
+    "marker": false,
+    "trimmer": false,
+    "zombie": false,
+    "foraging": false,
+    "rooms": false,
+    "objects": false,
+    "streets": false,
+    "coords": true
+  },
+  "version": "1.1.13",
+  "git_branch": "refs/heads/main",
+  "git_commit": "18a26311cfb752605d94e3e13a9ab7e7f3345fbe"
+}

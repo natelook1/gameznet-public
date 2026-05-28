@@ -1,0 +1,7964 @@
+- desc_cn: ''
+  desc_en: ''
+  id: '1009'
+  layer: 0
+  name_cn: 迪克西拖车公园
+  name_en: Dixie Trailer Park
+  type: point
+  x: 11493
+  y: 8914
+- desc_cn: ''
+  desc_en: ''
+  id: '1608'
+  layer: 0
+  name_cn: 山谷车站
+  name_en: Valley Station
+  type: point
+  x: 12734
+  y: 5772
+- desc_cn: ''
+  desc_en: ''
+  id: m5tn6msp_3507qxeny3r
+  layer: 0
+  name_cn: 雌鹿谷森林
+  name_en: Doe Valley Forest
+  color: green
+  background: transparent
+  passthrough: true
+  rects:
+  - height: 2280
+    width: 2044
+    x: 1990
+    y: 7400
+  - height: 1000
+    width: 1700
+    x: 2650
+    y: 6400
+  - height: 240
+    width: 740
+    x: 3000
+    y: 6160
+  - height: 1701
+    width: 1605
+    x: 4034
+    y: 7400
+  - height: 580
+    width: 900
+    x: 4350
+    y: 6820
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: m5tocl3x_5opccsxxvmt
+  layer: 0
+  name_cn: 豪格沃乐森林
+  name_en: Hog Wallow Forest
+  color: green
+  background: transparent
+  passthrough: true
+  rects:
+  - height: 3000
+    width: 2650
+    x: 4600
+    y: 10750
+  - height: 450
+    width: 680
+    x: 7250
+    y: 11250
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: m5touizl_9y227kiha4
+  layer: 0
+  name_cn: 雌鹿谷
+  name_en: Doe Valley
+  type: point
+  x: 6832
+  y: 9609
+- desc_cn: ''
+  desc_en: ''
+  id: m5tp2kbg_jjmd5c07hnj
+  layer: 0
+  name_cn: 印第安纳
+  name_en: Indiana
+  color: green
+  background: transparent
+  passthrough: true
+  rects:
+  - height: 2100
+    width: 500
+    x: 7800
+    y: 4800
+  - height: 2400
+    width: 700
+    x: 8300
+    y: 4800
+  - height: 1500
+    width: 3170
+    x: 9000
+    y: 4800
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: m5tpa931_askmtaah83
+  layer: 0
+  name_cn: 杰斐逊森林
+  name_en: Jefferson Forest
+  color: green
+  background: transparent
+  passthrough: true
+  rects:
+  - height: 3500
+    width: 3500
+    x: 12300
+    y: 7220
+  - height: 750
+    width: 1200
+    x: 12900
+    y: 6470
+  - height: 1120
+    width: 1200
+    x: 14100
+    y: 6100
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: m5tprhl8_yqcnuvz1kl
+  layer: 0
+  name_cn: 帕克伍德
+  name_en: Parkwood
+  type: point
+  x: 12668
+  y: 3582
+- desc_cn: ''
+  desc_en: ''
+  id: m5tput1k_zqe9fdspzjl
+  layer: 0
+  name_cn: 怀恩多特
+  name_en: Wyandotte
+  type: point
+  x: 12255
+  y: 3145
+- desc_cn: ''
+  desc_en: ''
+  id: m5tpvn39_528snhj8pr
+  layer: 0
+  name_cn: 奥杜邦
+  name_en: Audubon
+  type: point
+  x: 13875
+  y: 2790
+- desc_cn: ''
+  desc_en: ''
+  id: m5tq0yk6_jwcamchs2wi
+  layer: 0
+  name_cn: 德国城
+  name_en: Germantown
+  type: point
+  x: 13631
+  y: 2193
+- desc_cn: ''
+  desc_en: ''
+  id: m5tq2v20_t9u9wrd7wch
+  layer: 0
+  name_cn: 利默里克
+  name_en: Limerick
+  type: point
+  x: 12184
+  y: 1945
+- desc_cn: ''
+  desc_en: ''
+  id: m5tq6g6e_isi8dky3ti
+  layer: 0
+  name_cn: 东市场区
+  name_en: East Market District
+  type: point
+  x: 13360
+  y: 1662
+- desc_cn: ''
+  desc_en: ''
+  id: m5tq9jkb_jms9xzumb2r
+  layer: 0
+  name_cn: 市中心
+  name_en: Downtown
+  type: point
+  x: 12600
+  y: 1238
+- desc_cn: ''
+  desc_en: ''
+  id: mdg1s7t7_1ceki6n
+  layer: 0
+  name_cn: 马尔德劳
+  name_en: Muldraugh
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 529
+    width: 308
+    x: 10600
+    y: 10152
+  - height: 338
+    width: 355
+    x: 10600
+    y: 9814
+  - height: 144
+    width: 63
+    x: 10600
+    y: 9200
+  - height: 470
+    width: 430
+    x: 10600
+    y: 9344
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: mdg2d21v_efbrl8
+  layer: 0
+  name_cn: 西点
+  name_en: West Point
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 125
+    width: 1042
+    x: 10888
+    y: 6646
+  - height: 131
+    width: 1114
+    x: 11078
+    y: 6771
+  - height: 200
+    width: 334
+    x: 11286
+    y: 6902
+  - height: 160
+    width: 110
+    x: 12192
+    y: 6811
+  - height: 286
+    width: 572
+    x: 11620
+    y: 6902
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: mdg2lpqw_oikyh7
+  layer: 0
+  name_cn: 三月岭
+  name_en: March Ridge
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 240
+    width: 700
+    x: 9800
+    y: 12600
+  - height: 300
+    width: 256
+    x: 9800
+    y: 12840
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: me4j5o0j_vypcsa
+  layer: 0
+  name_cn: 法拉斯湖
+  name_en: Fallas Lake
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 420
+    width: 450
+    x: 7073
+    y: 8152
+  type: area
+- id: me4j9aqo_sigpfs
+  layer: 0
+  name_cn: 罗斯伍德
+  name_en: Rosewood
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 690
+    width: 336
+    x: 7938
+    y: 11215
+  - height: 305
+    width: 205
+    x: 8274
+    y: 11520
+  - height: 262
+    width: 369
+    x: 7569
+    y: 11746
+  - height: 562
+    width: 425
+    x: 7938
+    y: 11905
+  - height: 174
+    width: 112
+    x: 8363
+    y: 12161
+  - height: 459
+    width: 44
+    x: 7894
+    y: 12008
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: me4jlb3t_ff2je2
+  layer: 0
+  name_cn: 河畔
+  name_en: Riverside
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 255
+    width: 1164
+    x: 5678
+    y: 5192
+  - height: 72
+    width: 790
+    x: 6052
+    y: 5447
+  - height: 82
+    width: 379
+    x: 6302
+    y: 5519
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: me4jqc4h_1ry4dd7
+  layer: 0
+  name_cn: 回声溪
+  name_en: Echo Creek
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 243
+    width: 456
+    x: 3353
+    y: 10866
+  - height: 231
+    width: 91
+    x: 3521
+    y: 11109
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: me4kl3fd_s9y1yg
+  layer: 0
+  name_cn: 军事研究设施
+  name_en: Military Research Facility
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 151
+    width: 326
+    x: 5515
+    y: 12416
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: me4ksiq5_1tnfi8a
+  layer: 0
+  name_cn: 暗沼湖
+  name_en: Dark Wallow Lake
+  color: green
+  background: transparent
+  passthrough: true
+  rects:
+  - height: 1189
+    width: 579
+    x: 8395
+    y: 14324
+  - height: 995
+    width: 482
+    x: 7913
+    y: 14518
+  - height: 255
+    width: 300
+    x: 7613
+    y: 14518
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: me4p8yn1_dslrqa
+  layer: 0
+  name_cn: 路易斯维尔国际机场
+  name_en: Louisville International Airport
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 1000
+    width: 750
+    x: 14923
+    y: 2358
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: me4pco71_ebskil
+  layer: 0
+  name_cn: 路易斯维尔
+  name_en: Louisville
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 450
+    width: 2030
+    x: 11970
+    y: 3012
+  - height: 330
+    width: 2370
+    x: 11970
+    y: 2682
+  - height: 410
+    width: 2300
+    x: 11970
+    y: 2272
+  - height: 188
+    width: 2160
+    x: 11970
+    y: 2084
+  - height: 912
+    width: 1950
+    x: 11970
+    y: 1172
+  - height: 135
+    width: 360
+    x: 12500
+    y: 1037
+  - height: 400
+    width: 860
+    x: 12200
+    y: 3462
+  - height: 640
+    width: 440
+    x: 12420
+    y: 3862
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: me4q008y_1bhonh
+  layer: 0
+  name_cn: 勃兰登堡
+  name_en: Brandenburg
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 301
+    width: 1266
+    x: 1322
+    y: 5705
+  - height: 200
+    width: 281
+    x: 1432
+    y: 5505
+  - height: 520
+    width: 1074
+    x: 1460
+    y: 6006
+  - height: 280
+    width: 660
+    x: 1696
+    y: 6526
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: me4q3sm0_gb7lln
+  layer: 0
+  name_cn: 以格伦
+  name_en: Ekron
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 327
+    width: 818
+    x: 238
+    y: 9569
+  - height: 285
+    width: 185
+    x: 423
+    y: 9284
+  - height: 175
+    width: 206
+    x: 352
+    y: 9896
+  - height: 108
+    width: 73
+    x: 899
+    y: 9896
+  - height: 45
+    width: 184
+    x: 558
+    y: 9896
+  - height: 43
+    width: 72
+    x: 682
+    y: 9526
+  - height: 89
+    width: 77
+    x: 754
+    y: 9480
+  type: area
+- desc_cn: ''
+  desc_en: ''
+  id: me4q7vmn_1w3q0t2
+  layer: 0
+  name_cn: 欧文顿
+  name_en: Irvington
+  color: orange
+  background: transparent
+  text_position: top
+  passthrough: true
+  rects:
+  - height: 485
+    width: 1440
+    x: 1736
+    y: 14489
+  - height: 240
+    width: 1300
+    x: 1852
+    y: 14249
+  - height: 43
+    width: 100
+    x: 3000
+    y: 14206
+  - height: 264
+    width: 530
+    x: 2170
+    y: 13985
+  - height: 183
+    width: 700
+    x: 2170
+    y: 13802
+  type: area
+- desc_cn: 服装店。
+  desc_en: Barg-n-Clothes.
+  id: '1000'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 11599
+  y: 8252
+- desc_cn: ''
+  desc_en: ''
+  id: '1001'
+  layer: 0
+  name_cn: 小餐馆
+  name_en: Diner
+  type: point
+  visible_zoom_level: 1
+  x: 11464
+  y: 8809
+- desc_cn: 途行加油站，2个加油机。
+  desc_en: Gas-2-Go, 2 pumps.
+  id: '1002'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 11603
+  y: 8308
+- desc_cn: 2个加油机。
+  desc_en: Two pumps.
+  id: '1003'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas station
+  type: point
+  visible_zoom_level: 1
+  x: 11508
+  y: 8832
+- desc_cn: ''
+  desc_en: ''
+  id: '1004'
+  layer: 0
+  name_cn: 自助洗衣店
+  name_en: Laundromat
+  type: point
+  visible_zoom_level: 1
+  x: 11683
+  y: 8821
+- desc_cn: ''
+  desc_en: ''
+  id: '1005'
+  layer: 0
+  name_cn: 莫兰的二手车
+  name_en: Molan's Used Cars
+  type: point
+  visible_zoom_level: 1
+  x: 11687
+  y: 8367
+- desc_cn: ''
+  desc_en: ''
+  id: '1006'
+  layer: 0
+  name_cn: 野餐用餐区
+  name_en: Picnic Dining Area
+  type: point
+  visible_zoom_level: 1
+  x: 11556
+  y: 8858
+- desc_cn: ''
+  desc_en: ''
+  id: '1007'
+  layer: 0
+  name_cn: 斯皮福餐厅
+  name_en: Spiffo's
+  type: point
+  visible_zoom_level: 1
+  x: 11668
+  y: 8302
+- desc_cn: ''
+  desc_en: ''
+  id: '1008'
+  layer: 0
+  name_cn: 超市
+  name_en: Supermarket
+  type: point
+  visible_zoom_level: 1
+  x: 11670
+  y: 8794
+- desc_cn: 只是泥土中的一条信息。
+  desc_en: Just a message in the dirt.
+  id: '1010'
+  layer: 0
+  name_cn: <3 Brian
+  name_en: <3 Brian
+  type: point
+  visible_zoom_level: 1
+  x: 8927
+  y: 10320
+- desc_cn: 3层，已废弃。
+  desc_en: 3 stories, needs renovation.
+  id: '1011'
+  layer: 0
+  name_cn: 废弃工厂
+  name_en: Abandoned Factory
+  type: point
+  visible_zoom_level: 1
+  x: 3847
+  y: 6212
+- desc_cn: ''
+  desc_en: ''
+  id: '1012'
+  layer: 0
+  name_cn: 陆军宿舍
+  name_en: Army Quarters
+  type: point
+  visible_zoom_level: 1
+  x: 7445
+  y: 7959
+- desc_cn: ''
+  desc_en: ''
+  id: '1013'
+  layer: 0
+  name_cn: 汽车修理店
+  name_en: Auto Repair Store
+  type: point
+  visible_zoom_level: 1
+  x: 5470
+  y: 9661
+- desc_cn: ''
+  desc_en: ''
+  id: '1014'
+  layer: 0
+  name_cn: 林中小屋
+  name_en: Cabin in the Woods
+  type: point
+  visible_zoom_level: 1
+  x: 8059
+  y: 7620
+- desc_cn: 位于肯塔基州荒野深处的一系列小屋和体育设施。祝您旅途愉快！
+  desc_en: A collection of cabins & sports amenities deep in the Kentucky wilderness.
+    Happy trails!
+  id: '1015'
+  layer: 0
+  name_cn: 露营地
+  name_en: Camp Camus
+  type: point
+  visible_zoom_level: 1
+  x: 4817
+  y: 7939
+- desc_cn: ''
+  desc_en: ''
+  id: '1016'
+  layer: 0
+  name_cn: 露营店
+  name_en: Camping Store
+  type: point
+  visible_zoom_level: 1
+  x: 3800
+  y: 8549
+- desc_cn: ''
+  desc_en: ''
+  id: '1017'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 5501
+  y: 9566
+- desc_cn: ''
+  desc_en: ''
+  id: '1018'
+  layer: 0
+  name_cn: 建筑工地
+  name_en: Construction Site
+  type: point
+  visible_zoom_level: 1
+  x: 10223
+  y: 7586
+- desc_cn: 公园管理员站，有 3 张床、楼上厨房和大量存储空间。
+  desc_en: Park ranger station that has 3 beds, a kitchen upstairs, and lots of storage
+    space.
+  id: '1019'
+  layer: 0
+  name_cn: 鹿头湖公园护林站
+  name_en: Deerhead Lake Park Ranger Station
+  type: point
+  visible_zoom_level: 1
+  x: 4674
+  y: 8597
+- desc_cn: 公园管理员站，有3张床、楼上厨房和大量存储空间。
+  desc_en: Park ranger station that has 3 beds, a kitchen upstairs, and lots of storage
+    space.
+  id: '1020'
+  layer: 0
+  name_cn: 鹿头湖公园护林站
+  name_en: Deerhead Lake Park Ranger Station
+  type: point
+  visible_zoom_level: 1
+  x: 4674
+  y: 8597
+- desc_cn: ''
+  desc_en: ''
+  id: '1021'
+  layer: 0
+  name_cn: 小餐馆
+  name_en: Diner
+  type: point
+  visible_zoom_level: 1
+  x: 3703
+  y: 8462
+- desc_cn: ''
+  desc_en: ''
+  id: '1022'
+  layer: 0
+  name_cn: 医生办公室
+  name_en: Doctor's Office
+  type: point
+  visible_zoom_level: 1
+  x: 5499
+  y: 9582
+- desc_cn: ''
+  desc_en: ''
+  id: '1023'
+  layer: 0
+  name_cn: 双层小型仓库
+  name_en: Double Small Warehouses
+  type: point
+  visible_zoom_level: 1
+  x: 6560
+  y: 8946
+- desc_cn: ''
+  desc_en: ''
+  id: '1024'
+  layer: 0
+  name_cn: 双层小型仓库
+  name_en: Double Small Warehouses
+  type: point
+  visible_zoom_level: 1
+  x: 5892
+  y: 9861
+- desc_cn: ''
+  desc_en: ''
+  id: '1025'
+  layer: 0
+  name_cn: 双仓库
+  name_en: Double Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 7657
+  y: 9343
+- desc_cn: ''
+  desc_en: ''
+  id: '1026'
+  layer: 0
+  name_cn: 双仓库
+  name_en: Double Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 8279
+  y: 10039
+- desc_cn: “旁边有咖啡馆\xC3\xA9s。”
+  desc_en: With adjoining cafÃ©s.
+  id: '1027'
+  layer: 0
+  name_cn: 农产品商店
+  name_en: Farm Produce Shop
+  type: point
+  visible_zoom_level: 1
+  x: 5465
+  y: 9584
+- desc_cn: 新鲜的时令农产品，现已开始销售！
+  desc_en: Fresh seasonal produce - sale now on!
+  id: '1028'
+  layer: 0
+  name_cn: 农场摊位
+  name_en: Farm stall
+  type: point
+  visible_zoom_level: 1
+  x: 9449
+  y: 9777
+- desc_cn: “这里发生了什么，这里发生了什么……它没有被控制住！”
+  desc_en: '"What happened here, what''s happening here... it''s not contained!"'
+  id: '1029'
+  layer: 0
+  name_cn: 僵尸毁灭工程预告片中展示的第一栋房子
+  name_en: First house shown in Project Zomboid's trailer
+  type: point
+  visible_zoom_level: 1
+  x: 7087
+  y: 8370
+- desc_cn: 2个水加油机。
+  desc_en: Two Pumps.
+  id: '1030'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 5467
+  y: 9709
+- desc_cn: Gas N More加油站，2个加油机。
+  desc_en: Gas N More, 2 pumps.
+  id: '1031'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 3690
+  y: 8495
+- desc_cn: 无需大锤。
+  desc_en: No sledgehammer needed.
+  id: '1032'
+  layer: 0
+  name_cn: 枪支店
+  name_en: Gun Store
+  type: point
+  visible_zoom_level: 1
+  x: 3807
+  y: 8513
+- desc_cn: ''
+  desc_en: ''
+  id: '1033'
+  layer: 0
+  name_cn: 赛马场
+  name_en: Horse Course
+  type: point
+  visible_zoom_level: 1
+  x: 5577
+  y: 6499
+- desc_cn: 有壁炉、工具棚和户外厕所。
+  desc_en: Has a fireplace, tool shed, and outhouse.
+  id: '1034'
+  layer: 0
+  name_cn: 猎人小屋
+  name_en: Hunter's Cabin
+  type: point
+  visible_zoom_level: 1
+  x: 9040
+  y: 8732
+- desc_cn: 你值得享受一番。
+  desc_en: You deserve a treat.
+  id: '1035'
+  layer: 0
+  name_cn: 冰淇淋店
+  name_en: Ice Cream Store
+  type: point
+  visible_zoom_level: 1
+  x: 7140
+  y: 8981
+- desc_cn: 低矮的栅栏和小棚屋，总比没有好。大部分被树木遮挡。
+  desc_en: Low fence and small shed, better than nothing. Mostly obscured by trees.
+  id: '1036'
+  layer: 0
+  name_cn: 孤立的房子
+  name_en: Isolated House
+  type: point
+  visible_zoom_level: 1
+  x: 3859
+  y: 8428
+- desc_cn: 雌鹿谷森林深处湖边的一座孤零零的房子。有一个古典火炉。
+  desc_en: A lone house by a lake deep in the woods of Doe Valley. Has an antique
+    oven.
+  id: '1037'
+  layer: 0
+  name_cn: 湖边别墅
+  name_en: Lake House
+  type: point
+  visible_zoom_level: 1
+  x: 4243
+  y: 7226
+- desc_cn: 非常小的自助洗衣店，只有少量的洗衣机/烘干机。
+  desc_en: Very Small laundromat, only has a handful of washers/dryers.
+  id: '1038'
+  layer: 0
+  name_cn: 自助洗衣店
+  name_en: Laundromat
+  type: point
+  visible_zoom_level: 1
+  x: 7259
+  y: 8498
+- desc_cn: ''
+  desc_en: ''
+  id: '1039'
+  layer: 0
+  name_cn: 自助洗衣店
+  name_en: Laundromat
+  type: point
+  visible_zoom_level: 1
+  x: 5474
+  y: 9680
+- desc_cn: ''
+  desc_en: ''
+  id: '1042'
+  layer: 0
+  name_cn: 军事剩余物资商店
+  name_en: Military Surplus Store
+  type: point
+  visible_zoom_level: 1
+  x: 5464
+  y: 9511
+- desc_cn: ''
+  desc_en: ''
+  id: '1043'
+  layer: 0
+  name_cn: 餐厅
+  name_en: Restaurant
+  type: point
+  visible_zoom_level: 1
+  x: 5547
+  y: 9663
+- desc_cn: 带有田地和工具棚的小型农舍。
+  desc_en: Small Farm House with fields and tool shed.
+  id: '1044'
+  layer: 0
+  name_cn: 小农舍
+  name_en: Small Farm House
+  type: point
+  visible_zoom_level: 1
+  x: 3659
+  y: 8535
+- desc_cn: ''
+  desc_en: ''
+  id: '1045'
+  layer: 0
+  name_cn: 小仓库
+  name_en: Small Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 7485
+  y: 11081
+- desc_cn: 带古典火炉的小作坊。
+  desc_en: Small workshop with antique oven.
+  id: '1046'
+  layer: 0
+  name_cn: 小作坊
+  name_en: Small Workshop
+  type: point
+  visible_zoom_level: 1
+  x: 8532
+  y: 9033
+- desc_cn: 废弃城镇的最后一座幸存房屋。
+  desc_en: The last surviving house of an abandoned town.
+  id: '1047'
+  layer: 0
+  name_cn: 捕兽者之家
+  name_en: Trapper House
+  type: point
+  visible_zoom_level: 1
+  x: 3924
+  y: 6214
+- desc_cn: ''
+  desc_en: ''
+  id: '1048'
+  layer: 0
+  name_cn: 三个仓库
+  name_en: Triple Warehouses
+  type: point
+  visible_zoom_level: 1
+  x: 6734
+  y: 10020
+- desc_cn: ''
+  desc_en: ''
+  id: '1049'
+  layer: 0
+  name_cn: 酒吧
+  name_en: Bar
+  type: point
+  visible_zoom_level: 1
+  x: 7246
+  y: 8522
+- desc_cn: ''
+  desc_en: ''
+  id: '1050'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 7258
+  y: 8431
+- desc_cn: ''
+  desc_en: ''
+  id: '1051'
+  layer: 0
+  name_cn: 汉堡店
+  name_en: Burger Joint
+  type: point
+  visible_zoom_level: 1
+  x: 7234
+  y: 8203
+- desc_cn: ''
+  desc_en: ''
+  id: '1052'
+  layer: 0
+  name_cn: 教堂
+  name_en: Church
+  type: point
+  visible_zoom_level: 1
+  x: 7387
+  y: 8353
+- desc_cn: ''
+  desc_en: ''
+  id: '1053'
+  layer: 0
+  name_cn: 医生办公室
+  name_en: Doctor's Office
+  type: point
+  visible_zoom_level: 1
+  x: 7296
+  y: 8388
+- desc_cn: 种子等，一些普通五金，以及后屋里的枪支。
+  desc_en: Seeds etc, some general hardware, plus guns in the back room.
+  id: '1054'
+  layer: 0
+  name_cn: 农用用品店
+  name_en: Farming Supply Store
+  type: point
+  visible_zoom_level: 1
+  x: 7252
+  y: 8321
+- desc_cn: 湖边的2层加油站。4个加油机。
+  desc_en: 2-story gas station by the lake. 4 pumps.
+  id: '1056'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 7317
+  y: 8186
+- desc_cn: 大量食物和一些衣服。
+  desc_en: Lots of food and some clothes.
+  id: '1057'
+  layer: 0
+  name_cn: 杂货店
+  name_en: General Store
+  type: point
+  visible_zoom_level: 1
+  x: 7296
+  y: 8253
+- desc_cn: E.P. 工具。
+  desc_en: E.P. Tools.
+  id: '1058'
+  layer: 0
+  name_cn: 五金店
+  name_en: Hardware Store
+  type: point
+  visible_zoom_level: 1
+  x: 7256
+  y: 8231
+- desc_cn: ''
+  desc_en: ''
+  id: '1059'
+  layer: 0
+  name_cn: 警察局
+  name_en: Police Station
+  type: point
+  visible_zoom_level: 1
+  x: 7252
+  y: 8378
+- desc_cn: ''
+  desc_en: ''
+  id: '1060'
+  layer: 0
+  name_cn: 3车库豪宅
+  name_en: 3 Garage Mansion
+  type: point
+  visible_zoom_level: 1
+  x: 12037
+  y: 2593
+- desc_cn: 3栋豪宅四周全部被栅栏围住，只有一条路可以进去，还有一个小池塘。
+  desc_en: 3 Mansions gated all around with only 1 way in and a small pond.
+  id: '1061'
+  layer: 0
+  name_cn: 3联别墅
+  name_en: 3 Mansion Complex
+  type: point
+  visible_zoom_level: 1
+  x: 14150
+  y: 2628
+- desc_cn: 每天所有商品低于 5 美元。
+  desc_en: Everything under $5, everyday.
+  id: '1062'
+  layer: 0
+  name_cn: 5美元或更少
+  name_en: 5 Bux or Less
+  type: point
+  visible_zoom_level: 1
+  x: 13318
+  y: 1293
+- desc_cn: 电子设备和办公室。
+  desc_en: Electronic equipment & offices.
+  id: '1063'
+  layer: 0
+  name_cn: LMBW 93.2广播电台
+  name_en: 93.2 LMBW Radio
+  type: point
+  visible_zoom_level: 1
+  x: 12474
+  y: 1774
+- desc_cn: 狩猎商店/枪支商店。
+  desc_en: Hunting store/gun store.
+  id: '1064'
+  layer: 0
+  name_cn: 罗恩狩猎用品
+  name_en: A.A. Ron Hunting Supply
+  type: point
+  visible_zoom_level: 1
+  x: 13961
+  y: 3231
+- desc_cn: 你撞坏了，你就得赔。
+  desc_en: You crash it, you pay it.
+  id: '1065'
+  layer: 0
+  name_cn: ABC驾校
+  name_en: ABC Driving School
+  type: point
+  visible_zoom_level: 1
+  x: 13312
+  y: 1314
+- desc_cn: ''
+  desc_en: ''
+  id: '1066'
+  layer: 0
+  name_cn: 艾托线材公司
+  name_en: Aitor Wire Company
+  type: point
+  visible_zoom_level: 1
+  x: 12183
+  y: 1457
+- desc_cn: ''
+  desc_en: ''
+  id: '1067'
+  layer: 0
+  name_cn: 美国环球通讯
+  name_en: AmeriGlobe Communications
+  type: point
+  visible_zoom_level: 1
+  x: 12305
+  y: 3533
+- desc_cn: ''
+  desc_en: ''
+  id: '1068'
+  layer: 0
+  name_cn: 美国美食
+  name_en: American Eats
+  type: point
+  visible_zoom_level: 1
+  x: 12781
+  y: 1214
+- desc_cn: 在主干道上设立的军营。
+  desc_en: Army camp set up on the main road.
+  id: '1069'
+  layer: 0
+  name_cn: 陆军检查站
+  name_en: Army Checkpoint
+  type: point
+  visible_zoom_level: 1
+  x: 12515
+  y: 4267
+- desc_cn: 枪支和军用装备。
+  desc_en: Ready Prep, guns and army gear.
+  id: '1070'
+  layer: 0
+  name_cn: 军队剩余物资商店
+  name_en: Army Surplus Store
+  type: point
+  visible_zoom_level: 1
+  x: 12225
+  y: 1319
+- desc_cn: ''
+  desc_en: ''
+  id: '1071'
+  layer: 0
+  name_cn: 路易斯维尔艺术馆
+  name_en: Art Gallery of Louisville
+  type: point
+  visible_zoom_level: 1
+  x: 12547
+  y: 1393
+- desc_cn: 汽车修理店。
+  desc_en: Car Fix-Ation.
+  id: '1072'
+  layer: 0
+  name_cn: 汽车修理店（中央）
+  name_en: Auto Repair Shop (Central)
+  type: point
+  visible_zoom_level: 1
+  x: 12655
+  y: 2118
+- desc_cn: 艾尔的汽车修理店。
+  desc_en: Al's Autoshop.
+  id: '1073'
+  layer: 0
+  name_cn: 汽车修理店（中心区）
+  name_en: Auto Repair Shop (Central)
+  type: point
+  visible_zoom_level: 1
+  x: 12266
+  y: 1567
+- desc_cn: 美国轮胎。
+  desc_en: American Tire.
+  id: '1074'
+  layer: 0
+  name_cn: 汽车修理店（东）
+  name_en: Auto Repair Shop (East)
+  type: point
+  visible_zoom_level: 1
+  x: 13111
+  y: 1757
+- desc_cn: 吉姆的汽车修理店。
+  desc_en: Jim's Autoshop.
+  id: '1075'
+  layer: 0
+  name_cn: 汽车修理店（北）
+  name_en: Auto Repair Shop (North)
+  type: point
+  visible_zoom_level: 1
+  x: 12232
+  y: 1375
+- desc_cn: 美国轮胎。
+  desc_en: American Tire.
+  id: '1076'
+  layer: 0
+  name_cn: 汽车修理店（南）
+  name_en: Auto Repair Shop (South)
+  type: point
+  visible_zoom_level: 1
+  x: 13280
+  y: 2965
+- desc_cn: 汽车修复。
+  desc_en: Car Fix-ation.
+  id: '1077'
+  layer: 0
+  name_cn: 汽车修理店（南）
+  name_en: Auto Repair Shop (South)
+  type: point
+  visible_zoom_level: 1
+  x: 12616
+  y: 3518
+- desc_cn: ''
+  desc_en: ''
+  id: '1078'
+  layer: 0
+  name_cn: 裁缝店
+  name_en: Awl Work and Sew Play
+  type: point
+  visible_zoom_level: 1
+  x: 12489
+  y: 1697
+- desc_cn: ''
+  desc_en: ''
+  id: '1079'
+  layer: 0
+  name_cn: 裁缝店
+  name_en: Awl Work and Sew Play
+  type: point
+  visible_zoom_level: 1
+  x: 13169
+  y: 1560
+- desc_cn: ''
+  desc_en: ''
+  id: '1080'
+  layer: 0
+  name_cn: 烧烤设备店
+  name_en: BBBQ
+  type: point
+  visible_zoom_level: 1
+  x: 12912
+  y: 1398
+- desc_cn: ''
+  desc_en: ''
+  id: '1081'
+  layer: 0
+  name_cn: 回归自然脊椎按摩
+  name_en: Back To The Nurture
+  type: point
+  visible_zoom_level: 1
+  x: 12411
+  y: 2835
+- desc_cn: ''
+  desc_en: ''
+  id: '1082'
+  layer: 0
+  name_cn: 面包店
+  name_en: Bakery
+  type: point
+  visible_zoom_level: 1
+  x: 13581
+  y: 2134
+- desc_cn: ''
+  desc_en: ''
+  id: '1083'
+  layer: 0
+  name_cn: 酒吧
+  name_en: Bar
+  type: point
+  visible_zoom_level: 1
+  x: 13181
+  y: 1283
+- desc_cn: ''
+  desc_en: ''
+  id: '1084'
+  layer: 0
+  name_cn: 酒吧
+  name_en: Bar
+  type: point
+  visible_zoom_level: 1
+  x: 13951
+  y: 3129
+- desc_cn: ''
+  desc_en: ''
+  id: '1085'
+  layer: 0
+  name_cn: 酒吧
+  name_en: Bar
+  type: point
+  visible_zoom_level: 1
+  x: 12858
+  y: 1206
+- desc_cn: ''
+  desc_en: ''
+  id: '1086'
+  layer: 0
+  name_cn: 电池厂
+  name_en: Battery Factory
+  type: point
+  visible_zoom_level: 1
+  x: 12190
+  y: 1270
+- desc_cn: ''
+  desc_en: ''
+  id: '1087'
+  layer: 0
+  name_cn: 啤酒和烈酒
+  name_en: Beer & Liquor
+  type: point
+  visible_zoom_level: 1
+  x: 13585
+  y: 2147
+- desc_cn: ''
+  desc_en: ''
+  id: '1088'
+  layer: 0
+  name_cn: 圣经精神浸信会教堂
+  name_en: Bible Spirit Baptist Church
+  type: point
+  visible_zoom_level: 1
+  x: 12433
+  y: 3020
+- desc_cn: 带围栏的仓库，空间很大。
+  desc_en: Fenced in warehouse with lots of room.
+  id: '1089'
+  layer: 0
+  name_cn: 大空仓库
+  name_en: Big Empty Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 12704
+  y: 2123
+- desc_cn: ''
+  desc_en: ''
+  id: '1090'
+  layer: 0
+  name_cn: 大仓库
+  name_en: Big Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 12179
+  y: 1592
+- desc_cn: ''
+  desc_en: ''
+  id: '1091'
+  layer: 0
+  name_cn: 黑甘草
+  name_en: Black Liquorice
+  type: point
+  visible_zoom_level: 1
+  x: 13613
+  y: 1622
+- desc_cn: 书虫。
+  desc_en: Worm of Books.
+  id: '1092'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 13347
+  y: 1295
+- desc_cn: 伯纳兹书店。
+  desc_en: Bernards Book Emporium.
+  id: '1093'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 12560
+  y: 1931
+- desc_cn: 书之本色。
+  desc_en: Book Naked.
+  id: '1094'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 12375
+  y: 1510
+- desc_cn: ''
+  desc_en: ''
+  id: '1095'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 13240
+  y: 1658
+- desc_cn: ''
+  desc_en: ''
+  id: '1096'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 12813
+  y: 1310
+- desc_cn: ''
+  desc_en: ''
+  id: '1097'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 13382
+  y: 3052
+- desc_cn: ''
+  desc_en: ''
+  id: '1098'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 12534
+  y: 1254
+- desc_cn: 相当多的收藏品。
+  desc_en: Quite the collection.
+  id: '1099'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 13524
+  y: 1396
+- desc_cn: ''
+  desc_en: ''
+  id: '1100'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 13182
+  y: 1250
+- desc_cn: ''
+  desc_en: ''
+  id: '1101'
+  layer: 0
+  name_cn: 汪汪狗营养中心
+  name_en: Bow-Wow Dog Nutrition
+  type: point
+  visible_zoom_level: 1
+  x: 12561
+  y: 3523
+- desc_cn: ''
+  desc_en: ''
+  id: '1102'
+  layer: 0
+  name_cn: 保龄球馆
+  name_en: Bowling Alley
+  type: point
+  visible_zoom_level: 1
+  x: 12444
+  y: 2062
+- desc_cn: ''
+  desc_en: ''
+  id: '1103'
+  layer: 0
+  name_cn: 拳击馆
+  name_en: Boxing Gym
+  type: point
+  visible_zoom_level: 1
+  x: 13139
+  y: 1578
+- desc_cn: ''
+  desc_en: ''
+  id: '1104'
+  layer: 0
+  name_cn: 拳击馆
+  name_en: Boxing Gym
+  type: point
+  visible_zoom_level: 1
+  x: 12313
+  y: 1428
+- desc_cn: ''
+  desc_en: ''
+  id: '1105'
+  layer: 0
+  name_cn: 流行音乐啤酒厂
+  name_en: Boxpop Berwery
+  type: point
+  visible_zoom_level: 1
+  x: 13170
+  y: 1592
+- desc_cn: 到处都是紧急玻璃破碎器！
+  desc_en: Full of emergency glass breakers!
+  id: '1106'
+  layer: 0
+  name_cn: 布拉克砖厂
+  name_en: Brac Brick Factory
+  type: point
+  visible_zoom_level: 1
+  x: 12121
+  y: 1259
+- desc_cn: 无法通过
+  desc_en: No way through...
+  id: '1107'
+  layer: 0
+  name_cn: 克拉克纪念大桥
+  name_en: Clark Memorial Bridge
+  type: point
+  visible_zoom_level: 1
+  x: 12596
+  y: 962
+- desc_cn: ''
+  desc_en: ''
+  id: '1108'
+  layer: 0
+  name_cn: 布鲁克斯公共图书馆
+  name_en: Brooks Public Library
+  type: point
+  visible_zoom_level: 1
+  x: 12562
+  y: 1467
+- desc_cn: 市中心郊区的一家小餐馆。
+  desc_en: A small diner on the outskirts of the city center.
+  id: '1109'
+  layer: 0
+  name_cn: 汉堡店
+  name_en: Burger Joint
+  type: point
+  visible_zoom_level: 1
+  x: 13240
+  y: 3486
+- desc_cn: ''
+  desc_en: ''
+  id: '1110'
+  layer: 0
+  name_cn: 汉堡餐厅
+  name_en: Burgers
+  type: point
+  visible_zoom_level: 1
+  x: 13206
+  y: 1283
+- desc_cn: 通往路易斯维尔、诺克斯县和其他地方的大门！座椅上的污渍可能是也可能不是死者的大脑。
+  desc_en: Your gateway to Louisville, Knox Country and beyond! Stains on seats may
+    or may not be brains of the deceased.
+  id: '1111'
+  layer: 0
+  name_cn: 公交车站
+  name_en: Bus Station
+  type: point
+  visible_zoom_level: 1
+  x: 12558
+  y: 2313
+- desc_cn: ''
+  desc_en: ''
+  id: '1112'
+  layer: 0
+  name_cn: 肉店
+  name_en: Butcher Shop
+  type: point
+  visible_zoom_level: 1
+  x: 12491
+  y: 1446
+- desc_cn: ''
+  desc_en: ''
+  id: '1113'
+  layer: 0
+  name_cn: 咖啡馆
+  name_en: Cafe
+  type: point
+  visible_zoom_level: 1
+  x: 12713
+  y: 1333
+- desc_cn: ''
+  desc_en: ''
+  id: '1114'
+  layer: 0
+  name_cn: 咖啡馆
+  name_en: Cafe
+  type: point
+  visible_zoom_level: 1
+  x: 13530
+  y: 2143
+- desc_cn: ''
+  desc_en: ''
+  id: '1115'
+  layer: 0
+  name_cn: 坎托录音棚
+  name_en: Canto Records
+  type: point
+  visible_zoom_level: 1
+  x: 13388
+  y: 2925
+- desc_cn: Scenic Mile 汽车经销店。
+  desc_en: Scenic Mile car dealership.
+  id: '1116'
+  layer: 0
+  name_cn: 汽车经销店
+  name_en: Car Dealership
+  type: point
+  visible_zoom_level: 1
+  x: 13246
+  y: 1327
+- desc_cn: 高档移动汽车经销店。
+  desc_en: Upscale Mobility Auto Dealership.
+  id: '1117'
+  layer: 0
+  name_cn: 汽车经销店
+  name_en: Car Dealership
+  type: point
+  visible_zoom_level: 1
+  x: 13159
+  y: 1388
+- desc_cn: ''
+  desc_en: ''
+  id: '1118'
+  layer: 0
+  name_cn: 汽车经销店
+  name_en: Car Dealership
+  type: point
+  visible_zoom_level: 1
+  x: 12372
+  y: 2533
+- desc_cn: 有各种商店的多层小型购物中心。
+  desc_en: Multi-floor mini-mall with various shops.
+  id: '1119'
+  layer: 0
+  name_cn: 红衣主教广场
+  name_en: Cardinal Plaza
+  type: point
+  visible_zoom_level: 1
+  x: 12850
+  y: 1316
+- desc_cn: 圣迈克尔大教堂。
+  desc_en: St. Michael's Cathedral.
+  id: '1120'
+  layer: 0
+  name_cn: 大教堂
+  name_en: Cathedral
+  type: point
+  visible_zoom_level: 1
+  x: 12768
+  y: 1398
+- desc_cn: ''
+  desc_en: ''
+  id: '1121'
+  layer: 0
+  name_cn: 公墓
+  name_en: Cemetary
+  type: point
+  visible_zoom_level: 1
+  x: 12583
+  y: 3274
+- desc_cn: ''
+  desc_en: ''
+  id: '1122'
+  layer: 0
+  name_cn: 中央路易斯维尔社区中心
+  name_en: Central Loisville Community Center
+  type: point
+  visible_zoom_level: 1
+  x: 12846
+  y: 1697
+- desc_cn: 路易斯维尔的中央公园和游乐场。
+  desc_en: Louiville's central park with playground.
+  id: '1123'
+  layer: 0
+  name_cn: 易洛魁公园
+  name_en: Iroquois Park
+  type: point
+  visible_zoom_level: 1
+  x: 13238
+  y: 2681
+- desc_cn: ''
+  desc_en: ''
+  id: '1124'
+  layer: 0
+  name_cn: 中央公园马厩
+  name_en: Central Park Stables
+  type: point
+  visible_zoom_level: 1
+  x: 13043
+  y: 2827
+- desc_cn: 俄亥俄河附近的饮料/啤酒厂。
+  desc_en: Beverage/beer factory near the Ohio River.
+  id: '1125'
+  layer: 0
+  name_cn: 查格斯
+  name_en: Chugg's
+  type: point
+  visible_zoom_level: 1
+  x: 13330
+  y: 1242
+- desc_cn: 带有巨大墓地的教堂。
+  desc_en: Church with a huge graveyard.
+  id: '1126'
+  layer: 0
+  name_cn: 教堂
+  name_en: Church
+  type: point
+  visible_zoom_level: 1
+  x: 12607
+  y: 3364
+- desc_cn: 圣光浸信会教堂。
+  desc_en: Holy Light Baptist Church.
+  id: '1127'
+  layer: 0
+  name_cn: 教堂
+  name_en: Church
+  type: point
+  visible_zoom_level: 1
+  x: 12410
+  y: 1926
+- desc_cn: ''
+  desc_en: ''
+  id: '1128'
+  layer: 0
+  name_cn: 教堂
+  name_en: Church
+  type: point
+  visible_zoom_level: 1
+  x: 12874
+  y: 2854
+- desc_cn: ''
+  desc_en: ''
+  id: '1129'
+  layer: 0
+  name_cn: 教堂
+  name_en: Church
+  type: point
+  visible_zoom_level: 1
+  x: 13667
+  y: 2547
+- desc_cn: ''
+  desc_en: ''
+  id: '1130'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 13182
+  y: 1293
+- desc_cn: ''
+  desc_en: ''
+  id: '1131'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 13239
+  y: 1675
+- desc_cn: ''
+  desc_en: ''
+  id: '1132'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 13334
+  y: 1293
+- desc_cn: ''
+  desc_en: ''
+  id: '1133'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 12693
+  y: 1209
+- desc_cn: ''
+  desc_en: ''
+  id: '1134'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 12666
+  y: 1211
+- desc_cn: ''
+  desc_en: ''
+  id: '1135'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing store
+  type: point
+  visible_zoom_level: 1
+  x: 13251
+  y: 2137
+- desc_cn: ''
+  desc_en: ''
+  id: '1136'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing store
+  type: point
+  visible_zoom_level: 1
+  x: 13466
+  y: 1317
+- desc_cn: ''
+  desc_en: ''
+  id: '1137'
+  layer: 0
+  name_cn: 咖啡天堂
+  name_en: Coffee Nirvana
+  type: point
+  visible_zoom_level: 1
+  x: 12629
+  y: 2327
+- desc_cn: 适合DIY家居装修的好地方。
+  desc_en: Good spot for some DIY home improvements.
+  id: '1138'
+  layer: 0
+  name_cn: 建筑工地
+  name_en: Construction Site
+  type: point
+  visible_zoom_level: 1
+  x: 13820
+  y: 1675
+- desc_cn: 美食，美味的美食。
+  desc_en: Food, glorious food.
+  id: '1139'
+  layer: 0
+  name_cn: 便利店
+  name_en: Conven-U-Mart
+  type: point
+  visible_zoom_level: 1
+  x: 12280
+  y: 2529
+- desc_cn: ''
+  desc_en: ''
+  id: '1140'
+  layer: 0
+  name_cn: 便利店/自助洗衣店
+  name_en: Convenience Store / Laundromat
+  type: point
+  visible_zoom_level: 1
+  x: 13947
+  y: 2240
+- desc_cn: 你会去这里吗？
+  desc_en: Would you go here?
+  id: '1141'
+  layer: 0
+  name_cn: 玉米迷宫
+  name_en: Corn Maze
+  type: point
+  visible_zoom_level: 1
+  x: 13721
+  y: 3691
+- desc_cn: 路易斯维尔边缘的一栋两层楼房，几乎被高高的围栏包围。
+  desc_en: A 2-story house on the edge of Louisville that is almost surrounded by
+    tall fences.
+  id: '1142'
+  layer: 0
+  name_cn: 角落围栏房屋
+  name_en: Corner-fenced house
+  type: point
+  visible_zoom_level: 1
+  x: 12325
+  y: 3415
+- desc_cn: ''
+  desc_en: ''
+  id: '1143'
+  layer: 0
+  name_cn: 乡村书记员和记录
+  name_en: Country Clerk and Records
+  type: point
+  visible_zoom_level: 1
+  x: 12637
+  y: 1469
+- desc_cn: ''
+  desc_en: ''
+  id: '1144'
+  layer: 0
+  name_cn: 法院
+  name_en: Court House
+  type: point
+  visible_zoom_level: 1
+  x: 12468
+  y: 1540
+- desc_cn: ''
+  desc_en: ''
+  id: '1145'
+  layer: 0
+  name_cn: 小餐馆
+  name_en: Diner
+  type: point
+  visible_zoom_level: 1
+  x: 13344
+  y: 1735
+- desc_cn: 我还能说什么呢？在僵尸最猖獗的地方吃点东西吧
+  desc_en: What more do I gotta say? Grab a bite to eat in the most zombie-infested
+    place you possibly can.
+  id: '1146'
+  layer: 0
+  name_cn: 小餐馆
+  name_en: Diner
+  type: point
+  visible_zoom_level: 1
+  x: 13240
+  y: 1697
+- desc_cn: ''
+  desc_en: ''
+  id: '1147'
+  layer: 0
+  name_cn: 小餐馆
+  name_en: Diner
+  type: point
+  visible_zoom_level: 1
+  x: 12907
+  y: 1408
+- desc_cn: ''
+  desc_en: ''
+  id: '1148'
+  layer: 0
+  name_cn: 小餐馆
+  name_en: Diner
+  type: point
+  visible_zoom_level: 1
+  x: 12718
+  y: 1212
+- desc_cn: ''
+  desc_en: ''
+  id: '1149'
+  layer: 0
+  name_cn: 折扣帐户公司
+  name_en: Discount Account
+  type: point
+  visible_zoom_level: 1
+  x: 12627
+  y: 3667
+- desc_cn: ''
+  desc_en: ''
+  id: '1150'
+  layer: 0
+  name_cn: 狗火狂欢
+  name_en: Dogs-A-Flaming
+  type: point
+  visible_zoom_level: 1
+  x: 13078
+  y: 1589
+- desc_cn: ''
+  desc_en: ''
+  id: '1151'
+  layer: 0
+  name_cn: 甜甜圈店
+  name_en: Donut Store
+  type: point
+  visible_zoom_level: 1
+  x: 13470
+  y: 1349
+- desc_cn: ''
+  desc_en: ''
+  id: '1152'
+  layer: 0
+  name_cn: 宿舍
+  name_en: Dormitory
+  type: point
+  visible_zoom_level: 1
+  x: 12328
+  y: 2268
+- desc_cn: ''
+  desc_en: ''
+  id: '1153'
+  layer: 0
+  name_cn: 雷布伦大楼
+  name_en: E. Wrayburn Building
+  type: point
+  visible_zoom_level: 1
+  x: 12662
+  y: 1400
+- desc_cn: 检测到电网损坏；技术人员已派遣。
+  desc_en: Grid damage detected; Technicians dispatched.
+  id: '1154'
+  layer: 0
+  name_cn: 变电站
+  name_en: Electrical Substation
+  type: point
+  visible_zoom_level: 1
+  x: 14765
+  y: 4085
+- desc_cn: ''
+  desc_en: ''
+  id: '1155'
+  layer: 0
+  name_cn: 小学
+  name_en: Elementary School
+  type: point
+  visible_zoom_level: 1
+  x: 12335
+  y: 3251
+- desc_cn: ''
+  desc_en: ''
+  id: '1156'
+  layer: 0
+  name_cn: 长青山社区中心
+  name_en: Evergreen Hill Community Center
+  type: point
+  visible_zoom_level: 1
+  x: 13683
+  y: 2785
+- desc_cn: ''
+  desc_en: ''
+  id: '1158'
+  layer: 0
+  name_cn: 长青公立学校
+  name_en: Evergreen Public School
+  type: point
+  visible_zoom_level: 1
+  x: 13600
+  y: 2762
+- desc_cn: ''
+  desc_en: ''
+  id: '1159'
+  layer: 0
+  name_cn: 家庭牙科诊所
+  name_en: Family Dentistry
+  type: point
+  visible_zoom_level: 1
+  x: 13605
+  y: 1569
+- desc_cn: 像国王一样面对世界末日。
+  desc_en: Face the apocalypse like a king.
+  id: '1160'
+  layer: 0
+  name_cn: 豪华豪宅
+  name_en: Fancy Mansion
+  type: point
+  visible_zoom_level: 1
+  x: 13533
+  y: 2856
+- desc_cn: ''
+  desc_en: ''
+  id: '1161'
+  layer: 0
+  name_cn: 高档餐厅
+  name_en: Fancy Restaurant
+  type: point
+  visible_zoom_level: 1
+  x: 12664
+  y: 1151
+- desc_cn: ''
+  desc_en: ''
+  id: '1162'
+  layer: 0
+  name_cn: 农产品仓库
+  name_en: Farm Produce Warehouses
+  type: point
+  visible_zoom_level: 1
+  x: 13555
+  y: 3635
+- desc_cn: 来自当地农民的新鲜食物！看看附近的玉米迷宫！
+  desc_en: Fresh food from our local farmers! Check out the nearby corn maze!
+  id: '1163'
+  layer: 0
+  name_cn: 农贸集市
+  name_en: Farmer's Fair
+  type: point
+  visible_zoom_level: 1
+  x: 13697
+  y: 3604
+- desc_cn: ''
+  desc_en: ''
+  id: '1164'
+  layer: 0
+  name_cn: 带花园的农业商店
+  name_en: Farming Store With Garden
+  type: point
+  visible_zoom_level: 1
+  x: 13219
+  y: 3021
+- desc_cn: 被高高的围栏包围的安全房屋。一个入口。
+  desc_en: Secure Houses surrounded by tall fences. One entrance.
+  id: '1165'
+  layer: 0
+  name_cn: 带围栏的房屋
+  name_en: Fenced Housing
+  type: point
+  visible_zoom_level: 1
+  x: 13423
+  y: 1732
+- desc_cn: ''
+  desc_en: ''
+  id: '1166'
+  layer: 0
+  name_cn: 芬尼根研究小组
+  name_en: Finnegan Research Group
+  type: point
+  visible_zoom_level: 1
+  x: 13580
+  y: 1701
+- desc_cn: ''
+  desc_en: ''
+  id: '1167'
+  layer: 0
+  name_cn: 消防局
+  name_en: Fire Department
+  type: point
+  visible_zoom_level: 1
+  x: 13689
+  y: 1779
+- desc_cn: ''
+  desc_en: ''
+  id: '1168'
+  layer: 0
+  name_cn: 消防局
+  name_en: Fire Department
+  type: point
+  visible_zoom_level: 1
+  x: 12363
+  y: 1760
+- desc_cn: ''
+  desc_en: ''
+  id: '1169'
+  layer: 0
+  name_cn: 消防局
+  name_en: Fire Department
+  type: point
+  visible_zoom_level: 1
+  x: 13943
+  y: 3047
+- desc_cn: ''
+  desc_en: ''
+  id: '1170'
+  layer: 0
+  name_cn: 第一火车旅馆
+  name_en: First Train Inn
+  type: point
+  visible_zoom_level: 1
+  x: 12617
+  y: 2354
+- desc_cn: ''
+  desc_en: ''
+  id: '1171'
+  layer: 0
+  name_cn: 食品市场
+  name_en: Food Market
+  type: point
+  visible_zoom_level: 1
+  x: 13346
+  y: 1753
+- desc_cn: ''
+  desc_en: ''
+  id: '1172'
+  layer: 0
+  name_cn: 食品市场
+  name_en: Food Market
+  type: point
+  visible_zoom_level: 1
+  x: 12481
+  y: 1929
+- desc_cn: ''
+  desc_en: ''
+  id: '1173'
+  layer: 0
+  name_cn: 食品市场
+  name_en: Food Market
+  type: point
+  visible_zoom_level: 1
+  x: 13567
+  y: 3024
+- desc_cn: ''
+  desc_en: ''
+  id: '1174'
+  layer: 0
+  name_cn: 食品市场
+  name_en: Food Market
+  type: point
+  visible_zoom_level: 1
+  x: 13782
+  y: 2542
+- desc_cn: ''
+  desc_en: ''
+  id: '1175'
+  layer: 0
+  name_cn: 食品市场
+  name_en: Food Market
+  type: point
+  visible_zoom_level: 1
+  x: 13177
+  y: 1603
+- desc_cn: ''
+  desc_en: ''
+  id: '1176'
+  layer: 0
+  name_cn: 足球场
+  name_en: Football Field
+  type: point
+  visible_zoom_level: 1
+  x: 12368
+  y: 2463
+- desc_cn: ''
+  desc_en: ''
+  id: '1177'
+  layer: 0
+  name_cn: 棒球场
+  name_en: Fossoil Field - Baseball Stadium
+  type: point
+  visible_zoom_level: 1
+  x: 13026
+  y: 1581
+- desc_cn: ''
+  desc_en: ''
+  id: '1178'
+  layer: 0
+  name_cn: 福斯石油总部
+  name_en: Fossoil Headquarters
+  type: point
+  visible_zoom_level: 1
+  x: 12082
+  y: 1612
+- desc_cn: 礼品和纪念品
+  desc_en: Gifts + Souvenirs
+  id: '1179'
+  layer: 0
+  name_cn: 来自掩体
+  name_en: From The Dugouts
+  type: point
+  visible_zoom_level: 1
+  x: 13039
+  y: 1634
+- desc_cn: 迷你高尔夫、保龄球、街机、激光枪战游戏。
+  desc_en: Mini Golf, Bowling, Arcade, Laser Tag.
+  id: '1180'
+  layer: 0
+  name_cn: 极点娱乐城
+  name_en: Fun XTreme
+  type: point
+  visible_zoom_level: 1
+  x: 12369
+  y: 1319
+- desc_cn: 这里欢迎死者！
+  desc_en: Here the dead are welcome!
+  id: '1181'
+  layer: 0
+  name_cn: 殡仪馆
+  name_en: Funeral Home
+  type: point
+  visible_zoom_level: 1
+  x: 13153
+  y: 1516
+- desc_cn: 有古典火炉的家具店。
+  desc_en: Furniture Store with an antique stove.
+  id: '1182'
+  layer: 0
+  name_cn: 家具店
+  name_en: Furniture Store
+  type: point
+  visible_zoom_level: 1
+  x: 13115
+  y: 1444
+- desc_cn: Better Furnishings。
+  desc_en: Better Furnishings.
+  id: '1183'
+  layer: 0
+  name_cn: 家具店
+  name_en: Furniture Store
+  type: point
+  visible_zoom_level: 1
+  x: 12668
+  y: 2163
+- desc_cn: ''
+  desc_en: ''
+  id: '1184'
+  layer: 0
+  name_cn: 家具店
+  name_en: Furniture Store
+  type: point
+  visible_zoom_level: 1
+  x: 13420
+  y: 1462
+- desc_cn: 一家小型家具店，有不错的选择。
+  desc_en: A small furniture store with decent options.
+  id: '1185'
+  layer: 0
+  name_cn: 家具店
+  name_en: Furniture Store
+  type: point
+  visible_zoom_level: 1
+  x: 13380
+  y: 3073
+- desc_cn: ''
+  desc_en: ''
+  id: '1186'
+  layer: 0
+  name_cn: 车库出租
+  name_en: Garage For Lease
+  type: point
+  visible_zoom_level: 1
+  x: 13143
+  y: 3013
+- desc_cn: ''
+  desc_en: ''
+  id: '1187'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 12098
+  y: 2100
+- desc_cn: 途行加油站。
+  desc_en: Gas-2-Go.
+  id: '1188'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 12713
+  y: 2239
+- desc_cn: 福斯石油。
+  desc_en: Fossoil.
+  id: '1189'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 12273
+  y: 1621
+- desc_cn: 福斯石油。
+  desc_en: Fossoil.
+  id: '1190'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 12444
+  y: 3536
+- desc_cn: 途行加油站。
+  desc_en: Gas-2-Go.
+  id: '1191'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 13960
+  y: 3275
+- desc_cn: 福斯石油。
+  desc_en: Fossoil.
+  id: '1192'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 13386
+  y: 1412
+- desc_cn: 福斯石油。
+  desc_en: Fossoil.
+  id: '1193'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 12912
+  y: 3029
+- desc_cn: 途行加油站。
+  desc_en: Gas-2-Go.
+  id: '1194'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 13556
+  y: 2138
+- desc_cn: 途行加油站。
+  desc_en: Gas-2-Go.
+  id: '1195'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 13619
+  y: 1527
+- desc_cn: 途行加油站，4个加油机。
+  desc_en: Gas-2-Go, 4 pumps.
+  id: '1196'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 13383
+  y: 2966
+- desc_cn: 福斯石油，8个加油机。
+  desc_en: Fossoil, 8 pumps.
+  id: '1197'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 12998
+  y: 2162
+- desc_cn: 途行加油站，4个加油机。
+  desc_en: Gas-2-Go, 4-pumps.
+  id: '1198'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 13133
+  y: 1324
+- desc_cn: 吉佳玛特连锁超市旁边有4个加油机。
+  desc_en: GigaMart with 4 gas pumps next to it.
+  id: '1199'
+  layer: 0
+  name_cn: 加油站和吉佳玛特连锁超市
+  name_en: Gas Station/GigaMart
+  type: point
+  visible_zoom_level: 1
+  x: 12579
+  y: 2550
+- desc_cn: ''
+  desc_en: ''
+  id: '1200'
+  layer: 0
+  name_cn: 封闭式社区
+  name_en: Gated Community
+  type: point
+  visible_zoom_level: 1
+  x: 12207
+  y: 1799
+- desc_cn: ''
+  desc_en: ''
+  id: '1201'
+  layer: 0
+  name_cn: 吉佳玛特连锁超市
+  name_en: GigaMart
+  type: point
+  visible_zoom_level: 1
+  x: 13452
+  y: 3057
+- desc_cn: ''
+  desc_en: ''
+  id: '1202'
+  layer: 0
+  name_cn: 吉佳玛特连锁超市
+  name_en: GigaMart
+  type: point
+  visible_zoom_level: 1
+  x: 12633
+  y: 1672
+- desc_cn: ''
+  desc_en: ''
+  id: '1203'
+  layer: 0
+  name_cn: 格洛夜总会
+  name_en: Glo Night Club
+  type: point
+  visible_zoom_level: 1
+  x: 12425
+  y: 1323
+- desc_cn: ''
+  desc_en: ''
+  id: '1204'
+  layer: 0
+  name_cn: 摄影器材店
+  name_en: Go Flash
+  type: point
+  visible_zoom_level: 1
+  x: 12413
+  y: 2827
+- desc_cn: ''
+  desc_en: ''
+  id: '1205'
+  layer: 0
+  name_cn: 金龙自助餐
+  name_en: Golden Dragon Buffet
+  type: point
+  visible_zoom_level: 1
+  x: 12576
+  y: 1882
+- desc_cn: ''
+  desc_en: ''
+  id: '1206'
+  layer: 0
+  name_cn: 古德曼法律服务
+  name_en: Goodman Legal Services
+  type: point
+  visible_zoom_level: 1
+  x: 12662
+  y: 2190
+- desc_cn: 杂货店。
+  desc_en: Grocery store.
+  id: '1207'
+  layer: 0
+  name_cn: 格林氏杂货店
+  name_en: Greene's
+  type: point
+  visible_zoom_level: 1
+  x: 13362
+  y: 1292
+- desc_cn: 杂货店。
+  desc_en: Grocery store.
+  id: '1208'
+  layer: 0
+  name_cn: 格林氏杂货店
+  name_en: Greene's
+  type: point
+  visible_zoom_level: 1
+  x: 13334
+  y: 2959
+- desc_cn: ''
+  desc_en: ''
+  id: '1209'
+  layer: 0
+  name_cn: 格林氏杂货店
+  name_en: Greene's
+  type: point
+  visible_zoom_level: 1
+  x: 13510
+  y: 2142
+- desc_cn: ''
+  desc_en: ''
+  id: '1210'
+  layer: 0
+  name_cn: 格林氏杂货店
+  name_en: Greene's
+  type: point
+  visible_zoom_level: 1
+  x: 13137
+  y: 2123
+- desc_cn: ''
+  desc_en: ''
+  id: '1211'
+  layer: 0
+  name_cn: 烧烤店
+  name_en: Grill store
+  type: point
+  visible_zoom_level: 1
+  x: 13328
+  y: 3072
+- desc_cn: ''
+  desc_en: ''
+  id: '1212'
+  layer: 0
+  name_cn: 杂货店
+  name_en: Grocery Store
+  type: point
+  visible_zoom_level: 1
+  x: 13246
+  y: 1633
+- desc_cn: ''
+  desc_en: ''
+  id: '1213'
+  layer: 0
+  name_cn: 枪支店
+  name_en: Gun Store
+  type: point
+  visible_zoom_level: 1
+  x: 13594
+  y: 1536
+- desc_cn: ''
+  desc_en: ''
+  id: '1214'
+  layer: 0
+  name_cn: 枪支店
+  name_en: Gun Store
+  type: point
+  visible_zoom_level: 1
+  x: 12361
+  y: 1720
+- desc_cn: 星条旗。
+  desc_en: Stars and Stripes.
+  id: '1215'
+  layer: 0
+  name_cn: 枪支店
+  name_en: Gun Store
+  type: point
+  visible_zoom_level: 1
+  x: 13555
+  y: 1273
+- desc_cn: ''
+  desc_en: ''
+  id: '1216'
+  layer: 0
+  name_cn: 健身房
+  name_en: Gym
+  type: point
+  visible_zoom_level: 1
+  x: 12630
+  y: 1144
+- desc_cn: ''
+  desc_en: ''
+  id: '1217'
+  layer: 0
+  name_cn: 健身房
+  name_en: Gym
+  type: point
+  visible_zoom_level: 1
+  x: 12854
+  y: 1373
+- desc_cn: ''
+  desc_en: ''
+  id: '1218'
+  layer: 0
+  name_cn: 理发店
+  name_en: Hair Genesis
+  type: point
+  visible_zoom_level: 1
+  x: 13330
+  y: 2971
+- desc_cn: ''
+  desc_en: ''
+  id: '1219'
+  layer: 0
+  name_cn: 五金店
+  name_en: Hardware Store
+  type: point
+  visible_zoom_level: 1
+  x: 13959
+  y: 3106
+- desc_cn: ''
+  desc_en: ''
+  id: '1220'
+  layer: 0
+  name_cn: 五金店
+  name_en: Hardware Store
+  type: point
+  visible_zoom_level: 1
+  x: 13172
+  y: 1551
+- desc_cn: ''
+  desc_en: ''
+  id: '1221'
+  layer: 0
+  name_cn: 五金店
+  name_en: Hardware Store
+  type: point
+  visible_zoom_level: 1
+  x: 13312
+  y: 1307
+- desc_cn: ''
+  desc_en: ''
+  id: '1222'
+  layer: 0
+  name_cn: 五金店
+  name_en: Hardware Store
+  type: point
+  visible_zoom_level: 1
+  x: 12377
+  y: 1382
+- desc_cn: E.P. 工具。
+  desc_en: E.P. Tools.
+  id: '1223'
+  layer: 0
+  name_cn: 五金店
+  name_en: Hardware Store
+  type: point
+  visible_zoom_level: 1
+  x: 13959
+  y: 3099
+- desc_cn: ''
+  desc_en: ''
+  id: '1224'
+  layer: 0
+  name_cn: 五金店
+  name_en: Hardware Store
+  type: point
+  visible_zoom_level: 1
+  x: 13528
+  y: 3089
+- desc_cn: 位于俄亥俄购物中心的二楼。
+  desc_en: On the second floor of Grand Ohio Mall.
+  id: '1225'
+  layer: 0
+  name_cn: 五金店
+  name_en: Hardware Store
+  type: point
+  visible_zoom_level: 1
+  x: 13521
+  y: 1318
+- desc_cn: ''
+  desc_en: ''
+  id: '1226'
+  layer: 0
+  name_cn: 五金店
+  name_en: Hardware store
+  type: point
+  visible_zoom_level: 1
+  x: 13369
+  y: 3074
+- desc_cn: ''
+  desc_en: ''
+  id: '1227'
+  layer: 0
+  name_cn: 希科里面包房
+  name_en: Hickory Bakery Box
+  type: point
+  visible_zoom_level: 1
+  x: 12927
+  y: 1484
+- desc_cn: ''
+  desc_en: ''
+  id: '1228'
+  layer: 0
+  name_cn: 高中
+  name_en: HighSchool
+  type: point
+  visible_zoom_level: 1
+  x: 13049
+  y: 1710
+- desc_cn: 通往军队检查站的另一条路。
+  desc_en: The alternate way to the army checkpoint.
+  id: '1229'
+  layer: 0
+  name_cn: 篱笆上的洞
+  name_en: Hole in the Fence
+  type: point
+  visible_zoom_level: 1
+  x: 12606
+  y: 4161
+- desc_cn: ''
+  desc_en: ''
+  id: '1230'
+  layer: 0
+  name_cn: 赛马场
+  name_en: Horsetrack
+  type: point
+  visible_zoom_level: 1
+  x: 12224
+  y: 2757
+- desc_cn: 路易斯维尔中央医院。
+  desc_en: Louisville Central Hospital.
+  id: '1231'
+  layer: 0
+  name_cn: 医院
+  name_en: Hospital
+  type: point
+  visible_zoom_level: 1
+  x: 12940
+  y: 2076
+- desc_cn: 皮衣服装店
+  desc_en: Leather clothing store
+  id: '1232'
+  layer: 0
+  name_cn: 毛绒雨果
+  name_en: Hugo Plush
+  type: point
+  visible_zoom_level: 1
+  x: 12578
+  y: 1816
+- desc_cn: ''
+  desc_en: ''
+  id: '1233'
+  layer: 0
+  name_cn: 杰伊炸鸡
+  name_en: Jay's Chicken
+  type: point
+  visible_zoom_level: 1
+  x: 13466
+  y: 2979
+- desc_cn: 快餐店。
+  desc_en: Fast-food Restaurant.
+  id: '1234'
+  layer: 0
+  name_cn: 杰伊炸鸡
+  name_en: Jay's Chicken
+  type: point
+  visible_zoom_level: 1
+  x: 13630
+  y: 1271
+- desc_cn: ''
+  desc_en: ''
+  id: '1235'
+  layer: 0
+  name_cn: 杰伊炸鸡
+  name_en: Jay's Chicken
+  type: point
+  visible_zoom_level: 1
+  x: 12745
+  y: 2233
+- desc_cn: ''
+  desc_en: ''
+  id: '1236'
+  layer: 0
+  name_cn: 杰伊炸鸡
+  name_en: Jay's Chicken
+  type: point
+  visible_zoom_level: 1
+  x: 13365
+  y: 1350
+- desc_cn: ''
+  desc_en: ''
+  id: '1237'
+  layer: 0
+  name_cn: 杰伊炸鸡
+  name_en: Jay's Chicken
+  type: point
+  visible_zoom_level: 1
+  x: 12271
+  y: 1381
+- desc_cn: ''
+  desc_en: ''
+  id: '1238'
+  layer: 0
+  name_cn: 杰伊炸鸡总部
+  name_en: Jay's Chicken HQ
+  type: point
+  visible_zoom_level: 1
+  x: 12790
+  y: 2227
+- desc_cn: ''
+  desc_en: ''
+  id: '1239'
+  layer: 0
+  name_cn: 垃圾场
+  name_en: Junkyard
+  type: point
+  visible_zoom_level: 1
+  x: 13695
+  y: 1681
+- desc_cn: ''
+  desc_en: ''
+  id: '1240'
+  layer: 0
+  name_cn: 肯塔基州交通局
+  name_en: KY Transit
+  type: point
+  visible_zoom_level: 1
+  x: 12558
+  y: 2408
+- desc_cn: 印刷厂和作家/编辑工作场所。
+  desc_en: Printing factory and writers/editors workplace.
+  id: '1241'
+  layer: 0
+  name_cn: 肯塔基先驱报
+  name_en: Kentucky Herald Newspaper
+  type: point
+  visible_zoom_level: 1
+  x: 12615
+  y: 3557
+- desc_cn: 电器、锅碗瓢盆等。
+  desc_en: Appliances, pots, pans, etc.
+  id: '1242'
+  layer: 0
+  name_cn: 厨房用品店
+  name_en: Kitchen Supply Store
+  type: point
+  visible_zoom_level: 1
+  x: 12427
+  y: 1371
+- desc_cn: 大型办公楼，配有生产线和仓库。
+  desc_en: Large office building with a production line and storage.
+  id: '1243'
+  layer: 0
+  name_cn: 小猫刀具
+  name_en: Kitten Knives
+  type: point
+  visible_zoom_level: 1
+  x: 12171
+  y: 1394
+- desc_cn: ''
+  desc_en: ''
+  id: '1244'
+  layer: 0
+  name_cn: 诺克斯银行
+  name_en: Knox Bank
+  type: point
+  visible_zoom_level: 1
+  x: 12566
+  y: 1696
+- desc_cn: ''
+  desc_en: ''
+  id: '1245'
+  layer: 0
+  name_cn: 诺克斯银行
+  name_en: Knox Bank
+  type: point
+  visible_zoom_level: 1
+  x: 13410
+  y: 1353
+- desc_cn: ''
+  desc_en: ''
+  id: '1246'
+  layer: 0
+  name_cn: 诺克斯银行（经典建筑）
+  name_en: Knox Bank (Classic Building)
+  type: point
+  visible_zoom_level: 1
+  x: 12617
+  y: 1586
+- desc_cn: ''
+  desc_en: ''
+  id: '1247'
+  layer: 0
+  name_cn: 诺克斯银行（现代建筑）
+  name_en: Knox Bank (Modern Building)
+  type: point
+  visible_zoom_level: 1
+  x: 13603
+  y: 3027
+- desc_cn: ''
+  desc_en: ''
+  id: '1248'
+  layer: 0
+  name_cn: 诺克斯酿酒厂
+  name_en: Knox Distillery
+  type: point
+  visible_zoom_level: 1
+  x: 12912
+  y: 1380
+- desc_cn: 厨房用具商店。
+  desc_en: Kitchen Appliance Store.
+  id: '1249'
+  layer: 0
+  name_cn: 诺克斯派克厨房
+  name_en: Knox Pack Kitchens
+  type: point
+  visible_zoom_level: 1
+  x: 12917
+  y: 1446
+- desc_cn: ''
+  desc_en: ''
+  id: '1250'
+  layer: 0
+  name_cn: 诺克斯脱口秀电台
+  name_en: Knox Talk Radio Station
+  type: point
+  visible_zoom_level: 1
+  x: 13561
+  y: 1581
+- desc_cn: ''
+  desc_en: ''
+  id: '1251'
+  layer: 0
+  name_cn: 诺克斯派克厨房
+  name_en: KnoxPack Kitchens
+  type: point
+  visible_zoom_level: 1
+  x: 12632
+  y: 3769
+- desc_cn: ''
+  desc_en: ''
+  id: '1252'
+  layer: 0
+  name_cn: LBMW电视台
+  name_en: LBMW Station
+  type: point
+  visible_zoom_level: 1
+  x: 12340
+  y: 2057
+- desc_cn: ''
+  desc_en: ''
+  id: '1253'
+  layer: 0
+  name_cn: 路易斯安那州立大学校园
+  name_en: LSU Campus
+  type: point
+  visible_zoom_level: 1
+  x: 12407
+  y: 2254
+- desc_cn: 路易斯维尔州立大学图书馆。
+  desc_en: Louisville State University Library.
+  id: '1254'
+  layer: 0
+  name_cn: 路易斯安那州立大学图书馆
+  name_en: LSU Library
+  type: point
+  visible_zoom_level: 1
+  x: 12350
+  y: 2142
+- desc_cn: ''
+  desc_en: ''
+  id: '1255'
+  layer: 0
+  name_cn: 大型公寓大楼
+  name_en: Large Apartment Complex
+  type: point
+  visible_zoom_level: 1
+  x: 12787
+  y: 1848
+- desc_cn: ''
+  desc_en: ''
+  id: '1256'
+  layer: 0
+  name_cn: 大型封闭式社区
+  name_en: Large Gated Community
+  type: point
+  visible_zoom_level: 1
+  x: 14121
+  y: 2798
+- desc_cn: ''
+  desc_en: ''
+  id: '1257'
+  layer: 0
+  name_cn: 大型杂货店
+  name_en: Large Grocery Store
+  type: point
+  visible_zoom_level: 1
+  x: 12759
+  y: 2944
+- desc_cn: 工具等。
+  desc_en: Tools and more.
+  id: '1258'
+  layer: 0
+  name_cn: 大型仓库
+  name_en: Large Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 12720
+  y: 2180
+- desc_cn: ''
+  desc_en: ''
+  id: '1259'
+  layer: 0
+  name_cn: 叶山高地办公室
+  name_en: Leafhill Heights Offices
+  type: point
+  visible_zoom_level: 1
+  x: 12254
+  y: 3545
+- desc_cn: ''
+  desc_en: ''
+  id: '1260'
+  layer: 0
+  name_cn: 逐行设计公司
+  name_en: Line by Line Design
+  type: point
+  visible_zoom_level: 1
+  x: 12565
+  y: 3761
+- desc_cn: Liquorty Split。
+  desc_en: Liquorty Split.
+  id: '1261'
+  layer: 0
+  name_cn: 酒类商店
+  name_en: Liquor Store
+  type: point
+  visible_zoom_level: 1
+  x: 12408
+  y: 2845
+- desc_cn: ''
+  desc_en: ''
+  id: '1262'
+  layer: 0
+  name_cn: 酒类商店
+  name_en: Liquor Store
+  type: point
+  visible_zoom_level: 1
+  x: 13440
+  y: 1292
+- desc_cn: ''
+  desc_en: ''
+  id: '1263'
+  layer: 0
+  name_cn: 酒类商店
+  name_en: Liquor Store
+  type: point
+  visible_zoom_level: 1
+  x: 12232
+  y: 1347
+- desc_cn: ''
+  desc_en: ''
+  id: '1264'
+  layer: 0
+  name_cn: 酒类商店
+  name_en: Liquor Store
+  type: point
+  visible_zoom_level: 1
+  x: 12618
+  y: 2292
+- desc_cn: ''
+  desc_en: ''
+  id: '1265'
+  layer: 0
+  name_cn: 酒类商店
+  name_en: Liquor store
+  type: point
+  visible_zoom_level: 1
+  x: 12717
+  y: 5059
+- desc_cn: ''
+  desc_en: ''
+  id: '1266'
+  layer: 0
+  name_cn: 酒类商店
+  name_en: Liquor store
+  type: point
+  visible_zoom_level: 1
+  x: 13960
+  y: 3205
+- desc_cn: 服装店
+  desc_en: Clothing store
+  id: '1267'
+  layer: 0
+  name_cn: 萝拉·利蒙
+  name_en: Lola Limon
+  type: point
+  visible_zoom_level: 1
+  x: 12830
+  y: 1332
+- desc_cn: 服装店，商场内部。
+  desc_en: Inside of the mall.
+  id: '1268'
+  layer: 0
+  name_cn: 萝拉·利蒙
+  name_en: Lola Limon
+  type: point
+  visible_zoom_level: 1
+  x: 13522
+  y: 1271
+- desc_cn: ''
+  desc_en: ''
+  id: '1269'
+  layer: 0
+  name_cn: 路易斯维尔动物收容所
+  name_en: Louisville Animal Shelter
+  type: point
+  visible_zoom_level: 1
+  x: 12263
+  y: 1444
+- desc_cn: ''
+  desc_en: ''
+  id: '1270'
+  layer: 0
+  name_cn: 路易斯维尔划船俱乐部
+  name_en: Louisville Boat Club
+  type: point
+  visible_zoom_level: 1
+  x: 12776
+  y: 1144
+- desc_cn: 棒球棒工厂。
+  desc_en: Baseball Bat Factory.
+  id: '1271'
+  layer: 0
+  name_cn: 路易斯维尔布鲁泽
+  name_en: Louisville Bruiser
+  type: point
+  visible_zoom_level: 1
+  x: 13249
+  y: 1234
+- desc_cn: ''
+  desc_en: ''
+  id: '1272'
+  layer: 0
+  name_cn: 路易斯维尔市政厅
+  name_en: Louisville City Hall
+  type: point
+  visible_zoom_level: 1
+  x: 12563
+  y: 1534
+- desc_cn: ''
+  desc_en: ''
+  id: '1273'
+  layer: 0
+  name_cn: 路易斯维尔博览中心
+  name_en: Louisville Expo Center
+  type: point
+  visible_zoom_level: 1
+  x: 12965
+  y: 1309
+- desc_cn: ''
+  desc_en: ''
+  id: '1274'
+  layer: 0
+  name_cn: 路易斯维尔音乐会
+  name_en: Louisville Music Concert
+  type: point
+  visible_zoom_level: 1
+  x: 13759
+  y: 1937
+- desc_cn: ''
+  desc_en: ''
+  id: '1275'
+  layer: 0
+  name_cn: 麦克福金顿餐厅
+  name_en: Mama McFudgington's
+  type: point
+  visible_zoom_level: 1
+  x: 13182
+  y: 1276
+- desc_cn: 出售国内和国际地图和杂志。
+  desc_en: Sells domestic and internation maps and magazines.
+  id: '1276'
+  layer: 0
+  name_cn: 无限地图
+  name_en: Maps Unlimited
+  type: point
+  visible_zoom_level: 1
+  x: 12233
+  y: 1627
+- desc_cn: ''
+  desc_en: ''
+  id: '1277'
+  layer: 0
+  name_cn: 默欣标志和绘画设计
+  name_en: Mashie Signs & Paintings
+  type: point
+  visible_zoom_level: 1
+  x: 12606
+  y: 3701
+- desc_cn: ''
+  desc_en: ''
+  id: '1278'
+  layer: 0
+  name_cn: 陵墓
+  name_en: Mausoleum
+  type: point
+  visible_zoom_level: 1
+  x: 12571
+  y: 3172
+- desc_cn: ''
+  desc_en: ''
+  id: '1279'
+  layer: 0
+  name_cn: 医疗中心
+  name_en: Medical Center
+  type: point
+  visible_zoom_level: 1
+  x: 12423
+  y: 1761
+- desc_cn: ''
+  desc_en: ''
+  id: '1280'
+  layer: 0
+  name_cn: 军人之家
+  name_en: Military Homes
+  type: point
+  visible_zoom_level: 1
+  x: 12733
+  y: 3969
+- desc_cn: ''
+  desc_en: ''
+  id: '1281'
+  layer: 0
+  name_cn: 不止牛奶便利店
+  name_en: Milk 'n' More
+  type: point
+  visible_zoom_level: 1
+  x: 12668
+  y: 2125
+- desc_cn: ''
+  desc_en: ''
+  id: '1282'
+  layer: 0
+  name_cn: 乳制品商店
+  name_en: Milk 'n' More
+  type: point
+  visible_zoom_level: 1
+  x: 13958
+  y: 3242
+- desc_cn: ''
+  desc_en: ''
+  id: '1283'
+  layer: 0
+  name_cn: 汽车旅馆
+  name_en: Motel
+  type: point
+  visible_zoom_level: 1
+  x: 12428
+  y: 2774
+- desc_cn: 有大型室外游泳池和大量房间的汽车旅馆。
+  desc_en: A motel with a large outside pool and plenty of rooms.
+  id: '1284'
+  layer: 0
+  name_cn: 汽车旅馆
+  name_en: Motel
+  type: point
+  visible_zoom_level: 1
+  x: 13225
+  y: 3523
+- desc_cn: ''
+  desc_en: ''
+  id: '1285'
+  layer: 0
+  name_cn: 电影院
+  name_en: Movie theater
+  type: point
+  visible_zoom_level: 1
+  x: 12333
+  y: 1369
+- desc_cn: ''
+  desc_en: ''
+  id: '1286'
+  layer: 0
+  name_cn: 音乐商店
+  name_en: Music store
+  type: point
+  visible_zoom_level: 1
+  x: 12403
+  y: 1389
+- desc_cn: ''
+  desc_en: ''
+  id: '1287'
+  layer: 0
+  name_cn: 我的周日市场
+  name_en: My Sunday Market
+  type: point
+  visible_zoom_level: 1
+  x: 12438
+  y: 3108
+- desc_cn: 大型建筑，有许多架子、桌子和一些主题拍摄场景。
+  desc_en: Large building with many shelves, desks, and a few themed filming sets.
+  id: '1288'
+  layer: 0
+  name_cn: 即刻新闻网络
+  name_en: News Now Network
+  type: point
+  visible_zoom_level: 1
+  x: 12645
+  y: 1918
+- desc_cn: ''
+  desc_en: ''
+  id: '1289'
+  layer: 0
+  name_cn: 橡树园公寓
+  name_en: Oak Park Apartments
+  type: point
+  visible_zoom_level: 1
+  x: 12155
+  y: 2914
+- desc_cn: 这里有很多办公桌。
+  desc_en: Lots of desks here.
+  id: '1290'
+  layer: 0
+  name_cn: 办公家具店
+  name_en: Office Furniture Store
+  type: point
+  visible_zoom_level: 1
+  x: 13682
+  y: 1572
+- desc_cn: 满足您所有的基本装饰需求！
+  desc_en: For all your base decoration needs!
+  id: '1291'
+  layer: 0
+  name_cn: 调色板艺术用品
+  name_en: Palette Art Supplies
+  type: point
+  visible_zoom_level: 1
+  x: 13179
+  y: 1748
+- desc_cn: 路易斯维尔中央公园中心。
+  desc_en: Louisville central park center.
+  id: '1292'
+  layer: 0
+  name_cn: 公园中心
+  name_en: Park Center
+  type: point
+  visible_zoom_level: 1
+  x: 13391
+  y: 2368
+- desc_cn: ''
+  desc_en: ''
+  id: '1293'
+  layer: 0
+  name_cn: 当铺
+  name_en: Pawn Shop
+  type: point
+  visible_zoom_level: 1
+  x: 12320
+  y: 1331
+- desc_cn: ''
+  desc_en: ''
+  id: '1294'
+  layer: 0
+  name_cn: 当铺
+  name_en: Pawn Shop
+  type: point
+  visible_zoom_level: 1
+  x: 13123
+  y: 2975
+- desc_cn: ''
+  desc_en: ''
+  id: '1295'
+  layer: 0
+  name_cn: 当铺
+  name_en: Pawn Shop
+  type: point
+  visible_zoom_level: 1
+  x: 12376
+  y: 1470
+- desc_cn: ''
+  desc_en: ''
+  id: '1296'
+  layer: 0
+  name_cn: 当铺
+  name_en: Pawn Shop
+  type: point
+  visible_zoom_level: 1
+  x: 12488
+  y: 1383
+- desc_cn: ''
+  desc_en: ''
+  id: '1297'
+  layer: 0
+  name_cn: Perfick 土豆公司
+  name_en: Perfick Potato Co.
+  type: point
+  visible_zoom_level: 1
+  x: 12268
+  y: 1341
+- desc_cn: 兽医办公室。
+  desc_en: A Veterinarian's office.
+  id: '1298'
+  layer: 0
+  name_cn: 宠物健康 Pawmise
+  name_en: Pet Health Pawmise
+  type: point
+  visible_zoom_level: 1
+  x: 13217
+  y: 3044
+- desc_cn: 药店
+  desc_en: Pharmahug.
+  id: '1299'
+  layer: 0
+  name_cn: 药店
+  name_en: Pharmacy
+  type: point
+  visible_zoom_level: 1
+  x: 13237
+  y: 1286
+- desc_cn: 药店
+  desc_en: Pharmahug.
+  id: '1300'
+  layer: 0
+  name_cn: 药店
+  name_en: Pharmacy
+  type: point
+  visible_zoom_level: 1
+  x: 13123
+  y: 2126
+- desc_cn: Med-U-Well 药房和医疗诊所。
+  desc_en: Med-U-Well Pharmacy and Medical Clinic.
+  id: '1301'
+  layer: 0
+  name_cn: 药店
+  name_en: Pharmacy
+  type: point
+  visible_zoom_level: 1
+  x: 13232
+  y: 2972
+- desc_cn: 药房和诊所。
+  desc_en: Med-U-Well Pharmacy and Clinic.
+  id: '1302'
+  layer: 0
+  name_cn: 药店
+  name_en: Pharmacy
+  type: point
+  visible_zoom_level: 1
+  x: 12950
+  y: 1482
+- desc_cn: ''
+  desc_en: ''
+  id: '1303'
+  layer: 0
+  name_cn: 披萨旋转
+  name_en: Pizza Whirled
+  type: point
+  visible_zoom_level: 1
+  x: 12440
+  y: 3832
+- desc_cn: ''
+  desc_en: ''
+  id: '1304'
+  layer: 0
+  name_cn: 披萨旋转
+  name_en: Pizza Whirled
+  type: point
+  visible_zoom_level: 1
+  x: 13170
+  y: 3028
+- desc_cn: ''
+  desc_en: ''
+  id: '1305'
+  layer: 0
+  name_cn: 披萨旋转
+  name_en: Pizza Whirled
+  type: point
+  visible_zoom_level: 1
+  x: 13225
+  y: 2104
+- desc_cn: ''
+  desc_en: ''
+  id: '1306'
+  layer: 0
+  name_cn: 披萨旋转
+  name_en: Pizza Whirled
+  type: point
+  visible_zoom_level: 1
+  x: 13652
+  y: 1278
+- desc_cn: ''
+  desc_en: ''
+  id: '1307'
+  layer: 0
+  name_cn: 披萨旋转
+  name_en: Pizza Whirled
+  type: point
+  visible_zoom_level: 1
+  x: 13474
+  y: 1411
+- desc_cn: ''
+  desc_en: ''
+  id: '1308'
+  layer: 0
+  name_cn: 披萨旋转
+  name_en: Pizza Whirled
+  type: point
+  visible_zoom_level: 1
+  x: 13517
+  y: 2112
+- desc_cn: ''
+  desc_en: ''
+  id: '1309'
+  layer: 0
+  name_cn: 警察局
+  name_en: Police Station
+  type: point
+  visible_zoom_level: 1
+  x: 13782
+  y: 2558
+- desc_cn: ''
+  desc_en: ''
+  id: '1310'
+  layer: 0
+  name_cn: 警察局
+  name_en: Police Station
+  type: point
+  visible_zoom_level: 1
+  x: 13220
+  y: 3087
+- desc_cn: ''
+  desc_en: ''
+  id: '1311'
+  layer: 0
+  name_cn: 警察局和监狱
+  name_en: Police Station & Prison
+  type: point
+  visible_zoom_level: 1
+  x: 12444
+  y: 1609
+- desc_cn: ''
+  desc_en: ''
+  id: '1312'
+  layer: 0
+  name_cn: 警察局
+  name_en: Police station
+  type: point
+  visible_zoom_level: 1
+  x: 12961
+  y: 1379
+- desc_cn: ''
+  desc_en: ''
+  id: '1313'
+  layer: 0
+  name_cn: 邮局
+  name_en: Post Office
+  type: point
+  visible_zoom_level: 1
+  x: 12624
+  y: 2076
+- desc_cn: 难民区，有很多帐篷、丙烷烧烤架和金属桶。
+  desc_en: Refugee Area with lots of tents, propane bbqs, and metal drums.
+  id: '1314'
+  layer: 0
+  name_cn: 难民区
+  name_en: Refugee Area
+  type: point
+  visible_zoom_level: 1
+  x: 12514
+  y: 4063
+- desc_cn: ''
+  desc_en: ''
+  id: '1315'
+  layer: 0
+  name_cn: 难民营
+  name_en: Refugee Camp
+  type: point
+  visible_zoom_level: 1
+  x: 13423
+  y: 3738
+- desc_cn: ''
+  desc_en: ''
+  id: '1316'
+  layer: 0
+  name_cn: 带田地的偏远房屋
+  name_en: Remote House with a field
+  type: point
+  visible_zoom_level: 1
+  x: 14824
+  y: 3716
+- desc_cn: 一栋大型建筑，改建为军队使用，里面有很多行军床、衣服和武器，位于城市北部剧院的西南方向。
+  desc_en: A large building repurposed for what appears to be the army, containing
+    many cots, clothing, and weapons, slightly southwest of the theater in the north
+    of the city.
+  id: '1317'
+  layer: 0
+  name_cn: 改建建筑
+  name_en: Repurposed Building
+  type: point
+  visible_zoom_level: 1
+  x: 12421
+  y: 1423
+- desc_cn: 天啊，那里发生了什么事！
+  desc_en: Good lord what is happening in there!
+  id: '1318'
+  layer: 0
+  name_cn: 研究实验室
+  name_en: Research Labs
+  type: point
+  visible_zoom_level: 1
+  x: 13597
+  y: 1699
+- desc_cn: ''
+  desc_en: ''
+  id: '1319'
+  layer: 0
+  name_cn: 餐厅
+  name_en: Resturant
+  type: point
+  visible_zoom_level: 1
+  x: 13959
+  y: 3211
+- desc_cn: ''
+  desc_en: ''
+  id: '1320'
+  layer: 0
+  name_cn: 餐厅
+  name_en: Resturant
+  type: point
+  visible_zoom_level: 1
+  x: 12731
+  y: 1143
+- desc_cn: ''
+  desc_en: ''
+  id: '1321'
+  layer: 0
+  name_cn: 溜冰场
+  name_en: Roller Skating Rink
+  type: point
+  visible_zoom_level: 1
+  x: 12975
+  y: 1430
+- desc_cn: ''
+  desc_en: ''
+  id: '1322'
+  layer: 0
+  name_cn: 罗梅罗表演艺术中心
+  name_en: Romero Center for the Performing Arts
+  type: point
+  visible_zoom_level: 1
+  x: 12527
+  y: 1751
+- desc_cn: 有一个幸存的加油机。
+  desc_en: With one surviving pump.
+  id: '1323'
+  layer: 0
+  name_cn: 废弃的加油站
+  name_en: Ruined Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 13639
+  y: 4072
+- desc_cn: ''
+  desc_en: ''
+  id: '1324'
+  layer: 0
+  name_cn: 绯红橡木酿酒厂
+  name_en: Scarlet Oak Distillery
+  type: point
+  visible_zoom_level: 1
+  x: 12034
+  y: 1945
+- desc_cn: ''
+  desc_en: ''
+  id: '1325'
+  layer: 0
+  name_cn: 海马咖啡
+  name_en: Seahorse Coffee
+  type: point
+  visible_zoom_level: 1
+  x: 12576
+  y: 1635
+- desc_cn: ''
+  desc_en: ''
+  id: '1326'
+  layer: 0
+  name_cn: 海马咖啡
+  name_en: Seahorse Coffee
+  type: point
+  visible_zoom_level: 1
+  x: 13523
+  y: 1714
+- desc_cn: 福斯石油体育场内的咖啡店。
+  desc_en: A coffee store inside Fossoil Stadium.
+  id: '1327'
+  layer: 0
+  name_cn: 海马咖啡
+  name_en: Seahorse Coffee
+  type: point
+  visible_zoom_level: 1
+  x: 13078
+  y: 1598
+- desc_cn: ''
+  desc_en: ''
+  id: '1328'
+  layer: 0
+  name_cn: 橡树荫养老院
+  name_en: Shady Oaks Nursing Home
+  type: point
+  visible_zoom_level: 1
+  x: 13084
+  y: 2023
+- desc_cn: 珠宝店。
+  desc_en: Jewelry Store.
+  id: '1329'
+  layer: 0
+  name_cn: 示巴珠宝商
+  name_en: Sheba Jewellers
+  type: point
+  visible_zoom_level: 1
+  x: 13570
+  y: 1274
+- desc_cn: ''
+  desc_en: ''
+  id: '1330'
+  layer: 0
+  name_cn: 小型艺术画廊
+  name_en: Small Art Gallery
+  type: point
+  visible_zoom_level: 1
+  x: 12517
+  y: 1445
+- desc_cn: ''
+  desc_en: ''
+  id: '1331'
+  layer: 0
+  name_cn: 小型艺术画廊
+  name_en: Small Art Gallery
+  type: point
+  visible_zoom_level: 1
+  x: 13610
+  y: 1366
+- desc_cn: ''
+  desc_en: ''
+  id: '1332'
+  layer: 0
+  name_cn: 小型购物中心
+  name_en: Small Mall
+  type: point
+  visible_zoom_level: 1
+  x: 13344
+  y: 3045
+- desc_cn: 禁区边界上的一个小检查站。
+  desc_en: A small checkpoint on the boundary of the exclusion zone.
+  id: '1333'
+  layer: 0
+  name_cn: 小型军事检查站
+  name_en: Small Military Checkpoint
+  type: point
+  visible_zoom_level: 1
+  x: 13446
+  y: 4077
+- desc_cn: 进入路易斯维尔的另一条路。
+  desc_en: Another way into Louisville.
+  id: '1334'
+  layer: 0
+  name_cn: 南陆军检查站
+  name_en: South Army Checkpoint
+  type: point
+  visible_zoom_level: 1
+  x: 14534
+  y: 4025
+- desc_cn: ''
+  desc_en: ''
+  id: '1335'
+  layer: 0
+  name_cn: 南路易斯维尔小学
+  name_en: South Louisville Elementary
+  type: point
+  visible_zoom_level: 1
+  x: 12971
+  y: 3223
+- desc_cn: ''
+  desc_en: ''
+  id: '1336'
+  layer: 0
+  name_cn: 斯皮福餐厅
+  name_en: Spiffo's
+  type: point
+  visible_zoom_level: 1
+  x: 12448
+  y: 3786
+- desc_cn: ''
+  desc_en: ''
+  id: '1337'
+  layer: 0
+  name_cn: 斯皮福餐厅
+  name_en: Spiffo's
+  type: point
+  visible_zoom_level: 1
+  x: 13457
+  y: 2927
+- desc_cn: 快餐店。
+  desc_en: Fast-food Restaurant.
+  id: '1338'
+  layer: 0
+  name_cn: 斯皮福餐厅
+  name_en: Spiffo's
+  type: point
+  visible_zoom_level: 1
+  x: 13661
+  y: 1321
+- desc_cn: 路易斯维尔西侧的斯皮福餐厅。
+  desc_en: A Spiffo's on the West side of Louisville.
+  id: '1339'
+  layer: 0
+  name_cn: 斯皮福餐厅
+  name_en: Spiffo's
+  type: point
+  visible_zoom_level: 1
+  x: 12314
+  y: 1930
+- desc_cn: ''
+  desc_en: ''
+  id: '1340'
+  layer: 0
+  name_cn: 斯皮福餐厅
+  name_en: Spiffo's
+  type: point
+  visible_zoom_level: 1
+  x: 13303
+  y: 1351
+- desc_cn: 棒球场内的斯皮福餐厅。
+  desc_en: Spiffo's in the baseball stadium.
+  id: '1341'
+  layer: 0
+  name_cn: 斯皮福餐厅
+  name_en: Spiffo's
+  type: point
+  visible_zoom_level: 1
+  x: 13080
+  y: 1633
+- desc_cn: 斯皮福总部，超级斯皮福。
+  desc_en: The Spiffo's headquarters. Praise mega Spiffo.
+  id: '1342'
+  layer: 0
+  name_cn: 斯皮福总部
+  name_en: Spiffo's HQ
+  type: point
+  visible_zoom_level: 1
+  x: 12714
+  y: 1621
+- desc_cn: 棒球棒可用数天。
+  desc_en: Baseball bats for days.
+  id: '1343'
+  layer: 0
+  name_cn: 体育用品店
+  name_en: Sporting Goods Store
+  type: point
+  visible_zoom_level: 1
+  x: 13316
+  y: 3052
+- desc_cn: ''
+  desc_en: ''
+  id: '1344'
+  layer: 0
+  name_cn: 圣佩雷格林医院
+  name_en: St. Peregrin Hospital
+  type: point
+  visible_zoom_level: 1
+  x: 12458
+  y: 3702
+- desc_cn: ''
+  desc_en: ''
+  id: '1345'
+  layer: 0
+  name_cn: 圣佩雷格林医院
+  name_en: St. Peregrin Hospital
+  type: point
+  visible_zoom_level: 1
+  x: 12458
+  y: 3702
+- desc_cn: ''
+  desc_en: ''
+  id: '1346'
+  layer: 0
+  name_cn: 星空影城
+  name_en: StarEplex - Movie Theater
+  type: point
+  visible_zoom_level: 1
+  x: 12471
+  y: 1272
+- desc_cn: 一家金属加工公司。
+  desc_en: A metal working company.
+  id: '1347'
+  layer: 0
+  name_cn: 钢铁旋转公司
+  name_en: Steely Revolve
+  type: point
+  visible_zoom_level: 1
+  x: 12583
+  y: 3637
+- desc_cn: ''
+  desc_en: ''
+  id: '1348'
+  layer: 0
+  name_cn: 存储单元
+  name_en: Storage Units
+  type: point
+  visible_zoom_level: 1
+  x: 12196
+  y: 1684
+- desc_cn: ''
+  desc_en: ''
+  id: '1349'
+  layer: 0
+  name_cn: 存储单元
+  name_en: Storage Units
+  type: point
+  visible_zoom_level: 1
+  x: 12181
+  y: 1328
+- desc_cn: ''
+  desc_en: ''
+  id: '1350'
+  layer: 0
+  name_cn: 存储单元
+  name_en: Storage Units
+  type: point
+  visible_zoom_level: 1
+  x: 12713
+  y: 1999
+- desc_cn: ''
+  desc_en: ''
+  id: '1351'
+  layer: 0
+  name_cn: 存储单元
+  name_en: Storage Units
+  type: point
+  visible_zoom_level: 1
+  x: 13122
+  y: 1708
+- desc_cn: ''
+  desc_en: ''
+  id: '1352'
+  layer: 0
+  name_cn: 甜豌豆餐厅
+  name_en: SweetPea
+  type: point
+  visible_zoom_level: 1
+  x: 12419
+  y: 2818
+- desc_cn: ''
+  desc_en: ''
+  id: '1353'
+  layer: 0
+  name_cn: TIS建筑公司
+  name_en: T.I.S Construction
+  type: point
+  visible_zoom_level: 1
+  x: 12669
+  y: 2140
+- desc_cn: ''
+  desc_en: ''
+  id: '1354'
+  layer: 0
+  name_cn: 潘乔塔克卷饼
+  name_en: Taco del Pancho
+  type: point
+  visible_zoom_level: 1
+  x: 12579
+  y: 2071
+- desc_cn: ''
+  desc_en: ''
+  id: '1355'
+  layer: 0
+  name_cn: 潘乔塔克卷饼
+  name_en: Taco del Pancho
+  type: point
+  visible_zoom_level: 1
+  x: 13527
+  y: 3019
+- desc_cn: 大型两层商场。
+  desc_en: Large 2 level mall.
+  id: '1356'
+  layer: 0
+  name_cn: 俄亥俄购物中心
+  name_en: The Grand Ohio Mall
+  type: point
+  visible_zoom_level: 1
+  x: 13562
+  y: 1386
+- desc_cn: ''
+  desc_en: ''
+  id: '1357'
+  layer: 0
+  name_cn: 哈维沙姆酒店及套房
+  name_en: The Havisham Hotel&Suites
+  type: point
+  visible_zoom_level: 1
+  x: 12636
+  y: 1317
+- desc_cn: 杂货店。
+  desc_en: A grocery store of sorts.
+  id: '1358'
+  layer: 0
+  name_cn: 丰盛的丰饶之角
+  name_en: The Plump Cornucopia
+  type: point
+  visible_zoom_level: 1
+  x: 12733
+  y: 1211
+- desc_cn: ''
+  desc_en: ''
+  id: '1359'
+  layer: 0
+  name_cn: 海滨公寓
+  name_en: The Waterfront
+  type: point
+  visible_zoom_level: 1
+  x: 13037
+  y: 1210
+- desc_cn: 带花园的农贸商店。
+  desc_en: Farming store with a garden.
+  id: '1360'
+  layer: 0
+  name_cn: 绿色拇指
+  name_en: Thumbs of Green
+  type: point
+  visible_zoom_level: 1
+  x: 13135
+  y: 1780
+- desc_cn: 在商场一楼
+  desc_en: On the 1st floor of the mall
+  id: '1361'
+  layer: 0
+  name_cn: 健身时刻
+  name_en: Time 4 Sport
+  type: point
+  visible_zoom_level: 1
+  x: 13522
+  y: 1314
+- desc_cn: ''
+  desc_en: ''
+  id: '1362'
+  layer: 0
+  name_cn: 蒂塔玛利亚餐厅
+  name_en: Tita Maria's Catina
+  type: point
+  visible_zoom_level: 1
+  x: 13311
+  y: 2970
+- desc_cn: ''
+  desc_en: ''
+  id: '1363'
+  layer: 0
+  name_cn: 中央车站
+  name_en: Central Station
+  type: point
+  visible_zoom_level: 1
+  x: 12714
+  y: 2326
+- desc_cn: ''
+  desc_en: ''
+  id: '1364'
+  layer: 0
+  name_cn: 火车站
+  name_en: Train Yard
+  type: point
+  visible_zoom_level: 1
+  x: 12675
+  y: 4403
+- desc_cn: ''
+  desc_en: ''
+  id: '1365'
+  layer: 0
+  name_cn: 火车站
+  name_en: Trainyard
+  type: point
+  visible_zoom_level: 1
+  x: 12650
+  y: 4339
+- desc_cn: ''
+  desc_en: ''
+  id: '1366'
+  layer: 0
+  name_cn: 存储单元
+  name_en: U-Store It
+  type: point
+  visible_zoom_level: 1
+  x: 13689
+  y: 1615
+- desc_cn: 邮局。
+  desc_en: Post Office.
+  id: '1367'
+  layer: 0
+  name_cn: 美国邮政服务
+  name_en: U.S Mail Service
+  type: point
+  visible_zoom_level: 1
+  x: 12583
+  y: 3581
+- desc_cn: ''
+  desc_en: ''
+  id: '1368'
+  layer: 0
+  name_cn: 联合航运物流
+  name_en: United Shipping Logistics
+  type: point
+  visible_zoom_level: 1
+  x: 12627
+  y: 3704
+- desc_cn: 热门录像带。
+  desc_en: Hit Vids.
+  id: '1369'
+  layer: 0
+  name_cn: 录像带商店
+  name_en: VHS Store
+  type: point
+  visible_zoom_level: 1
+  x: 12431
+  y: 2818
+- desc_cn: 热门录像带。
+  desc_en: Hit Vids.
+  id: '1370'
+  layer: 0
+  name_cn: 录像带商店
+  name_en: VHS Store
+  type: point
+  visible_zoom_level: 1
+  x: 12797
+  y: 1212
+- desc_cn: 热门录像带，位于俄亥俄购物中心西侧。
+  desc_en: Hit Vids, West of the Grand Ohio Mall.
+  id: '1371'
+  layer: 0
+  name_cn: 录像带商店
+  name_en: VHS Store
+  type: point
+  visible_zoom_level: 1
+  x: 13429
+  y: 1292
+- desc_cn: 热门录像带。
+  desc_en: Hit Vids.
+  id: '1372'
+  layer: 0
+  name_cn: 录像带商店
+  name_en: VHS Store
+  type: point
+  visible_zoom_level: 1
+  x: 13114
+  y: 1454
+- desc_cn: ''
+  desc_en: ''
+  id: '1373'
+  layer: 0
+  name_cn: 廉科保险公司
+  name_en: Valu Insurance
+  type: point
+  visible_zoom_level: 1
+  x: 12561
+  y: 3617
+- desc_cn: ''
+  desc_en: ''
+  id: '1374'
+  layer: 0
+  name_cn: 廉科总部
+  name_en: ValuTech HQ
+  type: point
+  visible_zoom_level: 1
+  x: 12560
+  y: 3696
+- desc_cn: ''
+  desc_en: ''
+  id: '1375'
+  layer: 0
+  name_cn: 天鹅绒流苏俱乐部
+  name_en: Velvet Tassel Club
+  type: point
+  visible_zoom_level: 1
+  x: 12316
+  y: 1271
+- desc_cn: ''
+  desc_en: ''
+  id: '1376'
+  layer: 0
+  name_cn: 仓库
+  name_en: Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 12611
+  y: 3617
+- desc_cn: ''
+  desc_en: ''
+  id: '1377'
+  layer: 0
+  name_cn: 仓库
+  name_en: Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 12796
+  y: 2184
+- desc_cn: ''
+  desc_en: ''
+  id: '1378'
+  layer: 0
+  name_cn: 惠灵顿高地高尔夫俱乐部
+  name_en: Wellington Heights Golf Club
+  type: point
+  visible_zoom_level: 1
+  x: 12973
+  y: 2233
+- desc_cn: ''
+  desc_en: ''
+  id: '1379'
+  layer: 0
+  name_cn: 橱窗店
+  name_en: Window shop
+  type: point
+  visible_zoom_level: 1
+  x: 13416
+  y: 1292
+- desc_cn: ''
+  desc_en: ''
+  id: '1380'
+  layer: 0
+  name_cn: Zippee便利店
+  name_en: Zippee Market
+  type: point
+  visible_zoom_level: 1
+  x: 12225
+  y: 3026
+- desc_cn: ''
+  desc_en: ''
+  id: '1381'
+  layer: 0
+  name_cn: Zippee便利店
+  name_en: Zippee Market
+  type: point
+  visible_zoom_level: 1
+  x: 12999
+  y: 3113
+- desc_cn: ''
+  desc_en: ''
+  id: '1382'
+  layer: 0
+  name_cn: Zippee便利店
+  name_en: Zippee Market
+  type: point
+  visible_zoom_level: 1
+  x: 13066
+  y: 1922
+- desc_cn: ''
+  desc_en: ''
+  id: '1383'
+  layer: 0
+  name_cn: Zippee便利店
+  name_en: Zippee Market
+  type: point
+  visible_zoom_level: 1
+  x: 12664
+  y: 1366
+- desc_cn: ''
+  desc_en: ''
+  id: '1384'
+  layer: 0
+  name_cn: Zippee便利店
+  name_en: Zippee Market
+  type: point
+  visible_zoom_level: 1
+  x: 13519
+  y: 1668
+- desc_cn: ''
+  desc_en: ''
+  id: '1385'
+  layer: 0
+  name_cn: Zippee便利店
+  name_en: Zippee Market
+  type: point
+  visible_zoom_level: 1
+  x: 12521
+  y: 1482
+- desc_cn: ''
+  desc_en: ''
+  id: '1386'
+  layer: 0
+  name_cn: Zippee便利店
+  name_en: Zippee Market
+  type: point
+  visible_zoom_level: 1
+  x: 12646
+  y: 2291
+- desc_cn: ''
+  desc_en: ''
+  id: '1387'
+  layer: 0
+  name_cn: 面包店
+  name_en: Bakery
+  type: point
+  visible_zoom_level: 1
+  x: 10081
+  y: 12806
+- desc_cn: ''
+  desc_en: ''
+  id: '1388'
+  layer: 0
+  name_cn: 酒吧
+  name_en: Bar
+  type: point
+  visible_zoom_level: 1
+  x: 10170
+  y: 12673
+- desc_cn: ''
+  desc_en: ''
+  id: '1389'
+  layer: 0
+  name_cn: 教堂
+  name_en: Church
+  type: point
+  visible_zoom_level: 1
+  x: 10328
+  y: 12794
+- desc_cn: ''
+  desc_en: ''
+  id: '1390'
+  layer: 0
+  name_cn: 电影院
+  name_en: Cinema
+  type: point
+  visible_zoom_level: 1
+  x: 10172
+  y: 12645
+- desc_cn: ''
+  desc_en: ''
+  id: '1391'
+  layer: 0
+  name_cn: 社区中心
+  name_en: Community Center
+  type: point
+  visible_zoom_level: 1
+  x: 10030
+  y: 12732
+- desc_cn: ''
+  desc_en: ''
+  id: '1392'
+  layer: 0
+  name_cn: 小餐馆
+  name_en: Diner
+  type: point
+  visible_zoom_level: 1
+  x: 10110
+  y: 11151
+- desc_cn: ''
+  desc_en: ''
+  id: '1393'
+  layer: 0
+  name_cn: 医生办公室
+  name_en: Doctor's Office
+  type: point
+  visible_zoom_level: 1
+  x: 10160
+  y: 12761
+- desc_cn: ''
+  desc_en: ''
+  id: '1394'
+  layer: 0
+  name_cn: 服装店
+  name_en: Family Fashion
+  type: point
+  visible_zoom_level: 1
+  x: 10079
+  y: 12818
+- desc_cn: 新鲜农产品物流中心。
+  desc_en: Logistics hub for fresh produce.
+  id: '1395'
+  layer: 0
+  name_cn: 农民仓库
+  name_en: Farmer's Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 9395
+  y: 9300
+- desc_cn: ''
+  desc_en: ''
+  id: '1396'
+  layer: 0
+  name_cn: 食品市场
+  name_en: Food Market
+  type: point
+  visible_zoom_level: 1
+  x: 10113
+  y: 12786
+- desc_cn: ''
+  desc_en: ''
+  id: '1397'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 10144
+  y: 12791
+- desc_cn: ''
+  desc_en: ''
+  id: '1398'
+  layer: 0
+  name_cn: 美发沙龙
+  name_en: Hair-Saloon
+  type: point
+  visible_zoom_level: 1
+  x: 10183
+  y: 12819
+- desc_cn: ''
+  desc_en: ''
+  id: '1399'
+  layer: 0
+  name_cn: 保险办公室
+  name_en: Insurance Office
+  type: point
+  visible_zoom_level: 1
+  x: 10074
+  y: 12776
+- desc_cn: 军事人员的公寓大楼，拥有大量装备和武器。
+  desc_en: An apartment complex for military personnel with a large amount of equipment
+    and weapons.
+  id: '1400'
+  layer: 0
+  name_cn: 诺克斯军事公寓
+  name_en: Knox Military Apartments
+  type: point
+  visible_zoom_level: 1
+  x: 10077
+  y: 12637
+- desc_cn: ''
+  desc_en: ''
+  id: '1401'
+  layer: 0
+  name_cn: 自助洗衣店
+  name_en: Laundromat
+  type: point
+  visible_zoom_level: 1
+  x: 10183
+  y: 12782
+- desc_cn: ''
+  desc_en: ''
+  id: '1402'
+  layer: 0
+  name_cn: 自助洗衣店
+  name_en: Laundromat
+  type: point
+  visible_zoom_level: 1
+  x: 10181
+  y: 12731
+- desc_cn: ''
+  desc_en: ''
+  id: '1403'
+  layer: 0
+  name_cn: 麦克福金顿餐厅
+  name_en: Mama McFudgington's
+  type: point
+  visible_zoom_level: 1
+  x: 10176
+  y: 12805
+- desc_cn: ''
+  desc_en: ''
+  id: '1404'
+  layer: 0
+  name_cn: 门迪餐厅
+  name_en: Mendy's Eatery
+  type: point
+  visible_zoom_level: 1
+  x: 10131
+  y: 12761
+- desc_cn: ''
+  desc_en: ''
+  id: '1405'
+  layer: 0
+  name_cn: 办公室
+  name_en: Office
+  type: point
+  visible_zoom_level: 1
+  x: 10184
+  y: 12793
+- desc_cn: ''
+  desc_en: ''
+  id: '1406'
+  layer: 0
+  name_cn: 药店
+  name_en: Pharmahug
+  type: point
+  visible_zoom_level: 1
+  x: 10144
+  y: 12761
+- desc_cn: ''
+  desc_en: ''
+  id: '1407'
+  layer: 0
+  name_cn: 邮局
+  name_en: Post Office
+  type: point
+  visible_zoom_level: 1
+  x: 10107
+  y: 12713
+- desc_cn: 无线电中继站。禁止进入，除受过训练的人员外。
+  desc_en: A radio relay station. Access forbidden, except trained personnel.
+  id: '1408'
+  layer: 0
+  name_cn: 中继站
+  name_en: Relay station
+  type: point
+  visible_zoom_level: 1
+  x: 10278
+  y: 8749
+- desc_cn: ''
+  desc_en: ''
+  id: '1409'
+  layer: 0
+  name_cn: 餐厅
+  name_en: Restaurant
+  type: point
+  visible_zoom_level: 1
+  x: 10095
+  y: 12750
+- desc_cn: ''
+  desc_en: ''
+  id: '1410'
+  layer: 0
+  name_cn: 学校
+  name_en: School
+  type: point
+  visible_zoom_level: 1
+  x: 9999
+  y: 12655
+- desc_cn: ''
+  desc_en: ''
+  id: '1411'
+  layer: 0
+  name_cn: 录像带商店
+  name_en: VHS Store
+  type: point
+  visible_zoom_level: 1
+  x: 10164
+  y: 12733
+- desc_cn: 好吧。好吧。
+  desc_en: Well. Well.
+  id: '1412'
+  layer: 0
+  name_cn: 水井
+  name_en: Well
+  type: point
+  visible_zoom_level: 1
+  x: 8847
+  y: 9206
+- desc_cn: CDDA挑战地图中的第一栋房子。
+  desc_en: House one starts in the the A Really CDDA challenge map.
+  id: '1413'
+  layer: 0
+  name_cn: CDDA初始房间
+  name_en: A CDDA Starter House
+  type: point
+  visible_zoom_level: 1
+  x: 10820
+  y: 9412
+- desc_cn: ''
+  desc_en: ''
+  id: '1414'
+  layer: 0
+  name_cn: 废弃的小屋
+  name_en: Abandoned Cabins
+  type: point
+  visible_zoom_level: 1
+  x: 10969
+  y: 9173
+- desc_cn: ''
+  desc_en: ''
+  id: '1415'
+  layer: 0
+  name_cn: 废弃餐厅
+  name_en: Abandoned Restaurant
+  type: point
+  visible_zoom_level: 1
+  x: 10625
+  y: 10047
+- desc_cn: ''
+  desc_en: ''
+  id: '1416'
+  layer: 0
+  name_cn: 成人教育中心
+  name_en: Adult Education Center
+  type: point
+  visible_zoom_level: 1
+  x: 10638
+  y: 9904
+- desc_cn: ''
+  desc_en: ''
+  id: '1417'
+  layer: 0
+  name_cn: 自助餐
+  name_en: All You Can Eat Buffet
+  type: point
+  visible_zoom_level: 1
+  x: 10619
+  y: 9437
+- desc_cn: ''
+  desc_en: ''
+  id: '1418'
+  layer: 0
+  name_cn: 汽车修理店
+  name_en: Auto Repair Shop
+  type: point
+  visible_zoom_level: 1
+  x: 10605
+  y: 9406
+- desc_cn: ''
+  desc_en: ''
+  id: '1419'
+  layer: 0
+  name_cn: 汽车修理店
+  name_en: Auto Repair Shop
+  type: point
+  visible_zoom_level: 1
+  x: 10173
+  y: 10940
+- desc_cn: ''
+  desc_en: ''
+  id: '1420'
+  layer: 0
+  name_cn: 后院花园
+  name_en: Backyard Garden
+  type: point
+  visible_zoom_level: 1
+  x: 10771
+  y: 9539
+- desc_cn: ''
+  desc_en: ''
+  id: '1421'
+  layer: 0
+  name_cn: 面包店
+  name_en: Bakery
+  type: point
+  visible_zoom_level: 1
+  x: 10617
+  y: 9606
+- desc_cn: 想喝点什么吗？
+  desc_en: Care for a drink?
+  id: '1422'
+  layer: 0
+  name_cn: 酒吧
+  name_en: Bar
+  type: point
+  visible_zoom_level: 1
+  x: 10617
+  y: 9219
+- desc_cn: ''
+  desc_en: ''
+  id: '1423'
+  layer: 0
+  name_cn: 棒球场
+  name_en: Baseball Field
+  type: point
+  visible_zoom_level: 1
+  x: 10955
+  y: 9944
+- desc_cn: ''
+  desc_en: ''
+  id: '1424'
+  layer: 0
+  name_cn: 大型城市仓库
+  name_en: Big Urban Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 10694
+  y: 10103
+- desc_cn: 枕头会让她感到舒适。
+  desc_en: The pillow will help her get comfortable.
+  id: '1425'
+  layer: 0
+  name_cn: 鲍勃和凯特的安全屋
+  name_en: Bob and Kate's Safehouse
+  type: point
+  visible_zoom_level: 1
+  x: 10746
+  y: 9415
+- desc_cn: ''
+  desc_en: ''
+  id: '1426'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 10610
+  y: 10365
+- desc_cn: ''
+  desc_en: ''
+  id: '1427'
+  layer: 0
+  name_cn: 汉堡和自助洗衣店
+  name_en: Burger and Laundromat
+  type: point
+  visible_zoom_level: 1
+  x: 10606
+  y: 9467
+- desc_cn: 你现在真的想一个人待在树林里吗？没有井？
+  desc_en: Do you really want to be alone in the woods now? Without a well?
+  id: '1428'
+  layer: 0
+  name_cn: 小木屋
+  name_en: Cabin
+  type: point
+  visible_zoom_level: 1
+  x: 11243
+  y: 8953
+- desc_cn: 你现在真的想一个人待在树林里吗？有一口井。
+  desc_en: Do you really want to be alone in the woods now?Has a well.
+  id: '1429'
+  layer: 0
+  name_cn: 林中小屋
+  name_en: Cabin in the Woods
+  type: point
+  visible_zoom_level: 1
+  x: 9664
+  y: 8773
+- desc_cn: ''
+  desc_en: ''
+  id: '1430'
+  layer: 0
+  name_cn: 自助餐厅
+  name_en: Cafeteria
+  type: point
+  visible_zoom_level: 1
+  x: 10648
+  y: 9924
+- desc_cn: 马尔德劳附近树林中的一组小屋。
+  desc_en: A Group of Cabins In The Woods Near Muldraugh.
+  id: '1431'
+  layer: 0
+  name_cn: 露营地
+  name_en: Camp Grounds
+  type: point
+  visible_zoom_level: 1
+  x: 12422
+  y: 8927
+- desc_cn: ''
+  desc_en: ''
+  id: '1432'
+  layer: 0
+  name_cn: 教堂
+  name_en: Chapel
+  type: point
+  visible_zoom_level: 1
+  x: 10723
+  y: 9711
+- desc_cn: ''
+  desc_en: ''
+  id: '1433'
+  layer: 0
+  name_cn: 教堂
+  name_en: Church
+  type: point
+  visible_zoom_level: 1
+  x: 10773
+  y: 10169
+- desc_cn: 小型二手服装店。
+  desc_en: Small used clothing store.
+  id: '1434'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 10628
+  y: 9903
+- desc_cn: ''
+  desc_en: ''
+  id: '1435'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 10610
+  y: 10376
+- desc_cn: ''
+  desc_en: ''
+  id: '1436'
+  layer: 0
+  name_cn: 建筑工地
+  name_en: Construction Site
+  type: point
+  visible_zoom_level: 1
+  x: 10061
+  y: 9576
+- desc_cn: ''
+  desc_en: ''
+  id: '1437'
+  layer: 0
+  name_cn: 便利店
+  name_en: Convenience Store
+  type: point
+  visible_zoom_level: 1
+  x: 10838
+  y: 10029
+- desc_cn: ''
+  desc_en: ''
+  id: '1438'
+  layer: 0
+  name_cn: 科特曼医疗公司
+  name_en: Cortman Medical
+  type: point
+  visible_zoom_level: 1
+  x: 10876
+  y: 10028
+- desc_cn: ''
+  desc_en: ''
+  id: '1439'
+  layer: 0
+  name_cn: 十字路口
+  name_en: Cross roads
+  type: point
+  visible_zoom_level: 1
+  x: 10591
+  y: 11204
+- desc_cn: ''
+  desc_en: ''
+  id: '1440'
+  layer: 0
+  name_cn: 小餐馆
+  name_en: Diner
+  type: point
+  visible_zoom_level: 1
+  x: 10614
+  y: 10559
+- desc_cn: ''
+  desc_en: ''
+  id: '1441'
+  layer: 0
+  name_cn: 药品实验室
+  name_en: Drug Lab
+  type: point
+  visible_zoom_level: 1
+  x: 11600
+  y: 9295
+- desc_cn: ''
+  desc_en: ''
+  id: '1442'
+  layer: 0
+  name_cn: 变电站
+  name_en: Electrical Substation
+  type: point
+  visible_zoom_level: 1
+  x: 10383
+  y: 10090
+- desc_cn: ''
+  desc_en: ''
+  id: '1443'
+  layer: 0
+  name_cn: 电子产品商店
+  name_en: Electronics Store
+  type: point
+  visible_zoom_level: 1
+  x: 10614
+  y: 9881
+- desc_cn: 所有这些消防演习终于有了回报！
+  desc_en: All those fire drills finally paid off!
+  id: '1444'
+  layer: 0
+  name_cn: 小学
+  name_en: Elementary school
+  type: point
+  visible_zoom_level: 1
+  x: 10619
+  y: 9967
+- desc_cn: ''
+  desc_en: ''
+  id: '1445'
+  layer: 0
+  name_cn: 空仓库
+  name_en: Empty Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 11825
+  y: 9780
+- desc_cn: 潜在的新鲜食品。
+  desc_en: Potential fresh food.
+  id: '1446'
+  layer: 0
+  name_cn: 农场地块
+  name_en: Farm Plot
+  type: point
+  visible_zoom_level: 1
+  x: 10706
+  y: 9400
+- desc_cn: 有工具棚、鸡舍和水井。
+  desc_en: Has a tool shed, chickencoop and well.
+  id: '1447'
+  layer: 0
+  name_cn: 西部农场
+  name_en: Farm to the West
+  type: point
+  visible_zoom_level: 1
+  x: 8599
+  y: 8824
+- desc_cn: 你现在真的想一个人呆在树林里吗？没有水井？
+  desc_en: Do you really want to be alone in the woods right now? Without a well?
+  id: '1448'
+  layer: 0
+  name_cn: 森林之家
+  name_en: Forest House
+  type: point
+  visible_zoom_level: 1
+  x: 11063
+  y: 10638
+- desc_cn: ''
+  desc_en: ''
+  id: '1449'
+  layer: 0
+  name_cn: 车库
+  name_en: Garages
+  type: point
+  visible_zoom_level: 1
+  x: 10602
+  y: 9360
+- desc_cn: 福斯石油，4个加油机。
+  desc_en: Fossoil, 4 pumps.
+  id: '1450'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 10624
+  y: 9761
+- desc_cn: 途行加油站，4个加油机。
+  desc_en: Gas-2-Go, 4 pumps.
+  id: '1451'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 10668
+  y: 10625
+- desc_cn: ''
+  desc_en: ''
+  id: '1452'
+  layer: 0
+  name_cn: 封闭式社区
+  name_en: Gated Community
+  type: point
+  visible_zoom_level: 1
+  x: 10668
+  y: 9572
+- desc_cn: ''
+  desc_en: ''
+  id: '1453'
+  layer: 0
+  name_cn: 封闭式社区
+  name_en: Gated Community
+  type: point
+  visible_zoom_level: 1
+  x: 10856
+  y: 10138
+- desc_cn: 杂货店。
+  desc_en: Grocery store.
+  id: '1454'
+  layer: 0
+  name_cn: 格林氏杂货店
+  name_en: Greene's
+  type: point
+  visible_zoom_level: 1
+  x: 10609
+  y: 10259
+- desc_cn: ''
+  desc_en: ''
+  id: '1455'
+  layer: 0
+  name_cn: 史密斯律师事务所
+  name_en: H. Smith Attorney
+  type: point
+  visible_zoom_level: 1
+  x: 10648
+  y: 9648
+- desc_cn: ''
+  desc_en: ''
+  id: '1456'
+  layer: 0
+  name_cn: 带古典火炉的房子
+  name_en: House with Antique Stove
+  type: point
+  visible_zoom_level: 1
+  x: 10739
+  y: 9839
+- desc_cn: 一栋孤立的房子，有高墙，只有一个出入口，易于防御僵尸，同时靠近地图中央，使其成为受玩家欢迎的据点。
+  desc_en: An isolated house with only 1 way in and out, making it popular stronghold
+    among players because its resource efficent and zombie safe(ish) while being close
+    to the main part of the map.
+  id: '1457'
+  layer: 0
+  name_cn: 孤立的房子
+  name_en: Isolated House
+  type: point
+  visible_zoom_level: 1
+  x: 10945
+  y: 9370
+- desc_cn: ''
+  desc_en: ''
+  id: '1458'
+  layer: 0
+  name_cn: 杰伊炸鸡
+  name_en: Jay's Chicken
+  type: point
+  visible_zoom_level: 1
+  x: 10617
+  y: 9563
+- desc_cn: ''
+  desc_en: ''
+  id: '1459'
+  layer: 0
+  name_cn: 诺克斯银行
+  name_en: Knox Bank
+  type: point
+  visible_zoom_level: 1
+  x: 10622
+  y: 9691
+- desc_cn: ''
+  desc_en: ''
+  id: '1460'
+  layer: 0
+  name_cn: 大型仓库
+  name_en: Large Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 10611
+  y: 9308
+- desc_cn: ''
+  desc_en: ''
+  id: '1461'
+  layer: 0
+  name_cn: 自助洗衣店
+  name_en: Laundromat
+  type: point
+  visible_zoom_level: 1
+  x: 10914
+  y: 9842
+- desc_cn: ''
+  desc_en: ''
+  id: '1462'
+  layer: 0
+  name_cn: 酒类商店
+  name_en: Liquor Store
+  type: point
+  visible_zoom_level: 1
+  x: 10610
+  y: 9905
+- desc_cn: 你现在真的想一个人呆在树林里吗？没有水井？
+  desc_en: Do you really want to be alone in the woods right now? Without a well?
+  id: '1463'
+  layer: 0
+  name_cn: 孤独的森林小屋
+  name_en: Lone forest shack
+  type: point
+  visible_zoom_level: 1
+  x: 9341
+  y: 10293
+- desc_cn: ''
+  desc_en: ''
+  id: '1464'
+  layer: 0
+  name_cn: 木材厂
+  name_en: Lumber Mill
+  type: point
+  visible_zoom_level: 1
+  x: 10319
+  y: 9595
+- desc_cn: ''
+  desc_en: ''
+  id: '1465'
+  layer: 0
+  name_cn: 迷你商场
+  name_en: Mini Mall
+  type: point
+  visible_zoom_level: 1
+  x: 10606
+  y: 10358
+- desc_cn: ''
+  desc_en: ''
+  id: '1466'
+  layer: 0
+  name_cn: 汽车旅馆
+  name_en: Motel
+  type: point
+  visible_zoom_level: 1
+  x: 10900
+  y: 9749
+- desc_cn: ''
+  desc_en: ''
+  id: '1467'
+  layer: 0
+  name_cn: 北农场
+  name_en: North Farm
+  type: point
+  visible_zoom_level: 1
+  x: 10815
+  y: 9105
+- desc_cn: ''
+  desc_en: ''
+  id: '1468'
+  layer: 0
+  name_cn: 办公室
+  name_en: Offices
+  type: point
+  visible_zoom_level: 1
+  x: 10673
+  y: 10327
+- desc_cn: ''
+  desc_en: ''
+  id: '1469'
+  layer: 0
+  name_cn: 野餐区
+  name_en: Picnic Area
+  type: point
+  visible_zoom_level: 1
+  x: 10992
+  y: 9645
+- desc_cn: 煎饼屋。
+  desc_en: Pancake house.
+  id: '1470'
+  layer: 0
+  name_cn: 煎饼屋
+  name_en: Pile-o-Crepe
+  type: point
+  visible_zoom_level: 1
+  x: 10613
+  y: 9505
+- desc_cn: ''
+  desc_en: ''
+  id: '1471'
+  layer: 0
+  name_cn: 披萨旋转
+  name_en: Pizza Whirled
+  type: point
+  visible_zoom_level: 1
+  x: 10604
+  y: 10111
+- desc_cn: ''
+  desc_en: ''
+  id: '1472'
+  layer: 0
+  name_cn: 警察局
+  name_en: Police Station
+  type: point
+  visible_zoom_level: 1
+  x: 10631
+  y: 10405
+- desc_cn: ''
+  desc_en: ''
+  id: '1473'
+  layer: 0
+  name_cn: 小马漫游跑马场
+  name_en: Pony Roam-O
+  type: point
+  visible_zoom_level: 1
+  x: 8559
+  y: 8529
+- desc_cn: ''
+  desc_en: ''
+  id: '1474'
+  layer: 0
+  name_cn: 火车站
+  name_en: Trainyard
+  type: point
+  visible_zoom_level: 1
+  x: 11655
+  y: 9985
+- desc_cn: 木材！
+  desc_en: Timber!
+  id: '1475'
+  layer: 0
+  name_cn: 远程伐木办公室
+  name_en: Remote Logging Offices
+  type: point
+  visible_zoom_level: 1
+  x: 9641
+  y: 10152
+- desc_cn: ''
+  desc_en: ''
+  id: '1476'
+  layer: 0
+  name_cn: 餐厅
+  name_en: Restaurant
+  type: point
+  visible_zoom_level: 1
+  x: 10619
+  y: 10528
+- desc_cn: ''
+  desc_en: ''
+  id: '1477'
+  layer: 0
+  name_cn: 小型便利店
+  name_en: Small convenience store
+  type: point
+  visible_zoom_level: 1
+  x: 10836
+  y: 9530
+- desc_cn: ''
+  desc_en: ''
+  id: '1478'
+  layer: 0
+  name_cn: 小仓库
+  name_en: Small warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 10712
+  y: 10144
+- desc_cn: ''
+  desc_en: ''
+  id: '1479'
+  layer: 0
+  name_cn: 足球场
+  name_en: Soccer Field
+  type: point
+  visible_zoom_level: 1
+  x: 10656
+  y: 9970
+- desc_cn: ''
+  desc_en: ''
+  id: '1480'
+  layer: 0
+  name_cn: 斯皮福餐厅
+  name_en: Spiffo's
+  type: point
+  visible_zoom_level: 1
+  x: 10621
+  y: 9650
+- desc_cn: ''
+  desc_en: ''
+  id: '1481'
+  layer: 0
+  name_cn: 存储单元
+  name_en: Storage Units
+  type: point
+  visible_zoom_level: 1
+  x: 10684
+  y: 9829
+- desc_cn: ''
+  desc_en: ''
+  id: '1482'
+  layer: 0
+  name_cn: 存储单元
+  name_en: Storage Units
+  type: point
+  visible_zoom_level: 1
+  x: 10752
+  y: 10347
+- desc_cn: ''
+  desc_en: ''
+  id: '1483'
+  layer: 0
+  name_cn: 日星酒店
+  name_en: Sunstar Hotel
+  type: point
+  visible_zoom_level: 1
+  x: 10628
+  y: 9815
+- desc_cn: ''
+  desc_en: ''
+  id: '1484'
+  layer: 0
+  name_cn: 纹身店
+  name_en: Tattoo 42
+  type: point
+  visible_zoom_level: 1
+  x: 10614
+  y: 10155
+- desc_cn: ''
+  desc_en: ''
+  id: '1485'
+  layer: 0
+  name_cn: 酒馆
+  name_en: Tavern
+  type: point
+  visible_zoom_level: 1
+  x: 10758
+  y: 10547
+- desc_cn: ''
+  desc_en: ''
+  id: '1486'
+  layer: 0
+  name_cn: 麦考伊伐木公司
+  name_en: The McCoy Logging Corp.
+  type: point
+  visible_zoom_level: 1
+  x: 10317
+  y: 9290
+- desc_cn: ''
+  desc_en: ''
+  id: '1487'
+  layer: 0
+  name_cn: 火车站
+  name_en: Train Station
+  type: point
+  visible_zoom_level: 1
+  x: 11096
+  y: 9237
+- desc_cn: ''
+  desc_en: ''
+  id: '1488'
+  layer: 0
+  name_cn: 录像带商店
+  name_en: VHS Store
+  type: point
+  visible_zoom_level: 1
+  x: 10610
+  y: 10452
+- desc_cn: ''
+  desc_en: ''
+  id: '1489'
+  layer: 0
+  name_cn: 仓库
+  name_en: Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 10627
+  y: 9378
+- desc_cn: ''
+  desc_en: ''
+  id: '1490'
+  layer: 0
+  name_cn: 仓库
+  name_en: Warehouses
+  type: point
+  visible_zoom_level: 1
+  x: 10713
+  y: 10443
+- desc_cn: ''
+  desc_en: ''
+  id: '1491'
+  layer: 0
+  name_cn: 城外的仓库
+  name_en: Warehouses out of town
+  type: point
+  visible_zoom_level: 1
+  x: 10050
+  y: 10932
+- desc_cn: ''
+  desc_en: ''
+  id: '1492'
+  layer: 0
+  name_cn: Zippee便利店
+  name_en: Zippee Market
+  type: point
+  visible_zoom_level: 1
+  x: 10604
+  y: 9613
+- desc_cn: ''
+  desc_en: ''
+  id: '1493'
+  layer: 0
+  name_cn: 酒类商店
+  name_en: Liquor Store
+  type: point
+  visible_zoom_level: 1
+  x: 6189
+  y: 5370
+- desc_cn: ''
+  desc_en: ''
+  id: '1494'
+  layer: 0
+  name_cn: 汽车修理
+  name_en: Auto Repair
+  type: point
+  visible_zoom_level: 1
+  x: 5429
+  y: 5964
+- desc_cn: 放松关节的好地方！
+  desc_en: A nice spot to loosen those joints!
+  id: '1495'
+  layer: 0
+  name_cn: 回归自然脊椎按摩
+  name_en: Back to the Nurture chiropractic services
+  type: point
+  visible_zoom_level: 1
+  x: 6187
+  y: 5359
+- desc_cn: 紧邻河流。
+  desc_en: Right next to a river.
+  id: '1496'
+  layer: 0
+  name_cn: 诱饵和渔具
+  name_en: Bait & Tackle
+  type: point
+  visible_zoom_level: 1
+  x: 3631
+  y: 5722
+- desc_cn: 包括水桶。
+  desc_en: Includes water barrels.
+  id: '1497'
+  layer: 0
+  name_cn: 鱼饵店
+  name_en: Bait Shop
+  type: point
+  visible_zoom_level: 1
+  x: 5918
+  y: 5242
+- desc_cn: ''
+  desc_en: ''
+  id: '1498'
+  layer: 0
+  name_cn: 面包店
+  name_en: Bakery
+  type: point
+  visible_zoom_level: 1
+  x: 6493
+  y: 5267
+- desc_cn: ''
+  desc_en: ''
+  id: '1499'
+  layer: 0
+  name_cn: 银行
+  name_en: Bank
+  type: point
+  visible_zoom_level: 1
+  x: 6504
+  y: 5301
+- desc_cn: ''
+  desc_en: ''
+  id: '1500'
+  layer: 0
+  name_cn: 酒吧
+  name_en: Bar
+  type: point
+  visible_zoom_level: 1
+  x: 5963
+  y: 5422
+- desc_cn: ''
+  desc_en: ''
+  id: '1501'
+  layer: 0
+  name_cn: 酒吧
+  name_en: Bar
+  type: point
+  visible_zoom_level: 1
+  x: 6382
+  y: 5208
+- desc_cn: 餐厅。
+  desc_en: Restaurant.
+  id: '1502'
+  layer: 0
+  name_cn: 牛肉大杂烩
+  name_en: Beef Roundup
+  type: point
+  visible_zoom_level: 1
+  x: 3655
+  y: 5719
+- desc_cn: ''
+  desc_en: ''
+  id: '1503'
+  layer: 0
+  name_cn: 游艇俱乐部
+  name_en: Boat Club
+  type: point
+  visible_zoom_level: 1
+  x: 6571
+  y: 5212
+- desc_cn: Enigmabooks。
+  desc_en: Enigmabooks.
+  id: '1504'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 6437
+  y: 5269
+- desc_cn: ''
+  desc_en: ''
+  id: '1505'
+  layer: 0
+  name_cn: 汉堡店
+  name_en: Burgers
+  type: point
+  visible_zoom_level: 1
+  x: 5955
+  y: 5263
+- desc_cn: ''
+  desc_en: ''
+  id: '1506'
+  layer: 0
+  name_cn: 咖啡馆
+  name_en: Cafe
+  type: point
+  visible_zoom_level: 1
+  x: 6176
+  y: 6374
+- desc_cn: ''
+  desc_en: ''
+  id: '1507'
+  layer: 0
+  name_cn: 相机店
+  name_en: Camera Store
+  type: point
+  visible_zoom_level: 1
+  x: 6188
+  y: 5351
+- desc_cn: 废旧汽车，高围墙环绕，适合建家。
+  desc_en: Junked Cars, high fence, space to build a castle.
+  id: '1508'
+  layer: 0
+  name_cn: 汽车垃圾场
+  name_en: Car Junkyard
+  type: point
+  visible_zoom_level: 1
+  x: 5820
+  y: 5412
+- desc_cn: ''
+  desc_en: ''
+  id: '1509'
+  layer: 0
+  name_cn: 墓地
+  name_en: Cementery
+  type: point
+  visible_zoom_level: 1
+  x: 5700
+  y: 5331
+- desc_cn: ''
+  desc_en: ''
+  id: '1510'
+  layer: 0
+  name_cn: 教堂
+  name_en: Church
+  type: point
+  visible_zoom_level: 1
+  x: 6568
+  y: 5374
+- desc_cn: ''
+  desc_en: ''
+  id: '1511'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 6403
+  y: 5268
+- desc_cn: ''
+  desc_en: ''
+  id: '1512'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 6506
+  y: 5266
+- desc_cn: ''
+  desc_en: ''
+  id: '1513'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 6250
+  y: 5266
+- desc_cn: ''
+  desc_en: ''
+  id: '1514'
+  layer: 0
+  name_cn: 咖啡店
+  name_en: Coffee Shop
+  type: point
+  visible_zoom_level: 1
+  x: 6400
+  y: 5252
+- desc_cn: ''
+  desc_en: ''
+  id: '1515'
+  layer: 0
+  name_cn: 便利店
+  name_en: Convenience store
+  type: point
+  visible_zoom_level: 1
+  x: 5970
+  y: 5355
+- desc_cn: ''
+  desc_en: ''
+  id: '1516'
+  layer: 0
+  name_cn: 西枫乡村俱乐部
+  name_en: West Maple Country Club
+  type: point
+  visible_zoom_level: 1
+  x: 5756
+  y: 6446
+- desc_cn: ''
+  desc_en: ''
+  id: '1517'
+  layer: 0
+  name_cn: 小餐馆
+  name_en: Diner
+  type: point
+  visible_zoom_level: 1
+  x: 5424
+  y: 5914
+- desc_cn: 甜甜圈！！！
+  desc_en: Donuts!!!
+  id: '1518'
+  layer: 0
+  name_cn: 甜甜圈店
+  name_en: Donut Store
+  type: point
+  visible_zoom_level: 1
+  x: 6491
+  y: 5224
+- desc_cn: ''
+  desc_en: ''
+  id: '1519'
+  layer: 0
+  name_cn: 工厂
+  name_en: Factory
+  type: point
+  visible_zoom_level: 1
+  x: 5570
+  y: 5899
+- desc_cn: ''
+  desc_en: ''
+  id: '1520'
+  layer: 0
+  name_cn: 工厂仓库
+  name_en: Factory Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 5617
+  y: 5973
+- desc_cn: ''
+  desc_en: ''
+  id: '1521'
+  layer: 0
+  name_cn: 高档餐厅
+  name_en: Fancy Restaurant
+  type: point
+  visible_zoom_level: 1
+  x: 6192
+  y: 5340
+- desc_cn: 有田地的农场，两个工具棚。
+  desc_en: Farm with field, two toolsheds.
+  id: '1522'
+  layer: 0
+  name_cn: 农场
+  name_en: Farm
+  type: point
+  visible_zoom_level: 1
+  x: 6817
+  y: 7720
+- desc_cn: 有很多土地，两栋房子和棚屋。
+  desc_en: Has a lot of land, two houses and sheds.
+  id: '1523'
+  layer: 0
+  name_cn: 农场
+  name_en: Farm
+  type: point
+  visible_zoom_level: 1
+  x: 5693
+  y: 5740
+- desc_cn: ''
+  desc_en: ''
+  id: '1524'
+  layer: 0
+  name_cn: 农贸市场
+  name_en: Farmer's Market
+  type: point
+  visible_zoom_level: 1
+  x: 7252
+  y: 8274
+- desc_cn: 一个隐藏的车站，有两个高高的围栏，外围栏有一些洞。
+  desc_en: A densely hidden station with two tall fences with the outer fences having
+    some holes.
+  id: '1525'
+  layer: 0
+  name_cn: 用栅栏围起来的电台
+  name_en: Fenced off radio station
+  type: point
+  visible_zoom_level: 1
+  x: 4849
+  y: 6284
+- desc_cn: ''
+  desc_en: ''
+  id: '1526'
+  layer: 0
+  name_cn: 农贸市场
+  name_en: Farmer's Market
+  type: point
+  visible_zoom_level: 1
+  x: 5969
+  y: 5392
+- desc_cn: ''
+  desc_en: ''
+  id: '1527'
+  layer: 0
+  name_cn: 食品市场
+  name_en: Food Market
+  type: point
+  visible_zoom_level: 1
+  x: 6344
+  y: 5297
+- desc_cn: ''
+  desc_en: ''
+  id: '1528'
+  layer: 0
+  name_cn: 食品市场
+  name_en: Food Mart
+  type: point
+  visible_zoom_level: 1
+  x: 6273
+  y: 5266
+- desc_cn: ''
+  desc_en: ''
+  id: '1529'
+  layer: 0
+  name_cn: 家具店
+  name_en: Furniture Store
+  type: point
+  visible_zoom_level: 1
+  x: 6239
+  y: 5265
+- desc_cn: ''
+  desc_en: ''
+  id: '1530'
+  layer: 0
+  name_cn: 家具店
+  name_en: Furniture store
+  type: point
+  visible_zoom_level: 1
+  x: 6427
+  y: 5300
+- desc_cn: ''
+  desc_en: ''
+  id: '1531'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 6083
+  y: 5309
+- desc_cn: ''
+  desc_en: ''
+  id: '1532'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 5418
+  y: 5870
+- desc_cn: 1个加油机。
+  desc_en: 1 pump chump.
+  id: '1533'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 3660
+  y: 5950
+- desc_cn: ''
+  desc_en: ''
+  id: '1534'
+  layer: 0
+  name_cn: 封闭式社区
+  name_en: Gated Community
+  type: point
+  visible_zoom_level: 1
+  x: 6715
+  y: 5483
+- desc_cn: ''
+  desc_en: ''
+  id: '1535'
+  layer: 0
+  name_cn: 杂货店
+  name_en: General Store
+  type: point
+  visible_zoom_level: 1
+  x: 3679
+  y: 5743
+- desc_cn: ''
+  desc_en: ''
+  id: '1536'
+  layer: 0
+  name_cn: 吉佳玛特连锁超市
+  name_en: GigaMart
+  type: point
+  visible_zoom_level: 1
+  x: 6505
+  y: 5346
+- desc_cn: 末日来了，你还有心情打高尔夫？
+  desc_en: Golf. At a time like this?
+  id: '1537'
+  layer: 0
+  name_cn: 高尔夫球场
+  name_en: Golf Course
+  type: point
+  visible_zoom_level: 1
+  x: 6091
+  y: 6392
+- desc_cn: ''
+  desc_en: ''
+  id: '1538'
+  layer: 0
+  name_cn: 杂货店
+  name_en: Grocery Store
+  type: point
+  visible_zoom_level: 1
+  x: 6140
+  y: 5370
+- desc_cn: ''
+  desc_en: ''
+  id: '1539'
+  layer: 0
+  name_cn: 五金店
+  name_en: Hardware Store
+  type: point
+  visible_zoom_level: 1
+  x: 6364
+  y: 5327
+- desc_cn: ''
+  desc_en: ''
+  id: '1540'
+  layer: 0
+  name_cn: 酒店
+  name_en: Hotel
+  type: point
+  visible_zoom_level: 1
+  x: 6357
+  y: 5259
+- desc_cn: ''
+  desc_en: ''
+  id: '1541'
+  layer: 0
+  name_cn: 带农田的房子
+  name_en: House with Farmland
+  type: point
+  visible_zoom_level: 1
+  x: 6956
+  y: 5565
+- desc_cn: ''
+  desc_en: ''
+  id: '1542'
+  layer: 0
+  name_cn: 冰淇淋店
+  name_en: Ice Cream Parlor
+  type: point
+  visible_zoom_level: 1
+  x: 6471
+  y: 5222
+- desc_cn: ''
+  desc_en: ''
+  id: '1543'
+  layer: 0
+  name_cn: 珠宝店
+  name_en: Jewellery store
+  type: point
+  visible_zoom_level: 1
+  x: 6481
+  y: 5267
+- desc_cn: ''
+  desc_en: ''
+  id: '1544'
+  layer: 0
+  name_cn: 自助洗衣店
+  name_en: Laundromat
+  type: point
+  visible_zoom_level: 1
+  x: 6407
+  y: 5339
+- desc_cn: ''
+  desc_en: ''
+  id: '1545'
+  layer: 0
+  name_cn: 麦克福金顿餐厅
+  name_en: Mama Mcfudgington's
+  type: point
+  visible_zoom_level: 1
+  x: 6491
+  y: 5266
+- desc_cn: ''
+  desc_en: ''
+  id: '1546'
+  layer: 0
+  name_cn: 药店
+  name_en: Pharmacy
+  type: point
+  visible_zoom_level: 1
+  x: 6471
+  y: 5266
+- desc_cn: ''
+  desc_en: ''
+  id: '1547'
+  layer: 0
+  name_cn: 警察局
+  name_en: Police Station
+  type: point
+  visible_zoom_level: 1
+  x: 6082
+  y: 5261
+- desc_cn: ''
+  desc_en: ''
+  id: '1548'
+  layer: 0
+  name_cn: 娱乐中心
+  name_en: Rec Centre
+  type: point
+  visible_zoom_level: 1
+  x: 6560
+  y: 5305
+- desc_cn: ''
+  desc_en: ''
+  id: '1550'
+  layer: 0
+  name_cn: 学校
+  name_en: School
+  type: point
+  visible_zoom_level: 1
+  x: 6440
+  y: 5445
+- desc_cn: ''
+  desc_en: ''
+  id: '1551'
+  layer: 0
+  name_cn: 自选家具店
+  name_en: Seat Yourself Furniture Store
+  type: point
+  visible_zoom_level: 1
+  x: 6236
+  y: 5264
+- desc_cn: ''
+  desc_en: ''
+  id: '1552'
+  layer: 0
+  name_cn: 斯皮福餐厅
+  name_en: Spiffo's
+  type: point
+  visible_zoom_level: 1
+  x: 6123
+  y: 5305
+- desc_cn: ''
+  desc_en: ''
+  id: '1553'
+  layer: 0
+  name_cn: 存储单元
+  name_en: Storage Units
+  type: point
+  visible_zoom_level: 1
+  x: 5541
+  y: 6063
+- desc_cn: ''
+  desc_en: ''
+  id: '1554'
+  layer: 0
+  name_cn: 玩具店
+  name_en: Toy Store
+  type: point
+  visible_zoom_level: 1
+  x: 6452
+  y: 5298
+- desc_cn: ''
+  desc_en: ''
+  id: '1555'
+  layer: 0
+  name_cn: 拖车公园
+  name_en: Trailer Park
+  type: point
+  visible_zoom_level: 1
+  x: 5342
+  y: 5980
+- desc_cn: 他们的仓库里有很多书。
+  desc_en: There are a lot of books at their storage.
+  id: '1556'
+  layer: 0
+  name_cn: 美国邮政服务
+  name_en: U.S. Mail Service
+  type: point
+  visible_zoom_level: 1
+  x: 6312
+  y: 5264
+- desc_cn: ''
+  desc_en: ''
+  id: '1557'
+  layer: 0
+  name_cn: 录像带商店
+  name_en: VHS Store
+  type: point
+  visible_zoom_level: 1
+  x: 6206
+  y: 5344
+- desc_cn: 顶层有公寓。
+  desc_en: Top floor of this building contains apartments.
+  id: '1558'
+  layer: 0
+  name_cn: 公寓大楼
+  name_en: Apartment Complex
+  type: point
+  visible_zoom_level: 1
+  x: 8081
+  y: 11535
+- desc_cn: ''
+  desc_en: ''
+  id: '1559'
+  layer: 0
+  name_cn: 军营
+  name_en: Army Barracks
+  type: point
+  visible_zoom_level: 1
+  x: 8136
+  y: 10238
+- desc_cn: ''
+  desc_en: ''
+  id: '1560'
+  layer: 0
+  name_cn: 陆军区
+  name_en: Army Quarter
+  type: point
+  visible_zoom_level: 1
+  x: 9118
+  y: 11814
+- desc_cn: ''
+  desc_en: ''
+  id: '1561'
+  layer: 0
+  name_cn: 汽车修理店
+  name_en: Auto Repair Shop
+  type: point
+  visible_zoom_level: 1
+  x: 8154
+  y: 11325
+- desc_cn: ''
+  desc_en: ''
+  id: '1562'
+  layer: 0
+  name_cn: 保释金代理
+  name_en: Bail Bonds
+  type: point
+  visible_zoom_level: 1
+  x: 7994
+  y: 11450
+- desc_cn: ''
+  desc_en: ''
+  id: '1563'
+  layer: 0
+  name_cn: 银行
+  name_en: Bank
+  type: point
+  visible_zoom_level: 1
+  x: 8084
+  y: 11588
+- desc_cn: ''
+  desc_en: ''
+  id: '1564'
+  layer: 0
+  name_cn: 酒吧
+  name_en: Bar
+  type: point
+  visible_zoom_level: 1
+  x: 8019
+  y: 11427
+- desc_cn: ''
+  desc_en: ''
+  id: '1565'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 8087
+  y: 11512
+- desc_cn: ''
+  desc_en: ''
+  id: '1566'
+  layer: 0
+  name_cn: 公交车站
+  name_en: Bus Station
+  type: point
+  visible_zoom_level: 1
+  x: 8244
+  y: 12239
+- desc_cn: ''
+  desc_en: ''
+  id: '1567'
+  layer: 0
+  name_cn: 教堂
+  name_en: Church
+  type: point
+  visible_zoom_level: 1
+  x: 8124
+  y: 11550
+- desc_cn: ''
+  desc_en: ''
+  id: '1568'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 8087
+  y: 11489
+- desc_cn: ''
+  desc_en: ''
+  id: '1569'
+  layer: 0
+  name_cn: 建筑工地
+  name_en: Construction Site
+  type: point
+  visible_zoom_level: 1
+  x: 8219
+  y: 11841
+- desc_cn: ''
+  desc_en: ''
+  id: '1570'
+  layer: 0
+  name_cn: 小餐馆
+  name_en: Diner
+  type: point
+  visible_zoom_level: 1
+  x: 8075
+  y: 11456
+- desc_cn: ''
+  desc_en: ''
+  id: '1571'
+  layer: 0
+  name_cn: 汽车电影院
+  name_en: Drive-In Movie Theater
+  type: point
+  visible_zoom_level: 1
+  x: 8426
+  y: 12240
+- desc_cn: 两栋农舍，附近有仓库和棚屋组合。
+  desc_en: Two farmhouses with a nearby warehouse & shed combo.
+  id: '1572'
+  layer: 0
+  name_cn: 双农舍
+  name_en: Dual Farmhouses
+  type: point
+  visible_zoom_level: 1
+  x: 7671
+  y: 11098
+- desc_cn: ''
+  desc_en: ''
+  id: '1573'
+  layer: 0
+  name_cn: 小学
+  name_en: Elementary School
+  type: point
+  visible_zoom_level: 1
+  x: 8341
+  y: 11612
+- desc_cn: ''
+  desc_en: ''
+  id: '1574'
+  layer: 0
+  name_cn: 农贸市场
+  name_en: Farmer's Market
+  type: point
+  visible_zoom_level: 1
+  x: 9070
+  y: 12200
+- desc_cn: ''
+  desc_en: ''
+  id: '1575'
+  layer: 0
+  name_cn: 消防局
+  name_en: Fire Departament
+  type: point
+  visible_zoom_level: 1
+  x: 8138
+  y: 11741
+- desc_cn: ''
+  desc_en: ''
+  id: '1576'
+  layer: 0
+  name_cn: 食品市场和自助洗衣店
+  name_en: Food Market and Laundromat
+  type: point
+  visible_zoom_level: 1
+  x: 8136
+  y: 11485
+- desc_cn: ''
+  desc_en: ''
+  id: '1577'
+  layer: 0
+  name_cn: 食品仓库
+  name_en: Food Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 7488
+  y: 11082
+- desc_cn: ''
+  desc_en: ''
+  id: '1578'
+  layer: 0
+  name_cn: 新鲜食品市场
+  name_en: Fresh Food Market
+  type: point
+  visible_zoom_level: 1
+  x: 9074
+  y: 12186
+- desc_cn: 福斯石油，8个加油机。
+  desc_en: Fossoil, 8 pumps.
+  id: '1579'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 8297
+  y: 12225
+- desc_cn: 4个加油机。
+  desc_en: 4 pumps.
+  id: '1580'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 8164
+  y: 11267
+- desc_cn: 周围有高墙的房屋。
+  desc_en: Defendable housing.
+  id: '1581'
+  layer: 0
+  name_cn: 封闭式社区
+  name_en: Gated Community
+  type: point
+  visible_zoom_level: 1
+  x: 8026
+  y: 11525
+- desc_cn: 单层房屋，有农田、工具棚。
+  desc_en: Single level house with farm plots and a tool shed.
+  id: '1582'
+  layer: 0
+  name_cn: 房屋
+  name_en: House
+  type: point
+  visible_zoom_level: 1
+  x: 8341
+  y: 11750
+- desc_cn: 极度隔离意味着噪音不会吸引太多人流。
+  desc_en: Extreme isolation means noise should draw little foot traffic.
+  id: '1583'
+  layer: 0
+  name_cn: 孤立的房屋
+  name_en: Isolated Houses
+  type: point
+  visible_zoom_level: 1
+  x: 8838
+  y: 11612
+- desc_cn: 不是肯塔基州最差的监狱！
+  desc_en: Not the best/worst place to live!
+  id: '1584'
+  layer: 0
+  name_cn: 肯塔基州监狱
+  name_en: Kentucky State Penitentiary
+  type: point
+  visible_zoom_level: 1
+  x: 7693
+  y: 11873
+- desc_cn: ''
+  desc_en: ''
+  id: '1585'
+  layer: 0
+  name_cn: 诺克斯县法院
+  name_en: Knox County Court of Justice
+  type: point
+  visible_zoom_level: 1
+  x: 8075
+  y: 11654
+- desc_cn: ''
+  desc_en: ''
+  id: '1586'
+  layer: 0
+  name_cn: 诺克斯县法院
+  name_en: Knox County Court of Justice
+  type: point
+  visible_zoom_level: 1
+  x: 8075
+  y: 11654
+- desc_cn: ''
+  desc_en: ''
+  id: '1587'
+  layer: 0
+  name_cn: 律师事务所
+  name_en: Law Offices
+  type: point
+  visible_zoom_level: 1
+  x: 8089
+  y: 11536
+- desc_cn: ''
+  desc_en: ''
+  id: '1588'
+  layer: 0
+  name_cn: 麦克福金顿餐厅
+  name_en: Mama McFudgington's
+  type: point
+  visible_zoom_level: 1
+  x: 8085
+  y: 11619
+- desc_cn: ''
+  desc_en: ''
+  id: '1589'
+  layer: 0
+  name_cn: 麦克福金顿餐厅
+  name_en: Mama McFudgington's
+  type: point
+  visible_zoom_level: 1
+  x: 8085
+  y: 11619
+- desc_cn: ''
+  desc_en: ''
+  id: '1590'
+  layer: 0
+  name_cn: 汽车旅馆
+  name_en: Motel
+  type: point
+  visible_zoom_level: 1
+  x: 8078
+  y: 11417
+- desc_cn: ''
+  desc_en: ''
+  id: '1591'
+  layer: 0
+  name_cn: 包装仓库
+  name_en: Packaging Warehouses
+  type: point
+  visible_zoom_level: 1
+  x: 9199
+  y: 11853
+- desc_cn: ''
+  desc_en: ''
+  id: '1592'
+  layer: 0
+  name_cn: 披萨餐厅
+  name_en: Pizza Restaurant
+  type: point
+  visible_zoom_level: 1
+  x: 8075
+  y: 11310
+- desc_cn: 免责声明：不是自助餐。
+  desc_en: '*Disclaimer: Not all-you-can-eat.'
+  id: '1593'
+  layer: 0
+  name_cn: 罗斯伍德乡村自助餐厅
+  name_en: Rosewood Country Buffet
+  type: point
+  visible_zoom_level: 1
+  x: 8086
+  y: 11500
+- desc_cn: ''
+  desc_en: ''
+  id: '1594'
+  layer: 0
+  name_cn: 罗斯伍德医疗中心
+  name_en: Rosewood Medical
+  type: point
+  visible_zoom_level: 1
+  x: 8089
+  y: 11526
+- desc_cn: ''
+  desc_en: ''
+  id: '1595'
+  layer: 0
+  name_cn: 理发店
+  name_en: Salon
+  type: point
+  visible_zoom_level: 1
+  x: 8086
+  y: 11551
+- desc_cn: ''
+  desc_en: ''
+  id: '1596'
+  layer: 0
+  name_cn: 斯皮福餐厅
+  name_en: Spiffo's
+  type: point
+  visible_zoom_level: 1
+  x: 8074
+  y: 11343
+- desc_cn: ''
+  desc_en: ''
+  id: '1597'
+  layer: 0
+  name_cn: 仓库
+  name_en: Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 9202
+  y: 11840
+- desc_cn: 带开口的独立仓库。
+  desc_en: Isolated Warehouse With Garage Opening.
+  id: '1598'
+  layer: 0
+  name_cn: 仓库
+  name_en: Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 7887
+  y: 12467
+- desc_cn: ''
+  desc_en: ''
+  id: '1599'
+  layer: 0
+  name_cn: Zippee便利店
+  name_en: Zippee Market
+  type: point
+  visible_zoom_level: 1
+  x: 8089
+  y: 11561
+- desc_cn: 莫里斯鱼饵店。
+  desc_en: Morris' Bait Shop.
+  id: '1600'
+  layer: 0
+  name_cn: 鱼饵店
+  name_en: Bait Shop
+  type: point
+  visible_zoom_level: 1
+  x: 12538
+  y: 5288
+- desc_cn: ''
+  desc_en: ''
+  id: '1601'
+  layer: 0
+  name_cn: 酒吧
+  name_en: Bar
+  type: point
+  visible_zoom_level: 1
+  x: 13004
+  y: 5262
+- desc_cn: ''
+  desc_en: ''
+  id: '1602'
+  layer: 0
+  name_cn: 美容院
+  name_en: Beauty Salon
+  type: point
+  visible_zoom_level: 1
+  x: 13619
+  y: 5672
+- desc_cn: ''
+  desc_en: ''
+  id: '1603'
+  layer: 0
+  name_cn: 大农场
+  name_en: Big Farm
+  type: point
+  visible_zoom_level: 1
+  x: 13856
+  y: 4740
+- desc_cn: ''
+  desc_en: ''
+  id: '1604'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 13604
+  y: 5668
+- desc_cn: ''
+  desc_en: ''
+  id: '1605'
+  layer: 0
+  name_cn: 桥梁
+  name_en: Bridge
+  type: point
+  visible_zoom_level: 1
+  x: 12309
+  y: 6730
+- desc_cn: 采用100%纯天然的肉！
+  desc_en: Now with 100% meat!
+  id: '1606'
+  layer: 0
+  name_cn: 汉堡店
+  name_en: Burger Shop
+  type: point
+  visible_zoom_level: 1
+  x: 12544
+  y: 5266
+- desc_cn: 军事检查站后面被烧毁的拖车停车场。
+  desc_en: A burnt trailer park behind the military checkpoint.
+  id: '1607'
+  layer: 0
+  name_cn: 烧毁的拖车停车场
+  name_en: Burned Trailer Park
+  type: point
+  visible_zoom_level: 1
+  x: 13887
+  y: 4040
+- desc_cn: ''
+  desc_en: ''
+  id: '1609'
+  layer: 0
+  name_cn: 菲茨杰拉德营地
+  name_en: Camp Fitzgerald
+  type: point
+  visible_zoom_level: 1
+  x: 13721
+  y: 6729
+- desc_cn: 圣火教堂。
+  desc_en: Sacred flame church.
+  id: '1610'
+  layer: 0
+  name_cn: 教堂
+  name_en: Church
+  type: point
+  visible_zoom_level: 1
+  x: 12848
+  y: 4956
+- desc_cn: 附近有小工具棚的小教堂。
+  desc_en: Small Church with small tool shed near.
+  id: '1611'
+  layer: 0
+  name_cn: 教堂和墓地
+  name_en: Church and Cemetery
+  type: point
+  visible_zoom_level: 1
+  x: 14551
+  y: 4970
+- desc_cn: ''
+  desc_en: ''
+  id: '1612'
+  layer: 0
+  name_cn: 服装店
+  name_en: Clothing Store
+  type: point
+  visible_zoom_level: 1
+  x: 13686
+  y: 5672
+- desc_cn: ''
+  desc_en: ''
+  id: '1613'
+  layer: 0
+  name_cn: 建筑工地
+  name_en: Construction Site
+  type: point
+  visible_zoom_level: 1
+  x: 14123
+  y: 5493
+- desc_cn: ''
+  desc_en: ''
+  id: '1614'
+  layer: 0
+  name_cn: 建筑工地
+  name_en: Construction Site
+  type: point
+  visible_zoom_level: 1
+  x: 12582
+  y: 5387
+- desc_cn: 当心购物僵尸。
+  desc_en: Beware the Shopping Dead.
+  id: '1615'
+  layer: 0
+  name_cn: 十字路口购物中心
+  name_en: Crossroads Mall
+  type: point
+  visible_zoom_level: 1
+  x: 13930
+  y: 5878
+- desc_cn: ''
+  desc_en: ''
+  id: '1616'
+  layer: 0
+  name_cn: 日托中心
+  name_en: Daycare
+  type: point
+  visible_zoom_level: 1
+  x: 13585
+  y: 5669
+- desc_cn: ''
+  desc_en: ''
+  id: '1617'
+  layer: 0
+  name_cn: 日托中心
+  name_en: Daycare
+  type: point
+  visible_zoom_level: 1
+  x: 13585
+  y: 5669
+- desc_cn: 萨米百货
+  desc_en: Sammie's
+  id: '1618'
+  layer: 0
+  name_cn: 百货商店
+  name_en: Department Store
+  type: point
+  visible_zoom_level: 1
+  x: 13417
+  y: 1461
+- desc_cn: ''
+  desc_en: ''
+  id: '1619'
+  layer: 0
+  name_cn: 被毁坏的小屋
+  name_en: Destroyed Cabin
+  type: point
+  visible_zoom_level: 1
+  x: 12531
+  y: 5232
+- desc_cn: ''
+  desc_en: ''
+  id: '1620'
+  layer: 0
+  name_cn: 小餐馆
+  name_en: Diner
+  type: point
+  visible_zoom_level: 1
+  x: 12741
+  y: 5711
+- desc_cn: ''
+  desc_en: ''
+  id: '1621'
+  layer: 0
+  name_cn: 飞机场
+  name_en: Airfield
+  type: point
+  visible_zoom_level: 1
+  x: 12840
+  y: 6402
+- desc_cn: 连接山谷站和西点的桥梁。
+  desc_en: Bridge Connecting Valley Station and West Point.
+  id: '1622'
+  layer: 0
+  name_cn: 东桥
+  name_en: East Bridge
+  type: point
+  visible_zoom_level: 1
+  x: 12895
+  y: 6898
+- desc_cn: ''
+  desc_en: ''
+  id: '1623'
+  layer: 0
+  name_cn: 小学
+  name_en: Elementary School
+  type: point
+  visible_zoom_level: 1
+  x: 12857
+  y: 4856
+- desc_cn: ''
+  desc_en: ''
+  id: '1624'
+  layer: 0
+  name_cn: 食品市场
+  name_en: Food Market
+  type: point
+  visible_zoom_level: 1
+  x: 12571
+  y: 5728
+- desc_cn: 红宝石加油站，2个加油机。
+  desc_en: Ruby gas, 2 pumps.
+  id: '1625'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 12734
+  y: 5033
+- desc_cn: 途行加油站，4个加油机。
+  desc_en: Gas-2-Go, 4 pumps.
+  id: '1626'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 13734
+  y: 5643
+- desc_cn: 有工具棚和小湖可以钓鱼。
+  desc_en: With tool shed and small lake go fishing.
+  id: '1627'
+  layer: 0
+  name_cn: 湖边的房子
+  name_en: House Near the Lake
+  type: point
+  visible_zoom_level: 1
+  x: 14059
+  y: 5199
+- desc_cn: ''
+  desc_en: ''
+  id: '1628'
+  layer: 0
+  name_cn: 狩猎小屋
+  name_en: Hunting Cabin
+  type: point
+  visible_zoom_level: 1
+  x: 13651
+  y: 7145
+- desc_cn: ''
+  desc_en: ''
+  id: '1629'
+  layer: 0
+  name_cn: 狩猎小屋
+  name_en: Hunting Lodge
+  type: point
+  visible_zoom_level: 1
+  x: 13105
+  y: 5315
+- desc_cn: 小心熊。
+  desc_en: Watch out for bears.
+  id: '1630'
+  layer: 0
+  name_cn: 狩猎摊
+  name_en: Hunting Stand
+  type: point
+  visible_zoom_level: 1
+  x: 13403
+  y: 5338
+- desc_cn: ''
+  desc_en: ''
+  id: '1631'
+  layer: 0
+  name_cn: 诺克斯银行
+  name_en: Knox Bank
+  type: point
+  visible_zoom_level: 1
+  x: 13656
+  y: 5745
+- desc_cn: ''
+  desc_en: ''
+  id: '1632'
+  layer: 0
+  name_cn: 中型仓库
+  name_en: Medium Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 12620
+  y: 4713
+- desc_cn: ''
+  desc_en: ''
+  id: '1633'
+  layer: 0
+  name_cn: 煎饼屋
+  name_en: Pile-o-Crepe
+  type: point
+  visible_zoom_level: 1
+  x: 13602
+  y: 5762
+- desc_cn: ''
+  desc_en: ''
+  id: '1634'
+  layer: 0
+  name_cn: 餐厅
+  name_en: Restaurant
+  type: point
+  visible_zoom_level: 1
+  x: 13649
+  y: 5671
+- desc_cn: ''
+  desc_en: ''
+  id: '1635'
+  layer: 0
+  name_cn: 靶场
+  name_en: Shooting Range
+  type: point
+  visible_zoom_level: 1
+  x: 13264
+  y: 5440
+- desc_cn: ''
+  desc_en: ''
+  id: '1636'
+  layer: 0
+  name_cn: 小码头
+  name_en: Small Dock
+  type: point
+  visible_zoom_level: 1
+  x: 12482
+  y: 5298
+- desc_cn: 有大花园、小工具棚和食品摊。
+  desc_en: With big garden, small tool shed and food stand.
+  id: '1637'
+  layer: 0
+  name_cn: 小农场
+  name_en: Small Farm
+  type: point
+  visible_zoom_level: 1
+  x: 14315
+  y: 4953
+- desc_cn: ''
+  desc_en: ''
+  id: '1638'
+  layer: 0
+  name_cn: 小旅馆
+  name_en: Small Hotel
+  type: point
+  visible_zoom_level: 1
+  x: 13008
+  y: 5321
+- desc_cn: 杂货店。
+  desc_en: Groceries.
+  id: '1639'
+  layer: 0
+  name_cn: 小商店
+  name_en: Small Store
+  type: point
+  visible_zoom_level: 1
+  x: 12627
+  y: 5324
+- desc_cn: ''
+  desc_en: ''
+  id: '1640'
+  layer: 0
+  name_cn: 星空影城
+  name_en: StarEplex Cinema
+  type: point
+  visible_zoom_level: 1
+  x: 13629
+  y: 5881
+- desc_cn: ''
+  desc_en: ''
+  id: '1641'
+  layer: 0
+  name_cn: 存储单元
+  name_en: Storage Units
+  type: point
+  visible_zoom_level: 1
+  x: 12959
+  y: 4876
+- desc_cn: “抱歉，僵尸末日不在您的保单中的天灾条款的承保范围内。”
+  desc_en: '"Sorry, zombie apocalypses aren''t covered under the Act of God clause
+    in your policy."'
+  id: '1642'
+  layer: 0
+  name_cn: 价值保险
+  name_en: Valu In$urance
+  type: point
+  visible_zoom_level: 1
+  x: 13664
+  y: 5669
+- desc_cn: 餐厅
+  desc_en: Restaurant.
+  id: '1643'
+  layer: 0
+  name_cn: 餐厅
+  name_en: Yummmers
+  type: point
+  visible_zoom_level: 1
+  x: 13571
+  y: 5762
+- desc_cn: ''
+  desc_en: ''
+  id: '1644'
+  layer: 0
+  name_cn: Zippee便利店
+  name_en: Zippee Market
+  type: point
+  visible_zoom_level: 1
+  x: 13658
+  y: 5766
+- desc_cn: 汽车修复。
+  desc_en: Car Fix-ation.
+  id: '1645'
+  layer: 0
+  name_cn: 汽车修理店
+  name_en: Auto Repair Shop
+  type: point
+  visible_zoom_level: 1
+  x: 11898
+  y: 6807
+- desc_cn: 美国轮胎。
+  desc_en: American Tire.
+  id: '1646'
+  layer: 0
+  name_cn: 汽车修理店
+  name_en: Auto Repair Shop
+  type: point
+  visible_zoom_level: 1
+  x: 12256
+  y: 6931
+- desc_cn: ''
+  desc_en: ''
+  id: '1647'
+  layer: 0
+  name_cn: 面包店
+  name_en: Bakery
+  type: point
+  visible_zoom_level: 1
+  x: 11907
+  y: 6866
+- desc_cn: 书店。
+  desc_en: Enigma books.
+  id: '1648'
+  layer: 0
+  name_cn: 书店
+  name_en: Book Store
+  type: point
+  visible_zoom_level: 1
+  x: 11896
+  y: 6880
+- desc_cn: ''
+  desc_en: ''
+  id: '1649'
+  layer: 0
+  name_cn: 汉堡餐厅
+  name_en: Burger Restaurant
+  type: point
+  visible_zoom_level: 1
+  x: 13965
+  y: 4866
+- desc_cn: ''
+  desc_en: ''
+  id: '1650'
+  layer: 0
+  name_cn: 汉堡店
+  name_en: Burgers
+  type: point
+  visible_zoom_level: 1
+  x: 12077
+  y: 7075
+- desc_cn: 你真的想独自一人待在没有水井的森林里吗？
+  desc_en: Do you really want to be alone in the woods without a well?
+  id: '1651'
+  layer: 0
+  name_cn: 小木屋
+  name_en: Cabin
+  type: point
+  visible_zoom_level: 1
+  x: 13628
+  y: 7222
+- desc_cn: ''
+  desc_en: ''
+  id: '1652'
+  layer: 0
+  name_cn: 咖啡馆
+  name_en: Cafe
+  type: point
+  visible_zoom_level: 1
+  x: 13092
+  y: 5449
+- desc_cn: 没有火车 :(
+  desc_en: No choo choo train :(
+  id: '1653'
+  layer: 0
+  name_cn: 火车守车
+  name_en: Choo Choo Train Caboose
+  type: point
+  visible_zoom_level: 1
+  x: 12197
+  y: 6878
+- desc_cn: ''
+  desc_en: ''
+  id: '1654'
+  layer: 0
+  name_cn: 教堂
+  name_en: Church
+  type: point
+  visible_zoom_level: 1
+  x: 11967
+  y: 6990
+- desc_cn: 还有人认为在僵尸末日期间呆在墓地里是个坏主意吗？
+  desc_en: Does anyone else think it's a bad idea being on a cemetary during the zombie
+    apocalypse?
+  id: '1655'
+  layer: 0
+  name_cn: 教堂和墓地
+  name_en: Church and Cemetery
+  type: point
+  visible_zoom_level: 1
+  x: 11069
+  y: 6710
+- desc_cn: ''
+  desc_en: ''
+  id: '1656'
+  layer: 0
+  name_cn: 旺铺招租
+  name_en: Commercial Rent
+  type: point
+  visible_zoom_level: 1
+  x: 11661
+  y: 7037
+- desc_cn: ''
+  desc_en: ''
+  id: '1657'
+  layer: 0
+  name_cn: 建筑工地
+  name_en: Construction Site
+  type: point
+  visible_zoom_level: 1
+  x: 12062
+  y: 6918
+- desc_cn: ''
+  desc_en: ''
+  id: '1658'
+  layer: 0
+  name_cn: 板条棚
+  name_en: Crate Shed
+  type: point
+  visible_zoom_level: 1
+  x: 10942
+  y: 6769
+- desc_cn: ''
+  desc_en: ''
+  id: '1659'
+  layer: 0
+  name_cn: 日托中心
+  name_en: Day Care
+  type: point
+  visible_zoom_level: 1
+  x: 11739
+  y: 6921
+- desc_cn: ''
+  desc_en: ''
+  id: '1660'
+  layer: 0
+  name_cn: 码头
+  name_en: Dock
+  type: point
+  visible_zoom_level: 1
+  x: 11828
+  y: 6574
+- desc_cn: ''
+  desc_en: ''
+  id: '1661'
+  layer: 0
+  name_cn: 码头
+  name_en: Dock
+  type: point
+  visible_zoom_level: 1
+  x: 11276
+  y: 6594
+- desc_cn: ''
+  desc_en: ''
+  id: '1662'
+  layer: 0
+  name_cn: 农舍
+  name_en: Farmhouse
+  type: point
+  visible_zoom_level: 1
+  x: 11132
+  y: 6852
+- desc_cn: 大型农舍，有工具棚和鸡舍。
+  desc_en: Large farmhouse with toolsheds and chicken coop.
+  id: '1663'
+  layer: 0
+  name_cn: 农舍
+  name_en: Farmhouse
+  type: point
+  visible_zoom_level: 1
+  x: 14396
+  y: 4568
+- desc_cn: 有古典火炉。
+  desc_en: Has an antique stove.
+  id: '1664'
+  layer: 0
+  name_cn: 农舍
+  name_en: Farmhouse
+  type: point
+  visible_zoom_level: 1
+  x: 9279
+  y: 7781
+- desc_cn: ''
+  desc_en: ''
+  id: '1665'
+  layer: 0
+  name_cn: 食品市场
+  name_en: Food Market
+  type: point
+  visible_zoom_level: 1
+  x: 11984
+  y: 6911
+- desc_cn: ''
+  desc_en: ''
+  id: '1666'
+  layer: 0
+  name_cn: 农贸市场
+  name_en: Famer's Market
+  type: point
+  visible_zoom_level: 1
+  x: 13937
+  y: 4864
+- desc_cn: ''
+  desc_en: ''
+  id: '1667'
+  layer: 0
+  name_cn: 家具店
+  name_en: Furniture Store
+  type: point
+  visible_zoom_level: 1
+  x: 11932
+  y: 6941
+- desc_cn: 福斯石油，4个加油机。
+  desc_en: Fossoil, 4 pumps.
+  id: '1668'
+  layer: 0
+  name_cn: 加油站
+  name_en: Gas Station
+  type: point
+  visible_zoom_level: 1
+  x: 12069
+  y: 7140
+- desc_cn: 靠近西点河边的封闭式豪华住宅。
+  desc_en: Gated luxurious house by the lake and river, near Westpoint.
+  id: '1669'
+  layer: 0
+  name_cn: 湖边的封闭式房屋
+  name_en: Gated House by the Lake
+  type: point
+  visible_zoom_level: 1
+  x: 10155
+  y: 6624
+- desc_cn: 这更像是一家杂货店，而不是五金店。
+  desc_en: This is more of a general store than a hardware store.
+  id: '1670'
+  layer: 0
+  name_cn: 杂货店
+  name_en: General Store
+  type: point
+  visible_zoom_level: 1
+  x: 11831
+  y: 6912
+- desc_cn: ''
+  desc_en: ''
+  id: '1671'
+  layer: 0
+  name_cn: 吉佳玛特连锁超市
+  name_en: GigaMart
+  type: point
+  visible_zoom_level: 1
+  x: 12024
+  y: 6853
+- desc_cn: ''
+  desc_en: ''
+  id: '1672'
+  layer: 0
+  name_cn: 枪支店
+  name_en: Gun Store
+  type: point
+  visible_zoom_level: 1
+  x: 12064
+  y: 6758
+- desc_cn: ''
+  desc_en: ''
+  id: '1673'
+  layer: 0
+  name_cn: 理发店
+  name_en: Hair O Genesis
+  type: point
+  visible_zoom_level: 1
+  x: 11852
+  y: 6878
+- desc_cn: ''
+  desc_en: ''
+  id: '1674'
+  layer: 0
+  name_cn: 五金店
+  name_en: Hardware Store
+  type: point
+  visible_zoom_level: 1
+  x: 11974
+  y: 6912
+- desc_cn: ''
+  desc_en: ''
+  id: '1675'
+  layer: 0
+  name_cn: 湖边的房子
+  name_en: House by the lake
+  type: point
+  visible_zoom_level: 1
+  x: 10182
+  y: 6763
+- desc_cn: ''
+  desc_en: ''
+  id: '1676'
+  layer: 0
+  name_cn: 诺克斯银行
+  name_en: Knox Bank
+  type: point
+  visible_zoom_level: 1
+  x: 11913
+  y: 6914
+- desc_cn: ''
+  desc_en: ''
+  id: '1677'
+  layer: 0
+  name_cn: 大型仓库
+  name_en: Large Warehouse
+  type: point
+  visible_zoom_level: 1
+  x: 12140
+  y: 7084
+- desc_cn: ''
+  desc_en: ''
+  id: '1678'
+  layer: 0
+  name_cn: 自助洗衣店
+  name_en: Laundromat
+  type: point
+  visible_zoom_level: 1
+  x: 11931
+  y: 6786
+- desc_cn: ''
+  desc_en: ''
+  id: '1679'
+  layer: 0
+  name_cn: 迷你酒店
+  name_en: Mini Hotel
+  type: point
+  visible_zoom_level: 1
+  x: 12018
+  y: 6917
+- desc_cn: ''
+  desc_en: ''
+  id: '1680'
+  layer: 0
+  name_cn: 汽车旅馆
+  name_en: Motel
+  type: point
+  visible_zoom_level: 1
+  x: 11860
+  y: 6906
+- desc_cn: ''
+  desc_en: ''
+  id: '1681'
+  layer: 0
+  name_cn: 办公楼
+  name_en: Office Building
+  type: point
+  visible_zoom_level: 1
+  x: 11976
+  y: 6939
+- desc_cn: ''
+  desc_en: ''
+  id: '1682'
+  layer: 0
+  name_cn: 办公楼
+  name_en: Office Building
+  type: point
+  visible_zoom_level: 1
+  x: 11977
+  y: 6882
+- desc_cn: 药店
+  desc_en: Pharmahug.
+  id: '1683'
+  layer: 0
+  name_cn: 药店
+  name_en: Pharmacy
+  type: point
+  visible_zoom_level: 1
+  x: 11935
+  y: 6802
+- desc_cn: 严禁食用自带的食物和饮料！
+  desc_en: Consumption of brought food and drinks strictly forbidden!
+  id: '1684'
+  layer: 0
+  name_cn: 野餐区
+  name_en: Picnic Area
+  type: point
+  visible_zoom_level: 1
+  x: 12033
+  y: 7364
+- desc_cn: ''
+  desc_en: ''
+  id: '1685'
+  layer: 0
+  name_cn: 披萨旋转
+  name_en: Pizza Whirled
+  type: point
+  visible_zoom_level: 1
+  x: 11660
+  y: 7083
+- desc_cn: ''
+  desc_en: ''
+  id: '1686'
+  layer: 0
+  name_cn: 游乐场
+  name_en: Playground
+  type: point
+  visible_zoom_level: 1
+  x: 11418
+  y: 6782
+- desc_cn: ''
+  desc_en: ''
+  id: '1687'
+  layer: 0
+  name_cn: 警察局
+  name_en: Police Station
+  type: point
+  visible_zoom_level: 1
+  x: 11898
+  y: 6940
+- desc_cn: ''
+  desc_en: ''
+  id: '1688'
+  layer: 0
+  name_cn: 警察局
+  name_en: Police station
+  type: point
+  visible_zoom_level: 1
+  x: 8063
+  y: 11735
+- desc_cn: ''
+  desc_en: ''
+  id: '1689'
+  layer: 0
+  name_cn: 邮局
+  name_en: Post Office
+  type: point
+  visible_zoom_level: 1
+  x: 11956
+  y: 6912
+- desc_cn: ''
+  desc_en: ''
+  id: '1690'
+  layer: 0
+  name_cn: 牙医诊所
+  name_en: R.B. Mat, Dentist
+  type: point
+  visible_zoom_level: 1
+  x: 11880
+  y: 6879
+- desc_cn: ''
+  desc_en: ''
+  id: '1691'
+  layer: 0
+  name_cn: 餐厅
+  name_en: Restaurant
+  type: point
+  visible_zoom_level: 1
+  x: 11932
+  y: 6914
+- desc_cn: ''
+  desc_en: ''
+  id: '1692'
+  layer: 0
+  name_cn: 学校
+  name_en: School
+  type: point
+  visible_zoom_level: 1
+  x: 11345
+  y: 6784
+- desc_cn: ''
+  desc_en: ''
+  id: '1693'
+  layer: 0
+  name_cn: 海马咖啡
+  name_en: Seahorse Coffee
+  type: point
+  visible_zoom_level: 1
+  x: 11962
+  y: 6879
+- desc_cn: ''
+  desc_en: ''
+  id: '1694'
+  layer: 0
+  name_cn: 小商店
+  name_en: Small Store
+  type: point
+  visible_zoom_level: 1
+  x: 11349
+  y: 6719
+- desc_cn: ''
+  desc_en: ''
+  id: '1695'
+  layer: 0
+  name_cn: 斯皮福餐厅
+  name_en: Spiffo's
+  type: point
+  visible_zoom_level: 1
+  x: 11976
+  y: 6810
+- desc_cn: ''
+  desc_en: ''
+  id: '1696'
+  layer: 0
+  name_cn: 存储单元
+  name_en: Storage Units
+  type: point
+  visible_zoom_level: 1
+  x: 12137
+  y: 7024
+- desc_cn: ''
+  desc_en: ''
+  id: '1697'
+  layer: 0
+  name_cn: 德雷克和水晶派店
+  name_en: The Drake and Crystal Pie Place
+  type: point
+  visible_zoom_level: 1
+  x: 11899
+  y: 6851
+- desc_cn: ''
+  desc_en: ''
+  id: '1698'
+  layer: 0
+  name_cn: 加油站
+  name_en: Thunder Gas
+  type: point
+  visible_zoom_level: 1
+  x: 11820
+  y: 6865
+- desc_cn: ''
+  desc_en: ''
+  id: '1699'
+  layer: 0
+  name_cn: 市政厅
+  name_en: Town Hall
+  type: point
+  visible_zoom_level: 1
+  x: 11941
+  y: 6873
+- desc_cn: 一个漂亮的小郊区公园。
+  desc_en: A nice small, suburban park.
+  id: '1700'
+  layer: 0
+  name_cn: 城镇公园
+  name_en: Town Park
+  type: point
+  visible_zoom_level: 1
+  x: 11786
+  y: 6913
+- desc_cn: ''
+  desc_en: ''
+  id: '1701'
+  layer: 0
+  name_cn: 崔吉的酒吧
+  name_en: Twiggy's
+  type: point
+  visible_zoom_level: 1
+  x: 12059
+  y: 6793
+- desc_cn: “抱歉，僵尸爆发不在您的保单中的天灾条款的承保范围内。”
+  desc_en: '"Sorry, zombie apocalypses aren''t covered under the Act of God clause
+    in your policy."'
+  id: '1702'
+  layer: 0
+  name_cn: 价值保险
+  name_en: Valu In$urance
+  type: point
+  visible_zoom_level: 1
+  x: 13664
+  y: 5669
+- desc_cn: ''
+  desc_en: ''
+  id: '1703'
+  layer: 0
+  name_cn: Zippee便利店
+  name_en: Zippee Market
+  type: point
+  visible_zoom_level: 1
+  x: 11660
+  y: 7067
+- desc_cn: ''
+  desc_en: ''
+  id: '3012'
+  layer: 0
+  name_cn: 山谷站
+  name_en: Valley Station
+  type: point
+  visible_zoom_level: 1
+  x: 13515
+  y: 5082
+- desc_cn: ''
+  desc_en: ''
+  id: m5tjqbk6_7xey4zis6is
+  layer: 0
+  name_cn: 机场跑道
+  name_en: Airstrip
+  type: point
+  visible_zoom_level: 1
+  x: 986
+  y: 6681
+- desc_cn: ''
+  desc_en: ''
+  id: m5tjrdzd_0tbo1yzzdadp
+  layer: 0
+  name_cn: 拘留中心
+  name_en: Detention Center
+  type: point
+  visible_zoom_level: 1
+  x: 1415
+  y: 5878
+- desc_cn: ''
+  desc_en: ''
+  id: m5tjskd0_ku0ah8idgxc
+  layer: 0
+  name_cn: 黛利拉号
+  name_en: P.S. Delilah
+  type: point
+  visible_zoom_level: 1
+  x: 2046
+  y: 5689
+- desc_cn: ''
+  desc_en: ''
+  id: m5tkjfwf_vjw0s5ntj1
+  layer: 0
+  name_cn: 火车站
+  name_en: Trainyard
+  type: point
+  visible_zoom_level: 1
+  x: 2202
+  y: 6695
+- desc_cn: ''
+  desc_en: ''
+  id: m5tkkhor_kr6rg14l1k
+  layer: 0
+  name_cn: 明谷拖车公园
+  name_en: Bright Valley Trailer Park
+  type: point
+  visible_zoom_level: 1
+  x: 2733
+  y: 6298
+- desc_cn: ''
+  desc_en: ''
+  id: m5tkmm78_l5eouogpw0g
+  layer: 0
+  name_cn: 威弗利山疗养院
+  name_en: Waverly Hills Sanatorium
+  type: point
+  visible_zoom_level: 1
+  x: 4050
+  y: 6520
+- desc_cn: ''
+  desc_en: ''
+  id: m5tn4vp9_dwoxl7eop1
+  layer: 0
+  name_cn: 雌鹿谷湖
+  name_en: Doe Valley Lake
+  type: point
+  visible_zoom_level: 1
+  x: 6718
+  y: 6208
+- desc_cn: ''
+  desc_en: ''
+  id: m5tn8l7n_jsvetr4e2t
+  layer: 0
+  name_cn: 旧煤田
+  name_en: Historic Coalfield
+  type: point
+  visible_zoom_level: 1
+  x: 3464
+  y: 8194
+- desc_cn: ''
+  desc_en: ''
+  id: m5tnba0v_o0iaqeaaioe
+  layer: 0
+  name_cn: 舒伯特庄园
+  name_en: Schubert's Estate
+  type: point
+  visible_zoom_level: 1
+  x: 1722
+  y: 8631
+- desc_cn: ''
+  desc_en: ''
+  id: m5tnez3f_z2a0103e35j
+  layer: 0
+  name_cn: 拖车公园
+  name_en: Trailer Park
+  type: point
+  visible_zoom_level: 1
+  x: 934
+  y: 9601
+- desc_cn: ''
+  desc_en: ''
+  id: m5tnfvbb_zuoplo1e8c
+  layer: 0
+  name_cn: 钢铁厂
+  name_en: Steel Factory
+  type: point
+  visible_zoom_level: 1
+  x: 567
+  y: 9420
+- desc_cn: ''
+  desc_en: ''
+  id: m5tnthsg_q1ddoa94qr
+  layer: 0
+  name_cn: 工业区
+  name_en: Industrial Area
+  type: point
+  visible_zoom_level: 1
+  x: 1918
+  y: 10899
+- desc_cn: ''
+  desc_en: ''
+  id: m5tnu262_a2yuptvx5sn
+  layer: 0
+  name_cn: 靶场
+  name_en: Shooting Range
+  type: point
+  visible_zoom_level: 1
+  x: 2565
+  y: 10892
+- desc_cn: ''
+  desc_en: ''
+  id: m5tnug28_g3y6ta33f9e
+  layer: 0
+  name_cn: AMZ钢铁
+  name_en: AMZ Steel
+  type: point
+  visible_zoom_level: 1
+  x: 1919
+  y: 10739
+- desc_cn: ''
+  desc_en: ''
+  id: m5tnzx0k_nd6a9zow6qm
+  layer: 0
+  name_cn: 拖车公园
+  name_en: Trailer Park
+  type: point
+  visible_zoom_level: 1
+  x: 3470
+  y: 10895
+- desc_cn: ''
+  desc_en: ''
+  id: m5to2e65_n0xagzlm1
+  layer: 0
+  name_cn: 野生动物中心
+  name_en: Wildlife Center
+  type: point
+  visible_zoom_level: 1
+  x: 3166
+  y: 12126
+- desc_cn: ''
+  desc_en: ''
+  id: m5to3fy0_z5j8ccrmx7
+  layer: 0
+  name_cn: 尼尔农场
+  name_en: Neil's Farm
+  type: point
+  visible_zoom_level: 1
+  x: 3827
+  y: 12203
+- desc_cn: ''
+  desc_en: ''
+  id: m5to4cal_nk0utjhexl
+  layer: 0
+  name_cn: 尼尔池塘
+  name_en: Neil's Pond
+  type: point
+  visible_zoom_level: 1
+  x: 3803
+  y: 12475
+- desc_cn: ''
+  desc_en: ''
+  id: m5to6vim_td1eh2x2jx
+  layer: 0
+  name_cn: 废料场
+  name_en: Scrapyard
+  type: point
+  visible_zoom_level: 1
+  x: 2941
+  y: 12629
+- desc_cn: ''
+  desc_en: ''
+  id: m5to7s16_9y80v7yzk08
+  layer: 0
+  name_cn: 废料场
+  name_en: Scrapyard
+  type: point
+  visible_zoom_level: 1
+  x: 1939
+  y: 13383
+- desc_cn: ''
+  desc_en: ''
+  id: m5to86ix_2ywu5mlcm1m
+  layer: 0
+  name_cn: 欧文顿赛车场
+  name_en: Irvington Speedway
+  type: point
+  visible_zoom_level: 1
+  x: 1085
+  y: 13060
+- desc_cn: ''
+  desc_en: ''
+  id: m5to9ini_efc2dyfgahv
+  layer: 0
+  name_cn: 靶场
+  name_en: Shooting Range
+  type: point
+  visible_zoom_level: 1
+  x: 1858
+  y: 14102
+- desc_cn: ''
+  desc_en: ''
+  id: m5toag3q_cd58qe4uyb6
+  layer: 0
+  name_cn: 布罗特牧业
+  name_en: Brott Cattle
+  type: point
+  visible_zoom_level: 1
+  x: 3796
+  y: 14443
+- desc_cn: ''
+  desc_en: ''
+  id: m5tobhmj_8hrjiegehup
+  layer: 0
+  name_cn: 耕作工厂
+  name_en: F.Arable Factory
+  type: point
+  visible_zoom_level: 1
+  x: 3764
+  y: 14672
+- desc_cn: ''
+  desc_en: ''
+  id: m5tohoje_mzmpx7lc0ee
+  layer: 0
+  name_cn: 露营地
+  name_en: Camping
+  type: point
+  visible_zoom_level: 1
+  x: 6063
+  y: 14550
+- desc_cn: ''
+  desc_en: ''
+  id: m5tojlyn_kspcsckqy4
+  layer: 0
+  name_cn: 水处理中心
+  name_en: Water Treatment
+  type: point
+  visible_zoom_level: 1
+  x: 8040
+  y: 15301
+- desc_cn: ''
+  desc_en: ''
+  id: m5too5ji_2b2zcfl2xqw
+  layer: 0
+  name_cn: 废料场
+  name_en: Scrapyard
+  type: point
+  visible_zoom_level: 1
+  x: 10762
+  y: 10493
+- desc_cn: ''
+  desc_en: ''
+  id: m5tormc9_ke1lgo82jp
+  layer: 0
+  name_cn: 麦考伊庄园
+  name_en: McCoy Estate
+  type: point
+  visible_zoom_level: 1
+  x: 10089
+  y: 8261
+- desc_cn: ''
+  desc_en: ''
+  id: m5tp99n3_3y22qqni8bn
+  layer: 0
+  name_cn: 盐河
+  name_en: Salt River
+  type: point
+  visible_zoom_level: 1
+  x: 13275
+  y: 7343
+- desc_cn: ''
+  desc_en: ''
+  id: m5tpck3z_bz5krbu47ju
+  layer: 0
+  name_cn: 社区中心
+  name_en: Community Area
+  type: point
+  visible_zoom_level: 1
+  x: 13782
+  y: 5843
+- desc_cn: ''
+  desc_en: ''
+  id: m5tpi4pg_l3p9mj90wfo
+  layer: 0
+  name_cn: 客运楼
+  name_en: Passenger Terminal
+  type: point
+  visible_zoom_level: 1
+  x: 15525
+  y: 2948
+- desc_cn: ''
+  desc_en: ''
+  id: m5tpj1a3_c5w72o16lwb
+  layer: 0
+  name_cn: 货运楼
+  name_en: Freight Terminal
+  type: point
+  visible_zoom_level: 1
+  x: 15406
+  y: 3164
+- desc_cn: ''
+  desc_en: ''
+  id: m5tpsqf4_1yuuh89e5hi
+  layer: 0
+  name_cn: 社区中心
+  name_en: Community Area
+  type: point
+  visible_zoom_level: 1
+  x: 13534
+  y: 3055
+- desc_cn: ''
+  desc_en: ''
+  id: m5tq7z74_w803oluac8o
+  layer: 0
+  name_cn: 工业区
+  name_en: Industrial Area
+  type: point
+  visible_zoom_level: 1
+  x: 12086
+  y: 1440
+- desc_cn: ''
+  desc_en: ''
+  id: m5tw2dkn_t15ni6cpzab
+  layer: 0
+  name_cn: 亚瑟营地
+  name_en: Camp Arthur
+  type: point
+  visible_zoom_level: 1
+  x: 8315
+  y: 14579
+- desc_cn: ''
+  desc_en: ''
+  id: m5tw3080_6swteh535b6
+  layer: 0
+  name_cn: 观光旅馆
+  name_en: Scenic Lodges
+  type: point
+  visible_zoom_level: 1
+  x: 8534
+  y: 14416
+- desc_cn: ''
+  desc_en: ''
+  id: m5tw6hc5_4szw5w2e90c
+  layer: 0
+  name_cn: 社区中心
+  name_en: Community Area
+  type: point
+  visible_zoom_level: 1
+  x: 4305
+  y: 9743
+- desc_cn: ''
+  desc_en: ''
+  id: m5tw7y9c_y4zgs2yb80k
+  layer: 0
+  name_cn: 米德郡庄园
+  name_en: Meadshire Estate
+  type: point
+  visible_zoom_level: 1
+  x: 4223
+  y: 9531
+- desc_cn: 相信奇迹
+  desc_en: Have hope.
+  id: m5xri8qf_c79vaqykaft
+  layer: -17
+  name_cn: 军事研究设施地下最深处
+  name_en: The deepest part of the military research facility underground
+  type: point
+  visible_zoom_level: 1
+  x: 5687
+  y: 12439
+- desc_en: ''
+  id: m5xrnby4_drwaqkh696t
+  layer: -1
+  name_cn: 地下走廊
+  name_en: Underground passage
+  type: point
+  visible_zoom_level: 1
+  x: 4105
+  y: 6536
+- desc_cn: 需要破坏地下一层的墙壁
+  desc_en: Destroy a wall of the basement level 1, there is a door behind it.
+  id: m5xrp3tw_w0adcz6lenh
+  layer: -2
+  name_cn: 教堂密室
+  name_en: Hidden chamber of the church
+  type: point
+  visible_zoom_level: 1
+  x: 446
+  y: 9937

@@ -1,0 +1,8101 @@
+[
+  {
+    "desc": "",
+    "name": "Dixie Trailer Park",
+    "id": "1009",
+    "layer": 0,
+    "type": "point",
+    "x": 11493,
+    "y": 8914
+  },
+  {
+    "desc": "",
+    "name": "Valley Station",
+    "id": "1608",
+    "layer": 0,
+    "type": "point",
+    "x": 12734,
+    "y": 5772
+  },
+  {
+    "desc": "",
+    "name": "Doe Valley Forest",
+    "id": "m5tn6msp_3507qxeny3r",
+    "layer": 0,
+    "color": "green",
+    "background": "transparent",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 2280,
+        "width": 2044,
+        "x": 1990,
+        "y": 7400
+      },
+      {
+        "height": 1000,
+        "width": 1700,
+        "x": 2650,
+        "y": 6400
+      },
+      {
+        "height": 240,
+        "width": 740,
+        "x": 3000,
+        "y": 6160
+      },
+      {
+        "height": 1701,
+        "width": 1605,
+        "x": 4034,
+        "y": 7400
+      },
+      {
+        "height": 580,
+        "width": 900,
+        "x": 4350,
+        "y": 6820
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Hog Wallow Forest",
+    "id": "m5tocl3x_5opccsxxvmt",
+    "layer": 0,
+    "color": "green",
+    "background": "transparent",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 3000,
+        "width": 2650,
+        "x": 4600,
+        "y": 10750
+      },
+      {
+        "height": 450,
+        "width": 680,
+        "x": 7250,
+        "y": 11250
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Doe Valley",
+    "id": "m5touizl_9y227kiha4",
+    "layer": 0,
+    "type": "point",
+    "x": 6832,
+    "y": 9609
+  },
+  {
+    "desc": "",
+    "name": "Indiana",
+    "id": "m5tp2kbg_jjmd5c07hnj",
+    "layer": 0,
+    "color": "green",
+    "background": "transparent",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 2100,
+        "width": 500,
+        "x": 7800,
+        "y": 4800
+      },
+      {
+        "height": 2400,
+        "width": 700,
+        "x": 8300,
+        "y": 4800
+      },
+      {
+        "height": 1500,
+        "width": 3170,
+        "x": 9000,
+        "y": 4800
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Jefferson Forest",
+    "id": "m5tpa931_askmtaah83",
+    "layer": 0,
+    "color": "green",
+    "background": "transparent",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 3500,
+        "width": 3500,
+        "x": 12300,
+        "y": 7220
+      },
+      {
+        "height": 750,
+        "width": 1200,
+        "x": 12900,
+        "y": 6470
+      },
+      {
+        "height": 1120,
+        "width": 1200,
+        "x": 14100,
+        "y": 6100
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Parkwood",
+    "id": "m5tprhl8_yqcnuvz1kl",
+    "layer": 0,
+    "type": "point",
+    "x": 12668,
+    "y": 3582
+  },
+  {
+    "desc": "",
+    "name": "Wyandotte",
+    "id": "m5tput1k_zqe9fdspzjl",
+    "layer": 0,
+    "type": "point",
+    "x": 12255,
+    "y": 3145
+  },
+  {
+    "desc": "",
+    "name": "Audubon",
+    "id": "m5tpvn39_528snhj8pr",
+    "layer": 0,
+    "type": "point",
+    "x": 13875,
+    "y": 2790
+  },
+  {
+    "desc": "",
+    "name": "Germantown",
+    "id": "m5tq0yk6_jwcamchs2wi",
+    "layer": 0,
+    "type": "point",
+    "x": 13631,
+    "y": 2193
+  },
+  {
+    "desc": "",
+    "name": "Limerick",
+    "id": "m5tq2v20_t9u9wrd7wch",
+    "layer": 0,
+    "type": "point",
+    "x": 12184,
+    "y": 1945
+  },
+  {
+    "desc": "",
+    "name": "East Market District",
+    "id": "m5tq6g6e_isi8dky3ti",
+    "layer": 0,
+    "type": "point",
+    "x": 13360,
+    "y": 1662
+  },
+  {
+    "desc": "",
+    "name": "Downtown",
+    "id": "m5tq9jkb_jms9xzumb2r",
+    "layer": 0,
+    "type": "point",
+    "x": 12600,
+    "y": 1238
+  },
+  {
+    "desc": "",
+    "name": "Muldraugh",
+    "id": "mdg1s7t7_1ceki6n",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 529,
+        "width": 308,
+        "x": 10600,
+        "y": 10152
+      },
+      {
+        "height": 338,
+        "width": 355,
+        "x": 10600,
+        "y": 9814
+      },
+      {
+        "height": 144,
+        "width": 63,
+        "x": 10600,
+        "y": 9200
+      },
+      {
+        "height": 470,
+        "width": 430,
+        "x": 10600,
+        "y": 9344
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "West Point",
+    "id": "mdg2d21v_efbrl8",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 125,
+        "width": 1042,
+        "x": 10888,
+        "y": 6646
+      },
+      {
+        "height": 131,
+        "width": 1114,
+        "x": 11078,
+        "y": 6771
+      },
+      {
+        "height": 200,
+        "width": 334,
+        "x": 11286,
+        "y": 6902
+      },
+      {
+        "height": 160,
+        "width": 110,
+        "x": 12192,
+        "y": 6811
+      },
+      {
+        "height": 286,
+        "width": 572,
+        "x": 11620,
+        "y": 6902
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "March Ridge",
+    "id": "mdg2lpqw_oikyh7",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 240,
+        "width": 700,
+        "x": 9800,
+        "y": 12600
+      },
+      {
+        "height": 300,
+        "width": 256,
+        "x": 9800,
+        "y": 12840
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Fallas Lake",
+    "id": "me4j5o0j_vypcsa",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 420,
+        "width": 450,
+        "x": 7073,
+        "y": 8152
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "name": "Rosewood",
+    "id": "me4j9aqo_sigpfs",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 690,
+        "width": 336,
+        "x": 7938,
+        "y": 11215
+      },
+      {
+        "height": 305,
+        "width": 205,
+        "x": 8274,
+        "y": 11520
+      },
+      {
+        "height": 262,
+        "width": 369,
+        "x": 7569,
+        "y": 11746
+      },
+      {
+        "height": 562,
+        "width": 425,
+        "x": 7938,
+        "y": 11905
+      },
+      {
+        "height": 174,
+        "width": 112,
+        "x": 8363,
+        "y": 12161
+      },
+      {
+        "height": 459,
+        "width": 44,
+        "x": 7894,
+        "y": 12008
+      }
+    ],
+    "type": "area",
+    "desc": ""
+  },
+  {
+    "desc": "",
+    "name": "Riverside",
+    "id": "me4jlb3t_ff2je2",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 255,
+        "width": 1164,
+        "x": 5678,
+        "y": 5192
+      },
+      {
+        "height": 72,
+        "width": 790,
+        "x": 6052,
+        "y": 5447
+      },
+      {
+        "height": 82,
+        "width": 379,
+        "x": 6302,
+        "y": 5519
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Echo Creek",
+    "id": "me4jqc4h_1ry4dd7",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 243,
+        "width": 456,
+        "x": 3353,
+        "y": 10866
+      },
+      {
+        "height": 231,
+        "width": 91,
+        "x": 3521,
+        "y": 11109
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Military Research Facility",
+    "id": "me4kl3fd_s9y1yg",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 151,
+        "width": 326,
+        "x": 5515,
+        "y": 12416
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Dark Wallow Lake",
+    "id": "me4ksiq5_1tnfi8a",
+    "layer": 0,
+    "color": "green",
+    "background": "transparent",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 1189,
+        "width": 579,
+        "x": 8395,
+        "y": 14324
+      },
+      {
+        "height": 995,
+        "width": 482,
+        "x": 7913,
+        "y": 14518
+      },
+      {
+        "height": 255,
+        "width": 300,
+        "x": 7613,
+        "y": 14518
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Louisville International Airport",
+    "id": "me4p8yn1_dslrqa",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 1000,
+        "width": 750,
+        "x": 14923,
+        "y": 2358
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Louisville",
+    "id": "me4pco71_ebskil",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 450,
+        "width": 2030,
+        "x": 11970,
+        "y": 3012
+      },
+      {
+        "height": 330,
+        "width": 2370,
+        "x": 11970,
+        "y": 2682
+      },
+      {
+        "height": 410,
+        "width": 2300,
+        "x": 11970,
+        "y": 2272
+      },
+      {
+        "height": 188,
+        "width": 2160,
+        "x": 11970,
+        "y": 2084
+      },
+      {
+        "height": 912,
+        "width": 1950,
+        "x": 11970,
+        "y": 1172
+      },
+      {
+        "height": 135,
+        "width": 360,
+        "x": 12500,
+        "y": 1037
+      },
+      {
+        "height": 400,
+        "width": 860,
+        "x": 12200,
+        "y": 3462
+      },
+      {
+        "height": 640,
+        "width": 440,
+        "x": 12420,
+        "y": 3862
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Brandenburg",
+    "id": "me4q008y_1bhonh",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 301,
+        "width": 1266,
+        "x": 1322,
+        "y": 5705
+      },
+      {
+        "height": 200,
+        "width": 281,
+        "x": 1432,
+        "y": 5505
+      },
+      {
+        "height": 520,
+        "width": 1074,
+        "x": 1460,
+        "y": 6006
+      },
+      {
+        "height": 280,
+        "width": 660,
+        "x": 1696,
+        "y": 6526
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Ekron",
+    "id": "me4q3sm0_gb7lln",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 327,
+        "width": 818,
+        "x": 238,
+        "y": 9569
+      },
+      {
+        "height": 285,
+        "width": 185,
+        "x": 423,
+        "y": 9284
+      },
+      {
+        "height": 175,
+        "width": 206,
+        "x": 352,
+        "y": 9896
+      },
+      {
+        "height": 108,
+        "width": 73,
+        "x": 899,
+        "y": 9896
+      },
+      {
+        "height": 45,
+        "width": 184,
+        "x": 558,
+        "y": 9896
+      },
+      {
+        "height": 43,
+        "width": 72,
+        "x": 682,
+        "y": 9526
+      },
+      {
+        "height": 89,
+        "width": 77,
+        "x": 754,
+        "y": 9480
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "",
+    "name": "Irvington",
+    "id": "me4q7vmn_1w3q0t2",
+    "layer": 0,
+    "color": "orange",
+    "background": "transparent",
+    "text_position": "top",
+    "passthrough": true,
+    "rects": [
+      {
+        "height": 485,
+        "width": 1440,
+        "x": 1736,
+        "y": 14489
+      },
+      {
+        "height": 240,
+        "width": 1300,
+        "x": 1852,
+        "y": 14249
+      },
+      {
+        "height": 43,
+        "width": 100,
+        "x": 3000,
+        "y": 14206
+      },
+      {
+        "height": 264,
+        "width": 530,
+        "x": 2170,
+        "y": 13985
+      },
+      {
+        "height": 183,
+        "width": 700,
+        "x": 2170,
+        "y": 13802
+      }
+    ],
+    "type": "area"
+  },
+  {
+    "desc": "Barg-n-Clothes.",
+    "name": "Clothing Store",
+    "id": "1000",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11599,
+    "y": 8252
+  },
+  {
+    "desc": "",
+    "name": "Diner",
+    "id": "1001",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11464,
+    "y": 8809
+  },
+  {
+    "desc": "Gas-2-Go, 2 pumps.",
+    "name": "Gas Station",
+    "id": "1002",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11603,
+    "y": 8308
+  },
+  {
+    "desc": "Two pumps.",
+    "name": "Gas station",
+    "id": "1003",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11508,
+    "y": 8832
+  },
+  {
+    "desc": "",
+    "name": "Laundromat",
+    "id": "1004",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11683,
+    "y": 8821
+  },
+  {
+    "desc": "",
+    "name": "Molan's Used Cars",
+    "id": "1005",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11687,
+    "y": 8367
+  },
+  {
+    "desc": "",
+    "name": "Picnic Dining Area",
+    "id": "1006",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11556,
+    "y": 8858
+  },
+  {
+    "desc": "",
+    "name": "Spiffo's",
+    "id": "1007",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11668,
+    "y": 8302
+  },
+  {
+    "desc": "",
+    "name": "Supermarket",
+    "id": "1008",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11670,
+    "y": 8794
+  },
+  {
+    "desc": "Just a message in the dirt.",
+    "name": "<3 Brian",
+    "id": "1010",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8927,
+    "y": 10320
+  },
+  {
+    "desc": "3 stories, needs renovation.",
+    "name": "Abandoned Factory",
+    "id": "1011",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3847,
+    "y": 6212
+  },
+  {
+    "desc": "",
+    "name": "Army Quarters",
+    "id": "1012",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7445,
+    "y": 7959
+  },
+  {
+    "desc": "",
+    "name": "Auto Repair Store",
+    "id": "1013",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5470,
+    "y": 9661
+  },
+  {
+    "desc": "",
+    "name": "Cabin in the Woods",
+    "id": "1014",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8059,
+    "y": 7620
+  },
+  {
+    "desc": "A collection of cabins & sports amenities deep in the Kentucky wilderness. Happy trails!",
+    "name": "Camp Camus",
+    "id": "1015",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 4817,
+    "y": 7939
+  },
+  {
+    "desc": "",
+    "name": "Camping Store",
+    "id": "1016",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3800,
+    "y": 8549
+  },
+  {
+    "desc": "",
+    "name": "Clothing Store",
+    "id": "1017",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5501,
+    "y": 9566
+  },
+  {
+    "desc": "",
+    "name": "Construction Site",
+    "id": "1018",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10223,
+    "y": 7586
+  },
+  {
+    "desc": "Park ranger station that has 3 beds, a kitchen upstairs, and lots of storage space.",
+    "name": "Deerhead Lake Park Ranger Station",
+    "id": "1019",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 4674,
+    "y": 8597
+  },
+  {
+    "desc": "Park ranger station that has 3 beds, a kitchen upstairs, and lots of storage space.",
+    "name": "Deerhead Lake Park Ranger Station",
+    "id": "1020",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 4674,
+    "y": 8597
+  },
+  {
+    "desc": "",
+    "name": "Diner",
+    "id": "1021",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3703,
+    "y": 8462
+  },
+  {
+    "desc": "",
+    "name": "Doctor's Office",
+    "id": "1022",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5499,
+    "y": 9582
+  },
+  {
+    "desc": "",
+    "name": "Double Small Warehouses",
+    "id": "1023",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6560,
+    "y": 8946
+  },
+  {
+    "desc": "",
+    "name": "Double Small Warehouses",
+    "id": "1024",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5892,
+    "y": 9861
+  },
+  {
+    "desc": "",
+    "name": "Double Warehouse",
+    "id": "1025",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7657,
+    "y": 9343
+  },
+  {
+    "desc": "",
+    "name": "Double Warehouse",
+    "id": "1026",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8279,
+    "y": 10039
+  },
+  {
+    "desc": "With adjoining cafÃ©s.",
+    "name": "Farm Produce Shop",
+    "id": "1027",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5465,
+    "y": 9584
+  },
+  {
+    "desc": "Fresh seasonal produce - sale now on!",
+    "name": "Farm stall",
+    "id": "1028",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9449,
+    "y": 9777
+  },
+  {
+    "desc": "\"What happened here, what's happening here... it's not contained!\"",
+    "name": "First house shown in Project Zomboid's trailer",
+    "id": "1029",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7087,
+    "y": 8370
+  },
+  {
+    "desc": "Two Pumps.",
+    "name": "Gas Station",
+    "id": "1030",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5467,
+    "y": 9709
+  },
+  {
+    "desc": "Gas N More, 2 pumps.",
+    "name": "Gas Station",
+    "id": "1031",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3690,
+    "y": 8495
+  },
+  {
+    "desc": "No sledgehammer needed.",
+    "name": "Gun Store",
+    "id": "1032",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3807,
+    "y": 8513
+  },
+  {
+    "desc": "",
+    "name": "Horse Course",
+    "id": "1033",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5577,
+    "y": 6499
+  },
+  {
+    "desc": "Has a fireplace, tool shed, and outhouse.",
+    "name": "Hunter's Cabin",
+    "id": "1034",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9040,
+    "y": 8732
+  },
+  {
+    "desc": "You deserve a treat.",
+    "name": "Ice Cream Store",
+    "id": "1035",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7140,
+    "y": 8981
+  },
+  {
+    "desc": "Low fence and small shed, better than nothing. Mostly obscured by trees.",
+    "name": "Isolated House",
+    "id": "1036",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3859,
+    "y": 8428
+  },
+  {
+    "desc": "A lone house by a lake deep in the woods of Doe Valley. Has an antique oven.",
+    "name": "Lake House",
+    "id": "1037",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 4243,
+    "y": 7226
+  },
+  {
+    "desc": "Very Small laundromat, only has a handful of washers/dryers.",
+    "name": "Laundromat",
+    "id": "1038",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7259,
+    "y": 8498
+  },
+  {
+    "desc": "",
+    "name": "Laundromat",
+    "id": "1039",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5474,
+    "y": 9680
+  },
+  {
+    "desc": "",
+    "name": "Military Surplus Store",
+    "id": "1042",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5464,
+    "y": 9511
+  },
+  {
+    "desc": "",
+    "name": "Restaurant",
+    "id": "1043",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5547,
+    "y": 9663
+  },
+  {
+    "desc": "Small Farm House with fields and tool shed.",
+    "name": "Small Farm House",
+    "id": "1044",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3659,
+    "y": 8535
+  },
+  {
+    "desc": "",
+    "name": "Small Warehouse",
+    "id": "1045",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7485,
+    "y": 11081
+  },
+  {
+    "desc": "Small workshop with antique oven.",
+    "name": "Small Workshop",
+    "id": "1046",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8532,
+    "y": 9033
+  },
+  {
+    "desc": "The last surviving house of an abandoned town.",
+    "name": "Trapper House",
+    "id": "1047",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3924,
+    "y": 6214
+  },
+  {
+    "desc": "",
+    "name": "Triple Warehouses",
+    "id": "1048",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6734,
+    "y": 10020
+  },
+  {
+    "desc": "",
+    "name": "Bar",
+    "id": "1049",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7246,
+    "y": 8522
+  },
+  {
+    "desc": "",
+    "name": "Book Store",
+    "id": "1050",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7258,
+    "y": 8431
+  },
+  {
+    "desc": "",
+    "name": "Burger Joint",
+    "id": "1051",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7234,
+    "y": 8203
+  },
+  {
+    "desc": "",
+    "name": "Church",
+    "id": "1052",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7387,
+    "y": 8353
+  },
+  {
+    "desc": "",
+    "name": "Doctor's Office",
+    "id": "1053",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7296,
+    "y": 8388
+  },
+  {
+    "desc": "Seeds etc, some general hardware, plus guns in the back room.",
+    "name": "Farming Supply Store",
+    "id": "1054",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7252,
+    "y": 8321
+  },
+  {
+    "desc": "2-story gas station by the lake. 4 pumps.",
+    "name": "Gas Station",
+    "id": "1056",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7317,
+    "y": 8186
+  },
+  {
+    "desc": "Lots of food and some clothes.",
+    "name": "General Store",
+    "id": "1057",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7296,
+    "y": 8253
+  },
+  {
+    "desc": "E.P. Tools.",
+    "name": "Hardware Store",
+    "id": "1058",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7256,
+    "y": 8231
+  },
+  {
+    "desc": "",
+    "name": "Police Station",
+    "id": "1059",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7252,
+    "y": 8378
+  },
+  {
+    "desc": "",
+    "name": "3 Garage Mansion",
+    "id": "1060",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12037,
+    "y": 2593
+  },
+  {
+    "desc": "3 Mansions gated all around with only 1 way in and a small pond.",
+    "name": "3 Mansion Complex",
+    "id": "1061",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 14150,
+    "y": 2628
+  },
+  {
+    "desc": "Everything under $5, everyday.",
+    "name": "5 Bux or Less",
+    "id": "1062",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13318,
+    "y": 1293
+  },
+  {
+    "desc": "Electronic equipment & offices.",
+    "name": "93.2 LMBW Radio",
+    "id": "1063",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12474,
+    "y": 1774
+  },
+  {
+    "desc": "Hunting store/gun store.",
+    "name": "A.A. Ron Hunting Supply",
+    "id": "1064",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13961,
+    "y": 3231
+  },
+  {
+    "desc": "You crash it, you pay it.",
+    "name": "ABC Driving School",
+    "id": "1065",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13312,
+    "y": 1314
+  },
+  {
+    "desc": "",
+    "name": "Aitor Wire Company",
+    "id": "1066",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12183,
+    "y": 1457
+  },
+  {
+    "desc": "",
+    "name": "AmeriGlobe Communications",
+    "id": "1067",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12305,
+    "y": 3533
+  },
+  {
+    "desc": "",
+    "name": "American Eats",
+    "id": "1068",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12781,
+    "y": 1214
+  },
+  {
+    "desc": "Army camp set up on the main road.",
+    "name": "Army Checkpoint",
+    "id": "1069",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12515,
+    "y": 4267
+  },
+  {
+    "desc": "Ready Prep, guns and army gear.",
+    "name": "Army Surplus Store",
+    "id": "1070",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12225,
+    "y": 1319
+  },
+  {
+    "desc": "",
+    "name": "Art Gallery of Louisville",
+    "id": "1071",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12547,
+    "y": 1393
+  },
+  {
+    "desc": "Car Fix-Ation.",
+    "name": "Auto Repair Shop (Central)",
+    "id": "1072",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12655,
+    "y": 2118
+  },
+  {
+    "desc": "Al's Autoshop.",
+    "name": "Auto Repair Shop (Central)",
+    "id": "1073",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12266,
+    "y": 1567
+  },
+  {
+    "desc": "American Tire.",
+    "name": "Auto Repair Shop (East)",
+    "id": "1074",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13111,
+    "y": 1757
+  },
+  {
+    "desc": "Jim's Autoshop.",
+    "name": "Auto Repair Shop (North)",
+    "id": "1075",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12232,
+    "y": 1375
+  },
+  {
+    "desc": "American Tire.",
+    "name": "Auto Repair Shop (South)",
+    "id": "1076",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13280,
+    "y": 2965
+  },
+  {
+    "desc": "Car Fix-ation.",
+    "name": "Auto Repair Shop (South)",
+    "id": "1077",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12616,
+    "y": 3518
+  },
+  {
+    "desc": "",
+    "name": "Awl Work and Sew Play",
+    "id": "1078",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12489,
+    "y": 1697
+  },
+  {
+    "desc": "",
+    "name": "Awl Work and Sew Play",
+    "id": "1079",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13169,
+    "y": 1560
+  },
+  {
+    "desc": "",
+    "name": "BBBQ",
+    "id": "1080",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12912,
+    "y": 1398
+  },
+  {
+    "desc": "",
+    "name": "Back To The Nurture",
+    "id": "1081",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12411,
+    "y": 2835
+  },
+  {
+    "desc": "",
+    "name": "Bakery",
+    "id": "1082",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13581,
+    "y": 2134
+  },
+  {
+    "desc": "",
+    "name": "Bar",
+    "id": "1083",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13181,
+    "y": 1283
+  },
+  {
+    "desc": "",
+    "name": "Bar",
+    "id": "1084",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13951,
+    "y": 3129
+  },
+  {
+    "desc": "",
+    "name": "Bar",
+    "id": "1085",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12858,
+    "y": 1206
+  },
+  {
+    "desc": "",
+    "name": "Battery Factory",
+    "id": "1086",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12190,
+    "y": 1270
+  },
+  {
+    "desc": "",
+    "name": "Beer & Liquor",
+    "id": "1087",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13585,
+    "y": 2147
+  },
+  {
+    "desc": "",
+    "name": "Bible Spirit Baptist Church",
+    "id": "1088",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12433,
+    "y": 3020
+  },
+  {
+    "desc": "Fenced in warehouse with lots of room.",
+    "name": "Big Empty Warehouse",
+    "id": "1089",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12704,
+    "y": 2123
+  },
+  {
+    "desc": "",
+    "name": "Big Warehouse",
+    "id": "1090",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12179,
+    "y": 1592
+  },
+  {
+    "desc": "",
+    "name": "Black Liquorice",
+    "id": "1091",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13613,
+    "y": 1622
+  },
+  {
+    "desc": "Worm of Books.",
+    "name": "Book Store",
+    "id": "1092",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13347,
+    "y": 1295
+  },
+  {
+    "desc": "Bernards Book Emporium.",
+    "name": "Book Store",
+    "id": "1093",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12560,
+    "y": 1931
+  },
+  {
+    "desc": "Book Naked.",
+    "name": "Book Store",
+    "id": "1094",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12375,
+    "y": 1510
+  },
+  {
+    "desc": "",
+    "name": "Book Store",
+    "id": "1095",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13240,
+    "y": 1658
+  },
+  {
+    "desc": "",
+    "name": "Book Store",
+    "id": "1096",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12813,
+    "y": 1310
+  },
+  {
+    "desc": "",
+    "name": "Book Store",
+    "id": "1097",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13382,
+    "y": 3052
+  },
+  {
+    "desc": "",
+    "name": "Book Store",
+    "id": "1098",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12534,
+    "y": 1254
+  },
+  {
+    "desc": "Quite the collection.",
+    "name": "Book Store",
+    "id": "1099",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13524,
+    "y": 1396
+  },
+  {
+    "desc": "",
+    "name": "Book Store",
+    "id": "1100",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13182,
+    "y": 1250
+  },
+  {
+    "desc": "",
+    "name": "Bow-Wow Dog Nutrition",
+    "id": "1101",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12561,
+    "y": 3523
+  },
+  {
+    "desc": "",
+    "name": "Bowling Alley",
+    "id": "1102",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12444,
+    "y": 2062
+  },
+  {
+    "desc": "",
+    "name": "Boxing Gym",
+    "id": "1103",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13139,
+    "y": 1578
+  },
+  {
+    "desc": "",
+    "name": "Boxing Gym",
+    "id": "1104",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12313,
+    "y": 1428
+  },
+  {
+    "desc": "",
+    "name": "Boxpop Berwery",
+    "id": "1105",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13170,
+    "y": 1592
+  },
+  {
+    "desc": "Full of emergency glass breakers!",
+    "name": "Brac Brick Factory",
+    "id": "1106",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12121,
+    "y": 1259
+  },
+  {
+    "desc": "No way through...",
+    "name": "Clark Memorial Bridge",
+    "id": "1107",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12596,
+    "y": 962
+  },
+  {
+    "desc": "",
+    "name": "Brooks Public Library",
+    "id": "1108",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12562,
+    "y": 1467
+  },
+  {
+    "desc": "A small diner on the outskirts of the city center.",
+    "name": "Burger Joint",
+    "id": "1109",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13240,
+    "y": 3486
+  },
+  {
+    "desc": "",
+    "name": "Burgers",
+    "id": "1110",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13206,
+    "y": 1283
+  },
+  {
+    "desc": "Your gateway to Louisville, Knox Country and beyond! Stains on seats may or may not be brains of the deceased.",
+    "name": "Bus Station",
+    "id": "1111",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12558,
+    "y": 2313
+  },
+  {
+    "desc": "",
+    "name": "Butcher Shop",
+    "id": "1112",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12491,
+    "y": 1446
+  },
+  {
+    "desc": "",
+    "name": "Cafe",
+    "id": "1113",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12713,
+    "y": 1333
+  },
+  {
+    "desc": "",
+    "name": "Cafe",
+    "id": "1114",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13530,
+    "y": 2143
+  },
+  {
+    "desc": "",
+    "name": "Canto Records",
+    "id": "1115",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13388,
+    "y": 2925
+  },
+  {
+    "desc": "Scenic Mile car dealership.",
+    "name": "Car Dealership",
+    "id": "1116",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13246,
+    "y": 1327
+  },
+  {
+    "desc": "Upscale Mobility Auto Dealership.",
+    "name": "Car Dealership",
+    "id": "1117",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13159,
+    "y": 1388
+  },
+  {
+    "desc": "",
+    "name": "Car Dealership",
+    "id": "1118",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12372,
+    "y": 2533
+  },
+  {
+    "desc": "Multi-floor mini-mall with various shops.",
+    "name": "Cardinal Plaza",
+    "id": "1119",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12850,
+    "y": 1316
+  },
+  {
+    "desc": "St. Michael's Cathedral.",
+    "name": "Cathedral",
+    "id": "1120",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12768,
+    "y": 1398
+  },
+  {
+    "desc": "",
+    "name": "Cemetary",
+    "id": "1121",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12583,
+    "y": 3274
+  },
+  {
+    "desc": "",
+    "name": "Central Loisville Community Center",
+    "id": "1122",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12846,
+    "y": 1697
+  },
+  {
+    "desc": "Louiville's central park with playground.",
+    "name": "Iroquois Park",
+    "id": "1123",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13238,
+    "y": 2681
+  },
+  {
+    "desc": "",
+    "name": "Central Park Stables",
+    "id": "1124",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13043,
+    "y": 2827
+  },
+  {
+    "desc": "Beverage/beer factory near the Ohio River.",
+    "name": "Chugg's",
+    "id": "1125",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13330,
+    "y": 1242
+  },
+  {
+    "desc": "Church with a huge graveyard.",
+    "name": "Church",
+    "id": "1126",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12607,
+    "y": 3364
+  },
+  {
+    "desc": "Holy Light Baptist Church.",
+    "name": "Church",
+    "id": "1127",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12410,
+    "y": 1926
+  },
+  {
+    "desc": "",
+    "name": "Church",
+    "id": "1128",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12874,
+    "y": 2854
+  },
+  {
+    "desc": "",
+    "name": "Church",
+    "id": "1129",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13667,
+    "y": 2547
+  },
+  {
+    "desc": "",
+    "name": "Clothing Store",
+    "id": "1130",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13182,
+    "y": 1293
+  },
+  {
+    "desc": "",
+    "name": "Clothing Store",
+    "id": "1131",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13239,
+    "y": 1675
+  },
+  {
+    "desc": "",
+    "name": "Clothing Store",
+    "id": "1132",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13334,
+    "y": 1293
+  },
+  {
+    "desc": "",
+    "name": "Clothing Store",
+    "id": "1133",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12693,
+    "y": 1209
+  },
+  {
+    "desc": "",
+    "name": "Clothing Store",
+    "id": "1134",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12666,
+    "y": 1211
+  },
+  {
+    "desc": "",
+    "name": "Clothing store",
+    "id": "1135",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13251,
+    "y": 2137
+  },
+  {
+    "desc": "",
+    "name": "Clothing store",
+    "id": "1136",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13466,
+    "y": 1317
+  },
+  {
+    "desc": "",
+    "name": "Coffee Nirvana",
+    "id": "1137",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12629,
+    "y": 2327
+  },
+  {
+    "desc": "Good spot for some DIY home improvements.",
+    "name": "Construction Site",
+    "id": "1138",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13820,
+    "y": 1675
+  },
+  {
+    "desc": "Food, glorious food.",
+    "name": "Conven-U-Mart",
+    "id": "1139",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12280,
+    "y": 2529
+  },
+  {
+    "desc": "",
+    "name": "Convenience Store / Laundromat",
+    "id": "1140",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13947,
+    "y": 2240
+  },
+  {
+    "desc": "Would you go here?",
+    "name": "Corn Maze",
+    "id": "1141",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13721,
+    "y": 3691
+  },
+  {
+    "desc": "A 2-story house on the edge of Louisville that is almost surrounded by tall fences.",
+    "name": "Corner-fenced house",
+    "id": "1142",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12325,
+    "y": 3415
+  },
+  {
+    "desc": "",
+    "name": "Country Clerk and Records",
+    "id": "1143",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12637,
+    "y": 1469
+  },
+  {
+    "desc": "",
+    "name": "Court House",
+    "id": "1144",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12468,
+    "y": 1540
+  },
+  {
+    "desc": "",
+    "name": "Diner",
+    "id": "1145",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13344,
+    "y": 1735
+  },
+  {
+    "desc": "What more do I gotta say? Grab a bite to eat in the most zombie-infested place you possibly can.",
+    "name": "Diner",
+    "id": "1146",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13240,
+    "y": 1697
+  },
+  {
+    "desc": "",
+    "name": "Diner",
+    "id": "1147",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12907,
+    "y": 1408
+  },
+  {
+    "desc": "",
+    "name": "Diner",
+    "id": "1148",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12718,
+    "y": 1212
+  },
+  {
+    "desc": "",
+    "name": "Discount Account",
+    "id": "1149",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12627,
+    "y": 3667
+  },
+  {
+    "desc": "",
+    "name": "Dogs-A-Flaming",
+    "id": "1150",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13078,
+    "y": 1589
+  },
+  {
+    "desc": "",
+    "name": "Donut Store",
+    "id": "1151",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13470,
+    "y": 1349
+  },
+  {
+    "desc": "",
+    "name": "Dormitory",
+    "id": "1152",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12328,
+    "y": 2268
+  },
+  {
+    "desc": "",
+    "name": "E. Wrayburn Building",
+    "id": "1153",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12662,
+    "y": 1400
+  },
+  {
+    "desc": "Grid damage detected; Technicians dispatched.",
+    "name": "Electrical Substation",
+    "id": "1154",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 14765,
+    "y": 4085
+  },
+  {
+    "desc": "",
+    "name": "Elementary School",
+    "id": "1155",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12335,
+    "y": 3251
+  },
+  {
+    "desc": "",
+    "name": "Evergreen Hill Community Center",
+    "id": "1156",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13683,
+    "y": 2785
+  },
+  {
+    "desc": "",
+    "name": "Evergreen Public School",
+    "id": "1158",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13600,
+    "y": 2762
+  },
+  {
+    "desc": "",
+    "name": "Family Dentistry",
+    "id": "1159",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13605,
+    "y": 1569
+  },
+  {
+    "desc": "Face the apocalypse like a king.",
+    "name": "Fancy Mansion",
+    "id": "1160",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13533,
+    "y": 2856
+  },
+  {
+    "desc": "",
+    "name": "Fancy Restaurant",
+    "id": "1161",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12664,
+    "y": 1151
+  },
+  {
+    "desc": "",
+    "name": "Farm Produce Warehouses",
+    "id": "1162",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13555,
+    "y": 3635
+  },
+  {
+    "desc": "Fresh food from our local farmers! Check out the nearby corn maze!",
+    "name": "Farmer's Fair",
+    "id": "1163",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13697,
+    "y": 3604
+  },
+  {
+    "desc": "",
+    "name": "Farming Store With Garden",
+    "id": "1164",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13219,
+    "y": 3021
+  },
+  {
+    "desc": "Secure Houses surrounded by tall fences. One entrance.",
+    "name": "Fenced Housing",
+    "id": "1165",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13423,
+    "y": 1732
+  },
+  {
+    "desc": "",
+    "name": "Finnegan Research Group",
+    "id": "1166",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13580,
+    "y": 1701
+  },
+  {
+    "desc": "",
+    "name": "Fire Department",
+    "id": "1167",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13689,
+    "y": 1779
+  },
+  {
+    "desc": "",
+    "name": "Fire Department",
+    "id": "1168",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12363,
+    "y": 1760
+  },
+  {
+    "desc": "",
+    "name": "Fire Department",
+    "id": "1169",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13943,
+    "y": 3047
+  },
+  {
+    "desc": "",
+    "name": "First Train Inn",
+    "id": "1170",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12617,
+    "y": 2354
+  },
+  {
+    "desc": "",
+    "name": "Food Market",
+    "id": "1171",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13346,
+    "y": 1753
+  },
+  {
+    "desc": "",
+    "name": "Food Market",
+    "id": "1172",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12481,
+    "y": 1929
+  },
+  {
+    "desc": "",
+    "name": "Food Market",
+    "id": "1173",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13567,
+    "y": 3024
+  },
+  {
+    "desc": "",
+    "name": "Food Market",
+    "id": "1174",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13782,
+    "y": 2542
+  },
+  {
+    "desc": "",
+    "name": "Food Market",
+    "id": "1175",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13177,
+    "y": 1603
+  },
+  {
+    "desc": "",
+    "name": "Football Field",
+    "id": "1176",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12368,
+    "y": 2463
+  },
+  {
+    "desc": "",
+    "name": "Fossoil Field - Baseball Stadium",
+    "id": "1177",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13026,
+    "y": 1581
+  },
+  {
+    "desc": "",
+    "name": "Fossoil Headquarters",
+    "id": "1178",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12082,
+    "y": 1612
+  },
+  {
+    "desc": "Gifts + Souvenirs",
+    "name": "From The Dugouts",
+    "id": "1179",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13039,
+    "y": 1634
+  },
+  {
+    "desc": "Mini Golf, Bowling, Arcade, Laser Tag.",
+    "name": "Fun XTreme",
+    "id": "1180",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12369,
+    "y": 1319
+  },
+  {
+    "desc": "Here the dead are welcome!",
+    "name": "Funeral Home",
+    "id": "1181",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13153,
+    "y": 1516
+  },
+  {
+    "desc": "Furniture Store with an antique stove.",
+    "name": "Furniture Store",
+    "id": "1182",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13115,
+    "y": 1444
+  },
+  {
+    "desc": "Better Furnishings.",
+    "name": "Furniture Store",
+    "id": "1183",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12668,
+    "y": 2163
+  },
+  {
+    "desc": "",
+    "name": "Furniture Store",
+    "id": "1184",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13420,
+    "y": 1462
+  },
+  {
+    "desc": "A small furniture store with decent options.",
+    "name": "Furniture Store",
+    "id": "1185",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13380,
+    "y": 3073
+  },
+  {
+    "desc": "",
+    "name": "Garage For Lease",
+    "id": "1186",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13143,
+    "y": 3013
+  },
+  {
+    "desc": "",
+    "name": "Gas Station",
+    "id": "1187",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12098,
+    "y": 2100
+  },
+  {
+    "desc": "Gas-2-Go.",
+    "name": "Gas Station",
+    "id": "1188",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12713,
+    "y": 2239
+  },
+  {
+    "desc": "Fossoil.",
+    "name": "Gas Station",
+    "id": "1189",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12273,
+    "y": 1621
+  },
+  {
+    "desc": "Fossoil.",
+    "name": "Gas Station",
+    "id": "1190",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12444,
+    "y": 3536
+  },
+  {
+    "desc": "Gas-2-Go.",
+    "name": "Gas Station",
+    "id": "1191",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13960,
+    "y": 3275
+  },
+  {
+    "desc": "Fossoil.",
+    "name": "Gas Station",
+    "id": "1192",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13386,
+    "y": 1412
+  },
+  {
+    "desc": "Fossoil.",
+    "name": "Gas Station",
+    "id": "1193",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12912,
+    "y": 3029
+  },
+  {
+    "desc": "Gas-2-Go.",
+    "name": "Gas Station",
+    "id": "1194",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13556,
+    "y": 2138
+  },
+  {
+    "desc": "Gas-2-Go.",
+    "name": "Gas Station",
+    "id": "1195",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13619,
+    "y": 1527
+  },
+  {
+    "desc": "Gas-2-Go, 4 pumps.",
+    "name": "Gas Station",
+    "id": "1196",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13383,
+    "y": 2966
+  },
+  {
+    "desc": "Fossoil, 8 pumps.",
+    "name": "Gas Station",
+    "id": "1197",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12998,
+    "y": 2162
+  },
+  {
+    "desc": "Gas-2-Go, 4-pumps.",
+    "name": "Gas Station",
+    "id": "1198",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13133,
+    "y": 1324
+  },
+  {
+    "desc": "GigaMart with 4 gas pumps next to it.",
+    "name": "Gas Station/GigaMart",
+    "id": "1199",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12579,
+    "y": 2550
+  },
+  {
+    "desc": "",
+    "name": "Gated Community",
+    "id": "1200",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12207,
+    "y": 1799
+  },
+  {
+    "desc": "",
+    "name": "GigaMart",
+    "id": "1201",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13452,
+    "y": 3057
+  },
+  {
+    "desc": "",
+    "name": "GigaMart",
+    "id": "1202",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12633,
+    "y": 1672
+  },
+  {
+    "desc": "",
+    "name": "Glo Night Club",
+    "id": "1203",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12425,
+    "y": 1323
+  },
+  {
+    "desc": "",
+    "name": "Go Flash",
+    "id": "1204",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12413,
+    "y": 2827
+  },
+  {
+    "desc": "",
+    "name": "Golden Dragon Buffet",
+    "id": "1205",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12576,
+    "y": 1882
+  },
+  {
+    "desc": "",
+    "name": "Goodman Legal Services",
+    "id": "1206",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12662,
+    "y": 2190
+  },
+  {
+    "desc": "Grocery store.",
+    "name": "Greene's",
+    "id": "1207",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13362,
+    "y": 1292
+  },
+  {
+    "desc": "Grocery store.",
+    "name": "Greene's",
+    "id": "1208",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13334,
+    "y": 2959
+  },
+  {
+    "desc": "",
+    "name": "Greene's",
+    "id": "1209",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13510,
+    "y": 2142
+  },
+  {
+    "desc": "",
+    "name": "Greene's",
+    "id": "1210",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13137,
+    "y": 2123
+  },
+  {
+    "desc": "",
+    "name": "Grill store",
+    "id": "1211",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13328,
+    "y": 3072
+  },
+  {
+    "desc": "",
+    "name": "Grocery Store",
+    "id": "1212",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13246,
+    "y": 1633
+  },
+  {
+    "desc": "",
+    "name": "Gun Store",
+    "id": "1213",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13594,
+    "y": 1536
+  },
+  {
+    "desc": "",
+    "name": "Gun Store",
+    "id": "1214",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12361,
+    "y": 1720
+  },
+  {
+    "desc": "Stars and Stripes.",
+    "name": "Gun Store",
+    "id": "1215",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13555,
+    "y": 1273
+  },
+  {
+    "desc": "",
+    "name": "Gym",
+    "id": "1216",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12630,
+    "y": 1144
+  },
+  {
+    "desc": "",
+    "name": "Gym",
+    "id": "1217",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12854,
+    "y": 1373
+  },
+  {
+    "desc": "",
+    "name": "Hair Genesis",
+    "id": "1218",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13330,
+    "y": 2971
+  },
+  {
+    "desc": "",
+    "name": "Hardware Store",
+    "id": "1219",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13959,
+    "y": 3106
+  },
+  {
+    "desc": "",
+    "name": "Hardware Store",
+    "id": "1220",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13172,
+    "y": 1551
+  },
+  {
+    "desc": "",
+    "name": "Hardware Store",
+    "id": "1221",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13312,
+    "y": 1307
+  },
+  {
+    "desc": "",
+    "name": "Hardware Store",
+    "id": "1222",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12377,
+    "y": 1382
+  },
+  {
+    "desc": "E.P. Tools.",
+    "name": "Hardware Store",
+    "id": "1223",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13959,
+    "y": 3099
+  },
+  {
+    "desc": "",
+    "name": "Hardware Store",
+    "id": "1224",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13528,
+    "y": 3089
+  },
+  {
+    "desc": "On the second floor of Grand Ohio Mall.",
+    "name": "Hardware Store",
+    "id": "1225",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13521,
+    "y": 1318
+  },
+  {
+    "desc": "",
+    "name": "Hardware store",
+    "id": "1226",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13369,
+    "y": 3074
+  },
+  {
+    "desc": "",
+    "name": "Hickory Bakery Box",
+    "id": "1227",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12927,
+    "y": 1484
+  },
+  {
+    "desc": "",
+    "name": "HighSchool",
+    "id": "1228",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13049,
+    "y": 1710
+  },
+  {
+    "desc": "The alternate way to the army checkpoint.",
+    "name": "Hole in the Fence",
+    "id": "1229",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12606,
+    "y": 4161
+  },
+  {
+    "desc": "",
+    "name": "Horsetrack",
+    "id": "1230",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12224,
+    "y": 2757
+  },
+  {
+    "desc": "Louisville Central Hospital.",
+    "name": "Hospital",
+    "id": "1231",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12940,
+    "y": 2076
+  },
+  {
+    "desc": "Leather clothing store",
+    "name": "Hugo Plush",
+    "id": "1232",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12578,
+    "y": 1816
+  },
+  {
+    "desc": "",
+    "name": "Jay's Chicken",
+    "id": "1233",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13466,
+    "y": 2979
+  },
+  {
+    "desc": "Fast-food Restaurant.",
+    "name": "Jay's Chicken",
+    "id": "1234",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13630,
+    "y": 1271
+  },
+  {
+    "desc": "",
+    "name": "Jay's Chicken",
+    "id": "1235",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12745,
+    "y": 2233
+  },
+  {
+    "desc": "",
+    "name": "Jay's Chicken",
+    "id": "1236",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13365,
+    "y": 1350
+  },
+  {
+    "desc": "",
+    "name": "Jay's Chicken",
+    "id": "1237",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12271,
+    "y": 1381
+  },
+  {
+    "desc": "",
+    "name": "Jay's Chicken HQ",
+    "id": "1238",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12790,
+    "y": 2227
+  },
+  {
+    "desc": "",
+    "name": "Junkyard",
+    "id": "1239",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13695,
+    "y": 1681
+  },
+  {
+    "desc": "",
+    "name": "KY Transit",
+    "id": "1240",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12558,
+    "y": 2408
+  },
+  {
+    "desc": "Printing factory and writers/editors workplace.",
+    "name": "Kentucky Herald Newspaper",
+    "id": "1241",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12615,
+    "y": 3557
+  },
+  {
+    "desc": "Appliances, pots, pans, etc.",
+    "name": "Kitchen Supply Store",
+    "id": "1242",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12427,
+    "y": 1371
+  },
+  {
+    "desc": "Large office building with a production line and storage.",
+    "name": "Kitten Knives",
+    "id": "1243",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12171,
+    "y": 1394
+  },
+  {
+    "desc": "",
+    "name": "Knox Bank",
+    "id": "1244",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12566,
+    "y": 1696
+  },
+  {
+    "desc": "",
+    "name": "Knox Bank",
+    "id": "1245",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13410,
+    "y": 1353
+  },
+  {
+    "desc": "",
+    "name": "Knox Bank (Classic Building)",
+    "id": "1246",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12617,
+    "y": 1586
+  },
+  {
+    "desc": "",
+    "name": "Knox Bank (Modern Building)",
+    "id": "1247",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13603,
+    "y": 3027
+  },
+  {
+    "desc": "",
+    "name": "Knox Distillery",
+    "id": "1248",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12912,
+    "y": 1380
+  },
+  {
+    "desc": "Kitchen Appliance Store.",
+    "name": "Knox Pack Kitchens",
+    "id": "1249",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12917,
+    "y": 1446
+  },
+  {
+    "desc": "",
+    "name": "Knox Talk Radio Station",
+    "id": "1250",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13561,
+    "y": 1581
+  },
+  {
+    "desc": "",
+    "name": "KnoxPack Kitchens",
+    "id": "1251",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12632,
+    "y": 3769
+  },
+  {
+    "desc": "",
+    "name": "LBMW Station",
+    "id": "1252",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12340,
+    "y": 2057
+  },
+  {
+    "desc": "",
+    "name": "LSU Campus",
+    "id": "1253",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12407,
+    "y": 2254
+  },
+  {
+    "desc": "Louisville State University Library.",
+    "name": "LSU Library",
+    "id": "1254",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12350,
+    "y": 2142
+  },
+  {
+    "desc": "",
+    "name": "Large Apartment Complex",
+    "id": "1255",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12787,
+    "y": 1848
+  },
+  {
+    "desc": "",
+    "name": "Large Gated Community",
+    "id": "1256",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 14121,
+    "y": 2798
+  },
+  {
+    "desc": "",
+    "name": "Large Grocery Store",
+    "id": "1257",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12759,
+    "y": 2944
+  },
+  {
+    "desc": "Tools and more.",
+    "name": "Large Warehouse",
+    "id": "1258",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12720,
+    "y": 2180
+  },
+  {
+    "desc": "",
+    "name": "Leafhill Heights Offices",
+    "id": "1259",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12254,
+    "y": 3545
+  },
+  {
+    "desc": "",
+    "name": "Line by Line Design",
+    "id": "1260",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12565,
+    "y": 3761
+  },
+  {
+    "desc": "Liquorty Split.",
+    "name": "Liquor Store",
+    "id": "1261",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12408,
+    "y": 2845
+  },
+  {
+    "desc": "",
+    "name": "Liquor Store",
+    "id": "1262",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13440,
+    "y": 1292
+  },
+  {
+    "desc": "",
+    "name": "Liquor Store",
+    "id": "1263",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12232,
+    "y": 1347
+  },
+  {
+    "desc": "",
+    "name": "Liquor Store",
+    "id": "1264",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12618,
+    "y": 2292
+  },
+  {
+    "desc": "",
+    "name": "Liquor store",
+    "id": "1265",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12717,
+    "y": 5059
+  },
+  {
+    "desc": "",
+    "name": "Liquor store",
+    "id": "1266",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13960,
+    "y": 3205
+  },
+  {
+    "desc": "Clothing store",
+    "name": "Lola Limon",
+    "id": "1267",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12830,
+    "y": 1332
+  },
+  {
+    "desc": "Inside of the mall.",
+    "name": "Lola Limon",
+    "id": "1268",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13522,
+    "y": 1271
+  },
+  {
+    "desc": "",
+    "name": "Louisville Animal Shelter",
+    "id": "1269",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12263,
+    "y": 1444
+  },
+  {
+    "desc": "",
+    "name": "Louisville Boat Club",
+    "id": "1270",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12776,
+    "y": 1144
+  },
+  {
+    "desc": "Baseball Bat Factory.",
+    "name": "Louisville Bruiser",
+    "id": "1271",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13249,
+    "y": 1234
+  },
+  {
+    "desc": "",
+    "name": "Louisville City Hall",
+    "id": "1272",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12563,
+    "y": 1534
+  },
+  {
+    "desc": "",
+    "name": "Louisville Expo Center",
+    "id": "1273",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12965,
+    "y": 1309
+  },
+  {
+    "desc": "",
+    "name": "Louisville Music Concert",
+    "id": "1274",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13759,
+    "y": 1937
+  },
+  {
+    "desc": "",
+    "name": "Mama McFudgington's",
+    "id": "1275",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13182,
+    "y": 1276
+  },
+  {
+    "desc": "Sells domestic and internation maps and magazines.",
+    "name": "Maps Unlimited",
+    "id": "1276",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12233,
+    "y": 1627
+  },
+  {
+    "desc": "",
+    "name": "Mashie Signs & Paintings",
+    "id": "1277",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12606,
+    "y": 3701
+  },
+  {
+    "desc": "",
+    "name": "Mausoleum",
+    "id": "1278",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12571,
+    "y": 3172
+  },
+  {
+    "desc": "",
+    "name": "Medical Center",
+    "id": "1279",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12423,
+    "y": 1761
+  },
+  {
+    "desc": "",
+    "name": "Military Homes",
+    "id": "1280",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12733,
+    "y": 3969
+  },
+  {
+    "desc": "",
+    "name": "Milk 'n' More",
+    "id": "1281",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12668,
+    "y": 2125
+  },
+  {
+    "desc": "",
+    "name": "Milk 'n' More",
+    "id": "1282",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13958,
+    "y": 3242
+  },
+  {
+    "desc": "",
+    "name": "Motel",
+    "id": "1283",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12428,
+    "y": 2774
+  },
+  {
+    "desc": "A motel with a large outside pool and plenty of rooms.",
+    "name": "Motel",
+    "id": "1284",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13225,
+    "y": 3523
+  },
+  {
+    "desc": "",
+    "name": "Movie theater",
+    "id": "1285",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12333,
+    "y": 1369
+  },
+  {
+    "desc": "",
+    "name": "Music store",
+    "id": "1286",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12403,
+    "y": 1389
+  },
+  {
+    "desc": "",
+    "name": "My Sunday Market",
+    "id": "1287",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12438,
+    "y": 3108
+  },
+  {
+    "desc": "Large building with many shelves, desks, and a few themed filming sets.",
+    "name": "News Now Network",
+    "id": "1288",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12645,
+    "y": 1918
+  },
+  {
+    "desc": "",
+    "name": "Oak Park Apartments",
+    "id": "1289",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12155,
+    "y": 2914
+  },
+  {
+    "desc": "Lots of desks here.",
+    "name": "Office Furniture Store",
+    "id": "1290",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13682,
+    "y": 1572
+  },
+  {
+    "desc": "For all your base decoration needs!",
+    "name": "Palette Art Supplies",
+    "id": "1291",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13179,
+    "y": 1748
+  },
+  {
+    "desc": "Louisville central park center.",
+    "name": "Park Center",
+    "id": "1292",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13391,
+    "y": 2368
+  },
+  {
+    "desc": "",
+    "name": "Pawn Shop",
+    "id": "1293",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12320,
+    "y": 1331
+  },
+  {
+    "desc": "",
+    "name": "Pawn Shop",
+    "id": "1294",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13123,
+    "y": 2975
+  },
+  {
+    "desc": "",
+    "name": "Pawn Shop",
+    "id": "1295",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12376,
+    "y": 1470
+  },
+  {
+    "desc": "",
+    "name": "Pawn Shop",
+    "id": "1296",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12488,
+    "y": 1383
+  },
+  {
+    "desc": "",
+    "name": "Perfick Potato Co.",
+    "id": "1297",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12268,
+    "y": 1341
+  },
+  {
+    "desc": "A Veterinarian's office.",
+    "name": "Pet Health Pawmise",
+    "id": "1298",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13217,
+    "y": 3044
+  },
+  {
+    "desc": "Pharmahug.",
+    "name": "Pharmacy",
+    "id": "1299",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13237,
+    "y": 1286
+  },
+  {
+    "desc": "Pharmahug.",
+    "name": "Pharmacy",
+    "id": "1300",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13123,
+    "y": 2126
+  },
+  {
+    "desc": "Med-U-Well Pharmacy and Medical Clinic.",
+    "name": "Pharmacy",
+    "id": "1301",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13232,
+    "y": 2972
+  },
+  {
+    "desc": "Med-U-Well Pharmacy and Clinic.",
+    "name": "Pharmacy",
+    "id": "1302",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12950,
+    "y": 1482
+  },
+  {
+    "desc": "",
+    "name": "Pizza Whirled",
+    "id": "1303",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12440,
+    "y": 3832
+  },
+  {
+    "desc": "",
+    "name": "Pizza Whirled",
+    "id": "1304",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13170,
+    "y": 3028
+  },
+  {
+    "desc": "",
+    "name": "Pizza Whirled",
+    "id": "1305",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13225,
+    "y": 2104
+  },
+  {
+    "desc": "",
+    "name": "Pizza Whirled",
+    "id": "1306",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13652,
+    "y": 1278
+  },
+  {
+    "desc": "",
+    "name": "Pizza Whirled",
+    "id": "1307",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13474,
+    "y": 1411
+  },
+  {
+    "desc": "",
+    "name": "Pizza Whirled",
+    "id": "1308",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13517,
+    "y": 2112
+  },
+  {
+    "desc": "",
+    "name": "Police Station",
+    "id": "1309",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13782,
+    "y": 2558
+  },
+  {
+    "desc": "",
+    "name": "Police Station",
+    "id": "1310",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13220,
+    "y": 3087
+  },
+  {
+    "desc": "",
+    "name": "Police Station & Prison",
+    "id": "1311",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12444,
+    "y": 1609
+  },
+  {
+    "desc": "",
+    "name": "Police station",
+    "id": "1312",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12961,
+    "y": 1379
+  },
+  {
+    "desc": "",
+    "name": "Post Office",
+    "id": "1313",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12624,
+    "y": 2076
+  },
+  {
+    "desc": "Refugee Area with lots of tents, propane bbqs, and metal drums.",
+    "name": "Refugee Area",
+    "id": "1314",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12514,
+    "y": 4063
+  },
+  {
+    "desc": "",
+    "name": "Refugee Camp",
+    "id": "1315",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13423,
+    "y": 3738
+  },
+  {
+    "desc": "",
+    "name": "Remote House with a field",
+    "id": "1316",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 14824,
+    "y": 3716
+  },
+  {
+    "desc": "A large building repurposed for what appears to be the army, containing many cots, clothing, and weapons, slightly southwest of the theater in the north of the city.",
+    "name": "Repurposed Building",
+    "id": "1317",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12421,
+    "y": 1423
+  },
+  {
+    "desc": "Good lord what is happening in there!",
+    "name": "Research Labs",
+    "id": "1318",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13597,
+    "y": 1699
+  },
+  {
+    "desc": "",
+    "name": "Resturant",
+    "id": "1319",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13959,
+    "y": 3211
+  },
+  {
+    "desc": "",
+    "name": "Resturant",
+    "id": "1320",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12731,
+    "y": 1143
+  },
+  {
+    "desc": "",
+    "name": "Roller Skating Rink",
+    "id": "1321",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12975,
+    "y": 1430
+  },
+  {
+    "desc": "",
+    "name": "Romero Center for the Performing Arts",
+    "id": "1322",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12527,
+    "y": 1751
+  },
+  {
+    "desc": "With one surviving pump.",
+    "name": "Ruined Gas Station",
+    "id": "1323",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13639,
+    "y": 4072
+  },
+  {
+    "desc": "",
+    "name": "Scarlet Oak Distillery",
+    "id": "1324",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12034,
+    "y": 1945
+  },
+  {
+    "desc": "",
+    "name": "Seahorse Coffee",
+    "id": "1325",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12576,
+    "y": 1635
+  },
+  {
+    "desc": "",
+    "name": "Seahorse Coffee",
+    "id": "1326",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13523,
+    "y": 1714
+  },
+  {
+    "desc": "A coffee store inside Fossoil Stadium.",
+    "name": "Seahorse Coffee",
+    "id": "1327",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13078,
+    "y": 1598
+  },
+  {
+    "desc": "",
+    "name": "Shady Oaks Nursing Home",
+    "id": "1328",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13084,
+    "y": 2023
+  },
+  {
+    "desc": "Jewelry Store.",
+    "name": "Sheba Jewellers",
+    "id": "1329",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13570,
+    "y": 1274
+  },
+  {
+    "desc": "",
+    "name": "Small Art Gallery",
+    "id": "1330",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12517,
+    "y": 1445
+  },
+  {
+    "desc": "",
+    "name": "Small Art Gallery",
+    "id": "1331",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13610,
+    "y": 1366
+  },
+  {
+    "desc": "",
+    "name": "Small Mall",
+    "id": "1332",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13344,
+    "y": 3045
+  },
+  {
+    "desc": "A small checkpoint on the boundary of the exclusion zone.",
+    "name": "Small Military Checkpoint",
+    "id": "1333",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13446,
+    "y": 4077
+  },
+  {
+    "desc": "Another way into Louisville.",
+    "name": "South Army Checkpoint",
+    "id": "1334",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 14534,
+    "y": 4025
+  },
+  {
+    "desc": "",
+    "name": "South Louisville Elementary",
+    "id": "1335",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12971,
+    "y": 3223
+  },
+  {
+    "desc": "",
+    "name": "Spiffo's",
+    "id": "1336",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12448,
+    "y": 3786
+  },
+  {
+    "desc": "",
+    "name": "Spiffo's",
+    "id": "1337",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13457,
+    "y": 2927
+  },
+  {
+    "desc": "Fast-food Restaurant.",
+    "name": "Spiffo's",
+    "id": "1338",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13661,
+    "y": 1321
+  },
+  {
+    "desc": "A Spiffo's on the West side of Louisville.",
+    "name": "Spiffo's",
+    "id": "1339",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12314,
+    "y": 1930
+  },
+  {
+    "desc": "",
+    "name": "Spiffo's",
+    "id": "1340",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13303,
+    "y": 1351
+  },
+  {
+    "desc": "Spiffo's in the baseball stadium.",
+    "name": "Spiffo's",
+    "id": "1341",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13080,
+    "y": 1633
+  },
+  {
+    "desc": "The Spiffo's headquarters. Praise mega Spiffo.",
+    "name": "Spiffo's HQ",
+    "id": "1342",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12714,
+    "y": 1621
+  },
+  {
+    "desc": "Baseball bats for days.",
+    "name": "Sporting Goods Store",
+    "id": "1343",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13316,
+    "y": 3052
+  },
+  {
+    "desc": "",
+    "name": "St. Peregrin Hospital",
+    "id": "1344",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12458,
+    "y": 3702
+  },
+  {
+    "desc": "",
+    "name": "St. Peregrin Hospital",
+    "id": "1345",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12458,
+    "y": 3702
+  },
+  {
+    "desc": "",
+    "name": "StarEplex - Movie Theater",
+    "id": "1346",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12471,
+    "y": 1272
+  },
+  {
+    "desc": "A metal working company.",
+    "name": "Steely Revolve",
+    "id": "1347",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12583,
+    "y": 3637
+  },
+  {
+    "desc": "",
+    "name": "Storage Units",
+    "id": "1348",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12196,
+    "y": 1684
+  },
+  {
+    "desc": "",
+    "name": "Storage Units",
+    "id": "1349",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12181,
+    "y": 1328
+  },
+  {
+    "desc": "",
+    "name": "Storage Units",
+    "id": "1350",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12713,
+    "y": 1999
+  },
+  {
+    "desc": "",
+    "name": "Storage Units",
+    "id": "1351",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13122,
+    "y": 1708
+  },
+  {
+    "desc": "",
+    "name": "SweetPea",
+    "id": "1352",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12419,
+    "y": 2818
+  },
+  {
+    "desc": "",
+    "name": "T.I.S Construction",
+    "id": "1353",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12669,
+    "y": 2140
+  },
+  {
+    "desc": "",
+    "name": "Taco del Pancho",
+    "id": "1354",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12579,
+    "y": 2071
+  },
+  {
+    "desc": "",
+    "name": "Taco del Pancho",
+    "id": "1355",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13527,
+    "y": 3019
+  },
+  {
+    "desc": "Large 2 level mall.",
+    "name": "The Grand Ohio Mall",
+    "id": "1356",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13562,
+    "y": 1386
+  },
+  {
+    "desc": "",
+    "name": "The Havisham Hotel&Suites",
+    "id": "1357",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12636,
+    "y": 1317
+  },
+  {
+    "desc": "A grocery store of sorts.",
+    "name": "The Plump Cornucopia",
+    "id": "1358",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12733,
+    "y": 1211
+  },
+  {
+    "desc": "",
+    "name": "The Waterfront",
+    "id": "1359",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13037,
+    "y": 1210
+  },
+  {
+    "desc": "Farming store with a garden.",
+    "name": "Thumbs of Green",
+    "id": "1360",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13135,
+    "y": 1780
+  },
+  {
+    "desc": "On the 1st floor of the mall",
+    "name": "Time 4 Sport",
+    "id": "1361",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13522,
+    "y": 1314
+  },
+  {
+    "desc": "",
+    "name": "Tita Maria's Catina",
+    "id": "1362",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13311,
+    "y": 2970
+  },
+  {
+    "desc": "",
+    "name": "Central Station",
+    "id": "1363",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12714,
+    "y": 2326
+  },
+  {
+    "desc": "",
+    "name": "Train Yard",
+    "id": "1364",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12675,
+    "y": 4403
+  },
+  {
+    "desc": "",
+    "name": "Trainyard",
+    "id": "1365",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12650,
+    "y": 4339
+  },
+  {
+    "desc": "",
+    "name": "U-Store It",
+    "id": "1366",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13689,
+    "y": 1615
+  },
+  {
+    "desc": "Post Office.",
+    "name": "U.S Mail Service",
+    "id": "1367",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12583,
+    "y": 3581
+  },
+  {
+    "desc": "",
+    "name": "United Shipping Logistics",
+    "id": "1368",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12627,
+    "y": 3704
+  },
+  {
+    "desc": "Hit Vids.",
+    "name": "VHS Store",
+    "id": "1369",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12431,
+    "y": 2818
+  },
+  {
+    "desc": "Hit Vids.",
+    "name": "VHS Store",
+    "id": "1370",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12797,
+    "y": 1212
+  },
+  {
+    "desc": "Hit Vids, West of the Grand Ohio Mall.",
+    "name": "VHS Store",
+    "id": "1371",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13429,
+    "y": 1292
+  },
+  {
+    "desc": "Hit Vids.",
+    "name": "VHS Store",
+    "id": "1372",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13114,
+    "y": 1454
+  },
+  {
+    "desc": "",
+    "name": "Valu Insurance",
+    "id": "1373",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12561,
+    "y": 3617
+  },
+  {
+    "desc": "",
+    "name": "ValuTech HQ",
+    "id": "1374",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12560,
+    "y": 3696
+  },
+  {
+    "desc": "",
+    "name": "Velvet Tassel Club",
+    "id": "1375",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12316,
+    "y": 1271
+  },
+  {
+    "desc": "",
+    "name": "Warehouse",
+    "id": "1376",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12611,
+    "y": 3617
+  },
+  {
+    "desc": "",
+    "name": "Warehouse",
+    "id": "1377",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12796,
+    "y": 2184
+  },
+  {
+    "desc": "",
+    "name": "Wellington Heights Golf Club",
+    "id": "1378",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12973,
+    "y": 2233
+  },
+  {
+    "desc": "",
+    "name": "Window shop",
+    "id": "1379",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13416,
+    "y": 1292
+  },
+  {
+    "desc": "",
+    "name": "Zippee Market",
+    "id": "1380",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12225,
+    "y": 3026
+  },
+  {
+    "desc": "",
+    "name": "Zippee Market",
+    "id": "1381",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12999,
+    "y": 3113
+  },
+  {
+    "desc": "",
+    "name": "Zippee Market",
+    "id": "1382",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13066,
+    "y": 1922
+  },
+  {
+    "desc": "",
+    "name": "Zippee Market",
+    "id": "1383",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12664,
+    "y": 1366
+  },
+  {
+    "desc": "",
+    "name": "Zippee Market",
+    "id": "1384",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13519,
+    "y": 1668
+  },
+  {
+    "desc": "",
+    "name": "Zippee Market",
+    "id": "1385",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12521,
+    "y": 1482
+  },
+  {
+    "desc": "",
+    "name": "Zippee Market",
+    "id": "1386",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12646,
+    "y": 2291
+  },
+  {
+    "desc": "",
+    "name": "Bakery",
+    "id": "1387",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10081,
+    "y": 12806
+  },
+  {
+    "desc": "",
+    "name": "Bar",
+    "id": "1388",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10170,
+    "y": 12673
+  },
+  {
+    "desc": "",
+    "name": "Church",
+    "id": "1389",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10328,
+    "y": 12794
+  },
+  {
+    "desc": "",
+    "name": "Cinema",
+    "id": "1390",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10172,
+    "y": 12645
+  },
+  {
+    "desc": "",
+    "name": "Community Center",
+    "id": "1391",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10030,
+    "y": 12732
+  },
+  {
+    "desc": "",
+    "name": "Diner",
+    "id": "1392",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10110,
+    "y": 11151
+  },
+  {
+    "desc": "",
+    "name": "Doctor's Office",
+    "id": "1393",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10160,
+    "y": 12761
+  },
+  {
+    "desc": "",
+    "name": "Family Fashion",
+    "id": "1394",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10079,
+    "y": 12818
+  },
+  {
+    "desc": "Logistics hub for fresh produce.",
+    "name": "Farmer's Warehouse",
+    "id": "1395",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9395,
+    "y": 9300
+  },
+  {
+    "desc": "",
+    "name": "Food Market",
+    "id": "1396",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10113,
+    "y": 12786
+  },
+  {
+    "desc": "",
+    "name": "Gas Station",
+    "id": "1397",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10144,
+    "y": 12791
+  },
+  {
+    "desc": "",
+    "name": "Hair-Saloon",
+    "id": "1398",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10183,
+    "y": 12819
+  },
+  {
+    "desc": "",
+    "name": "Insurance Office",
+    "id": "1399",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10074,
+    "y": 12776
+  },
+  {
+    "desc": "An apartment complex for military personnel with a large amount of equipment and weapons.",
+    "name": "Knox Military Apartments",
+    "id": "1400",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10077,
+    "y": 12637
+  },
+  {
+    "desc": "",
+    "name": "Laundromat",
+    "id": "1401",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10183,
+    "y": 12782
+  },
+  {
+    "desc": "",
+    "name": "Laundromat",
+    "id": "1402",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10181,
+    "y": 12731
+  },
+  {
+    "desc": "",
+    "name": "Mama McFudgington's",
+    "id": "1403",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10176,
+    "y": 12805
+  },
+  {
+    "desc": "",
+    "name": "Mendy's Eatery",
+    "id": "1404",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10131,
+    "y": 12761
+  },
+  {
+    "desc": "",
+    "name": "Office",
+    "id": "1405",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10184,
+    "y": 12793
+  },
+  {
+    "desc": "",
+    "name": "Pharmahug",
+    "id": "1406",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10144,
+    "y": 12761
+  },
+  {
+    "desc": "",
+    "name": "Post Office",
+    "id": "1407",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10107,
+    "y": 12713
+  },
+  {
+    "desc": "A radio relay station. Access forbidden, except trained personnel.",
+    "name": "Relay station",
+    "id": "1408",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10278,
+    "y": 8749
+  },
+  {
+    "desc": "",
+    "name": "Restaurant",
+    "id": "1409",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10095,
+    "y": 12750
+  },
+  {
+    "desc": "",
+    "name": "School",
+    "id": "1410",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9999,
+    "y": 12655
+  },
+  {
+    "desc": "",
+    "name": "VHS Store",
+    "id": "1411",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10164,
+    "y": 12733
+  },
+  {
+    "desc": "Well. Well.",
+    "name": "Well",
+    "id": "1412",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8847,
+    "y": 9206
+  },
+  {
+    "desc": "House one starts in the the A Really CDDA challenge map.",
+    "name": "A CDDA Starter House",
+    "id": "1413",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10820,
+    "y": 9412
+  },
+  {
+    "desc": "",
+    "name": "Abandoned Cabins",
+    "id": "1414",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10969,
+    "y": 9173
+  },
+  {
+    "desc": "",
+    "name": "Abandoned Restaurant",
+    "id": "1415",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10625,
+    "y": 10047
+  },
+  {
+    "desc": "",
+    "name": "Adult Education Center",
+    "id": "1416",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10638,
+    "y": 9904
+  },
+  {
+    "desc": "",
+    "name": "All You Can Eat Buffet",
+    "id": "1417",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10619,
+    "y": 9437
+  },
+  {
+    "desc": "",
+    "name": "Auto Repair Shop",
+    "id": "1418",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10605,
+    "y": 9406
+  },
+  {
+    "desc": "",
+    "name": "Auto Repair Shop",
+    "id": "1419",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10173,
+    "y": 10940
+  },
+  {
+    "desc": "",
+    "name": "Backyard Garden",
+    "id": "1420",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10771,
+    "y": 9539
+  },
+  {
+    "desc": "",
+    "name": "Bakery",
+    "id": "1421",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10617,
+    "y": 9606
+  },
+  {
+    "desc": "Care for a drink?",
+    "name": "Bar",
+    "id": "1422",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10617,
+    "y": 9219
+  },
+  {
+    "desc": "",
+    "name": "Baseball Field",
+    "id": "1423",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10955,
+    "y": 9944
+  },
+  {
+    "desc": "",
+    "name": "Big Urban Warehouse",
+    "id": "1424",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10694,
+    "y": 10103
+  },
+  {
+    "desc": "The pillow will help her get comfortable.",
+    "name": "Bob and Kate's Safehouse",
+    "id": "1425",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10746,
+    "y": 9415
+  },
+  {
+    "desc": "",
+    "name": "Book Store",
+    "id": "1426",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10610,
+    "y": 10365
+  },
+  {
+    "desc": "",
+    "name": "Burger and Laundromat",
+    "id": "1427",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10606,
+    "y": 9467
+  },
+  {
+    "desc": "Do you really want to be alone in the woods now? Without a well?",
+    "name": "Cabin",
+    "id": "1428",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11243,
+    "y": 8953
+  },
+  {
+    "desc": "Do you really want to be alone in the woods now?Has a well.",
+    "name": "Cabin in the Woods",
+    "id": "1429",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9664,
+    "y": 8773
+  },
+  {
+    "desc": "",
+    "name": "Cafeteria",
+    "id": "1430",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10648,
+    "y": 9924
+  },
+  {
+    "desc": "A Group of Cabins In The Woods Near Muldraugh.",
+    "name": "Camp Grounds",
+    "id": "1431",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12422,
+    "y": 8927
+  },
+  {
+    "desc": "",
+    "name": "Chapel",
+    "id": "1432",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10723,
+    "y": 9711
+  },
+  {
+    "desc": "",
+    "name": "Church",
+    "id": "1433",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10773,
+    "y": 10169
+  },
+  {
+    "desc": "Small used clothing store.",
+    "name": "Clothing Store",
+    "id": "1434",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10628,
+    "y": 9903
+  },
+  {
+    "desc": "",
+    "name": "Clothing Store",
+    "id": "1435",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10610,
+    "y": 10376
+  },
+  {
+    "desc": "",
+    "name": "Construction Site",
+    "id": "1436",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10061,
+    "y": 9576
+  },
+  {
+    "desc": "",
+    "name": "Convenience Store",
+    "id": "1437",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10838,
+    "y": 10029
+  },
+  {
+    "desc": "",
+    "name": "Cortman Medical",
+    "id": "1438",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10876,
+    "y": 10028
+  },
+  {
+    "desc": "",
+    "name": "Cross roads",
+    "id": "1439",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10591,
+    "y": 11204
+  },
+  {
+    "desc": "",
+    "name": "Diner",
+    "id": "1440",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10614,
+    "y": 10559
+  },
+  {
+    "desc": "",
+    "name": "Drug Lab",
+    "id": "1441",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11600,
+    "y": 9295
+  },
+  {
+    "desc": "",
+    "name": "Electrical Substation",
+    "id": "1442",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10383,
+    "y": 10090
+  },
+  {
+    "desc": "",
+    "name": "Electronics Store",
+    "id": "1443",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10614,
+    "y": 9881
+  },
+  {
+    "desc": "All those fire drills finally paid off!",
+    "name": "Elementary school",
+    "id": "1444",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10619,
+    "y": 9967
+  },
+  {
+    "desc": "",
+    "name": "Empty Warehouse",
+    "id": "1445",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11825,
+    "y": 9780
+  },
+  {
+    "desc": "Potential fresh food.",
+    "name": "Farm Plot",
+    "id": "1446",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10706,
+    "y": 9400
+  },
+  {
+    "desc": "Has a tool shed, chickencoop and well.",
+    "name": "Farm to the West",
+    "id": "1447",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8599,
+    "y": 8824
+  },
+  {
+    "desc": "Do you really want to be alone in the woods right now? Without a well?",
+    "name": "Forest House",
+    "id": "1448",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11063,
+    "y": 10638
+  },
+  {
+    "desc": "",
+    "name": "Garages",
+    "id": "1449",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10602,
+    "y": 9360
+  },
+  {
+    "desc": "Fossoil, 4 pumps.",
+    "name": "Gas Station",
+    "id": "1450",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10624,
+    "y": 9761
+  },
+  {
+    "desc": "Gas-2-Go, 4 pumps.",
+    "name": "Gas Station",
+    "id": "1451",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10668,
+    "y": 10625
+  },
+  {
+    "desc": "",
+    "name": "Gated Community",
+    "id": "1452",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10668,
+    "y": 9572
+  },
+  {
+    "desc": "",
+    "name": "Gated Community",
+    "id": "1453",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10856,
+    "y": 10138
+  },
+  {
+    "desc": "Grocery store.",
+    "name": "Greene's",
+    "id": "1454",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10609,
+    "y": 10259
+  },
+  {
+    "desc": "",
+    "name": "H. Smith Attorney",
+    "id": "1455",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10648,
+    "y": 9648
+  },
+  {
+    "desc": "",
+    "name": "House with Antique Stove",
+    "id": "1456",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10739,
+    "y": 9839
+  },
+  {
+    "desc": "An isolated house with only 1 way in and out, making it popular stronghold among players because its resource efficent and zombie safe(ish) while being close to the main part of the map.",
+    "name": "Isolated House",
+    "id": "1457",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10945,
+    "y": 9370
+  },
+  {
+    "desc": "",
+    "name": "Jay's Chicken",
+    "id": "1458",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10617,
+    "y": 9563
+  },
+  {
+    "desc": "",
+    "name": "Knox Bank",
+    "id": "1459",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10622,
+    "y": 9691
+  },
+  {
+    "desc": "",
+    "name": "Large Warehouse",
+    "id": "1460",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10611,
+    "y": 9308
+  },
+  {
+    "desc": "",
+    "name": "Laundromat",
+    "id": "1461",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10914,
+    "y": 9842
+  },
+  {
+    "desc": "",
+    "name": "Liquor Store",
+    "id": "1462",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10610,
+    "y": 9905
+  },
+  {
+    "desc": "Do you really want to be alone in the woods right now? Without a well?",
+    "name": "Lone forest shack",
+    "id": "1463",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9341,
+    "y": 10293
+  },
+  {
+    "desc": "",
+    "name": "Lumber Mill",
+    "id": "1464",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10319,
+    "y": 9595
+  },
+  {
+    "desc": "",
+    "name": "Mini Mall",
+    "id": "1465",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10606,
+    "y": 10358
+  },
+  {
+    "desc": "",
+    "name": "Motel",
+    "id": "1466",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10900,
+    "y": 9749
+  },
+  {
+    "desc": "",
+    "name": "North Farm",
+    "id": "1467",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10815,
+    "y": 9105
+  },
+  {
+    "desc": "",
+    "name": "Offices",
+    "id": "1468",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10673,
+    "y": 10327
+  },
+  {
+    "desc": "",
+    "name": "Picnic Area",
+    "id": "1469",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10992,
+    "y": 9645
+  },
+  {
+    "desc": "Pancake house.",
+    "name": "Pile-o-Crepe",
+    "id": "1470",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10613,
+    "y": 9505
+  },
+  {
+    "desc": "",
+    "name": "Pizza Whirled",
+    "id": "1471",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10604,
+    "y": 10111
+  },
+  {
+    "desc": "",
+    "name": "Police Station",
+    "id": "1472",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10631,
+    "y": 10405
+  },
+  {
+    "desc": "",
+    "name": "Pony Roam-O",
+    "id": "1473",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8559,
+    "y": 8529
+  },
+  {
+    "desc": "",
+    "name": "Trainyard",
+    "id": "1474",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11655,
+    "y": 9985
+  },
+  {
+    "desc": "Timber!",
+    "name": "Remote Logging Offices",
+    "id": "1475",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9641,
+    "y": 10152
+  },
+  {
+    "desc": "",
+    "name": "Restaurant",
+    "id": "1476",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10619,
+    "y": 10528
+  },
+  {
+    "desc": "",
+    "name": "Small convenience store",
+    "id": "1477",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10836,
+    "y": 9530
+  },
+  {
+    "desc": "",
+    "name": "Small warehouse",
+    "id": "1478",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10712,
+    "y": 10144
+  },
+  {
+    "desc": "",
+    "name": "Soccer Field",
+    "id": "1479",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10656,
+    "y": 9970
+  },
+  {
+    "desc": "",
+    "name": "Spiffo's",
+    "id": "1480",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10621,
+    "y": 9650
+  },
+  {
+    "desc": "",
+    "name": "Storage Units",
+    "id": "1481",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10684,
+    "y": 9829
+  },
+  {
+    "desc": "",
+    "name": "Storage Units",
+    "id": "1482",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10752,
+    "y": 10347
+  },
+  {
+    "desc": "",
+    "name": "Sunstar Hotel",
+    "id": "1483",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10628,
+    "y": 9815
+  },
+  {
+    "desc": "",
+    "name": "Tattoo 42",
+    "id": "1484",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10614,
+    "y": 10155
+  },
+  {
+    "desc": "",
+    "name": "Tavern",
+    "id": "1485",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10758,
+    "y": 10547
+  },
+  {
+    "desc": "",
+    "name": "The McCoy Logging Corp.",
+    "id": "1486",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10317,
+    "y": 9290
+  },
+  {
+    "desc": "",
+    "name": "Train Station",
+    "id": "1487",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11096,
+    "y": 9237
+  },
+  {
+    "desc": "",
+    "name": "VHS Store",
+    "id": "1488",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10610,
+    "y": 10452
+  },
+  {
+    "desc": "",
+    "name": "Warehouse",
+    "id": "1489",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10627,
+    "y": 9378
+  },
+  {
+    "desc": "",
+    "name": "Warehouses",
+    "id": "1490",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10713,
+    "y": 10443
+  },
+  {
+    "desc": "",
+    "name": "Warehouses out of town",
+    "id": "1491",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10050,
+    "y": 10932
+  },
+  {
+    "desc": "",
+    "name": "Zippee Market",
+    "id": "1492",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10604,
+    "y": 9613
+  },
+  {
+    "desc": "",
+    "name": "Liquor Store",
+    "id": "1493",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6189,
+    "y": 5370
+  },
+  {
+    "desc": "",
+    "name": "Auto Repair",
+    "id": "1494",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5429,
+    "y": 5964
+  },
+  {
+    "desc": "A nice spot to loosen those joints!",
+    "name": "Back to the Nurture chiropractic services",
+    "id": "1495",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6187,
+    "y": 5359
+  },
+  {
+    "desc": "Right next to a river.",
+    "name": "Bait & Tackle",
+    "id": "1496",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3631,
+    "y": 5722
+  },
+  {
+    "desc": "Includes water barrels.",
+    "name": "Bait Shop",
+    "id": "1497",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5918,
+    "y": 5242
+  },
+  {
+    "desc": "",
+    "name": "Bakery",
+    "id": "1498",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6493,
+    "y": 5267
+  },
+  {
+    "desc": "",
+    "name": "Bank",
+    "id": "1499",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6504,
+    "y": 5301
+  },
+  {
+    "desc": "",
+    "name": "Bar",
+    "id": "1500",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5963,
+    "y": 5422
+  },
+  {
+    "desc": "",
+    "name": "Bar",
+    "id": "1501",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6382,
+    "y": 5208
+  },
+  {
+    "desc": "Restaurant.",
+    "name": "Beef Roundup",
+    "id": "1502",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3655,
+    "y": 5719
+  },
+  {
+    "desc": "",
+    "name": "Boat Club",
+    "id": "1503",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6571,
+    "y": 5212
+  },
+  {
+    "desc": "Enigmabooks.",
+    "name": "Book Store",
+    "id": "1504",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6437,
+    "y": 5269
+  },
+  {
+    "desc": "",
+    "name": "Burgers",
+    "id": "1505",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5955,
+    "y": 5263
+  },
+  {
+    "desc": "",
+    "name": "Cafe",
+    "id": "1506",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6176,
+    "y": 6374
+  },
+  {
+    "desc": "",
+    "name": "Camera Store",
+    "id": "1507",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6188,
+    "y": 5351
+  },
+  {
+    "desc": "Junked Cars, high fence, space to build a castle.",
+    "name": "Car Junkyard",
+    "id": "1508",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5820,
+    "y": 5412
+  },
+  {
+    "desc": "",
+    "name": "Cementery",
+    "id": "1509",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5700,
+    "y": 5331
+  },
+  {
+    "desc": "",
+    "name": "Church",
+    "id": "1510",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6568,
+    "y": 5374
+  },
+  {
+    "desc": "",
+    "name": "Clothing Store",
+    "id": "1511",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6403,
+    "y": 5268
+  },
+  {
+    "desc": "",
+    "name": "Clothing Store",
+    "id": "1512",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6506,
+    "y": 5266
+  },
+  {
+    "desc": "",
+    "name": "Clothing Store",
+    "id": "1513",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6250,
+    "y": 5266
+  },
+  {
+    "desc": "",
+    "name": "Coffee Shop",
+    "id": "1514",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6400,
+    "y": 5252
+  },
+  {
+    "desc": "",
+    "name": "Convenience store",
+    "id": "1515",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5970,
+    "y": 5355
+  },
+  {
+    "desc": "",
+    "name": "West Maple Country Club",
+    "id": "1516",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5756,
+    "y": 6446
+  },
+  {
+    "desc": "",
+    "name": "Diner",
+    "id": "1517",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5424,
+    "y": 5914
+  },
+  {
+    "desc": "Donuts!!!",
+    "name": "Donut Store",
+    "id": "1518",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6491,
+    "y": 5224
+  },
+  {
+    "desc": "",
+    "name": "Factory",
+    "id": "1519",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5570,
+    "y": 5899
+  },
+  {
+    "desc": "",
+    "name": "Factory Warehouse",
+    "id": "1520",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5617,
+    "y": 5973
+  },
+  {
+    "desc": "",
+    "name": "Fancy Restaurant",
+    "id": "1521",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6192,
+    "y": 5340
+  },
+  {
+    "desc": "Farm with field, two toolsheds.",
+    "name": "Farm",
+    "id": "1522",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6817,
+    "y": 7720
+  },
+  {
+    "desc": "Has a lot of land, two houses and sheds.",
+    "name": "Farm",
+    "id": "1523",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5693,
+    "y": 5740
+  },
+  {
+    "desc": "",
+    "name": "Farmer's Market",
+    "id": "1524",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7252,
+    "y": 8274
+  },
+  {
+    "desc": "A densely hidden station with two tall fences with the outer fences having some holes.",
+    "name": "Fenced off radio station",
+    "id": "1525",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 4849,
+    "y": 6284
+  },
+  {
+    "desc": "",
+    "name": "Farmer's Market",
+    "id": "1526",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5969,
+    "y": 5392
+  },
+  {
+    "desc": "",
+    "name": "Food Market",
+    "id": "1527",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6344,
+    "y": 5297
+  },
+  {
+    "desc": "",
+    "name": "Food Mart",
+    "id": "1528",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6273,
+    "y": 5266
+  },
+  {
+    "desc": "",
+    "name": "Furniture Store",
+    "id": "1529",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6239,
+    "y": 5265
+  },
+  {
+    "desc": "",
+    "name": "Furniture store",
+    "id": "1530",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6427,
+    "y": 5300
+  },
+  {
+    "desc": "",
+    "name": "Gas Station",
+    "id": "1531",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6083,
+    "y": 5309
+  },
+  {
+    "desc": "",
+    "name": "Gas Station",
+    "id": "1532",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5418,
+    "y": 5870
+  },
+  {
+    "desc": "1 pump chump.",
+    "name": "Gas Station",
+    "id": "1533",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3660,
+    "y": 5950
+  },
+  {
+    "desc": "",
+    "name": "Gated Community",
+    "id": "1534",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6715,
+    "y": 5483
+  },
+  {
+    "desc": "",
+    "name": "General Store",
+    "id": "1535",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3679,
+    "y": 5743
+  },
+  {
+    "desc": "",
+    "name": "GigaMart",
+    "id": "1536",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6505,
+    "y": 5346
+  },
+  {
+    "desc": "Golf. At a time like this?",
+    "name": "Golf Course",
+    "id": "1537",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6091,
+    "y": 6392
+  },
+  {
+    "desc": "",
+    "name": "Grocery Store",
+    "id": "1538",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6140,
+    "y": 5370
+  },
+  {
+    "desc": "",
+    "name": "Hardware Store",
+    "id": "1539",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6364,
+    "y": 5327
+  },
+  {
+    "desc": "",
+    "name": "Hotel",
+    "id": "1540",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6357,
+    "y": 5259
+  },
+  {
+    "desc": "",
+    "name": "House with Farmland",
+    "id": "1541",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6956,
+    "y": 5565
+  },
+  {
+    "desc": "",
+    "name": "Ice Cream Parlor",
+    "id": "1542",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6471,
+    "y": 5222
+  },
+  {
+    "desc": "",
+    "name": "Jewellery store",
+    "id": "1543",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6481,
+    "y": 5267
+  },
+  {
+    "desc": "",
+    "name": "Laundromat",
+    "id": "1544",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6407,
+    "y": 5339
+  },
+  {
+    "desc": "",
+    "name": "Mama Mcfudgington's",
+    "id": "1545",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6491,
+    "y": 5266
+  },
+  {
+    "desc": "",
+    "name": "Pharmacy",
+    "id": "1546",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6471,
+    "y": 5266
+  },
+  {
+    "desc": "",
+    "name": "Police Station",
+    "id": "1547",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6082,
+    "y": 5261
+  },
+  {
+    "desc": "",
+    "name": "Rec Centre",
+    "id": "1548",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6560,
+    "y": 5305
+  },
+  {
+    "desc": "",
+    "name": "School",
+    "id": "1550",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6440,
+    "y": 5445
+  },
+  {
+    "desc": "",
+    "name": "Seat Yourself Furniture Store",
+    "id": "1551",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6236,
+    "y": 5264
+  },
+  {
+    "desc": "",
+    "name": "Spiffo's",
+    "id": "1552",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6123,
+    "y": 5305
+  },
+  {
+    "desc": "",
+    "name": "Storage Units",
+    "id": "1553",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5541,
+    "y": 6063
+  },
+  {
+    "desc": "",
+    "name": "Toy Store",
+    "id": "1554",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6452,
+    "y": 5298
+  },
+  {
+    "desc": "",
+    "name": "Trailer Park",
+    "id": "1555",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5342,
+    "y": 5980
+  },
+  {
+    "desc": "There are a lot of books at their storage.",
+    "name": "U.S. Mail Service",
+    "id": "1556",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6312,
+    "y": 5264
+  },
+  {
+    "desc": "",
+    "name": "VHS Store",
+    "id": "1557",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6206,
+    "y": 5344
+  },
+  {
+    "desc": "Top floor of this building contains apartments.",
+    "name": "Apartment Complex",
+    "id": "1558",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8081,
+    "y": 11535
+  },
+  {
+    "desc": "",
+    "name": "Army Barracks",
+    "id": "1559",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8136,
+    "y": 10238
+  },
+  {
+    "desc": "",
+    "name": "Army Quarter",
+    "id": "1560",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9118,
+    "y": 11814
+  },
+  {
+    "desc": "",
+    "name": "Auto Repair Shop",
+    "id": "1561",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8154,
+    "y": 11325
+  },
+  {
+    "desc": "",
+    "name": "Bail Bonds",
+    "id": "1562",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7994,
+    "y": 11450
+  },
+  {
+    "desc": "",
+    "name": "Bank",
+    "id": "1563",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8084,
+    "y": 11588
+  },
+  {
+    "desc": "",
+    "name": "Bar",
+    "id": "1564",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8019,
+    "y": 11427
+  },
+  {
+    "desc": "",
+    "name": "Book Store",
+    "id": "1565",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8087,
+    "y": 11512
+  },
+  {
+    "desc": "",
+    "name": "Bus Station",
+    "id": "1566",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8244,
+    "y": 12239
+  },
+  {
+    "desc": "",
+    "name": "Church",
+    "id": "1567",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8124,
+    "y": 11550
+  },
+  {
+    "desc": "",
+    "name": "Clothing Store",
+    "id": "1568",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8087,
+    "y": 11489
+  },
+  {
+    "desc": "",
+    "name": "Construction Site",
+    "id": "1569",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8219,
+    "y": 11841
+  },
+  {
+    "desc": "",
+    "name": "Diner",
+    "id": "1570",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8075,
+    "y": 11456
+  },
+  {
+    "desc": "",
+    "name": "Drive-In Movie Theater",
+    "id": "1571",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8426,
+    "y": 12240
+  },
+  {
+    "desc": "Two farmhouses with a nearby warehouse & shed combo.",
+    "name": "Dual Farmhouses",
+    "id": "1572",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7671,
+    "y": 11098
+  },
+  {
+    "desc": "",
+    "name": "Elementary School",
+    "id": "1573",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8341,
+    "y": 11612
+  },
+  {
+    "desc": "",
+    "name": "Farmer's Market",
+    "id": "1574",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9070,
+    "y": 12200
+  },
+  {
+    "desc": "",
+    "name": "Fire Departament",
+    "id": "1575",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8138,
+    "y": 11741
+  },
+  {
+    "desc": "",
+    "name": "Food Market and Laundromat",
+    "id": "1576",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8136,
+    "y": 11485
+  },
+  {
+    "desc": "",
+    "name": "Food Warehouse",
+    "id": "1577",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7488,
+    "y": 11082
+  },
+  {
+    "desc": "",
+    "name": "Fresh Food Market",
+    "id": "1578",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9074,
+    "y": 12186
+  },
+  {
+    "desc": "Fossoil, 8 pumps.",
+    "name": "Gas Station",
+    "id": "1579",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8297,
+    "y": 12225
+  },
+  {
+    "desc": "4 pumps.",
+    "name": "Gas Station",
+    "id": "1580",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8164,
+    "y": 11267
+  },
+  {
+    "desc": "Defendable housing.",
+    "name": "Gated Community",
+    "id": "1581",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8026,
+    "y": 11525
+  },
+  {
+    "desc": "Single level house with farm plots and a tool shed.",
+    "name": "House",
+    "id": "1582",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8341,
+    "y": 11750
+  },
+  {
+    "desc": "Extreme isolation means noise should draw little foot traffic.",
+    "name": "Isolated Houses",
+    "id": "1583",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8838,
+    "y": 11612
+  },
+  {
+    "desc": "Not the best/worst place to live!",
+    "name": "Kentucky State Penitentiary",
+    "id": "1584",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7693,
+    "y": 11873
+  },
+  {
+    "desc": "",
+    "name": "Knox County Court of Justice",
+    "id": "1585",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8075,
+    "y": 11654
+  },
+  {
+    "desc": "",
+    "name": "Knox County Court of Justice",
+    "id": "1586",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8075,
+    "y": 11654
+  },
+  {
+    "desc": "",
+    "name": "Law Offices",
+    "id": "1587",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8089,
+    "y": 11536
+  },
+  {
+    "desc": "",
+    "name": "Mama McFudgington's",
+    "id": "1588",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8085,
+    "y": 11619
+  },
+  {
+    "desc": "",
+    "name": "Mama McFudgington's",
+    "id": "1589",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8085,
+    "y": 11619
+  },
+  {
+    "desc": "",
+    "name": "Motel",
+    "id": "1590",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8078,
+    "y": 11417
+  },
+  {
+    "desc": "",
+    "name": "Packaging Warehouses",
+    "id": "1591",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9199,
+    "y": 11853
+  },
+  {
+    "desc": "",
+    "name": "Pizza Restaurant",
+    "id": "1592",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8075,
+    "y": 11310
+  },
+  {
+    "desc": "*Disclaimer: Not all-you-can-eat.",
+    "name": "Rosewood Country Buffet",
+    "id": "1593",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8086,
+    "y": 11500
+  },
+  {
+    "desc": "",
+    "name": "Rosewood Medical",
+    "id": "1594",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8089,
+    "y": 11526
+  },
+  {
+    "desc": "",
+    "name": "Salon",
+    "id": "1595",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8086,
+    "y": 11551
+  },
+  {
+    "desc": "",
+    "name": "Spiffo's",
+    "id": "1596",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8074,
+    "y": 11343
+  },
+  {
+    "desc": "",
+    "name": "Warehouse",
+    "id": "1597",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9202,
+    "y": 11840
+  },
+  {
+    "desc": "Isolated Warehouse With Garage Opening.",
+    "name": "Warehouse",
+    "id": "1598",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 7887,
+    "y": 12467
+  },
+  {
+    "desc": "",
+    "name": "Zippee Market",
+    "id": "1599",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8089,
+    "y": 11561
+  },
+  {
+    "desc": "Morris' Bait Shop.",
+    "name": "Bait Shop",
+    "id": "1600",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12538,
+    "y": 5288
+  },
+  {
+    "desc": "",
+    "name": "Bar",
+    "id": "1601",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13004,
+    "y": 5262
+  },
+  {
+    "desc": "",
+    "name": "Beauty Salon",
+    "id": "1602",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13619,
+    "y": 5672
+  },
+  {
+    "desc": "",
+    "name": "Big Farm",
+    "id": "1603",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13856,
+    "y": 4740
+  },
+  {
+    "desc": "",
+    "name": "Book Store",
+    "id": "1604",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13604,
+    "y": 5668
+  },
+  {
+    "desc": "",
+    "name": "Bridge",
+    "id": "1605",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12309,
+    "y": 6730
+  },
+  {
+    "desc": "Now with 100% meat!",
+    "name": "Burger Shop",
+    "id": "1606",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12544,
+    "y": 5266
+  },
+  {
+    "desc": "A burnt trailer park behind the military checkpoint.",
+    "name": "Burned Trailer Park",
+    "id": "1607",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13887,
+    "y": 4040
+  },
+  {
+    "desc": "",
+    "name": "Camp Fitzgerald",
+    "id": "1609",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13721,
+    "y": 6729
+  },
+  {
+    "desc": "Sacred flame church.",
+    "name": "Church",
+    "id": "1610",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12848,
+    "y": 4956
+  },
+  {
+    "desc": "Small Church with small tool shed near.",
+    "name": "Church and Cemetery",
+    "id": "1611",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 14551,
+    "y": 4970
+  },
+  {
+    "desc": "",
+    "name": "Clothing Store",
+    "id": "1612",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13686,
+    "y": 5672
+  },
+  {
+    "desc": "",
+    "name": "Construction Site",
+    "id": "1613",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 14123,
+    "y": 5493
+  },
+  {
+    "desc": "",
+    "name": "Construction Site",
+    "id": "1614",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12582,
+    "y": 5387
+  },
+  {
+    "desc": "Beware the Shopping Dead.",
+    "name": "Crossroads Mall",
+    "id": "1615",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13930,
+    "y": 5878
+  },
+  {
+    "desc": "",
+    "name": "Daycare",
+    "id": "1616",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13585,
+    "y": 5669
+  },
+  {
+    "desc": "",
+    "name": "Daycare",
+    "id": "1617",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13585,
+    "y": 5669
+  },
+  {
+    "desc": "Sammie's",
+    "name": "Department Store",
+    "id": "1618",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13417,
+    "y": 1461
+  },
+  {
+    "desc": "",
+    "name": "Destroyed Cabin",
+    "id": "1619",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12531,
+    "y": 5232
+  },
+  {
+    "desc": "",
+    "name": "Diner",
+    "id": "1620",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12741,
+    "y": 5711
+  },
+  {
+    "desc": "",
+    "name": "Airfield",
+    "id": "1621",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12840,
+    "y": 6402
+  },
+  {
+    "desc": "Bridge Connecting Valley Station and West Point.",
+    "name": "East Bridge",
+    "id": "1622",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12895,
+    "y": 6898
+  },
+  {
+    "desc": "",
+    "name": "Elementary School",
+    "id": "1623",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12857,
+    "y": 4856
+  },
+  {
+    "desc": "",
+    "name": "Food Market",
+    "id": "1624",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12571,
+    "y": 5728
+  },
+  {
+    "desc": "Ruby gas, 2 pumps.",
+    "name": "Gas Station",
+    "id": "1625",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12734,
+    "y": 5033
+  },
+  {
+    "desc": "Gas-2-Go, 4 pumps.",
+    "name": "Gas Station",
+    "id": "1626",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13734,
+    "y": 5643
+  },
+  {
+    "desc": "With tool shed and small lake go fishing.",
+    "name": "House Near the Lake",
+    "id": "1627",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 14059,
+    "y": 5199
+  },
+  {
+    "desc": "",
+    "name": "Hunting Cabin",
+    "id": "1628",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13651,
+    "y": 7145
+  },
+  {
+    "desc": "",
+    "name": "Hunting Lodge",
+    "id": "1629",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13105,
+    "y": 5315
+  },
+  {
+    "desc": "Watch out for bears.",
+    "name": "Hunting Stand",
+    "id": "1630",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13403,
+    "y": 5338
+  },
+  {
+    "desc": "",
+    "name": "Knox Bank",
+    "id": "1631",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13656,
+    "y": 5745
+  },
+  {
+    "desc": "",
+    "name": "Medium Warehouse",
+    "id": "1632",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12620,
+    "y": 4713
+  },
+  {
+    "desc": "",
+    "name": "Pile-o-Crepe",
+    "id": "1633",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13602,
+    "y": 5762
+  },
+  {
+    "desc": "",
+    "name": "Restaurant",
+    "id": "1634",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13649,
+    "y": 5671
+  },
+  {
+    "desc": "",
+    "name": "Shooting Range",
+    "id": "1635",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13264,
+    "y": 5440
+  },
+  {
+    "desc": "",
+    "name": "Small Dock",
+    "id": "1636",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12482,
+    "y": 5298
+  },
+  {
+    "desc": "With big garden, small tool shed and food stand.",
+    "name": "Small Farm",
+    "id": "1637",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 14315,
+    "y": 4953
+  },
+  {
+    "desc": "",
+    "name": "Small Hotel",
+    "id": "1638",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13008,
+    "y": 5321
+  },
+  {
+    "desc": "Groceries.",
+    "name": "Small Store",
+    "id": "1639",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12627,
+    "y": 5324
+  },
+  {
+    "desc": "",
+    "name": "StarEplex Cinema",
+    "id": "1640",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13629,
+    "y": 5881
+  },
+  {
+    "desc": "",
+    "name": "Storage Units",
+    "id": "1641",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12959,
+    "y": 4876
+  },
+  {
+    "desc": "\"Sorry, zombie apocalypses aren't covered under the Act of God clause in your policy.\"",
+    "name": "Valu In$urance",
+    "id": "1642",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13664,
+    "y": 5669
+  },
+  {
+    "desc": "Restaurant.",
+    "name": "Yummmers",
+    "id": "1643",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13571,
+    "y": 5762
+  },
+  {
+    "desc": "",
+    "name": "Zippee Market",
+    "id": "1644",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13658,
+    "y": 5766
+  },
+  {
+    "desc": "Car Fix-ation.",
+    "name": "Auto Repair Shop",
+    "id": "1645",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11898,
+    "y": 6807
+  },
+  {
+    "desc": "American Tire.",
+    "name": "Auto Repair Shop",
+    "id": "1646",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12256,
+    "y": 6931
+  },
+  {
+    "desc": "",
+    "name": "Bakery",
+    "id": "1647",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11907,
+    "y": 6866
+  },
+  {
+    "desc": "Enigma books.",
+    "name": "Book Store",
+    "id": "1648",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11896,
+    "y": 6880
+  },
+  {
+    "desc": "",
+    "name": "Burger Restaurant",
+    "id": "1649",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13965,
+    "y": 4866
+  },
+  {
+    "desc": "",
+    "name": "Burgers",
+    "id": "1650",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12077,
+    "y": 7075
+  },
+  {
+    "desc": "Do you really want to be alone in the woods without a well?",
+    "name": "Cabin",
+    "id": "1651",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13628,
+    "y": 7222
+  },
+  {
+    "desc": "",
+    "name": "Cafe",
+    "id": "1652",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13092,
+    "y": 5449
+  },
+  {
+    "desc": "No choo choo train :(",
+    "name": "Choo Choo Train Caboose",
+    "id": "1653",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12197,
+    "y": 6878
+  },
+  {
+    "desc": "",
+    "name": "Church",
+    "id": "1654",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11967,
+    "y": 6990
+  },
+  {
+    "desc": "Does anyone else think it's a bad idea being on a cemetary during the zombie apocalypse?",
+    "name": "Church and Cemetery",
+    "id": "1655",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11069,
+    "y": 6710
+  },
+  {
+    "desc": "",
+    "name": "Commercial Rent",
+    "id": "1656",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11661,
+    "y": 7037
+  },
+  {
+    "desc": "",
+    "name": "Construction Site",
+    "id": "1657",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12062,
+    "y": 6918
+  },
+  {
+    "desc": "",
+    "name": "Crate Shed",
+    "id": "1658",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10942,
+    "y": 6769
+  },
+  {
+    "desc": "",
+    "name": "Day Care",
+    "id": "1659",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11739,
+    "y": 6921
+  },
+  {
+    "desc": "",
+    "name": "Dock",
+    "id": "1660",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11828,
+    "y": 6574
+  },
+  {
+    "desc": "",
+    "name": "Dock",
+    "id": "1661",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11276,
+    "y": 6594
+  },
+  {
+    "desc": "",
+    "name": "Farmhouse",
+    "id": "1662",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11132,
+    "y": 6852
+  },
+  {
+    "desc": "Large farmhouse with toolsheds and chicken coop.",
+    "name": "Farmhouse",
+    "id": "1663",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 14396,
+    "y": 4568
+  },
+  {
+    "desc": "Has an antique stove.",
+    "name": "Farmhouse",
+    "id": "1664",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 9279,
+    "y": 7781
+  },
+  {
+    "desc": "",
+    "name": "Food Market",
+    "id": "1665",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11984,
+    "y": 6911
+  },
+  {
+    "desc": "",
+    "name": "Famer's Market",
+    "id": "1666",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13937,
+    "y": 4864
+  },
+  {
+    "desc": "",
+    "name": "Furniture Store",
+    "id": "1667",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11932,
+    "y": 6941
+  },
+  {
+    "desc": "Fossoil, 4 pumps.",
+    "name": "Gas Station",
+    "id": "1668",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12069,
+    "y": 7140
+  },
+  {
+    "desc": "Gated luxurious house by the lake and river, near Westpoint.",
+    "name": "Gated House by the Lake",
+    "id": "1669",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10155,
+    "y": 6624
+  },
+  {
+    "desc": "This is more of a general store than a hardware store.",
+    "name": "General Store",
+    "id": "1670",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11831,
+    "y": 6912
+  },
+  {
+    "desc": "",
+    "name": "GigaMart",
+    "id": "1671",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12024,
+    "y": 6853
+  },
+  {
+    "desc": "",
+    "name": "Gun Store",
+    "id": "1672",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12064,
+    "y": 6758
+  },
+  {
+    "desc": "",
+    "name": "Hair O Genesis",
+    "id": "1673",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11852,
+    "y": 6878
+  },
+  {
+    "desc": "",
+    "name": "Hardware Store",
+    "id": "1674",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11974,
+    "y": 6912
+  },
+  {
+    "desc": "",
+    "name": "House by the lake",
+    "id": "1675",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10182,
+    "y": 6763
+  },
+  {
+    "desc": "",
+    "name": "Knox Bank",
+    "id": "1676",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11913,
+    "y": 6914
+  },
+  {
+    "desc": "",
+    "name": "Large Warehouse",
+    "id": "1677",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12140,
+    "y": 7084
+  },
+  {
+    "desc": "",
+    "name": "Laundromat",
+    "id": "1678",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11931,
+    "y": 6786
+  },
+  {
+    "desc": "",
+    "name": "Mini Hotel",
+    "id": "1679",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12018,
+    "y": 6917
+  },
+  {
+    "desc": "",
+    "name": "Motel",
+    "id": "1680",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11860,
+    "y": 6906
+  },
+  {
+    "desc": "",
+    "name": "Office Building",
+    "id": "1681",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11976,
+    "y": 6939
+  },
+  {
+    "desc": "",
+    "name": "Office Building",
+    "id": "1682",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11977,
+    "y": 6882
+  },
+  {
+    "desc": "Pharmahug.",
+    "name": "Pharmacy",
+    "id": "1683",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11935,
+    "y": 6802
+  },
+  {
+    "desc": "Consumption of brought food and drinks strictly forbidden!",
+    "name": "Picnic Area",
+    "id": "1684",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12033,
+    "y": 7364
+  },
+  {
+    "desc": "",
+    "name": "Pizza Whirled",
+    "id": "1685",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11660,
+    "y": 7083
+  },
+  {
+    "desc": "",
+    "name": "Playground",
+    "id": "1686",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11418,
+    "y": 6782
+  },
+  {
+    "desc": "",
+    "name": "Police Station",
+    "id": "1687",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11898,
+    "y": 6940
+  },
+  {
+    "desc": "",
+    "name": "Police station",
+    "id": "1688",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8063,
+    "y": 11735
+  },
+  {
+    "desc": "",
+    "name": "Post Office",
+    "id": "1689",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11956,
+    "y": 6912
+  },
+  {
+    "desc": "",
+    "name": "R.B. Mat, Dentist",
+    "id": "1690",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11880,
+    "y": 6879
+  },
+  {
+    "desc": "",
+    "name": "Restaurant",
+    "id": "1691",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11932,
+    "y": 6914
+  },
+  {
+    "desc": "",
+    "name": "School",
+    "id": "1692",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11345,
+    "y": 6784
+  },
+  {
+    "desc": "",
+    "name": "Seahorse Coffee",
+    "id": "1693",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11962,
+    "y": 6879
+  },
+  {
+    "desc": "",
+    "name": "Small Store",
+    "id": "1694",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11349,
+    "y": 6719
+  },
+  {
+    "desc": "",
+    "name": "Spiffo's",
+    "id": "1695",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11976,
+    "y": 6810
+  },
+  {
+    "desc": "",
+    "name": "Storage Units",
+    "id": "1696",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12137,
+    "y": 7024
+  },
+  {
+    "desc": "",
+    "name": "The Drake and Crystal Pie Place",
+    "id": "1697",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11899,
+    "y": 6851
+  },
+  {
+    "desc": "",
+    "name": "Thunder Gas",
+    "id": "1698",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11820,
+    "y": 6865
+  },
+  {
+    "desc": "",
+    "name": "Town Hall",
+    "id": "1699",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11941,
+    "y": 6873
+  },
+  {
+    "desc": "A nice small, suburban park.",
+    "name": "Town Park",
+    "id": "1700",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11786,
+    "y": 6913
+  },
+  {
+    "desc": "",
+    "name": "Twiggy's",
+    "id": "1701",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12059,
+    "y": 6793
+  },
+  {
+    "desc": "\"Sorry, zombie apocalypses aren't covered under the Act of God clause in your policy.\"",
+    "name": "Valu In$urance",
+    "id": "1702",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13664,
+    "y": 5669
+  },
+  {
+    "desc": "",
+    "name": "Zippee Market",
+    "id": "1703",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 11660,
+    "y": 7067
+  },
+  {
+    "desc": "",
+    "name": "Valley Station",
+    "id": "3012",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13515,
+    "y": 5082
+  },
+  {
+    "desc": "",
+    "name": "Airstrip",
+    "id": "m5tjqbk6_7xey4zis6is",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 986,
+    "y": 6681
+  },
+  {
+    "desc": "",
+    "name": "Detention Center",
+    "id": "m5tjrdzd_0tbo1yzzdadp",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 1415,
+    "y": 5878
+  },
+  {
+    "desc": "",
+    "name": "P.S. Delilah",
+    "id": "m5tjskd0_ku0ah8idgxc",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 2046,
+    "y": 5689
+  },
+  {
+    "desc": "",
+    "name": "Trainyard",
+    "id": "m5tkjfwf_vjw0s5ntj1",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 2202,
+    "y": 6695
+  },
+  {
+    "desc": "",
+    "name": "Bright Valley Trailer Park",
+    "id": "m5tkkhor_kr6rg14l1k",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 2733,
+    "y": 6298
+  },
+  {
+    "desc": "",
+    "name": "Waverly Hills Sanatorium",
+    "id": "m5tkmm78_l5eouogpw0g",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 4050,
+    "y": 6520
+  },
+  {
+    "desc": "",
+    "name": "Doe Valley Lake",
+    "id": "m5tn4vp9_dwoxl7eop1",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6718,
+    "y": 6208
+  },
+  {
+    "desc": "",
+    "name": "Historic Coalfield",
+    "id": "m5tn8l7n_jsvetr4e2t",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3464,
+    "y": 8194
+  },
+  {
+    "desc": "",
+    "name": "Schubert's Estate",
+    "id": "m5tnba0v_o0iaqeaaioe",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 1722,
+    "y": 8631
+  },
+  {
+    "desc": "",
+    "name": "Trailer Park",
+    "id": "m5tnez3f_z2a0103e35j",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 934,
+    "y": 9601
+  },
+  {
+    "desc": "",
+    "name": "Steel Factory",
+    "id": "m5tnfvbb_zuoplo1e8c",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 567,
+    "y": 9420
+  },
+  {
+    "desc": "",
+    "name": "Industrial Area",
+    "id": "m5tnthsg_q1ddoa94qr",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 1918,
+    "y": 10899
+  },
+  {
+    "desc": "",
+    "name": "Shooting Range",
+    "id": "m5tnu262_a2yuptvx5sn",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 2565,
+    "y": 10892
+  },
+  {
+    "desc": "",
+    "name": "AMZ Steel",
+    "id": "m5tnug28_g3y6ta33f9e",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 1919,
+    "y": 10739
+  },
+  {
+    "desc": "",
+    "name": "Trailer Park",
+    "id": "m5tnzx0k_nd6a9zow6qm",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3470,
+    "y": 10895
+  },
+  {
+    "desc": "",
+    "name": "Wildlife Center",
+    "id": "m5to2e65_n0xagzlm1",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3166,
+    "y": 12126
+  },
+  {
+    "desc": "",
+    "name": "Neil's Farm",
+    "id": "m5to3fy0_z5j8ccrmx7",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3827,
+    "y": 12203
+  },
+  {
+    "desc": "",
+    "name": "Neil's Pond",
+    "id": "m5to4cal_nk0utjhexl",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3803,
+    "y": 12475
+  },
+  {
+    "desc": "",
+    "name": "Scrapyard",
+    "id": "m5to6vim_td1eh2x2jx",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 2941,
+    "y": 12629
+  },
+  {
+    "desc": "",
+    "name": "Scrapyard",
+    "id": "m5to7s16_9y80v7yzk08",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 1939,
+    "y": 13383
+  },
+  {
+    "desc": "",
+    "name": "Irvington Speedway",
+    "id": "m5to86ix_2ywu5mlcm1m",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 1085,
+    "y": 13060
+  },
+  {
+    "desc": "",
+    "name": "Shooting Range",
+    "id": "m5to9ini_efc2dyfgahv",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 1858,
+    "y": 14102
+  },
+  {
+    "desc": "",
+    "name": "Brott Cattle",
+    "id": "m5toag3q_cd58qe4uyb6",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3796,
+    "y": 14443
+  },
+  {
+    "desc": "",
+    "name": "F.Arable Factory",
+    "id": "m5tobhmj_8hrjiegehup",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 3764,
+    "y": 14672
+  },
+  {
+    "desc": "",
+    "name": "Camping",
+    "id": "m5tohoje_mzmpx7lc0ee",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 6063,
+    "y": 14550
+  },
+  {
+    "desc": "",
+    "name": "Water Treatment",
+    "id": "m5tojlyn_kspcsckqy4",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8040,
+    "y": 15301
+  },
+  {
+    "desc": "",
+    "name": "Scrapyard",
+    "id": "m5too5ji_2b2zcfl2xqw",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10762,
+    "y": 10493
+  },
+  {
+    "desc": "",
+    "name": "McCoy Estate",
+    "id": "m5tormc9_ke1lgo82jp",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 10089,
+    "y": 8261
+  },
+  {
+    "desc": "",
+    "name": "Salt River",
+    "id": "m5tp99n3_3y22qqni8bn",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13275,
+    "y": 7343
+  },
+  {
+    "desc": "",
+    "name": "Community Area",
+    "id": "m5tpck3z_bz5krbu47ju",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13782,
+    "y": 5843
+  },
+  {
+    "desc": "",
+    "name": "Passenger Terminal",
+    "id": "m5tpi4pg_l3p9mj90wfo",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 15525,
+    "y": 2948
+  },
+  {
+    "desc": "",
+    "name": "Freight Terminal",
+    "id": "m5tpj1a3_c5w72o16lwb",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 15406,
+    "y": 3164
+  },
+  {
+    "desc": "",
+    "name": "Community Area",
+    "id": "m5tpsqf4_1yuuh89e5hi",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 13534,
+    "y": 3055
+  },
+  {
+    "desc": "",
+    "name": "Industrial Area",
+    "id": "m5tq7z74_w803oluac8o",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 12086,
+    "y": 1440
+  },
+  {
+    "desc": "",
+    "name": "Camp Arthur",
+    "id": "m5tw2dkn_t15ni6cpzab",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8315,
+    "y": 14579
+  },
+  {
+    "desc": "",
+    "name": "Scenic Lodges",
+    "id": "m5tw3080_6swteh535b6",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 8534,
+    "y": 14416
+  },
+  {
+    "desc": "",
+    "name": "Community Area",
+    "id": "m5tw6hc5_4szw5w2e90c",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 4305,
+    "y": 9743
+  },
+  {
+    "desc": "",
+    "name": "Meadshire Estate",
+    "id": "m5tw7y9c_y4zgs2yb80k",
+    "layer": 0,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 4223,
+    "y": 9531
+  },
+  {
+    "desc": "Have hope.",
+    "name": "The deepest part of the military research facility underground",
+    "id": "m5xri8qf_c79vaqykaft",
+    "layer": -17,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 5687,
+    "y": 12439
+  },
+  {
+    "desc": "",
+    "name": "Underground passage",
+    "id": "m5xrnby4_drwaqkh696t",
+    "layer": -1,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 4105,
+    "y": 6536
+  },
+  {
+    "desc": "Destroy a wall of the basement level 1, there is a door behind it.",
+    "name": "Hidden chamber of the church",
+    "id": "m5xrp3tw_w0adcz6lenh",
+    "layer": -2,
+    "type": "point",
+    "visible_zoom_level": 1,
+    "x": 446,
+    "y": 9937
+  }
+]

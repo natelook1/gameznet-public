@@ -1,0 +1,307 @@
+{
+  "id": {
+    "page_title": {
+      "innerHTML": {
+        "eval": "PageTitle"
+      }
+    },
+    "layer_selector": {
+      "title": "LayerSelector"
+    },
+    "roof_opacity_slider": {
+      "title": {
+        "eval": "RoofOpacity"
+      }
+    },
+    "map_btn": {
+      "title": "MapButtonTitle",
+      "innerHTML": "MapButton"
+    },
+    "map_all_btn": {
+      "title": {
+        "eval": "MapAllButtonTitle"
+      },
+      "innerHTML": {
+        "eval": "MapAllButton"
+      }
+    },
+    "map_selector_dummy_option": {
+      "innerHTML": "SelectModMapToLoad"
+    },
+    "map_loaded_text": {
+      "innerHTML": "LoadedMaps"
+    },
+    "save_selector_dummy_option": {
+      "innerHTML": "SelectSaveMapToLoad"
+    },
+    "highlight_save_btn": {
+      "innerHTML": "HighlightSaveMap"
+    },
+    "grid_btn": {
+      "innerHTML": "GridButton"
+    },
+    "zombie_btn": {
+      "innerHTML": "ZombieButton"
+    },
+    "foraging_btn": {
+      "innerHTML": "ForagingButton"
+    },
+    "foraging_legends_text": {
+      "innerHTML": "ForagingLegends"
+    },
+    "foraging_legend_Nav": {
+      "innerHTML": "LegendNav"
+    },
+    "foraging_legend_TownZone": {
+      "innerHTML": "LegendTownZone"
+    },
+    "foraging_legend_TrailerPark": {
+      "innerHTML": "LegendTrailerPark"
+    },
+    "foraging_legend_Vegitation": {
+      "innerHTML": "LegendVegitation"
+    },
+    "foraging_legend_Forest": {
+      "innerHTML": "LegendForest"
+    },
+    "foraging_legend_DeepForest": {
+      "innerHTML": "LegendDeepForest"
+    },
+    "foraging_legend_FarmLand": {
+      "innerHTML": "LegendFarmLand"
+    },
+    "foraging_legend_Farm": {
+      "innerHTML": "LegendFarm"
+    },
+    "foraging_legend_ForagingNav": {
+      "innerHTML": "LegendForagingNav"
+    },
+    "foraging_legend_Water": {
+      "innerHTML": "LegendWater"
+    },
+    "foraging_legend_WaterNoFish": {
+      "innerHTML": "LegendWaterNoFish"
+    },
+    "foraging_legend_PHForest": {
+      "innerHTML": "LegendPHForest"
+    },
+    "foraging_legend_PHMixForest": {
+      "innerHTML": "LegendPHMixForest"
+    },
+    "foraging_legend_PRForest": {
+      "innerHTML": "LegendPRForest"
+    },
+    "foraging_legend_FarmMixForest": {
+      "innerHTML": "LegendFarmMixForest"
+    },
+    "foraging_legend_FarmForest": {
+      "innerHTML": "LegendFarmForest"
+    },
+    "foraging_legend_BirchForest": {
+      "innerHTML": "LegendBirchForest"
+    },
+    "foraging_legend_BirchMixForest": {
+      "innerHTML": "LegendBirchMixForest"
+    },
+    "foraging_legend_OrganicForest": {
+      "innerHTML": "LegendOrganicForest"
+    },
+    "rooms_btn": {
+      "innerHTML": "RoomsButton"
+    },
+    "objects_btn": {
+      "innerHTML": "ObjectsButton"
+    },
+    "objects_legends_text": {
+      "innerHTML": "ObjectsLegends"
+    },
+    "objects_legend_ZombiesType": {
+      "innerHTML": "LegendZombiesType"
+    },
+    "objects_legend_ParkingStall": {
+      "innerHTML": "LegendParkingStall"
+    },
+    "objects_legend_ZoneStory": {
+      "innerHTML": "LegendZoneStory"
+    },
+    "streets_btn": {
+      "innerHTML": "StreetsButton"
+    },
+    "marker_btn": {
+      "innerHTML": "MarkerButton"
+    },
+    "marker_save_btn": {
+      "innerHTML": "MarkerSaveButton"
+    },
+    "marker_x_text": {
+      "innerHTML": "MarkerXText"
+    },
+    "marker_y_text": {
+      "innerHTML": "MarkerYText"
+    },
+    "marker_layer_text": {
+      "innerHTML": "MarkerLayerText"
+    },
+    "marker_name_text": {
+      "innerHTML": "MarkerNameText"
+    },
+    "marker_description_text": {
+      "innerHTML": "MarkerDescriptionText"
+    },
+    "marker_delete_btn": {
+      "innerHTML": "MarkerDeleteButton"
+    },
+    "marker_width_text": {
+      "innerHTML": "MarkerWidthText"
+    },
+    "marker_height_text": {
+      "innerHTML": "MarkerHeightText"
+    },
+    "marker_visibility_text": {
+      "innerHTML": "MarkerVisibilityText"
+    },
+    "marker_visible_zoom_level_0": {
+      "innerHTML": "MarkerVisibilityLevel0"
+    },
+    "marker_visible_zoom_level_1": {
+      "innerHTML": "MarkerVisibilityLevel1"
+    },
+    "marker_visible_zoom_level_2": {
+      "innerHTML": "MarkerVisibilityLevel2"
+    },
+    "marker_import_btn": {
+      "innerHTML": "MarkerImportButton"
+    },
+    "marker_export_btn": {
+      "innerHTML": "MarkerExportButton"
+    },
+    "marker_default_btn": {
+      "innerHTML": "MarkerDefaultButton"
+    },
+    "marker_clear_btn": {
+      "innerHTML": "MarkerClearButton"
+    },
+    "marker_help_btn": {
+      "innerHTML": {
+        "eval": "MarkerHelpButton"
+      }
+    },
+    "marker_focus_btn": {
+      "title": "MarkerFocusButtonTitle"
+    },
+    "marker_deselect_btn": {
+      "title": "MarkerDeselectButtonTitle",
+      "innerHTML": "MarkerDeselectButton"
+    },
+    "marker_point_label": {
+      "innerHTML": "MarkerPointLabel"
+    },
+    "marker_area_label": {
+      "innerHTML": "MarkerAreaLabel"
+    },
+    "marker_name_label": {
+      "innerHTML": "MarkerNameLabel"
+    },
+    "mark_current": {
+      "innerHTML": "MarkCurrent"
+    },
+    "mark_above": {
+      "innerHTML": "MarkAbove"
+    },
+    "mark_below": {
+      "innerHTML": "MarkBelow"
+    },
+    "mark_selected": {
+      "innerHTML": "MarkSelected"
+    },
+    "marker_help_text": {
+      "innerHTML": "MarkerHelpText"
+    },
+    "trimmer_btn": {
+      "title": "TrimmerButtonTitle",
+      "innerHTML": "TrimmerButton"
+    },
+    "trimmer_title": {
+      "innerHTML": "TrimmerTitle"
+    },
+    "trimmer_legends_text": {
+      "innerHTML": "TrimmerLegendsText"
+    },
+    "trimmer_saved": {
+      "innerHTML": "TrimmerSaved"
+    },
+    "trimmer_partial_saved": {
+      "innerHTML": "TrimmerPartialSaved"
+    },
+    "trimmer_selected": {
+      "innerHTML": "TrimmerSelected"
+    },
+    "trimmer_partial_selected": {
+      "innerHTML": "TrimmerPartialSelected"
+    },
+    "trimmer_help_btn": {
+      "innerHTML": {
+        "eval": "TrimmerHelpButton"
+      }
+    },
+    "trimmer_save_selector_dummy_option": {
+      "innerHTML": "TrimmerDummyOption"
+    },
+    "trimmer_refresh_btn": {
+      "innerHTML": "TrimmerRefreshButton"
+    },
+    "trimmer_vehicles_label": {
+      "title": "TrimmerVehiclesLabelTitle",
+      "innerHTML": "TrimmerVehiclesLabel"
+    },
+    "trimmer_animals_label": {
+      "title": "TrimmerAnimalsLabelTitle",
+      "innerHTML": "TrimmerAnimalsLabel"
+    },
+    "trimmer_trim_btn": {
+      "innerHTML": "TrimmerTrimButton"
+    },
+    "trimmer_browse_btn": {
+      "innerHTML": "TrimmerBrowseButton"
+    },
+    "trimmer_help_text": {
+      "innerHTML": "TrimmerHelpText"
+    },
+    "coords_btn": {
+      "innerHTML": "CoordsButton",
+      "title": "CoordsTitle"
+    },
+    "route_selector": {
+      "title": "RouteSelectorTitle"
+    },
+    "route_selector_dummy_option": {
+      "innerHTML": "SelectRoute"
+    },
+    "change_view_btn": {
+      "innerHTML": {
+        "eval": "ChangeView"
+      }
+    },
+    "language_selector": {
+      "title": "LanguageSelectorTitle"
+    },
+    "about_btn": {
+      "innerHTML": "AboutButton"
+    },
+    "pzmap2dzi": {
+      "innerHTML": "PZmap2dzi"
+    },
+    "osd": {
+      "innerHTML": "OpenSeaDragon"
+    },
+    "pzwiki": {
+      "innerHTML": "PZwiki"
+    },
+    "pz": {
+      "innerHTML": "ProjectZomboid"
+    },
+    "pz_steam": {
+      "innerHTML": "ProjectZomboid"
+    }
+  }
+}

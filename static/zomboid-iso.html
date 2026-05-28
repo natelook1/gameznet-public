@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Zomboid — Isometric Map</title>
+  <script src="/static/iso/openseadragon/openseadragon.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a21; --surface2: #22222c;
+      --border: #2e2e3a; --accent: #ef4444; --green: #22c55e;
+      --text: #e2e2e8; --muted: #6b6b7a;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; flex-direction: column; overflow: hidden; }
+
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 16px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .topbar-title { font-size: 15px; font-weight: 700; }
+    .topbar-title span { color: var(--accent); }
+    .topbar-sep { width: 1px; height: 20px; background: var(--border); }
+
+    select, button.ctrl { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 5px; font-size: 12px; cursor: pointer; }
+    button.ctrl:hover { border-color: #4e4e5e; }
+    button.ctrl.active { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.5); color: var(--accent); }
+
+    label.toggle { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; }
+    label.toggle input { accent-color: var(--accent); }
+    label.toggle:hover { color: var(--text); }
+
+    .spacer { flex: 1; }
+
+    #viewer-wrap { flex: 1; position: relative; overflow: hidden; }
+    #osd { width: 100%; height: 100%; background: #0a0a0e; }
+
+    /* Marker styles */
+    .iso-marker { position: absolute; pointer-events: none; transform: translate(-50%, -50%); }
+    .iso-marker.player { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #000; box-shadow: 0 0 6px currentColor; }
+    .iso-marker.player.alive  { background: #22c55e; color: #22c55e; }
+    .iso-marker.player.bitten { background: #ef4444; color: #ef4444; }
+    .iso-marker.player.dead   { background: #6b7280; color: #6b7280; }
+    .iso-marker.death  { font-size: 11px; line-height: 1; }
+    .iso-marker.fire   { font-size: 13px; line-height: 1; }
+    .iso-marker.farm   { font-size: 11px; line-height: 1; }
+    .iso-marker.trap   { font-size: 11px; line-height: 1; }
+
+    .iso-label { position: absolute; pointer-events: none; transform: translateX(-50%); white-space: nowrap; font-size: 10px; font-weight: 700; color: #22c55e; text-shadow: 0 0 3px #000, 0 0 3px #000; top: 8px; left: 50%; }
+    .iso-label.bitten { color: #ef4444; }
+    .iso-label.dead   { color: #9ca3af; }
+
+    #status { position: absolute; bottom: 10px; right: 12px; font-size: 11px; color: var(--muted); background: rgba(15,15,19,0.8); padding: 4px 8px; border-radius: 5px; border: 1px solid var(--border); }
+    #coords-display { font-size: 11px; color: var(--muted); }
+
+    .legend { font-size: 11px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-title">Project <span>Zomboid</span> — Iso Map</div>
+    <div class="topbar-sep"></div>
+
+    <select id="layer-sel" onchange="setLayer(+this.value)">
+      <option value="0">Ground Floor</option>
+      <option value="1">Floor 1</option>
+      <option value="2">Floor 2</option>
+      <option value="3">Floor 3</option>
+      <option value="4">Floor 4</option>
+      <option value="5">Floor 5</option>
+      <option value="6">Floor 6</option>
+      <option value="7">Floor 7</option>
+    </select>
+
+    <input type="range" id="roof-opacity" min="0" max="100" value="0" step="10"
+      title="Roof opacity" oninput="setRoofOpacity(+this.value)"
+      style="width:80px;accent-color:var(--accent);">
+
+    <div class="topbar-sep"></div>
+
+    <label class="toggle"><input type="checkbox" id="show-players" checked onchange="redrawMarkers()"> Players</label>
+    <label class="toggle"><input type="checkbox" id="show-deaths" onchange="redrawMarkers()"> Deaths</label>
+    <label class="toggle"><input type="checkbox" id="show-campfires" checked onchange="redrawMarkers()"> Campfires</label>
+    <label class="toggle"><input type="checkbox" id="show-farming" onchange="redrawMarkers()"> Farming</label>
+    <label class="toggle"><input type="checkbox" id="show-traps" onchange="redrawMarkers()"> Traps</label>
+
+    <div class="topbar-sep"></div>
+    <div class="legend">🟢 alive &nbsp;🔴 bitten &nbsp;💀 death &nbsp;🔥 fire &nbsp;🌿 farm &nbsp;🕷 trap</div>
+
+    <div class="spacer"></div>
+    <div id="coords-display">—</div>
+    <a href="/zomboid" style="font-size:12px;color:var(--muted);text-decoration:none;" title="Back to full map">← Full Map</a>
+  </div>
+
+  <div id="viewer-wrap">
+    <div id="osd"></div>
+    <div id="status">Loading...</div>
+  </div>
+
+  <script type="module">
+    const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
+      ? 'https://gameznet.looknet.ca' : '';
+
+    // ── Map config ────────────────────────────────────────────────────────────
+    // Cell range rendered: cx=19-23, cy=17-22 (4x5)
+    // pzmap2dzi iso params: sqr=300 (squares per cell), scale is read from DZI
+    // Game coords (x,y) in squares. Cell origin: cx*300, cy*300.
+    const MAP_CONF = {
+      cx0: 19, cy0: 17, cw: 4, ch: 5,
+      sqr: 300,       // squares per cell edge
+    };
+
+    // Isometric projection: game square (sx,sy) -> DZI image pixel (px,py)
+    // pzmap2dzi uses: px = x0 + (sx-sy)*sqr/2, py = y0 + (sx+sy)*sqr/4 + layer*1.5*sqr
+    // x0,y0 are the image-space origin offsets baked into the DZI.
+    // We compute them from the cell range: the iso diamond origin is at the top vertex.
+    // For a CW×CH cell canvas:
+    //   iso width  = (CW+CH) * sqr  (pixels at scale=1)
+    //   iso height = (CW+CH) * sqr / 2
+    //   x0 = CH * sqr  (the top-left offset to the origin square)
+    //   y0 = 0
+
+    let dziInfo = null;  // loaded from layer0.dzi
+    let viewer = null;
+    let currentLayer = 0;
+    let layerItems = [];  // OSD world items per layer
+    let markerEls = [];   // DOM marker elements
+    let pzData = { players: [], overlays: {} };
+
+    async function loadDziInfo() {
+      try {
+        const r = await fetch('/static/map-tiles/iso/base/layer0.dzi');
+        const txt = await r.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(txt, 'text/xml');
+        const img = xml.querySelector('Image');
+        const size = xml.querySelector('Size');
+        dziInfo = {
+          tileSize: +img.getAttribute('TileSize'),
+          overlap: +img.getAttribute('Overlap'),
+          format: img.getAttribute('Format'),
+          width: +size.getAttribute('Width'),
+          height: +size.getAttribute('Height'),
+        };
+      } catch(e) {
+        console.warn('DZI load failed', e);
+      }
+    }
+
+    // Convert game square coords to DZI image pixel coords (0..1 viewport fraction)
+    function squareToViewport(sx, sy, layer) {
+      if (!dziInfo || !viewer) return null;
+      const { cw, ch, sqr } = MAP_CONF;
+      const x0 = ch * sqr;
+      const y0 = 0;
+      // iso projection
+      const px = x0 + (sx - sy) * sqr / 2;
+      const py = y0 + (sx + sy) * sqr / 4 + layer * 1.5 * sqr;
+      // normalize to [0,1] image fraction
+      const imgFracX = px / dziInfo.width;
+      const imgFracY = py / dziInfo.height;
+      // convert to viewport coords via OSD
+      const item = viewer.world.getItemAt(0);
+      if (!item) return null;
+      return item.imageToViewportCoordinates(imgFracX * dziInfo.width, imgFracY * dziInfo.height);
+    }
+
+    function viewportToScreen(vp) {
+      const pt = viewer.viewport.pixelFromPoint(vp);
+      return pt;
+    }
+
+    function placeMarker(el, sx, sy, layer) {
+      const vp = squareToViewport(sx, sy, layer);
+      if (!vp) return;
+      const pt = viewportToScreen(vp);
+      el.style.left = pt.x + 'px';
+      el.style.top  = pt.y + 'px';
+    }
+
+    function clearMarkers() {
+      markerEls.forEach(el => el.remove());
+      markerEls = [];
+    }
+
+    function addMarker(sx, sy, layer, html, cls) {
+      const wrap = document.getElementById('viewer-wrap');
+      const el = document.createElement('div');
+      el.className = 'iso-marker ' + cls;
+      el.innerHTML = html;
+      wrap.appendChild(el);
+      placeMarker(el, sx, sy, layer);
+      markerEls.push(el);
+      return el;
+    }
+
+    function redrawMarkers() {
+      clearMarkers();
+      if (!viewer || !dziInfo) return;
+
+      const showPlayers   = document.getElementById('show-players')?.checked;
+      const showDeaths    = document.getElementById('show-deaths')?.checked;
+      const showCampfires = document.getElementById('show-campfires')?.checked;
+      const showFarming   = document.getElementById('show-farming')?.checked;
+      const showTraps     = document.getElementById('show-traps')?.checked;
+
+      const ovl = pzData.overlays || {};
+
+      if (showPlayers) {
+        (pzData.players || []).forEach(p => {
+          if (p.x == null || p.y == null) return;
+          const cls = p.isDead ? 'player dead' : p.infected_risk ? 'player bitten' : 'player alive';
+          const wrap = addMarker(p.x, p.y, 0, '', cls);
+          // name label
+          const lbl = document.createElement('div');
+          lbl.className = 'iso-label' + (p.infected_risk ? ' bitten' : p.isDead ? ' dead' : '');
+          lbl.textContent = p.name + (p.infected_risk ? ' ⚠' : '');
+          wrap.appendChild(lbl);
+        });
+      }
+
+      if (showDeaths) {
+        (ovl.dead || []).forEach(d => {
+          addMarker(d.x, d.y, 0, '💀', 'death');
+        });
+      }
+
+      if (showCampfires) {
+        (ovl.campfires || []).forEach(pt => addMarker(pt.x, pt.y, 0, '🔥', 'fire'));
+        (ovl.drums    || []).forEach(pt => addMarker(pt.x, pt.y, 0, '🛢', 'fire'));
+        (ovl.barrels  || []).forEach(pt => addMarker(pt.x, pt.y, 0, '💧', 'fire'));
+      }
+
+      if (showFarming) {
+        (ovl.farming || []).forEach(pt => addMarker(pt.x, pt.y, 0, '🌿', 'farm'));
+      }
+
+      if (showTraps) {
+        (ovl.traps || []).forEach(pt => addMarker(pt.x, pt.y, 0, '🕷', 'trap'));
+      }
+    }
+
+    // Reposition all markers on pan/zoom
+    function repositionMarkers() {
+      if (!viewer || !dziInfo) return;
+      const wrap = document.getElementById('viewer-wrap');
+      // Rebuild is cheaper than trying to track individual els
+      redrawMarkers();
+    }
+
+    // ── Layer switching ───────────────────────────────────────────────────────
+    window.setLayer = function(layer) {
+      currentLayer = layer;
+      layerItems.forEach((item, i) => {
+        if (!item) return;
+        item.setOpacity(i === layer ? 1 : 0);
+      });
+    };
+
+    window.setRoofOpacity = function(val) {
+      const opacity = val / 100;
+      layerItems.forEach((item, i) => {
+        if (!item || i === 0) return;
+        if (i === currentLayer) item.setOpacity(opacity > 0 ? opacity : (i === currentLayer ? 1 : 0));
+      });
+    };
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    async function init() {
+      await loadDziInfo();
+
+      // Check which layers exist
+      const layerExists = await Promise.all(
+        Array.from({length: 8}, (_, i) =>
+          fetch(`/static/map-tiles/iso/base/layer${i}.dzi`, {method:'HEAD'})
+            .then(r => r.ok).catch(() => false)
+        )
+      );
+
+      // Populate layer selector with only available layers
+      const sel = document.getElementById('layer-sel');
+      sel.innerHTML = '';
+      layerExists.forEach((exists, i) => {
+        if (!exists) return;
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = i === 0 ? 'Ground Floor' : `Floor ${i}`;
+        sel.appendChild(opt);
+      });
+
+      // Build tile sources for all available layers
+      const tileSources = layerExists
+        .map((exists, i) => exists ? `/static/map-tiles/iso/base/layer${i}.dzi` : null)
+        .filter(Boolean);
+
+      viewer = OpenSeadragon({
+        element: document.getElementById('osd'),
+        tileSources: tileSources.map((src, i) => ({
+          tileSource: src,
+          opacity: i === 0 ? 1 : 0,
+          x: 0, y: 0, width: 1,
+        })),
+        sequenceMode: false,
+        homeFillsViewer: true,
+        showZoomControl: false,
+        showHomeControl: false,
+        showFullPageControl: false,
+        showRotationControl: false,
+        constrainDuringPan: true,
+        visibilityRatio: 0.5,
+        prefixUrl: '/static/iso/openseadragon/images/',
+        minZoomImageRatio: 0.1,
+        maxZoomPixelRatio: 4,
+        background: '#0a0a0e',
+      });
+
+      // Store world items by layer index
+      const srcIndexMap = [];
+      layerExists.forEach((exists, i) => { if (exists) srcIndexMap.push(i); });
+
+      viewer.addHandler('open', () => {
+        layerItems = new Array(8).fill(null);
+        srcIndexMap.forEach((layerIdx, worldIdx) => {
+          layerItems[layerIdx] = viewer.world.getItemAt(worldIdx);
+        });
+
+        document.getElementById('status').textContent = 'Ready';
+
+        // Jump to URL coords if provided
+        const params = new URLSearchParams(window.location.search);
+        const gx = +params.get('x'), gy = +params.get('y');
+        if (gx && gy) {
+          const vp = squareToViewport(gx, gy, 0);
+          if (vp) viewer.viewport.panTo(vp).zoomTo(0.05);
+        }
+
+        redrawMarkers();
+      });
+
+      viewer.addHandler('animation', repositionMarkers);
+      viewer.addHandler('resize', repositionMarkers);
+
+      // Coordinate display on mouse move
+      viewer.addHandler('mouse-move', (e) => {
+        if (!dziInfo) return;
+        const vp = viewer.viewport.pointFromPixel(e.position);
+        const item = viewer.world.getItemAt(0);
+        if (!item) return;
+        const img = item.viewportToImageCoordinates(vp);
+        const { cw, ch, sqr } = MAP_CONF;
+        const x0 = ch * sqr, y0 = 0;
+        // invert iso projection
+        const px = img.x, py = img.y;
+        const sx = (2 * (px - x0) / sqr + 4 * (py - y0) / sqr) / 2;
+        const sy = (4 * (py - y0) / sqr - 2 * (px - x0) / sqr) / 2;
+        document.getElementById('coords-display').textContent =
+          `X: ${Math.round(sx)}  Y: ${Math.round(sy)}`;
+      });
+
+      // Load data
+      loadData();
+      setInterval(loadData, 15000);
+    }
+
+    async function loadData() {
+      try {
+        const [statusRes, overlayRes] = await Promise.all([
+          fetch(`${API_BASE}/api/pz/status`),
+          fetch(`${API_BASE}/api/pz/overlays`),
+        ]);
+        const status = await statusRes.json();
+        const overlays = await overlayRes.json();
+        if (!status.error) pzData.players = status.players || [];
+        if (!overlays.error) pzData.overlays = overlays;
+        redrawMarkers();
+        document.getElementById('status').textContent =
+          `${pzData.players.length} player${pzData.players.length !== 1 ? 's' : ''} · updated ${new Date().toLocaleTimeString()}`;
+      } catch(e) {
+        document.getElementById('status').textContent = 'Offline';
+      }
+    }
+
+    window.redrawMarkers = redrawMarkers;
+    init();
+  </script>
+</body>
+</html>

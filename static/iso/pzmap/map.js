@@ -1,0 +1,669 @@
+import { g } from "./globals.js";
+import { MarkManager } from "./marker.js";
+import { rectsToRectCover } from "./algorithm/geometry/rect_cover.js";
+
+const BLACK_TILE = 'data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoQABAAAUAmJaQAA3AA/v02aAA=';
+const WHITE_TILE = 'data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoQABAAAUAmJaQAA3AA/vz0AAA=';
+
+export class Map {
+    constructor(root, map_type, name, base_map=null) {
+        this.layers = 0;
+        this.tiles = [];
+        this.mask = {
+            'bottom': 0,
+            'top': 0,
+        };
+        this.overlays = {};
+        this.marks = {};
+        this.overlay_layer = 0;
+        this.cell_rects = [];
+        this.clip_list = [];
+        this.info = {};
+        this.available_types = [];
+        this.root = root;
+        this.name = name;
+        this.type = map_type;
+        this.base_map = base_map;
+        if (!this.base_map) {
+            this.base_map = this;
+        }
+    }
+
+    cell2square(cx, cy) {
+        return {x: cx * this.cell_size, y: cy * this.cell_size};
+    }
+
+    square2pixel(sx, sy) {
+        let x = this.x0;
+        let y = this.y0;
+
+        if (this.type == 'iso') {
+            x += (sx - sy) * this.sqr / 2;
+            y += (sx + sy) * this.sqr / 4;
+        } else {
+            x += sx * this.sqr;
+            y += sy * this.sqr;
+        }
+
+        return {x: x, y: y};
+    }
+
+    cell2pixel(cx, cy) {
+        const {x, y} = this.cell2square(cx, cy);
+        return this.square2pixel(x, y);
+    }
+
+    getClipPoints(rects, remove) {
+        const points = [];
+        if (remove) {
+            points.push({x: 0, y: 0});
+            points.push({x: 0, y: this.h});
+            points.push({x: this.w, y: this.h});
+            points.push({x: this.w, y: 0});
+        }
+        points.push({x: 0, y: 0});
+        for (const {x, y, width, height} of rects) {
+            points.push(this.square2pixel(x, y));
+            points.push(this.square2pixel(x + width, y));
+            points.push(this.square2pixel(x + width, y + height));
+            points.push(this.square2pixel(x, y + height));
+            points.push(this.square2pixel(x, y));
+            points.push({x: 0, y: 0});
+        }
+        return points;
+    }
+
+    squareRects() {
+        const rects = [];
+        for (const [x, y, w, h] of this.cell_rects) {
+            const {x: sx, y: sy} = this.cell2square(x, y);
+            const {x: sw, y: sh} = this.cell2square(w, h);
+            rects.push({x: sx, y: sy, width: sw, height: sh});
+        }
+        return rects;
+    }
+
+    setClipByOtherMaps(maps, layer) {
+        const rects = this.square_rects;
+        const excludeRects = [];
+        this.clip_list = [this.getClipPoints(rects, false)];
+        for (let i = maps.length - 1; i >= 0; i--) {
+            for (const r of maps[i].square_rects) {
+                for (const b of rects) {
+                    if (rectIntersect(b, r)) {
+                        excludeRects.push(r);
+                        break;
+                    }
+                }
+            }
+        }
+        const excludeRectCover = rectsToRectCover(excludeRects);
+        if (excludeRectCover.length > 0) {
+            this.clip_list.push(this.getClipPoints(excludeRectCover, true));
+        }
+
+        for (const type of ['zombie', 'foraging']) {
+            if (![undefined, 0, 'loading', 'delete'].includes(this.overlays[type])) {
+                const clipList = this.getClipList(this.info[type].scale, 0);
+                this.overlays[type].setCroppingPolygons(clipList);
+            }
+        }
+        for (const type of ['rooms', 'objects']) {
+            if (![undefined, 0, 'loading', 'delete'].includes(this.overlays[type])) {
+                const clipList = this.getClipList(this.info[type].scale, layer);
+                this.overlays[type].setCroppingPolygons(clipList);
+            }
+        }
+        // clip for marks
+        for (const type in this.marks) {
+            if (this.marks[type]) {
+                this.marks[type].setIncludeRectCover(rects);
+                this.marks[type].setExcludeRectCover(excludeRectCover);
+                this.marks[type].redrawAll();
+            }
+        }
+    }
+
+    getClipList(scale, layer) {
+    let clip_list = [];
+    let yshift = (this.type == 'top' ? 0 : 1.5 * this.base_map.sqr * layer);
+    for (let clip of this.clip_list) {
+        let points = [];
+        for (let p of clip) {
+            points.push({x: p.x / scale, y: (p.y - yshift) / scale})
+        }
+        clip_list.push(points);
+    }
+    return clip_list;
+}
+
+    getMapRoot() {
+        return this.root;
+        let prefix = 'maps/'+g.get['map_name']+'_';
+			if (undefined == g.prefix){
+				g.prefix = prefix;
+			}
+        if (this.base_map === this) {
+            return prefix;
+        }
+        return prefix+'/mod_maps/' + this.name + '/'; 
+    }
+
+    getRelativePositionAndWidth(other_map) {
+        let x = (this.x0 - other_map.x0) / this.scale;
+        let y = (this.y0 - other_map.y0) / this.scale;
+        let p = g.viewer.world.getItemAt(0).imageToViewportCoordinates(x, y);
+        let width = other_map.w / this.w;
+        return [p, width];
+    }
+
+    _load_tile(layer, opacity=1) {
+        if (g.viewer) {
+            let [p, width] = this.base_map.getRelativePositionAndWidth(this);
+            if (layer < this.maxlayer && layer >= this.minlayer) {
+                if (this.getTile(layer) == 0) {
+                    this.setTile(layer, 'loading');
+                    g.viewer.addTiledImage({
+                        tileSource: this.root + 'base' + this.suffix + '/layer' + layer + '.dzi',
+                        opacity: 1,
+                        x: p.x,
+                        y: p.y,
+                        width: width,
+                        success: (function (obj) {
+                            if ([0, 'loading'].includes(this.getTile(layer))) {
+                                this.setTile(layer, obj.item);
+                                positionItem(obj.item);
+                                obj.item.setOpacity(opacity);
+                            } else {
+                                g.viewer.world.removeItem(obj.item);
+                                if (this.getTile(layer) == 'delete') {
+                                    this.setTile(layer, 0);
+                                }
+                            }
+                        }).bind(this),
+                        error: (function (e) {
+                            if (['delete', 0, 'loading'].includes(this.getTile(layer))) {
+                                this.setTile(layer, 0);
+                            }
+                        }).bind(this),
+                    });
+                } else {
+                    if (!['delete', 'loading'].includes(this.getTile(layer))) {
+                        this.getTile(layer).setOpacity(opacity);
+                    }
+                }
+            }
+        }
+    }
+
+    _load_overlay(type, layer) {
+        if (g.viewer && layer < this.maxlayer && layer >= this.minlayer) {
+            let [p, width] = this.base_map.getRelativePositionAndWidth(this);
+            let shift = true;
+            if (type == 'zombie' || type == 'foraging') {
+                layer = 0;
+                shift = false;
+            }
+            if (this.overlays[type] == 0) {
+                this.overlays[type] = 'loading';
+                g.viewer.addTiledImage({
+                    tileSource: this.root + type + this.suffix + '/layer' + layer + '.dzi',
+                    opacity: 1,
+                    x: p.x,
+                    y: p.y,
+                    width: width,
+                    success: (function (obj) {
+                        if ([0, 'loading'].includes(this.overlays[type])) {
+                            this.overlays[type] = obj.item;
+                            if (shift) {
+                                let clip_list = this.getClipList(this.info[type].scale, layer);
+                                this.overlays[type].setCroppingPolygons(clip_list);
+                            } else {
+                                let clip_list = this.getClipList(this.info[type].scale, 0);
+                                this.overlays[type].setCroppingPolygons(clip_list);
+                            }
+                        } else {
+                            g.viewer.world.removeItem(obj.item);
+                            if (this.overlays[type] == 'delete') {
+                                this.overlays[type] = 0;
+                            }
+                        }
+                    }).bind(this),
+                    error: (function (e) {
+                        if (['delete', 0, 'loading'].includes(this.overlays[type])) {
+                            this.overlays[type] = 0;
+                        }
+                    }).bind(this),
+                });
+            }
+        }
+    }
+
+    _load_mask(name, opacity) {
+        if (g.viewer && this.mask[name] == 0) {
+            this.mask[name] = 'loading';
+            console.log('loading mask', name);
+            g.viewer.addTiledImage({
+                tileSource: {
+                    height: this.w,
+                    width: this.h,
+                    tileSize: 1024,
+                    getTileUrl: function(level, x, y) {
+                        return BLACK_TILE;
+                    }.bind(this)
+                },
+                x: 0,
+                y: 0,
+                width: 1,
+                opacity: opacity,
+                success: (function (obj) {
+                    if ([0, 'loading'].includes(this.mask[name])) {
+                        this.mask[name] = obj.item;
+                        positionItem(obj.item);
+                    } else {
+                        g.viewer.world.removeItem(obj.item);
+                        if (this.mask[name] == 'delete') {
+                            this.mask[name] = 0;
+                        }
+                    }
+                }).bind(this),
+                error: (function (e) {
+                    if (['delete', 0, 'loading'].includes(this.mask[name])) {
+                        this.mask[name] = 0;
+                    }
+                }).bind(this),
+            });
+        } else {
+            if (!['delete', 'loading'].includes(this.mask[name])) {
+                this.mask[name].setOpacity(opacity);
+            }
+        }
+    }
+
+    _unload_tile(layer) {
+        if (layer < this.maxlayer && layer >= this.minlayer && this.getTile(layer) != 0) {
+            if (['loading', 'delete'].includes(this.getTile(layer))) {
+                this.setTile(layer, 'delete');
+            } else {
+                g.viewer.world.removeItem(this.getTile(layer));
+                this.setTile(layer, 0);
+            }
+        }
+        return
+    }
+
+    _unload_overlay(type) {
+        if (this.overlays[type]) {
+            if (['loading', 'delete'].includes(this.overlays[type])) {
+                this.overlays[type] = 'delete';
+            } else {
+                g.viewer.world.removeItem(this.overlays[type]);
+                this.overlays[type] = 0;
+            }
+        }
+    }
+
+    _unload_mask(name) {
+        if (this.mask[name]) {
+            if (['loading', 'delete'].includes(this.mask[name])) {
+                this.mask[name] = 'delete';
+            } else {
+                g.viewer.world.removeItem(this.mask[name]);
+                this.mask[name] = 0;
+            }
+        }
+    }
+
+    setTile(layer, tile) {
+        this.tiles[layer - this.minlayer] = tile;
+    }
+
+    getTile(layer) {
+        return this.tiles[layer - this.minlayer];
+    }
+
+    setBaseLayer(layer, bottom_mask=false) {
+        let start = this.minlayer;
+        if (layer >= 0) {
+            start = 0;
+        }
+        if (bottom_mask) {
+            this._load_mask('bottom', 0.5);
+        } else {
+            this._unload_mask('bottom');
+        }
+        for (let i = start; i < this.maxlayer ; i++) {
+            if (i > layer) {
+                if (i == layer + 1 && g.roof_opacity > 0) {
+                    this._load_tile(i, g.roof_opacity / 100);
+                } else {
+                    this._unload_tile(i);
+                }
+            } else {
+                this._load_tile(i);
+            }
+        }
+        if (layer >= 0) {
+            for (let i = this.minlayer; i < 0 ; i++) {
+                this._unload_tile(i);
+            }
+        }
+    }
+
+    setOverlayLayer(overlay, layer) {
+        for (let type of ['zombie', 'foraging', 'rooms', 'objects']) {
+            if (overlay[type]) {
+                if (!['zombie', 'foraging'].includes(type)) {
+                    if (layer != this.overlay_layer) {
+                        this._unload_overlay(type);
+                    }
+                }
+                this._load_overlay(type, layer);
+            } else {
+                this._unload_overlay(type);
+            }
+        }
+        this.overlay_layer = layer;
+        this.redrawMarks(overlay);
+    }
+
+    redrawMarks(overlay) {
+        for (const type of ['base', 'zombie', 'foraging', 'rooms', 'objects', 'streets']) {
+            if (this.marks[type]) {
+                if (type === 'base' || overlay[type]) {
+                    this.marks[type].enable();
+                    this.marks[type].redrawAll();
+                } else {
+                    this.marks[type].disable();
+                }
+            }
+        }
+    }
+
+    destroy() {
+        this.setOverlayLayer({}, 0);
+        for (let i = this.minlayer; i < this.maxlayer ; i++) {
+            this._unload_tile(i);
+        }
+        this._unload_mask('bottom');
+    }
+
+    getLayerRange() {
+        let i = -1, j = 0;
+        let root = this.root;
+        let suffix = this.suffix;
+        function getmax(r) {
+            if (r.ok) {
+                i += 1;
+                return window.fetch(root + 'base' + suffix + '/layer' + i + '.dzi').then(getmax, getmax);
+            } else {
+                return Promise.resolve(i);
+            }
+        };
+        function getmin(r) {
+            if (r.ok) {
+                j -= 1;
+                return window.fetch(root + 'base' + suffix + '/layer' + j + '.dzi').then(getmin, getmin);
+            } else {
+                return Promise.resolve(j+1);
+            }
+        };
+
+        let setrange = (function (r) {
+            [this.minlayer, this.maxlayer] = r;
+            return Promise.resolve(r);
+        }).bind(this)
+ 
+        return Promise.all([getmin({ok: 1}), getmax({ok: 1})]).then(setrange);
+    }
+
+    typeToSuffix(type) {
+        return (type == 'top') ? '_top' : '';
+    }
+
+    isTypeAvailable(type) {
+        let suffix = this.typeToSuffix(type);
+        return window.fetch(this.root + 'base' + suffix + '/map_info.json')
+            .then((r) => r.json())
+            .then((j) => Promise.resolve(type))
+            .catch((e) => Promise.resolve(null));
+    }
+
+    availableTypes() {
+        let t = [];
+        for (let type of ['iso', 'top']) {
+            t.push(this.isTypeAvailable(type));
+        }
+        return Promise.all(t).then((r) => {
+            let types = [];
+            for (let type of r) {
+                if (type) {
+                    types.push(type);
+                }
+            }
+            this.available_types = types;
+            return Promise.resolve(types);
+        });
+    }
+
+    init() {
+        return this.availableTypes().then((types) => {
+            if (!this.type) {
+                if (types.length) {
+                    this.type = types[0];
+                } else {
+                    this.type = 'iso';
+                }
+            }
+            return this.initMap();
+        });
+    }
+
+    initMap() {
+        this.suffix = this.typeToSuffix(this.type);
+
+        const types = ['base', 'zombie', 'foraging'];
+        if (this.type !== 'top') types.push('rooms', 'objects');
+        const getinfo = (type) => {
+            return window.fetch(this.root + type + this.suffix + '/map_info.json')
+                .then((r) => r.json()).catch((e) => Promise.resolve({}));
+        };
+
+        const setlayer = (r) => {
+            this.minlayer = this.minlayer > 0 ? 0: this.minlayer;
+            this.maxlayer = this.maxlayer < 1 ? 1: this.maxlayer;
+            this.layers = this.maxlayer - this.minlayer;
+            this.tiles = Array(this.layers).fill(0);
+            return Promise.resolve(this);
+        };
+
+        const setinfo = (r) => {
+            for (let i in types) {
+                let type = types[i];
+                this.info[type] = r[i];
+                this.info[type].scale = 1;
+                if ('skip' in r[i]) {
+                    this.info[type].scale <<= r[i].skip;
+                }
+                if (type !== 'base') {
+                    this.overlays[type] = 0;
+                }
+            }
+
+            if (this.info.base.pz_version) {
+                this.w = this.info.base.w * this.info.base.scale;
+                this.h = this.info.base.h * this.info.base.scale;
+                this.scale = this.info.base.scale;
+                this.x0 = this.info.base.x0;
+                this.y0 = this.info.base.y0;
+                this.sqr = this.info.base.sqr;
+                this.cell_rects = this.info.base.cell_rects;
+                this.cell_size = this.info.base.cell_size;
+                this.block_size = this.info.base.block_size;
+                this.cell_in_block = this.cell_size / this.block_size;
+                this.pz_version = this.info.base.pz_version;
+                this.render_version = this.info.base.pzmap2dzi_version;
+                this.branch = this.info.base.git_branch;
+                this.commit = this.info.base.git_commit;
+                this.minlayer = this.info.base.minlayer;
+                this.maxlayer = this.info.base.maxlayer;
+                this.square_rects = this.squareRects();
+            }
+
+            if (this.minlayer === undefined || this.maxlayer === undefined) {
+                return this.getLayerRange();
+            } else {
+                return Promise.resolve([this.minlayer, this.maxlayer]);
+            }
+        };
+
+        const markTypes = ['base', 'zombie', 'foraging', 'rooms', 'objects', 'streets'];
+        const getmarks = (type) => {
+            return window.fetch(this.root + type + '/marks.json') // always use marks in folder without suffix
+                .then((r) => r.json()).catch((e) => Promise.resolve(null));
+        };
+
+        const setmarks = (r) => {
+            const options = markTypes.map((t) => {
+                const option = {
+                    type: t,
+                    mode: this.type,
+                    onScreenLimit: g.query_string.mark_limit || 256,
+                    indexType: 'rtree',
+                    onlyCurrentLayer: true,
+                    defaultValue: {
+                        text_position: 'top',
+                        background: 'transparent',
+                        visible_zoom_level: 2,
+                    },
+                    renderOptions: { renderMethod: 'svg' },
+                };
+                if (t === 'streets') {
+                    option.onlyCurrentLayer = false;
+                    option.onScreenLimit = 0;
+                    option.defaultValue.text_position = 'dynamic';
+                    option.defaultValue.layer = 0;
+                    option.renderOptions.formatterOptions = { hide_text_level: 1 };
+                }
+                if (t === 'zombie') {
+                    option.onlyCurrentLayer = false;
+                    option.onScreenLimit = 0;
+                    option.defaultValue.layer = 0;
+                    option.defaultValue.visible_zoom_level = 3;
+                }
+                return option;
+            });
+            const buildIndexOptions = options.map((o) => {
+                const { onlyCurrentLayer, indexType, mode } = o;
+                return { onlyCurrentLayer, indexType, mode, defaultValue: {
+                    layer: o.defaultValue.layer || 0,
+                    visible_zoom_level: o.defaultValue.visible_zoom_level || 0,
+                } };
+            });
+            const worker = new Worker('pzmap/mark/loader.js', { type: "module" });
+            worker.postMessage([r, buildIndexOptions]);
+            worker.onmessage = (e) => {
+                const [r, indexes] = e.data;
+                for (const i in markTypes) {
+                    const type = markTypes[i];
+                    if (!r[i] || !Array.isArray(r[i])) continue;
+                    this.marks[type] = new MarkManager(options[i]);
+                    this.marks[type].disable();
+                    this.marks[type].load(r[i], indexes[i]);
+                    console.log(`${this.root}${type} loaded (${r[i].length} marks)`);
+                }
+                this.redrawMarks(g.overlays);
+                worker.terminate();
+            };
+            return Promise.resolve(this);
+        };
+
+        const getmarksAsync = (r) => {
+            const pmarks = [];
+            for (const type of markTypes) {
+                pmarks.push(getmarks(type));
+            }
+            Promise.all(pmarks).then(setmarks);
+
+            return Promise.resolve(r);
+        }
+
+        const ptypes = [];
+        for (const type of types) {
+            ptypes.push(getinfo(type));
+        }
+        return Promise.all(ptypes).then(setinfo).then(setlayer).then(getmarksAsync);
+    }
+};
+
+// order layered maps
+function positionItem(item) {
+    let pos = 1;
+    for (let i = g.minLayer; i < g.maxLayer; i++) {
+        if (![undefined, 0, 'loading', 'delete'].includes(g.base_map.getTile(i))) {
+            if (item == g.base_map.getTile(i)) {
+                g.viewer.world.setItemIndex(item, pos);
+                return;
+            }
+            pos++;
+        }
+        for (const map of g.mod_maps) {
+            if (![undefined, 0, 'loading', 'delete'].includes(map.getTile(i))) {
+                if (item == map.getTile(i)) {
+                    g.viewer.world.setItemIndex(item, pos);
+                    return;
+                }
+                pos++;
+            }
+        }
+    }
+
+    if (![undefined, 0, 'loading', 'delete'].includes(g.save_map.mask['bottom'])) {
+        if (item == g.save_map.mask['bottom']) {
+            g.viewer.world.setItemIndex(item, pos);
+            return;
+        }
+        pos++;
+    }
+    for (let i = g.minLayer; i < g.maxLayer; i++) {
+        if (![undefined, 0, 'loading', 'delete'].includes(g.save_map.getTile(i))) {
+            if (item == g.save_map.getTile(i)) {
+                g.viewer.world.setItemIndex(item, pos);
+                return;
+            }
+            pos++;
+        }
+    }
+}
+
+function positionAll() {
+    let pos = 1;
+    for (let i = g.minLayer; i < g.maxLayer; i++) {
+        if (![undefined, 0, 'loading', 'delete'].includes(g.base_map.getTile(i))) {
+            g.viewer.world.setItemIndex(g.base_map.getTile(i), pos);
+            pos++;
+        }
+        for (const map of g.mod_maps) {
+            if (![undefined, 0, 'loading', 'delete'].includes(map.getTile(i))) {
+                g.viewer.world.setItemIndex(map.getTile(i), pos);
+                pos++;
+            }
+        }
+    }
+    if (![undefined, 0, 'loading', 'delete'].includes(g.save_map.mask['bottom'])) {
+        g.viewer.world.setItemIndex(g.save_map.mask['bottom'], pos);
+        pos++;
+    }
+    for (let i = g.minLayer; i < g.maxLayer; i++) {
+        if (![undefined, 0, 'loading', 'delete'].includes(g.save_map.getTile(i))) {
+            g.viewer.world.setItemIndex(g.save_map.getTile(i), pos);
+            pos++;
+        }
+    }
+}
+
+function rectIntersect(r1, r2) {
+    const {x: x1, y: y1, width: w1, height: h1} = r1;
+    const {x: x2, y: y2, width: w2, height: h2} = r2;
+    return (x1 < x2 + w2) && (x2 < x1 + w1) && (y1 < y2 + h2) && (y2 < y1 + h1);
+}

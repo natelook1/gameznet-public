@@ -304,6 +304,7 @@
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-density" onchange="redrawOverlays()"> Density</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-towns" onchange="redrawTowns()"> Towns</label>
                 <button id="map-fullscreen-btn" onclick="toggleMapFullscreen()">⛶</button>
+                <button onclick="openIsoViewer()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:12px;">Iso View</button>
               </div>
               <div style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap</div>
             </div>
@@ -888,6 +889,17 @@
         rect.bindTooltip(town.name, { permanent: true, direction: 'center', className: 'player-label', opacity: 0.9 });
         townMarkers.push(rect);
       });
+    }
+
+    function openIsoViewer() {
+      const center = leafletMap ? leafletMap.getCenter() : null;
+      if (center) {
+        const x = Math.round(center.lng * PZ_SCALE);
+        const y = Math.round(-center.lat * PZ_SCALE);
+        window.open(`/zomboid-iso?x=${x}&y=${y}`, '_blank');
+      } else {
+        window.open('/zomboid-iso', '_blank');
+      }
     }
 
     function toggleMapFullscreen() {
