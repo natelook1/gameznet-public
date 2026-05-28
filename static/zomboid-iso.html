@@ -100,22 +100,18 @@
 
     // ── Map config ────────────────────────────────────────────────────────────
     // Cell range rendered: cx=19-23, cy=17-22 (4x5)
-    // pzmap2dzi iso params: sqr=300 (squares per cell), scale is read from DZI
-    // Game coords (x,y) in squares. Cell origin: cx*300, cy*300.
+    // pzmap2dzi IsoDZI coordinate constants (from pzdzi.py):
+    //   GRID_WIDTH=64, GRID_HEIGHT=32, LAYER_HEIGHT=192 (6 grid rows per layer)
+    //   gx = sx - sy,  gy = sx + sy  (grid coords from game squares)
+    //   pixel_x = x0 + gx * GRID_WIDTH
+    //   pixel_y = y0 + gy * GRID_HEIGHT + layer * LAYER_HEIGHT
+    // x0 = -gxo * GRID_WIDTH,  y0 = -(gyo+1) * GRID_HEIGHT
+    // gxo/gyo computed from dzi_cell_range [8,16,40,24] + tile_align_levels=3:
+    //   gxo=-9600, gyo=7168  => x0=614400, y0=-229408
     const MAP_CONF = {
-      cx0: 8, cy0: 16, cw: 40, ch: 24,
-      sqr: 300,       // squares per cell edge
+      GW: 64, GH: 32, LH: 192,
+      x0: 614400, y0: -229408,
     };
-
-    // Isometric projection: game square (sx,sy) -> DZI image pixel (px,py)
-    // pzmap2dzi uses: px = x0 + (sx-sy)*sqr/2, py = y0 + (sx+sy)*sqr/4 + layer*1.5*sqr
-    // x0,y0 are the image-space origin offsets baked into the DZI.
-    // We compute them from the cell range: the iso diamond origin is at the top vertex.
-    // For a CW×CH cell canvas:
-    //   iso width  = (CW+CH) * sqr  (pixels at scale=1)
-    //   iso height = (CW+CH) * sqr / 2
-    //   x0 = CH * sqr  (the top-left offset to the origin square)
-    //   y0 = 0
 
     let dziInfo = null;  // loaded from layer0.dzi
     let viewer = null;
@@ -147,17 +143,11 @@
     // Convert game square coords to DZI image pixel coords (0..1 viewport fraction)
     function squareToViewport(sx, sy, layer) {
       if (!dziInfo || !viewer) return null;
-      const { cx0, cy0, cw, ch, sqr } = MAP_CONF;
-      // pixels per game square in the DZI image
-      const scale = dziInfo.width / ((cw + ch) * sqr);
-      const x0 = ch * sqr * scale;
-      const y0 = 0;
-      // offset to canvas-relative squares
-      const rx = sx - cx0 * sqr;
-      const ry = sy - cy0 * sqr;
-      // iso projection (1 square = scale pixels)
-      const px = x0 + (rx - ry) * scale * 0.5;
-      const py = y0 + (rx + ry) * scale * 0.25 + layer * 1.5 * sqr * scale;
+      const { GW, GH, LH, x0, y0 } = MAP_CONF;
+      const gx = sx - sy;
+      const gy = sx + sy;
+      const px = x0 + gx * GW;
+      const py = y0 + gy * GH + layer * LH;
       // normalize to [0,1] image fraction
       const imgFracX = px / dziInfo.width;
       const imgFracY = py / dziInfo.height;
@@ -271,13 +261,14 @@
     async function init() {
       await loadDziInfo();
 
-      // Check which layers exist
-      const layerExists = await Promise.all(
-        Array.from({length: 8}, (_, i) =>
-          fetch(`/static/map-tiles/iso/base/layer${i}.dzi`, {method:'HEAD'})
-            .then(r => r.ok).catch(() => false)
-        )
-      );
+      // Probe which layers exist sequentially — stop at first 404 to avoid console spam
+      const layerExists = [false,false,false,false,false,false,false,false];
+      for (let i = 0; i < 8; i++) {
+        const ok = await fetch(`/static/map-tiles/iso/base/layer${i}.dzi`, {method:'HEAD'})
+          .then(r => r.ok).catch(() => false);
+        if (!ok) break;
+        layerExists[i] = true;
+      }
 
       // Populate layer selector with only available layers
       const sel = document.getElementById('layer-sel');
@@ -349,16 +340,13 @@
         const item = viewer.world.getItemAt(0);
         if (!item) return;
         const img = item.viewportToImageCoordinates(vp);
-        const { cx0, cy0, cw, ch, sqr } = MAP_CONF;
-        const scale = dziInfo.width / ((cw + ch) * sqr);
-        const x0 = ch * sqr * scale, y0 = 0;
-        // invert iso projection to canvas-relative squares
-        const px = img.x, py = img.y;
-        const rx = ((px - x0) / scale + 2 * (py - y0) / scale) / 1;
-        const ry = (2 * (py - y0) / scale - (px - x0) / scale) / 1;
-        // add canvas origin to get absolute game squares
-        const sx = rx + cx0 * sqr;
-        const sy = ry + cy0 * sqr;
+        const { GW, GH, x0, y0 } = MAP_CONF;
+        // invert: gx = (px - x0) / GW, gy = (py - y0) / GH
+        const gx = (img.x - x0) / GW;
+        const gy = (img.y - y0) / GH;
+        // sx = (gx + gy) / 2, sy = (gy - gx) / 2
+        const sx = (gx + gy) / 2;
+        const sy = (gy - gx) / 2;
         document.getElementById('coords-display').textContent =
           `X: ${Math.round(sx)}  Y: ${Math.round(sy)}`;
       });
