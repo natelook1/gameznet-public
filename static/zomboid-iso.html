@@ -46,6 +46,9 @@
     .iso-label { position: absolute; pointer-events: none; transform: translateX(-50%); white-space: nowrap; font-size: 10px; font-weight: 700; color: #22c55e; text-shadow: 0 0 3px #000, 0 0 3px #000; top: 8px; left: 50%; }
     .iso-label.bitten { color: #ef4444; }
     .iso-label.dead   { color: #9ca3af; }
+    .iso-marker.vehicle { font-size: 13px; line-height: 1; }
+    .iso-marker.town-label { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; border: 1px solid; background: rgba(0,0,0,0.5); white-space: nowrap; text-shadow: 0 0 4px #000; }
+    .iso-marker.town-box { position: absolute; transform: none; }
 
     #status { position: absolute; bottom: 10px; right: 12px; font-size: 11px; color: var(--muted); background: rgba(15,15,19,0.8); padding: 4px 8px; border-radius: 5px; border: 1px solid var(--border); }
     #coords-display { font-size: 11px; color: var(--muted); }
@@ -76,13 +79,16 @@
     <div class="topbar-sep"></div>
 
     <label class="toggle"><input type="checkbox" id="show-players" checked onchange="redrawMarkers()"> Players</label>
+    <label class="toggle"><input type="checkbox" id="show-vehicles" onchange="redrawMarkers()"> Vehicles</label>
     <label class="toggle"><input type="checkbox" id="show-deaths" onchange="redrawMarkers()"> Deaths</label>
     <label class="toggle"><input type="checkbox" id="show-campfires" checked onchange="redrawMarkers()"> Campfires</label>
     <label class="toggle"><input type="checkbox" id="show-farming" onchange="redrawMarkers()"> Farming</label>
     <label class="toggle"><input type="checkbox" id="show-traps" onchange="redrawMarkers()"> Traps</label>
+    <label class="toggle"><input type="checkbox" id="show-towns" onchange="redrawMarkers()"> Towns</label>
+    <label class="toggle"><input type="checkbox" id="show-heatmap" onchange="redrawMarkers()"> Heatmap</label>
 
     <div class="topbar-sep"></div>
-    <div class="legend">🟢 alive &nbsp;🔴 bitten &nbsp;💀 death &nbsp;🔥 fire &nbsp;🌿 farm &nbsp;🕷 trap</div>
+    <div class="legend">🟢 alive &nbsp;🔴 bitten &nbsp;💀 death &nbsp;🚗 vehicle &nbsp;🔥 fire &nbsp;🌿 farm &nbsp;🕷 trap</div>
 
     <div class="spacer"></div>
     <div id="coords-display">—</div>
@@ -91,6 +97,7 @@
 
   <div id="viewer-wrap">
     <div id="osd"></div>
+    <canvas id="heatmap-canvas" style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
     <div id="status">Loading...</div>
   </div>
 
@@ -100,17 +107,13 @@
 
     // ── Map config ────────────────────────────────────────────────────────────
     // Cell range rendered: cx=19-23, cy=17-22 (4x5)
-    // pzmap2dzi IsoDZI coordinate constants (from pzdzi.py):
-    //   GRID_WIDTH=64, GRID_HEIGHT=32, LAYER_HEIGHT=192 (6 grid rows per layer)
-    //   gx = sx - sy,  gy = sx + sy  (grid coords from game squares)
-    //   pixel_x = x0 + gx * GRID_WIDTH
-    //   pixel_y = y0 + gy * GRID_HEIGHT + layer * LAYER_HEIGHT
-    // x0 = -gxo * GRID_WIDTH,  y0 = -(gyo+1) * GRID_HEIGHT
-    // gxo/gyo computed from dzi_cell_range [8,16,40,24] + tile_align_levels=3:
-    //   gxo=-9600, gyo=7168  => x0=614400, y0=-229408
-    const MAP_CONF = {
+    // Coordinate constants from map_info.json (authoritative, written by pzmap2dzi):
+    //   gx = sx - sy,  gy = sx + sy
+    //   pixel_x = x0 + gx * GW,  pixel_y = y0 + gy * GH + layer * LH
+    //   sqr=128 px/square, GW=64, GH=32, LH=192
+    let MAP_CONF = {
       GW: 64, GH: 32, LH: 192,
-      x0: 614400, y0: -229408,
+      x0: 618496, y0: -229408,
     };
 
     let dziInfo = null;  // loaded from layer0.dzi
@@ -122,8 +125,11 @@
 
     async function loadDziInfo() {
       try {
-        const r = await fetch('/static/map-tiles/iso/base/layer0.dzi');
-        const txt = await r.text();
+        const [dziRes, infoRes] = await Promise.all([
+          fetch('/static/map-tiles/iso/base/layer0.dzi'),
+          fetch('/static/map-tiles/iso/base/map_info.json'),
+        ]);
+        const txt = await dziRes.text();
         const parser = new DOMParser();
         const xml = parser.parseFromString(txt, 'text/xml');
         const img = xml.querySelector('Image');
@@ -135,6 +141,10 @@
           width: +size.getAttribute('Width'),
           height: +size.getAttribute('Height'),
         };
+        // Load authoritative coordinate offsets from pzmap2dzi output
+        const info = await infoRes.json();
+        MAP_CONF.x0 = info.x0;
+        MAP_CONF.y0 = info.y0;
       } catch(e) {
         console.warn('DZI load failed', e);
       }
@@ -157,31 +167,30 @@
       return item.imageToViewportCoordinates(imgFracX * dziInfo.width, imgFracY * dziInfo.height);
     }
 
-    function viewportToScreen(vp) {
-      const pt = viewer.viewport.pixelFromPoint(vp);
-      return pt;
-    }
-
-    function placeMarker(el, sx, sy, layer) {
-      const vp = squareToViewport(sx, sy, layer);
-      if (!vp) return;
-      const pt = viewportToScreen(vp);
-      el.style.left = pt.x + 'px';
-      el.style.top  = pt.y + 'px';
-    }
+    const TOWN_ZONES = [
+      { name: 'Muldraugh',  cx0: 34, cy0: 30, cx1: 37, cy1: 36 },
+      { name: 'Riverside',  cx0: 16, cy0: 17, cx1: 23, cy1: 22 },
+      { name: 'Rosewood',   cx0: 25, cy0: 37, cx1: 29, cy1: 40 },
+      { name: 'West Point', cx0: 36, cy0: 21, cx1: 41, cy1: 24 },
+    ];
+    const TOWN_COLORS = ['#60a5fa','#34d399','#f472b6','#fbbf24'];
 
     function clearMarkers() {
-      markerEls.forEach(el => el.remove());
+      markerEls.forEach(el => { try { viewer.removeOverlay(el); } catch(e) {} el.remove(); });
       markerEls = [];
     }
 
-    function addMarker(sx, sy, layer, html, cls) {
-      const wrap = document.getElementById('viewer-wrap');
+    function addOverlay(sx, sy, layer, html, cls, placement) {
+      const vp = squareToViewport(sx, sy, layer);
+      if (!vp) return null;
       const el = document.createElement('div');
       el.className = 'iso-marker ' + cls;
       el.innerHTML = html;
-      wrap.appendChild(el);
-      placeMarker(el, sx, sy, layer);
+      viewer.addOverlay({
+        element: el,
+        location: vp,
+        placement: placement || OpenSeadragon.Placement.CENTER,
+      });
       markerEls.push(el);
       return el;
     }
@@ -191,10 +200,13 @@
       if (!viewer || !dziInfo) return;
 
       const showPlayers   = document.getElementById('show-players')?.checked;
+      const showVehicles  = document.getElementById('show-vehicles')?.checked;
       const showDeaths    = document.getElementById('show-deaths')?.checked;
       const showCampfires = document.getElementById('show-campfires')?.checked;
       const showFarming   = document.getElementById('show-farming')?.checked;
       const showTraps     = document.getElementById('show-traps')?.checked;
+      const showTowns     = document.getElementById('show-towns')?.checked;
+      const showHeatmap   = document.getElementById('show-heatmap')?.checked;
 
       const ovl = pzData.overlays || {};
 
@@ -202,42 +214,125 @@
         (pzData.players || []).forEach(p => {
           if (p.x == null || p.y == null) return;
           const cls = p.isDead ? 'player dead' : p.infected_risk ? 'player bitten' : 'player alive';
-          const wrap = addMarker(p.x, p.y, 0, '', cls);
-          // name label
-          const lbl = document.createElement('div');
-          lbl.className = 'iso-label' + (p.infected_risk ? ' bitten' : p.isDead ? ' dead' : '');
-          lbl.textContent = p.name + (p.infected_risk ? ' ⚠' : '');
-          wrap.appendChild(lbl);
+          const el = addOverlay(p.x, p.y, p.z || 0, '', cls);
+          if (el) {
+            const lbl = document.createElement('div');
+            lbl.className = 'iso-label' + (p.infected_risk ? ' bitten' : p.isDead ? ' dead' : '');
+            lbl.textContent = p.name + (p.infected_risk ? ' ⚠' : '');
+            el.appendChild(lbl);
+          }
+        });
+      }
+
+      if (showVehicles) {
+        (ovl.vehicles || []).forEach(v => {
+          const el = addOverlay(v.x, v.y, 0, '🚗', 'vehicle');
+          if (el && v.name) {
+            const lbl = document.createElement('div');
+            lbl.className = 'iso-label';
+            lbl.textContent = v.name;
+            el.appendChild(lbl);
+          }
         });
       }
 
       if (showDeaths) {
-        (ovl.dead || []).forEach(d => {
-          addMarker(d.x, d.y, 0, '💀', 'death');
+        const dead = (ovl.dead || []).slice(-5);
+        dead.forEach(d => {
+          const el = addOverlay(d.x, d.y, 0, '💀', 'death');
+          if (el) {
+            const lbl = document.createElement('div');
+            lbl.className = 'iso-label dead';
+            // PZ log format: "[MM-DD-YY HH:MM:SS." — extract and reformat
+            let ts = '';
+            if (d.ts) {
+              const m = d.ts.match(/\[(\d{2})-(\d{2})-(\d{2})\s+(\d{2}:\d{2})/);
+              if (m) ts = `${m[1]}/${m[2]} ${m[4]}`;
+            }
+            lbl.textContent = d.name + (ts ? ` ${ts}` : '');
+            el.appendChild(lbl);
+          }
         });
       }
 
       if (showCampfires) {
-        (ovl.campfires || []).forEach(pt => addMarker(pt.x, pt.y, 0, '🔥', 'fire'));
-        (ovl.drums    || []).forEach(pt => addMarker(pt.x, pt.y, 0, '🛢', 'fire'));
-        (ovl.barrels  || []).forEach(pt => addMarker(pt.x, pt.y, 0, '💧', 'fire'));
+        (ovl.campfires || []).forEach(pt => addOverlay(pt.x, pt.y, 0, '🔥', 'fire'));
+        (ovl.drums     || []).forEach(pt => addOverlay(pt.x, pt.y, 0, '🛢', 'fire'));
+        (ovl.barrels   || []).forEach(pt => addOverlay(pt.x, pt.y, 0, '💧', 'fire'));
       }
 
       if (showFarming) {
-        (ovl.farming || []).forEach(pt => addMarker(pt.x, pt.y, 0, '🌿', 'farm'));
+        (ovl.farming || []).forEach(pt => addOverlay(pt.x, pt.y, 0, '🌿', 'farm'));
       }
 
       if (showTraps) {
-        (ovl.traps || []).forEach(pt => addMarker(pt.x, pt.y, 0, '🕷', 'trap'));
+        (ovl.traps || []).forEach(pt => addOverlay(pt.x, pt.y, 0, '🕷', 'trap'));
+      }
+
+      if (showTowns) {
+        TOWN_ZONES.forEach((town, i) => {
+          const color = TOWN_COLORS[i % TOWN_COLORS.length];
+          const SQ = 300; // squares per cell
+          // corners of the bounding box in game squares
+          const sx0 = town.cx0 * SQ, sy0 = town.cy0 * SQ;
+          const sx1 = town.cx1 * SQ, sy1 = town.cy1 * SQ;
+          const vpTL = squareToViewport(sx0, sy0, 0);
+          const vpBR = squareToViewport(sx1, sy1, 0);
+          if (vpTL && vpBR) {
+            const box = document.createElement('div');
+            box.className = 'iso-marker town-box';
+            box.style.border = `1px solid ${color}`;
+            box.style.background = `${color}10`;
+            box.style.pointerEvents = 'none';
+            const rect = new OpenSeadragon.Rect(
+              Math.min(vpTL.x, vpBR.x), Math.min(vpTL.y, vpBR.y),
+              Math.abs(vpBR.x - vpTL.x), Math.abs(vpBR.y - vpTL.y)
+            );
+            viewer.addOverlay({ element: box, location: rect });
+            markerEls.push(box);
+          }
+          // label at top-left corner
+          const cx = ((town.cx0 + town.cx1) / 2) * SQ;
+          const cy = town.cy0 * SQ;
+          const el = addOverlay(cx, cy, 0, '', 'town-label');
+          if (el) {
+            el.style.color = color;
+            el.style.borderColor = color;
+            el.textContent = town.name;
+          }
+        });
+      }
+
+      if (showHeatmap) {
+        const canvas = document.getElementById('heatmap-canvas');
+        drawHeatmap(canvas, pzData.players || []);
+      } else {
+        const canvas = document.getElementById('heatmap-canvas');
+        if (canvas) { const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); }
       }
     }
 
-    // Reposition all markers on pan/zoom
-    function repositionMarkers() {
-      if (!viewer || !dziInfo) return;
+    function drawHeatmap(canvas, players) {
+      if (!canvas || !viewer || !dziInfo) return;
       const wrap = document.getElementById('viewer-wrap');
-      // Rebuild is cheaper than trying to track individual els
-      redrawMarkers();
+      canvas.width = wrap.clientWidth;
+      canvas.height = wrap.clientHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      players.forEach(p => {
+        if (p.x == null || p.y == null) return;
+        const vp = squareToViewport(p.x, p.y, 0);
+        if (!vp) return;
+        const pt = viewer.viewport.pixelFromPoint(vp);
+        const r = 40;
+        const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r);
+        grad.addColorStop(0, 'rgba(239,68,68,0.35)');
+        grad.addColorStop(1, 'rgba(239,68,68,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
     }
 
     // ── Layer switching ───────────────────────────────────────────────────────
@@ -330,8 +425,13 @@
         redrawMarkers();
       });
 
-      viewer.addHandler('update-viewport', repositionMarkers);
-      viewer.addHandler('resize', repositionMarkers);
+      viewer.addHandler('resize', redrawMarkers);
+      viewer.addHandler('viewport-change', () => {
+        const canvas = document.getElementById('heatmap-canvas');
+        if (document.getElementById('show-heatmap')?.checked) {
+          drawHeatmap(canvas, pzData.players || []);
+        }
+      });
 
       // Coordinate display on mouse move
       viewer.addHandler('mouse-move', (e) => {
@@ -358,14 +458,17 @@
 
     async function loadData() {
       try {
-        const [statusRes, overlayRes] = await Promise.all([
+        const [statusRes, overlayRes, vehiclesRes] = await Promise.all([
           fetch(`${API_BASE}/api/pz/status`),
           fetch(`${API_BASE}/api/pz/overlays`),
+          fetch(`${API_BASE}/api/pz/vehicles`),
         ]);
         const status = await statusRes.json();
         const overlays = await overlayRes.json();
+        const vehiclesData = await vehiclesRes.json();
         if (!status.error) pzData.players = status.players || [];
         if (!overlays.error) pzData.overlays = overlays;
+        if (!vehiclesData.error) pzData.overlays.vehicles = vehiclesData.vehicles || [];
         redrawMarkers();
         document.getElementById('status').textContent =
           `${pzData.players.length} player${pzData.players.length !== 1 ? 's' : ''} · updated ${new Date().toLocaleTimeString()}`;
