@@ -330,7 +330,7 @@
         redrawMarkers();
       });
 
-      viewer.addHandler('animation', repositionMarkers);
+      viewer.addHandler('update-viewport', repositionMarkers);
       viewer.addHandler('resize', repositionMarkers);
 
       // Coordinate display on mouse move
