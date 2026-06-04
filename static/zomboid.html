@@ -63,6 +63,7 @@
     .player-name .username { font-size: 12px; color: var(--muted); font-weight: 400; }
     .infection-badge { background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.5px; }
     .dead-badge { background: #374151; color: #9ca3af; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+    .online-badge { background: #166534; color: #86efac; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
 
     /* Skills bar */
     .skills-section { display: flex; flex-direction: column; gap: 5px; }
@@ -327,7 +328,7 @@
     const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
       ? 'https://gameznet.looknet.ca' : '';
 
-    let pzData = { players: [], vehicles: [], stats: {}, overlays: {}, gametime: {} };
+    let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {} };
     let leafletMap = null;
     let playerMarkers = [];
 
@@ -402,9 +403,13 @@
     function renderOverview() {
       const players = pzData.players || [];
       const stats = pzData.stats || {};
-      const infected = players.filter(p => p.infected_risk);
+      const liveNames = new Set((pzData.livePlayers || []).map(p => p.name));
+      const infected = players.filter(p => p.infected_risk && !p.isDead);
 
-      document.getElementById('stat-players').textContent = players.length;
+      const onlineCount = players.length > 0 && liveNames.size > 0
+        ? players.filter(p => liveNames.has(p.name)).length
+        : liveNames.size || players.length;
+      document.getElementById('stat-players').textContent = onlineCount + ' / ' + players.length;
       document.getElementById('stat-infected').textContent = infected.length > 0 ? infected.length + ' ⚠️' : '0';
       document.getElementById('stat-infected').style.color = infected.length > 0 ? 'var(--red)' : 'var(--green)';
       document.getElementById('stat-vehicles').textContent = (pzData.vehicles || []).length;
@@ -417,7 +422,7 @@
         const icon = periodIcons[gt.period] || '';
         document.getElementById('stat-gameday').textContent = `${icon} ${gt.period} · Day ${gt.day} (${gt.start_month} ${gt.start_day})`;
       }
-      document.getElementById('sidebar-players').textContent = players.length;
+      document.getElementById('sidebar-players').textContent = onlineCount + ' / ' + players.length;
       document.getElementById('sidebar-updated').textContent = new Date().toLocaleTimeString();
       document.getElementById('sidebar-status').textContent = 'Online';
       document.getElementById('sidebar-status').style.color = 'var(--green)';
@@ -434,11 +439,14 @@
       const rows = players.map(p => {
         const hours = stats.hours?.[p.username] ?? p.hours ?? 0;
         const deaths = stats.deaths?.[p.username] ?? 0;
+        const isOnline = liveNames.has(p.name);
         const statusHtml = p.isDead
           ? '<span style="color:var(--muted)">Dead</span>'
           : p.infected_risk
             ? '<span style="color:var(--red);font-weight:700">⚠ Bitten</span>'
-            : '<span style="color:var(--green)">Alive</span>';
+            : isOnline
+              ? '<span style="color:var(--green)">Online</span>'
+              : '<span style="color:var(--muted)">Offline</span>';
         return `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr;">
           <div style="font-weight:600">${p.name} <span style="color:var(--muted);font-size:11px">${p.username}</span></div>
           <div>${formatHours(hours)}</div>
@@ -453,6 +461,7 @@
     function renderPlayers() {
       const players = pzData.players || [];
       const stats = pzData.stats || {};
+      const liveNames = new Set((pzData.livePlayers || []).map(p => p.name));
 
       if (!players.length) {
         document.getElementById('players-list').innerHTML = '<div class="loading">No player data available</div>';
@@ -490,12 +499,13 @@
           .sort((a, b) => b[1] - a[1])
           .map(([cat, count]) => `<div class="kills-row"><span>${cat}</span><span>${count}</span></div>`).join('');
 
+        const isOnline = liveNames.has(p.name);
         return `<div class="player-card${p.infected_risk ? ' infected' : ''}${p.isDead ? ' dead' : ''}">
           <div class="player-name">
             ${p.name}
             <span class="username">${p.username}</span>
             ${p.infected_risk ? '<span class="infection-badge">BITTEN</span>' : ''}
-            ${p.isDead ? '<span class="dead-badge">DEAD</span>' : ''}
+            ${p.isDead ? '<span class="dead-badge">DEAD</span>' : isOnline ? '<span class="online-badge">ONLINE</span>' : ''}
           </div>
 
           <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);">
@@ -726,12 +736,15 @@
       playerMarkers.forEach(m => m.remove());
       playerMarkers = [];
       if (!document.getElementById('map-show-players')?.checked) return;
-      const players = pzData.players || [];
-      players.forEach(p => {
+      // Use livePlayers for real-time positions; fall back to SQL players if no live data yet
+      const source = pzData.livePlayers.length > 0 ? pzData.livePlayers : pzData.players;
+      const rosterMap = Object.fromEntries((pzData.players || []).map(p => [p.name, p]));
+      source.forEach(p => {
         if (p.x == null || p.y == null) return;
         if (p.x < MAP_MIN_X || p.x > MAP_MAX_X || p.y < MAP_MIN_Y || p.y > MAP_MAX_Y) return;
+        const roster = rosterMap[p.name] || p;
         const latlng = pzToLatLng(p.x, p.y);
-        const color = p.infected_risk ? '#ef4444' : p.isDead ? '#6b7280' : '#22c55e';
+        const color = roster.infected_risk ? '#ef4444' : (p.dead || roster.isDead) ? '#6b7280' : '#22c55e';
         const m = L.marker(latlng, {
           icon: L.divIcon({
             className: '',
@@ -739,7 +752,7 @@
             iconSize: [10, 10], iconAnchor: [5, 5],
           }),
         }).addTo(leafletMap);
-        m.bindTooltip(p.name + (p.infected_risk ? ' ⚠' : ''), { permanent: true, direction: 'top', offset: [0, -6], className: 'player-label' });
+        m.bindTooltip(p.name + (roster.infected_risk ? ' ⚠' : ''), { permanent: true, direction: 'top', offset: [0, -6], className: 'player-label' });
         playerMarkers.push(m);
       });
     }
@@ -950,9 +963,9 @@
       sseSource.addEventListener('players', e => {
         try {
           const d = JSON.parse(e.data);
-          if (d.error) return;
-          pzData.players = d.players || [];
-          renderOverview(); renderPlayers(); renderStats();
+          if (d.error || !d.updated) return;
+          pzData.livePlayers = d.players || [];
+          renderOverview(); renderPlayers();
           if (leafletMap) redrawPlayers();
         } catch {}
       });
@@ -960,7 +973,7 @@
       sseSource.addEventListener('vehicles', e => {
         try {
           const d = JSON.parse(e.data);
-          if (d.error) return;
+          if (d.error || !d.updated) return;
           pzData.vehicles = d.vehicles || [];
           renderVehicles(); renderOverview(); if (leafletMap) redrawVehicles();
         } catch {}

@@ -2,7 +2,7 @@
 
 **Private game server network — secure, invite-only, one command to join.**
 
-![GamezNET](static/screenshot.png)
+![GamezNET](static/ss-home.png)
 
 ---
 
@@ -74,6 +74,8 @@ The three dashboard panels (**Steam Social**, **Your Session / Who's Online**, *
 
 **Network Chat** is available as a floating panel that snaps to the left or right edge of the window. It supports **Tabbed Chat** and **Direct Messages (DMs)** — right-click any player in the "Who's Online" or Discord lists to start a private conversation. You can minimize the panel into a compact pill that shows an active unread message badge.
 
+![Network Chat](static/ss-chat.png)
+
 ---
 
 ## 🖥️ Game Servers
@@ -83,6 +85,8 @@ The **Home** tab shows a compact horizontal strip of **Server Chips** for all ho
 Clicking a server chip opens a **Detail Modal** displaying CPU load, RAM usage, and uptime. From the modal you can:
 - Click the **Server IP** or **Port** buttons to quickly copy them to your clipboard
 - Click **▶ STEAM JOIN** to launch Steam and connect directly to the server (if supported)
+
+![Server Detail Modal](static/ss-server-modal.png)
 
 ---
 
@@ -118,9 +122,13 @@ The **admin panel** Files tab shows all files regardless of visibility and inclu
 
 > Files tab is only accessible while connected to the VPN.
 
+![Files Tab](static/ss-files.png)
+
 ---
 
 ## 🎙️ Discord
+
+![Discord Tab](static/ss-discord.png)
 
 The **Discord** tab is a full embedded Discord experience — no Discord account or login required.
 
@@ -141,6 +149,8 @@ The **Discord** tab is a full embedded Discord experience — no Discord account
 ---
 
 ## ⚔️ World of Warcraft
+
+![WoW Tab](static/ss-wow.png)
 
 The **WoW** tab is a full guild roster and character tracker — no addons or third-party sites required.
 
@@ -210,6 +220,8 @@ WireGuard itself is left in place — it may be used by other applications.
 ---
 
 ## 📱 Mobile Companion
+
+![Mobile Companion](static/ss-mobile.png)
 
 GamezNET has a mobile-friendly web app at **[m.gameznet.looknet.ca](https://m.gameznet.looknet.ca)** — no install required, works on any phone or tablet browser.
 
@@ -433,8 +445,10 @@ All variables are loaded from `/etc/gameznet/.env` at deploy time. Credentials a
 | `/api/files/:id` | GET | Download a file (access-controlled) |
 | `/api/files/:id` | DELETE | Delete a file (uploader token or admin password) |
 | `/admin/wg/peers` | POST | List all WireGuard peers on the UDM |
+| `/admin/wg/kick` | POST | Remove a player's UDM peer, dropping VPN access immediately |
 | `/admin/wg/sync` | POST | Add any DB-provisioned peers missing from the UDM |
 | `/admin/wg/purge` | POST | Remove orphan peers from UDM with no matching token |
+| `/admin/player/lookup` | GET | Unfiltered player row lookup (bypasses test/vprobe filter) |
 
 </details>
 

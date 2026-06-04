@@ -1,5 +1,62 @@
 # Changelog
 
+## v1.10.13 — 2026-05-31
+
+### Added
+- **Isometric map viewer (`/zomboid-iso`)** — OpenSeadragon-based deep-zoom viewer for the pzmap2dzi isometric tile set. Displays player markers, vehicle markers, death locations with timestamps, town zone overlays, and a zombie density heatmap — all as zero-lag OSD overlays that reposition on every viewport update
+- **Real-time Lua mod SSE pipeline** — server-side GamezNET Lua mod writes player positions, vehicle data, and zombie counts to JSON files in `.cache/Lua/`; the backend streams updates via SSE every 2s; the iso viewer and zomboid map consume the same feed
+- **Live Lua mod player layer** — iso viewer separates Lua mod live positions from the SQL roster so offline players (DB only) and online players (Lua feed) are rendered distinctly; live layer takes priority when both sources have data for the same name
+- **normalize_dzi_tiles.py** — utility to rebase pzmap2dzi tile output to 0-based coordinates and patch the DZI `Width`/`Height` to match the actual content extent, eliminating the blank-canvas offset problem
+- **Vehicle overlays** — vehicles shown as colored dots on the iso viewer (blue = good engine, amber = damaged, red = wreck); wrecks get a dark pill label; lazy-loaded in chunks to avoid UI freeze
+- **Zombie density heatmap** — live zombie counts from the Lua mod rendered as a canvas heatmap layer with absolute-threshold coloring; updates on SSE tick
+
+### Fixed
+- **Post-sleep zombie/hung state** — resolved all three root causes of the app hanging after system sleep: (1) `QueryUnbiasedInterruptTime`-based sleep detection (unbiased time freezes during suspend, so ~0s elapsed after a 3s `time.sleep()` correctly identifies a wake cycle); (2) SSE stream reconnect on wake; (3) heartbeat failure force-reconnect after sustained tunnel death
+- **SSE players/vehicles no longer wipe DB data on empty Lua file** — empty or missing Lua output is now a no-op instead of clearing the stored state
+- **ISO viewer tile split artifact** — fixed diagonal split by reverting composited-tile experiments; uses one DZI layer at a time with `immediateRender:true`
+- **ISO viewer marker drift** — markers now use the current visible layer item for `squareToViewport` to prevent per-zoom drift; race condition on initial load resolved
+- **OSD minLevel=14** — stops OpenSeadragon requesting zoom levels below the tile pyramid, eliminating spurious 404s
+- **Pan tracking on heatmap** — heatmap canvas correctly follows viewport pan; `homeFillsViewer` and `constrainDuringPan` disabled to stop map shift on zoom
+- **Lua mod JSON path** — mod output read from `.cache/Lua/` subdirectory (not `.cache/` root)
+
+---
+
+## v1.10.12 — 2026-05-25
+
+### Added
+- **Project Zomboid integration** — new `/zomboid` page (desktop and web) with a live top-down tile map, player markers, vehicle markers, death history, town zone overlays, zombie density heatmap, in-game time/day display, and kill leaderboard
+- **PZ map tile pipeline** — Leaflet-based tile map using pzmap2dzi-rendered cells; `PZ_SCALE=300/16` so one Leaflet tile equals one PZ cell at zoom 4; `expand-tiles.ps1` auto-expands tile bounds as players explore new cells
+- **Map overlay layers** — campfires, farming plots, traps, dead players (10 most recent, from full session logs), zombie density grid
+- **Map controls** — fullscreen toggle, overlay controls panel, players/vehicles toggles with state persisted to `localStorage`
+- **`sync-tiles.ps1`** — standalone tile rsync script for pushing tile updates without a full release
+- **`expand-tiles.ps1`** — reads player history and expands `CELL_X_MIN/MAX`, `CELL_Y_MIN/MAX` automatically to cover all visited cells; snaps to multiples of 8 for zoom pyramid alignment
+- **`/admin/player/lookup`** — unfiltered player row lookup endpoint (bypasses `test*`/`vprobe*` filter) for admin diagnostics
+
+### Fixed
+- **PZ players 503** — resolved backend 503 on `/api/pz/players`
+- **Sleep/wake disconnect detection** — fixed false-positive disconnects during normal operation; correct detection now triggers clean disconnect after genuine sleep/wake cycle
+- **`/zomboid` Flask route** — added route to desktop app so the page loads from the local server
+- **Coordinate grid** — zomboid map now shows a coordinate grid overlay (was rendering as a solid green background)
+- **`CELL_Y_MIN=16` hard floor** — no PZ map data exists above cy=16; setting this prevents empty tile requests at the top of the map
+- **Tile URL mapping** — fixed cell-to-tile URL offset math; `PZ_SCALE` and tile size now consistent throughout
+- **Pan/zoom stability** — stopped re-fitting map view to player positions on each update; clamped zoom; constrained pan to tile bounds
+
+---
+
+## v1.10.11 — 2026-05-25
+
+### Added
+- **Connection duration badge** — desktop and mobile who's online lists now show a badge indicating how long each player has been connected in the current session
+
+---
+
+## v1.10.10 — 2026-05-25
+
+### Added
+- **"Online for" duration** — who's online player cards show the elapsed connection time for each currently connected player
+
+---
+
 ## v1.10.9 — 2026-05-24
 
 ### Added

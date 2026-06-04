@@ -34,19 +34,21 @@
 
     /* Marker styles */
     .iso-marker { position: absolute; pointer-events: none; transform: translate(-50%, -50%); }
-    .iso-marker.player { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #000; box-shadow: 0 0 6px currentColor; }
-    .iso-marker.player.alive  { background: #22c55e; color: #22c55e; }
-    .iso-marker.player.bitten { background: #ef4444; color: #ef4444; }
-    .iso-marker.player.dead   { background: #6b7280; color: #6b7280; }
+    .iso-marker.player { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #000; box-shadow: 0 0 8px currentColor; }
+    .iso-marker.player.alive   { background: #22c55e; color: #22c55e; }
+    .iso-marker.player.bitten  { background: #ef4444; color: #ef4444; }
+    .iso-marker.player.dead    { background: #6b7280; color: #6b7280; }
+    .iso-marker.player.offline { background: #6b7280; color: #6b7280; opacity: 0.5; }
     .iso-marker.death  { font-size: 11px; line-height: 1; }
     .iso-marker.fire   { font-size: 13px; line-height: 1; }
     .iso-marker.farm   { font-size: 11px; line-height: 1; }
     .iso-marker.trap   { font-size: 11px; line-height: 1; }
 
-    .iso-label { position: absolute; pointer-events: none; transform: translateX(-50%); white-space: nowrap; font-size: 10px; font-weight: 700; color: #22c55e; text-shadow: 0 0 3px #000, 0 0 3px #000; top: 8px; left: 50%; }
-    .iso-label.bitten { color: #ef4444; }
-    .iso-label.dead   { color: #9ca3af; }
-    .iso-marker.vehicle { font-size: 13px; line-height: 1; }
+    .iso-label { position: absolute; pointer-events: none; transform: translateX(-50%); white-space: nowrap; font-size: 11px; font-weight: 700; color: #22c55e; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 6px #000; top: 10px; left: 50%; }
+    .iso-label.bitten   { color: #ef4444; }
+    .iso-label.dead     { color: #9ca3af; }
+    .iso-label.offline  { color: #9ca3af; opacity: 0.55; }
+    .iso-marker.vehicle { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; border: 1px solid #000; box-shadow: 0 0 4px #fbbf24; }
     .iso-marker.town-label { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; border: 1px solid; background: rgba(0,0,0,0.5); white-space: nowrap; text-shadow: 0 0 4px #000; }
     .iso-marker.town-box { position: absolute; transform: none; }
 
@@ -54,6 +56,7 @@
     #coords-display { font-size: 11px; color: var(--muted); }
 
     .legend { font-size: 11px; color: var(--muted); }
+
   </style>
 </head>
 <body>
@@ -78,17 +81,18 @@
 
     <div class="topbar-sep"></div>
 
-    <label class="toggle"><input type="checkbox" id="show-players" checked onchange="redrawMarkers()"> Players</label>
-    <label class="toggle"><input type="checkbox" id="show-vehicles" onchange="redrawMarkers()"> Vehicles</label>
-    <label class="toggle"><input type="checkbox" id="show-deaths" onchange="redrawMarkers()"> Deaths</label>
-    <label class="toggle"><input type="checkbox" id="show-campfires" checked onchange="redrawMarkers()"> Campfires</label>
-    <label class="toggle"><input type="checkbox" id="show-farming" onchange="redrawMarkers()"> Farming</label>
-    <label class="toggle"><input type="checkbox" id="show-traps" onchange="redrawMarkers()"> Traps</label>
-    <label class="toggle"><input type="checkbox" id="show-towns" onchange="redrawMarkers()"> Towns</label>
-    <label class="toggle"><input type="checkbox" id="show-heatmap" onchange="redrawMarkers()"> Heatmap</label>
+    <label class="toggle"><input type="checkbox" id="show-players" onchange="saveToggles();redrawMarkers()"> Players</label>
+    <label class="toggle"><input type="checkbox" id="show-vehicles" onchange="saveToggles();redrawMarkers()"> Vehicles</label>
+    <label class="toggle"><input type="checkbox" id="show-wrecks" onchange="saveToggles();redrawMarkers()"> Wrecks</label>
+    <label class="toggle"><input type="checkbox" id="show-deaths" onchange="saveToggles();redrawMarkers()"> Deaths</label>
+    <label class="toggle"><input type="checkbox" id="show-campfires" onchange="saveToggles();redrawMarkers()"> Campfires</label>
+    <label class="toggle"><input type="checkbox" id="show-farming" onchange="saveToggles();redrawMarkers()"> Farming</label>
+    <label class="toggle"><input type="checkbox" id="show-traps" onchange="saveToggles();redrawMarkers()"> Traps</label>
+    <label class="toggle"><input type="checkbox" id="show-towns" onchange="saveToggles();redrawMarkers()"> Towns</label>
+    <label class="toggle"><input type="checkbox" id="show-heatmap" onchange="saveToggles();redrawMarkers()"> Heatmap</label>
 
     <div class="topbar-sep"></div>
-    <div class="legend">🟢 alive &nbsp;🔴 bitten &nbsp;💀 death &nbsp;🚗 vehicle &nbsp;🔥 fire &nbsp;🌿 farm &nbsp;🕷 trap</div>
+    <div class="legend">🟢 alive &nbsp;🔴 bitten &nbsp;💀 death &nbsp;🔵🟡🔴 vehicle &nbsp;⬜ wreck &nbsp;🔥 fire &nbsp;🌿 farm &nbsp;🕷 trap</div>
 
     <div class="spacer"></div>
     <div id="coords-display">—</div>
@@ -98,6 +102,7 @@
   <div id="viewer-wrap">
     <div id="osd"></div>
     <canvas id="heatmap-canvas" style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
+    <canvas id="towns-canvas" style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
     <div id="status">Loading...</div>
   </div>
 
@@ -118,6 +123,7 @@
 
     let dziInfo = null;  // loaded from layer0.dzi
     let viewer = null;
+    let viewerReady = false;
     let currentLayer = 0;
     let layerItems = [];  // OSD world items per layer
     let markerEls = [];   // DOM marker elements
@@ -145,29 +151,33 @@
         const info = await infoRes.json();
         MAP_CONF.x0 = info.x0;
         MAP_CONF.y0 = info.y0;
+        // cell_rects: [[cx_min, cy_min, cx_max, cy_max]] in cell coords (1 cell = 300 squares)
+        if (info.cell_rects && info.cell_rects[0]) {
+          const [cxMin, cyMin, cxMax, cyMax] = info.cell_rects[0];
+          MAP_CONF.bounds = { xMin: cxMin * 300, yMin: cyMin * 300, xMax: cxMax * 300, yMax: cyMax * 300 };
+        }
       } catch(e) {
         console.warn('DZI load failed', e);
       }
     }
 
-    // Convert game square coords to DZI image pixel coords (0..1 viewport fraction)
+    // Convert game square coords to DZI image pixel coords (0..1 viewport fraction).
+    // Always use the currently visible layer's world item for coordinate conversion
+    // so that zoom-dependent tile loading doesn't cause offset drift.
     function squareToViewport(sx, sy, layer) {
       if (!dziInfo || !viewer) return null;
       const { GW, GH, LH, x0, y0 } = MAP_CONF;
       const gx = sx - sy;
       const gy = sx + sy;
       const px = x0 + gx * GW;
-      const py = y0 + gy * GH + layer * LH;
-      // normalize to [0,1] image fraction
-      const imgFracX = px / dziInfo.width;
-      const imgFracY = py / dziInfo.height;
-      // convert to viewport coords via OSD
+      const py = y0 + gy * GH - (layer || 0) * LH;
       const item = viewer.world.getItemAt(0);
       if (!item) return null;
-      return item.imageToViewportCoordinates(imgFracX * dziInfo.width, imgFracY * dziInfo.height);
+      const vp = item.imageToViewportCoordinates(px, py);
+      return vp;
     }
 
-    const TOWN_ZONES = [
+const TOWN_ZONES = [
       { name: 'Muldraugh',  cx0: 34, cy0: 30, cx1: 37, cy1: 36 },
       { name: 'Riverside',  cx0: 16, cy0: 17, cx1: 23, cy1: 22 },
       { name: 'Rosewood',   cx0: 25, cy0: 37, cx1: 29, cy1: 40 },
@@ -197,8 +207,7 @@
 
     function redrawMarkers() {
       clearMarkers();
-      if (!viewer || !dziInfo) return;
-
+      if (!viewer || !dziInfo || !viewerReady) return;
       const showPlayers   = document.getElementById('show-players')?.checked;
       const showVehicles  = document.getElementById('show-vehicles')?.checked;
       const showDeaths    = document.getElementById('show-deaths')?.checked;
@@ -213,27 +222,60 @@
       if (showPlayers) {
         (pzData.players || []).forEach(p => {
           if (p.x == null || p.y == null) return;
-          const cls = p.isDead ? 'player dead' : p.infected_risk ? 'player bitten' : 'player alive';
-          const el = addOverlay(p.x, p.y, p.z || 0, '', cls);
+          const online = p.isOnline !== false;
+          const cls = p.isDead ? 'player dead' : p.infected_risk ? 'player bitten' : online ? 'player alive' : 'player offline';
+          const layer = p.z || 0;
+          const el = addOverlay(p.x, p.y, layer, '', cls);
           if (el) {
             const lbl = document.createElement('div');
-            lbl.className = 'iso-label' + (p.infected_risk ? ' bitten' : p.isDead ? ' dead' : '');
-            lbl.textContent = p.name + (p.infected_risk ? ' ⚠' : '');
+            lbl.className = 'iso-label' + (p.infected_risk ? ' bitten' : p.isDead ? ' dead' : !online ? ' offline' : '');
+            if (!online && p.lastConnection) {
+              const ago = Math.round((Date.now() - new Date(p.lastConnection + 'Z').getTime()) / 60000);
+              const agoStr = ago < 60 ? `${ago}m ago` : `${Math.round(ago/60)}h ago`;
+              lbl.textContent = p.name + ` (${agoStr})`;
+            } else {
+              lbl.textContent = p.name + (p.infected_risk ? ' ⚠' : '');
+            }
             el.appendChild(lbl);
           }
         });
       }
 
-      if (showVehicles) {
-        (ovl.vehicles || []).forEach(v => {
-          const el = addOverlay(v.x, v.y, 0, '🚗', 'vehicle');
-          if (el && v.name) {
-            const lbl = document.createElement('div');
-            lbl.className = 'iso-label';
-            lbl.textContent = v.name;
-            el.appendChild(lbl);
-          }
+      const isDestroyed = v => { const vals = Object.values(v.parts || {}); return vals.length === 0 || vals.every(c => c === 0); };
+      if (showVehicles || document.getElementById('show-wrecks')?.checked) {
+        const showWrecks = document.getElementById('show-wrecks')?.checked;
+        const b = MAP_CONF.bounds;
+        const vlist = (ovl.vehicles || []).filter(v => {
+          if (b && (v.x < b.xMin || v.x > b.xMax || v.y < b.yMin || v.y > b.yMax)) return false;
+          const d = isDestroyed(v);
+          return (d && showWrecks) || (!d && showVehicles);
         });
+        const CHUNK = 20;
+        let vi = 0;
+        const addVehicleChunk = () => {
+          const end = Math.min(vi + CHUNK, vlist.length);
+          for (; vi < end; vi++) {
+            const v = vlist[vi];
+            const destroyed = isDestroyed(v);
+            const engine = v.parts?.Engine ?? 0;
+            const color = destroyed ? '#6b7280' : engine > 0.6 ? '#60a5fa' : engine > 0.3 ? '#f59e0b' : '#ef4444';
+            const el = addOverlay(v.x, v.y, 0, '', 'vehicle');
+            if (el) {
+              el.style.background = color;
+              el.style.boxShadow = `0 0 4px ${color}`;
+              el.style.opacity = destroyed ? '0.5' : '0.85';
+              if (v.type) {
+                const lbl = document.createElement('div');
+                lbl.className = 'iso-label';
+                lbl.style.cssText = `color:#fff;background:rgba(0,0,0,0.65);padding:1px 4px;border-radius:3px;font-size:9px;`;
+                lbl.textContent = v.type;
+                el.appendChild(lbl);
+              }
+            }
+          }
+          if (vi < vlist.length) setTimeout(addVehicleChunk, 0);
+        };
+        setTimeout(addVehicleChunk, 0);
       }
 
       if (showDeaths) {
@@ -269,29 +311,11 @@
         (ovl.traps || []).forEach(pt => addOverlay(pt.x, pt.y, 0, '🕷', 'trap'));
       }
 
+      drawTowns(showTowns);
       if (showTowns) {
         TOWN_ZONES.forEach((town, i) => {
           const color = TOWN_COLORS[i % TOWN_COLORS.length];
-          const SQ = 300; // squares per cell
-          // corners of the bounding box in game squares
-          const sx0 = town.cx0 * SQ, sy0 = town.cy0 * SQ;
-          const sx1 = town.cx1 * SQ, sy1 = town.cy1 * SQ;
-          const vpTL = squareToViewport(sx0, sy0, 0);
-          const vpBR = squareToViewport(sx1, sy1, 0);
-          if (vpTL && vpBR) {
-            const box = document.createElement('div');
-            box.className = 'iso-marker town-box';
-            box.style.border = `1px solid ${color}`;
-            box.style.background = `${color}10`;
-            box.style.pointerEvents = 'none';
-            const rect = new OpenSeadragon.Rect(
-              Math.min(vpTL.x, vpBR.x), Math.min(vpTL.y, vpBR.y),
-              Math.abs(vpBR.x - vpTL.x), Math.abs(vpBR.y - vpTL.y)
-            );
-            viewer.addOverlay({ element: box, location: rect });
-            markerEls.push(box);
-          }
-          // label at top-left corner
+          const SQ = 300;
           const cx = ((town.cx0 + town.cx1) / 2) * SQ;
           const cy = town.cy0 * SQ;
           const el = addOverlay(cx, cy, 0, '', 'town-label');
@@ -305,51 +329,123 @@
 
       if (showHeatmap) {
         const canvas = document.getElementById('heatmap-canvas');
-        drawHeatmap(canvas, pzData.players || []);
+        drawHeatmap(canvas, ovl.density || [], pzData.liveCells || []);
       } else {
         const canvas = document.getElementById('heatmap-canvas');
         if (canvas) { const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); }
       }
     }
 
-    function drawHeatmap(canvas, players) {
+    function drawHeatmap(canvas, density, liveCells) {
       if (!canvas || !viewer || !dziInfo) return;
       const wrap = document.getElementById('viewer-wrap');
       canvas.width = wrap.clientWidth;
       canvas.height = wrap.clientHeight;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      players.forEach(p => {
-        if (p.x == null || p.y == null) return;
-        const vp = squareToViewport(p.x, p.y, 0);
+
+      const SQ = 300;
+
+      // Build live cell lookup: "cx,cy" -> normalized 0-1
+      const liveMap = {};
+      if (liveCells && liveCells.length) {
+        const maxLive = Math.max(...liveCells.map(c => c.count));
+        liveCells.forEach(c => {
+          liveMap[`${c.cx},${c.cy}`] = Math.pow(c.count / maxLive, 0.4);
+        });
+      }
+
+      // Normalize zpop scores to 0-1, skip cells covered by live data
+      const zpopCells = (density || []).filter(d => !liveMap[`${d.cx},${d.cy}`]);
+      const maxZpop = zpopCells.length ? Math.max(...zpopCells.map(d => d.score)) : 1;
+
+      const drawCell = (cx, cy, t, isLive) => {
+        const sx = (cx + 0.5) * SQ;
+        const sy = (cy + 0.5) * SQ;
+        const vp = squareToViewport(sx, sy, 0);
         if (!vp) return;
         const pt = viewer.viewport.pixelFromPoint(vp);
-        const r = 40;
+        const cellVp = squareToViewport((cx + 1) * SQ, (cy + 0.5) * SQ, 0);
+        const cellPt = cellVp ? viewer.viewport.pixelFromPoint(cellVp) : null;
+        const r = cellPt ? Math.max(4, Math.abs(cellPt.x - pt.x) * 0.8) : 8;
+
         const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r);
-        grad.addColorStop(0, 'rgba(239,68,68,0.35)');
-        grad.addColorStop(1, 'rgba(239,68,68,0)');
+        if (isLive) {
+          // Live data: teal-blue — clearly distinct from zpop orange-red
+          grad.addColorStop(0, `rgba(56,189,248,${(t * 0.85).toFixed(2)})`);
+          grad.addColorStop(0.5, `rgba(99,102,241,${(t * 0.45).toFixed(2)})`);
+          grad.addColorStop(1, 'rgba(99,102,241,0)');
+        } else {
+          // zpop estimate: red-orange
+          grad.addColorStop(0, `rgba(239,68,68,${(t * 0.7).toFixed(2)})`);
+          grad.addColorStop(0.5, `rgba(251,146,60,${(t * 0.35).toFixed(2)})`);
+          grad.addColorStop(1, 'rgba(251,146,60,0)');
+        }
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      };
+
+      // Draw zpop first (underneath), then live on top
+      zpopCells.forEach(d => drawCell(d.cx, d.cy, Math.pow(d.score / maxZpop, 0.4), false));
+      Object.entries(liveMap).forEach(([key, t]) => {
+        const [cx, cy] = key.split(',').map(Number);
+        drawCell(cx, cy, t, true);
+      });
+    }
+
+    function drawTowns(show) {
+      const canvas = document.getElementById('towns-canvas');
+      if (!canvas || !viewer || !dziInfo) return;
+      const wrap = document.getElementById('viewer-wrap');
+      canvas.width = wrap.clientWidth;
+      canvas.height = wrap.clientHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!show) return;
+      const SQ = 300;
+      TOWN_ZONES.forEach((town, i) => {
+        const color = TOWN_COLORS[i % TOWN_COLORS.length];
+        // 4 corners of the cell bounding box in iso space
+        const corners = [
+          [town.cx0 * SQ, town.cy0 * SQ],
+          [town.cx1 * SQ, town.cy0 * SQ],
+          [town.cx1 * SQ, town.cy1 * SQ],
+          [town.cx0 * SQ, town.cy1 * SQ],
+        ];
+        const pts = corners.map(([sx, sy]) => {
+          const vp = squareToViewport(sx, sy, 0);
+          return vp ? viewer.viewport.pixelFromPoint(vp) : null;
+        });
+        if (pts.some(p => !p)) return;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.closePath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = color + '18';
         ctx.fill();
       });
     }
 
     // ── Layer switching ───────────────────────────────────────────────────────
+    // Each layer's DZI has its tile grid offset vertically by layer*LAYER_HEIGHT.
+    // Loading multiple layers simultaneously causes OSD to composite them, producing
+    // the diagonal split-map artifact. Load only the active layer's DZI at a time.
     window.setLayer = function(layer) {
+      if (!viewer || layer === currentLayer) return;
       currentLayer = layer;
-      layerItems.forEach((item, i) => {
-        if (!item) return;
-        item.setOpacity(i === layer ? 1 : 0);
-      });
+      const src = `/static/map-tiles/iso/base/layer${layer}.dzi`;
+      viewer.world.removeAll();
+      viewer.addTiledImage({ tileSource: src, x: 0, y: 0, width: 1 });
     };
 
     window.setRoofOpacity = function(val) {
-      const opacity = val / 100;
-      layerItems.forEach((item, i) => {
-        if (!item || i === 0) return;
-        if (i === currentLayer) item.setOpacity(opacity > 0 ? opacity : (i === currentLayer ? 1 : 0));
-      });
+      const item = viewer && viewer.world.getItemAt(0);
+      if (item) item.setOpacity(val > 0 ? val / 100 : 1);
     };
 
     // ── Init ──────────────────────────────────────────────────────────────────
@@ -376,61 +472,78 @@
         sel.appendChild(opt);
       });
 
-      // Build tile sources for all available layers
-      const tileSources = layerExists
-        .map((exists, i) => exists ? `/static/map-tiles/iso/base/layer${i}.dzi` : null)
-        .filter(Boolean);
-
       viewer = OpenSeadragon({
         element: document.getElementById('osd'),
-        tileSources: tileSources.map((src, i) => ({
-          tileSource: src,
-          opacity: i === 0 ? 1 : 0,
-          x: 0, y: 0, width: 1,
-        })),
+        tileSources: `/static/map-tiles/iso/base/layer0.dzi`,
         sequenceMode: false,
-        homeFillsViewer: true,
+        homeFillsViewer: false,
         showZoomControl: false,
         showHomeControl: false,
         showFullPageControl: false,
         showRotationControl: false,
-        constrainDuringPan: true,
-        visibilityRatio: 0.5,
+        constrainDuringPan: false,
+        visibilityRatio: 0.05,
         prefixUrl: '/static/iso/openseadragon/images/',
-        minZoomImageRatio: 0.1,
+        minZoomImageRatio: 0.25,
         maxZoomPixelRatio: 4,
+        zoomPerScroll: 1.15,
+        smoothingEnabled: false,
         background: '#0a0a0e',
       });
 
-      // Store world items by layer index
-      const srcIndexMap = [];
-      layerExists.forEach((exists, i) => { if (exists) srcIndexMap.push(i); });
-
+      let _initialOpen = true;
       viewer.addHandler('open', () => {
-        layerItems = new Array(8).fill(null);
-        srcIndexMap.forEach((layerIdx, worldIdx) => {
-          layerItems[layerIdx] = viewer.world.getItemAt(worldIdx);
-        });
-
+        viewerReady = true;
         document.getElementById('status').textContent = 'Ready';
 
-        // Jump to URL coords if provided
-        const params = new URLSearchParams(window.location.search);
-        const gx = +params.get('x'), gy = +params.get('y');
-        if (gx && gy) {
-          const vp = squareToViewport(gx, gy, 0);
-          if (vp) viewer.viewport.panTo(vp).zoomTo(0.05);
+        if (_initialOpen) {
+          _initialOpen = false;
+          // Zoom to content bounds so OSD doesn't show the empty 1.2M canvas
+          const { GW, GH, x0, y0 } = MAP_CONF;
+          const item0 = viewer.world.getItemAt(0);
+          if (item0 && MAP_CONF.bounds) {
+            const b = MAP_CONF.bounds;
+            const corners = [
+              [b.xMin, b.yMin], [b.xMax, b.yMin],
+              [b.xMin, b.yMax], [b.xMax, b.yMax],
+            ];
+            const vps = corners.map(([sx, sy]) => {
+              const gx = sx - sy, gy = sx + sy;
+              return item0.imageToViewportCoordinates(x0 + gx * GW, y0 + gy * GH);
+            });
+            const vpXs = vps.map(p => p.x), vpYs = vps.map(p => p.y);
+            const vpRect = new OpenSeadragon.Rect(
+              Math.min(...vpXs), Math.min(...vpYs),
+              Math.max(...vpXs) - Math.min(...vpXs),
+              Math.max(...vpYs) - Math.min(...vpYs)
+            );
+            viewer.viewport.fitBounds(vpRect, true);
+          }
+
+          // Jump to URL coords if provided (overrides fitBounds)
+          const params = new URLSearchParams(window.location.search);
+          const gx = +params.get('x'), gy = +params.get('y');
+          if (gx && gy) {
+            const vp = squareToViewport(gx, gy, 0);
+            if (vp) viewer.viewport.panTo(vp).zoomTo(0.05);
+          }
         }
 
         redrawMarkers();
       });
 
       viewer.addHandler('resize', redrawMarkers);
+
+      let _canvasRaf = null;
       viewer.addHandler('viewport-change', () => {
-        const canvas = document.getElementById('heatmap-canvas');
-        if (document.getElementById('show-heatmap')?.checked) {
-          drawHeatmap(canvas, pzData.players || []);
-        }
+        if (_canvasRaf) return;
+        _canvasRaf = requestAnimationFrame(() => {
+          _canvasRaf = null;
+          if (document.getElementById('show-heatmap')?.checked)
+            drawHeatmap(document.getElementById('heatmap-canvas'), (pzData.overlays || {}).density || [], pzData.liveCells || []);
+          if (document.getElementById('show-towns')?.checked)
+            drawTowns(true);
+        });
       });
 
       // Coordinate display on mouse move
@@ -451,33 +564,101 @@
           `X: ${Math.round(sx)}  Y: ${Math.round(sy)}`;
       });
 
-      // Load data
+      // Load data — initial full fetch, then SSE for live updates
       loadData();
-      setInterval(loadData, 15000);
+
+      // SSE for fast player/vehicle/overlay updates
+      let _sseConnected = false;
+      function connectSSE() {
+        const es = new EventSource(`${API_BASE}/api/pz/stream`);
+        es.addEventListener('players', e => {
+          try {
+            const d = JSON.parse(e.data);
+            if (!d.error && d.updated) { pzData.players = d.players || []; redrawMarkers(); updateStatus(); }
+          } catch {}
+        });
+        es.addEventListener('vehicles', e => {
+          try {
+            const d = JSON.parse(e.data);
+            if (!d.error && d.updated) { pzData.overlays.vehicles = d.vehicles || []; redrawMarkers(); }
+          } catch {}
+        });
+        es.addEventListener('overlays', e => {
+          try {
+            const d = JSON.parse(e.data);
+            if (!d.error) { Object.assign(pzData.overlays, d); redrawMarkers(); }
+          } catch {}
+        });
+        es.onopen = () => { _sseConnected = true; };
+        es.onerror = () => { _sseConnected = false; es.close(); setTimeout(connectSSE, 10000); };
+      }
+      connectSSE();
+
+      // Fallback poll — catches zombies data (not on SSE) and acts as backup if SSE drops
+      setInterval(() => { if (!_sseConnected) loadData(); else loadZombies(); }, 15000);
     }
 
     async function loadData() {
       try {
-        const [statusRes, overlayRes, vehiclesRes] = await Promise.all([
+        const [statusRes, overlayRes, vehiclesRes, zombiesRes] = await Promise.all([
           fetch(`${API_BASE}/api/pz/status`),
           fetch(`${API_BASE}/api/pz/overlays`),
           fetch(`${API_BASE}/api/pz/vehicles`),
+          fetch(`${API_BASE}/api/pz/zombies`),
         ]);
         const status = await statusRes.json();
         const overlays = await overlayRes.json();
         const vehiclesData = await vehiclesRes.json();
+        const zombiesData = await zombiesRes.json();
         if (!status.error) pzData.players = status.players || [];
         if (!overlays.error) pzData.overlays = overlays;
         if (!vehiclesData.error) pzData.overlays.vehicles = vehiclesData.vehicles || [];
+        pzData.liveCells = zombiesData.cells || [];
         redrawMarkers();
-        document.getElementById('status').textContent =
-          `${pzData.players.length} player${pzData.players.length !== 1 ? 's' : ''} · updated ${new Date().toLocaleTimeString()}`;
+        updateStatus();
       } catch(e) {
         document.getElementById('status').textContent = 'Offline';
       }
     }
 
+    function updateStatus() {
+      const n = (pzData.players || []).filter(p => p.isOnline !== false).length;
+      document.getElementById('status').textContent =
+        `${n} online · updated ${new Date().toLocaleTimeString()}`;
+    }
+
+    async function loadZombies() {
+      try {
+        const d = await fetch(`${API_BASE}/api/pz/zombies`).then(r => r.json());
+        pzData.liveCells = d.cells || [];
+        if (document.getElementById('show-heatmap')?.checked) {
+          drawHeatmap(document.getElementById('heatmap-canvas'), (pzData.overlays || {}).density || [], pzData.liveCells);
+        }
+      } catch {}
+    }
+
+    const TOGGLE_IDS = ['show-players','show-vehicles','show-wrecks','show-deaths','show-campfires','show-farming','show-traps','show-towns','show-heatmap'];
+    const TOGGLE_DEFAULTS = { 'show-players': true, 'show-campfires': true };
+
+    function saveToggles() {
+      const state = {};
+      TOGGLE_IDS.forEach(id => { state[id] = document.getElementById(id)?.checked ?? false; });
+      localStorage.setItem('pz-iso-toggles', JSON.stringify(state));
+    }
+
+    function restoreToggles() {
+      let saved = {};
+      try { saved = JSON.parse(localStorage.getItem('pz-iso-toggles') || '{}'); } catch(_) {}
+      TOGGLE_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.checked = id in saved ? saved[id] : (TOGGLE_DEFAULTS[id] ?? false);
+      });
+    }
+
+    window.saveToggles = saveToggles;
     window.redrawMarkers = redrawMarkers;
+    restoreToggles();
     init();
   </script>
 </body>

@@ -249,7 +249,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.10.12"
+VERSION = "1.10.13"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -471,7 +471,8 @@ def update_telemetry():
                 output = subprocess.check_output(
                     f"ping -n 2 -w 1500 {target}",
                     shell=True,
-                    creationflags=CREATE_NO_WINDOW
+                    creationflags=CREATE_NO_WINDOW,
+                    timeout=10
                 ).decode()
 
                 all_pings = [int(m) for m in re.findall(r"time[=<](\d+)ms", output)]
@@ -489,7 +490,8 @@ def update_telemetry():
                     output = subprocess.check_output(
                         [wg, "show", TUNNEL_NAME],
                         text=True,
-                        creationflags=CREATE_NO_WINDOW
+                        creationflags=CREATE_NO_WINDOW,
+                        timeout=5
                     )
                     
                     # Parse Handshake
@@ -2298,28 +2300,34 @@ def api_remote_stream():
     name = request.args.get("name", "")
     url = f"{_backend_url()}/api/remote/stream?name={_ur.quote(name)}"
     def _generate():
+        import socket as _socket
         buf = b""
         try:
             req = _ur.Request(url, headers={"User-Agent": "GamezNET", "Accept": "text/event-stream"})
-            with _ur.urlopen(req, timeout=None) as resp:
-                while True:
-                    chunk = resp.read(1024)
-                    if not chunk:
-                        break
-                    buf += chunk
-                    # Parse SSE events to trigger local beep without browser autoplay restrictions
-                    while b"\n\n" in buf:
-                        msg_bytes, buf = buf.split(b"\n\n", 1)
-                        if msg_bytes.startswith(b"data:"):
-                            try:
-                                ev = json.loads(msg_bytes[5:].strip())
-                                if ev.get("status") == "pending":
-                                    _start_beep_alert()
-                                elif ev.get("status") in ("none", "accepted", "connected"):
-                                    _stop_beep_alert()
-                            except Exception:
-                                pass
-                    yield chunk
+            _prev_timeout = _socket.getdefaulttimeout()
+            _socket.setdefaulttimeout(30)
+            try:
+                with _ur.urlopen(req, timeout=30) as resp:
+                    while True:
+                        chunk = resp.read(1024)
+                        if not chunk:
+                            break
+                        buf += chunk
+                        # Parse SSE events to trigger local beep without browser autoplay restrictions
+                        while b"\n\n" in buf:
+                            msg_bytes, buf = buf.split(b"\n\n", 1)
+                            if msg_bytes.startswith(b"data:"):
+                                try:
+                                    ev = json.loads(msg_bytes[5:].strip())
+                                    if ev.get("status") == "pending":
+                                        _start_beep_alert()
+                                    elif ev.get("status") in ("none", "accepted", "connected"):
+                                        _stop_beep_alert()
+                                except Exception:
+                                    pass
+                        yield chunk
+            finally:
+                _socket.setdefaulttimeout(_prev_timeout)
         except Exception as e:
             _stop_beep_alert()
             yield f"data: {json.dumps({'error': str(e)})}\n\n".encode()
@@ -2335,32 +2343,38 @@ def api_chat_stream():
     name = request.args.get("name", "")
     url = f"{_backend_url()}/api/chat/stream?name={_ur.quote(name)}"
     def _generate():
+        import socket as _socket
         buf = b""
         try:
             req = _ur.Request(url, headers={"User-Agent": "GamezNET", "Accept": "text/event-stream"})
-            with _ur.urlopen(req, timeout=None) as resp:
-                while True:
-                    chunk = resp.read(1024)
-                    if not chunk:
-                        break
-                    buf += chunk
-                    while b"\n\n" in buf:
-                        msg_bytes, buf = buf.split(b"\n\n", 1)
-                        if msg_bytes.startswith(b"data:"):
-                            try:
-                                msg = json.loads(msg_bytes[5:].strip())
-                                if msg.get("type") == "server_state":
-                                    _name = msg.get("name", "Server")
-                                    _state = msg.get("state", "")
-                                    if _state in ("running", "stopping"):
-                                        _label = "is now online" if _state == "running" else "is stopping"
-                                        _icon = icon_holder.get("icon")
-                                        if _icon:
-                                            try: _icon.notify(f"{_name} {_label}", "GamezNET")
-                                            except Exception: pass
-                            except Exception:
-                                pass
-                        yield msg_bytes + b"\n\n"
+            _prev_timeout = _socket.getdefaulttimeout()
+            _socket.setdefaulttimeout(30)
+            try:
+                with _ur.urlopen(req, timeout=30) as resp:
+                    while True:
+                        chunk = resp.read(1024)
+                        if not chunk:
+                            break
+                        buf += chunk
+                        while b"\n\n" in buf:
+                            msg_bytes, buf = buf.split(b"\n\n", 1)
+                            if msg_bytes.startswith(b"data:"):
+                                try:
+                                    msg = json.loads(msg_bytes[5:].strip())
+                                    if msg.get("type") == "server_state":
+                                        _name = msg.get("name", "Server")
+                                        _state = msg.get("state", "")
+                                        if _state in ("running", "stopping"):
+                                            _label = "is now online" if _state == "running" else "is stopping"
+                                            _icon = icon_holder.get("icon")
+                                            if _icon:
+                                                try: _icon.notify(f"{_name} {_label}", "GamezNET")
+                                                except Exception: pass
+                                except Exception:
+                                    pass
+                            yield msg_bytes + b"\n\n"
+            finally:
+                _socket.setdefaulttimeout(_prev_timeout)
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n".encode()
     return Response(stream_with_context(_generate()), mimetype="text/event-stream",
@@ -2418,8 +2432,38 @@ def heartbeat_loop():
     _MAX_FAILS = 10       # ~30s of consecutive failures before checking if tunnel is actually dead
     _stale_tunnel_count = 0  # times we've seen "tunnel alive but heartbeat failing"
     _MAX_STALE = 10       # ~5min of stale state before forcing a reconnect
+    def _unbiased_ticks():
+        # QueryUnbiasedInterruptTime returns 100ns intervals excluding suspend time.
+        # Unlike time.monotonic() (GetTickCount64), it freezes during sleep/hibernate,
+        # so the gap between two readings tells us how much CPU-active time elapsed.
+        t = ctypes.c_ulonglong(0)
+        ctypes.windll.kernel32.QueryUnbiasedInterruptTime(ctypes.byref(t))
+        return t.value / 1e7  # convert to seconds
+
+    _last_unbiased = _unbiased_ticks()
     while True:
         time.sleep(3)
+        now_unbiased = _unbiased_ticks()
+        unbiased_elapsed = now_unbiased - _last_unbiased
+        _last_unbiased = now_unbiased
+        if _connected and unbiased_elapsed < 1.5:
+            # QueryUnbiasedInterruptTime advanced less than 1.5s despite a 3s sleep —
+            # the machine was suspended for most or all of that interval.
+            log.warning("Detected suspend/resume (only %.2fs unbiased elapsed) — auto-disconnecting", unbiased_elapsed)
+
+            _heartbeat_fail_count = 0
+            _stale_tunnel_count = 0
+            try:
+                urllib.request.urlopen(
+                    urllib.request.Request(
+                        f"http://127.0.0.1:{PORT}/api/disconnect",
+                        method="POST"
+                    ), timeout=5
+                )
+            except Exception as de:
+                log.warning("Post-sleep auto-disconnect failed: %s", de)
+                _connected = False
+            continue
         if _connected and os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
@@ -2875,7 +2919,7 @@ if __name__ == "__main__":
     try:
         from waitress import serve
         flask_thread = threading.Thread(
-            target=lambda: serve(app, host="127.0.0.1", port=PORT, _quiet=True),
+            target=lambda: serve(app, host="127.0.0.1", port=PORT, _quiet=True, threads=16),
             daemon=True
         )
     except ImportError:
