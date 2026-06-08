@@ -116,6 +116,10 @@
     //   gx = sx - sy,  gy = sx + sy
     //   pixel_x = x0 + gx * GW,  pixel_y = y0 + gy * GH + layer * LH
     //   sqr=128 px/square, GW=64, GH=32, LH=192
+    // Base (full-resolution) geometry constants. When the render omits the N deepest
+    // pyramid levels (map_info.skip), the DZI base image is downscaled by 2^N, so all
+    // pixel coordinates (x0/y0/GW/GH/LH) must be divided by the same factor.
+    const BASE_GEOM = { GW: 64, GH: 32, LH: 192 };
     let MAP_CONF = {
       GW: 64, GH: 32, LH: 192,
       x0: 618496, y0: -229408,
@@ -147,10 +151,17 @@
           width: +size.getAttribute('Width'),
           height: +size.getAttribute('Height'),
         };
-        // Load authoritative coordinate offsets from pzmap2dzi output
+        // Load authoritative coordinate offsets from pzmap2dzi output.
+        // skip = omitted deepest pyramid levels; base image is downscaled by 2^skip,
+        // so x0/y0 and the GW/GH/LH constants must be scaled to the base image's pixel space.
         const info = await infoRes.json();
-        MAP_CONF.x0 = info.x0;
-        MAP_CONF.y0 = info.y0;
+        const skip = info.skip || 0;
+        const f = Math.pow(2, skip);
+        MAP_CONF.x0 = info.x0 / f;
+        MAP_CONF.y0 = info.y0 / f;
+        MAP_CONF.GW = BASE_GEOM.GW / f;
+        MAP_CONF.GH = BASE_GEOM.GH / f;
+        MAP_CONF.LH = BASE_GEOM.LH / f;
         // cell_rects: [[x, y, width, height]] in cell coords (pzmap2dzi format; 1 cell = 300 squares)
         if (info.cell_rects && info.cell_rects[0]) {
           const [cx, cy, cw, ch] = info.cell_rects[0];
