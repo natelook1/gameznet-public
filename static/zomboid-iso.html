@@ -43,6 +43,8 @@
     .iso-marker.fire   { font-size: 13px; line-height: 1; }
     .iso-marker.farm   { font-size: 11px; line-height: 1; }
     .iso-marker.trap   { font-size: 11px; line-height: 1; }
+    .iso-marker.rare   { font-size: 13px; line-height: 1; filter: drop-shadow(0 0 3px #fde047); }
+    .iso-marker.crate  { font-size: 12px; line-height: 1; cursor: help; }
 
     .iso-label { position: absolute; pointer-events: none; transform: translateX(-50%); white-space: nowrap; font-size: 11px; font-weight: 700; color: #22c55e; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 6px #000; top: 10px; left: 50%; }
     .iso-label.bitten   { color: #ef4444; }
@@ -90,6 +92,8 @@
     <label class="toggle"><input type="checkbox" id="show-traps" onchange="saveToggles();redrawMarkers()"> Traps</label>
     <label class="toggle"><input type="checkbox" id="show-towns" onchange="saveToggles();redrawMarkers()"> Towns</label>
     <label class="toggle"><input type="checkbox" id="show-heatmap" onchange="saveToggles();redrawMarkers()"> Heatmap</label>
+    <label class="toggle"><input type="checkbox" id="show-rare" checked onchange="saveToggles();redrawMarkers()"> Rare</label>
+    <label class="toggle"><input type="checkbox" id="show-crates" onchange="saveToggles();redrawMarkers()"> Crates</label>
 
     <div class="topbar-sep"></div>
     <div class="legend">🟢 alive &nbsp;🔴 bitten &nbsp;💀 death &nbsp;🔵🟡🔴 vehicle &nbsp;⬜ wreck &nbsp;🔥 fire &nbsp;🌿 farm &nbsp;🕷 trap</div>
@@ -131,7 +135,7 @@
     let currentLayer = 0;
     let layerItems = [];  // OSD world items per layer
     let markerEls = [];   // DOM marker elements
-    let pzData = { players: [], overlays: {} };
+    let pzData = { players: [], overlays: {}, rare: { spawns: [] }, storage: { containers: [] } };
 
     async function loadDziInfo() {
       try {
@@ -227,6 +231,8 @@ const TOWN_ZONES = [
       const showTraps     = document.getElementById('show-traps')?.checked;
       const showTowns     = document.getElementById('show-towns')?.checked;
       const showHeatmap   = document.getElementById('show-heatmap')?.checked;
+      const showRare      = document.getElementById('show-rare')?.checked;
+      const showCrates    = document.getElementById('show-crates')?.checked;
 
       const ovl = pzData.overlays || {};
 
@@ -320,6 +326,37 @@ const TOWN_ZONES = [
 
       if (showTraps) {
         (ovl.traps || []).forEach(pt => addOverlay(pt.x, pt.y, 0, '🕷', 'trap'));
+      }
+
+      if (showRare) {
+        (pzData.rare?.spawns || []).forEach(s => {
+          if (s.x == null || s.y == null) return;
+          const icon = s.kind === 'zombie' ? '🧟' : s.kind === 'ground' ? '🎒' : '💎';
+          const el = addOverlay(s.x, s.y, s.z || 0, icon, 'rare');
+          if (el) {
+            const lbl = document.createElement('div');
+            lbl.className = 'iso-label';
+            lbl.style.cssText = 'color:#fde047;background:rgba(0,0,0,0.7);padding:1px 4px;border-radius:3px;font-size:9px;';
+            lbl.textContent = s.kind === 'zombie' ? (s.why || 'special') : (s.label || s.item || 'rare');
+            el.appendChild(lbl);
+          }
+        });
+      }
+
+      if (showCrates) {
+        (pzData.storage?.containers || []).forEach(c => {
+          if (c.x == null || c.y == null) return;
+          const el = addOverlay(c.x, c.y, c.z || 0, '📦', 'crate');
+          if (el) {
+            const items = c.items || {};
+            const total = Object.values(items).reduce((s, n) => s + n, 0);
+            const lines = Object.entries(items)
+              .sort((a, b) => b[1] - a[1])
+              .map(([ft, n]) => `${ft.replace(/^Base\./, '')} x${n}`)
+              .join('\n');
+            el.title = `Crate (${total} items)\n${lines}`;
+          }
+        });
       }
 
       drawTowns(showTowns);
@@ -600,6 +637,18 @@ const TOWN_ZONES = [
             if (!d.error) { Object.assign(pzData.overlays, d); redrawMarkers(); }
           } catch {}
         });
+        es.addEventListener('rare', e => {
+          try {
+            const d = JSON.parse(e.data);
+            if (!d.error) { pzData.rare = d; redrawMarkers(); }
+          } catch {}
+        });
+        es.addEventListener('storage', e => {
+          try {
+            const d = JSON.parse(e.data);
+            if (!d.error) { pzData.storage = d; redrawMarkers(); }
+          } catch {}
+        });
         es.onopen = () => { _sseConnected = true; };
         es.onerror = () => { _sseConnected = false; es.close(); setTimeout(connectSSE, 10000); };
       }
@@ -611,19 +660,25 @@ const TOWN_ZONES = [
 
     async function loadData() {
       try {
-        const [statusRes, overlayRes, vehiclesRes, zombiesRes] = await Promise.all([
+        const [statusRes, overlayRes, vehiclesRes, zombiesRes, rareRes, storageRes] = await Promise.all([
           fetch(`${API_BASE}/api/pz/status`),
           fetch(`${API_BASE}/api/pz/overlays`),
           fetch(`${API_BASE}/api/pz/vehicles`),
           fetch(`${API_BASE}/api/pz/zombies`),
+          fetch(`${API_BASE}/api/pz/rare`),
+          fetch(`${API_BASE}/api/pz/storage`),
         ]);
         const status = await statusRes.json();
         const overlays = await overlayRes.json();
         const vehiclesData = await vehiclesRes.json();
         const zombiesData = await zombiesRes.json();
+        const rareData = await rareRes.json();
+        const storageData = await storageRes.json();
         if (!status.error) pzData.players = status.players || [];
         if (!overlays.error) pzData.overlays = overlays;
         if (!vehiclesData.error) pzData.overlays.vehicles = vehiclesData.vehicles || [];
+        if (!rareData.error) pzData.rare = rareData;
+        if (!storageData.error) pzData.storage = storageData;
         pzData.liveCells = zombiesData.cells || [];
         redrawMarkers();
         updateStatus();
@@ -648,7 +703,7 @@ const TOWN_ZONES = [
       } catch {}
     }
 
-    const TOGGLE_IDS = ['show-players','show-vehicles','show-wrecks','show-deaths','show-campfires','show-farming','show-traps','show-towns','show-heatmap'];
+    const TOGGLE_IDS = ['show-players','show-vehicles','show-wrecks','show-deaths','show-campfires','show-farming','show-traps','show-towns','show-heatmap','show-rare','show-crates'];
     const TOGGLE_DEFAULTS = { 'show-players': true, 'show-campfires': true };
 
     function saveToggles() {
