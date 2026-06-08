@@ -328,7 +328,7 @@
     const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
       ? 'https://gameznet.looknet.ca' : '';
 
-    let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {} };
+    let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {} };
     let leafletMap = null;
     let playerMarkers = [];
 
@@ -757,10 +757,19 @@
       });
     }
 
+    function applyLiveWounds() {
+      if (Object.keys(pzData.wounds).length === 0) return;
+      pzData.players.forEach(p => {
+        const lw = pzData.wounds[p.name];
+        if (lw != null) p.infected_risk = lw.infected_risk === true && !p.isDead;
+      });
+    }
+
     function isVehicleDestroyed(v) {
+      if (v.isWreck != null) return v.isWreck;
       const parts = v.parts || {};
       const vals = Object.values(parts);
-      return vals.length === 0 || vals.every(c => c === 0);
+      return vals.length > 0 && vals.every(c => c === 0);
     }
 
     function redrawVehicles() {
@@ -965,6 +974,7 @@
           const d = JSON.parse(e.data);
           if (d.error || !d.updated) return;
           pzData.livePlayers = d.players || [];
+          applyLiveWounds();
           renderOverview(); renderPlayers();
           if (leafletMap) redrawPlayers();
         } catch {}
@@ -974,8 +984,32 @@
         try {
           const d = JSON.parse(e.data);
           if (d.error || !d.updated) return;
-          pzData.vehicles = d.vehicles || [];
+          const incoming = d.vehicles || [];
+          if (incoming.length > 0 && pzData.vehicles.length > 0) {
+            // Merge live positions/wreck status from Lua mod into blob-parsed vehicles (which have parts data)
+            const byId = Object.fromEntries(pzData.vehicles.map(v => [v.id, v]));
+            incoming.forEach(lv => {
+              if (byId[lv.id]) {
+                byId[lv.id].x = lv.x ?? byId[lv.id].x;
+                byId[lv.id].y = lv.y ?? byId[lv.id].y;
+                if (lv.isWreck != null) byId[lv.id].isWreck = lv.isWreck;
+              }
+            });
+          } else {
+            pzData.vehicles = incoming;
+          }
           renderVehicles(); renderOverview(); if (leafletMap) redrawVehicles();
+        } catch {}
+      });
+
+      sseSource.addEventListener('wounds', e => {
+        try {
+          const d = JSON.parse(e.data);
+          if (!d.players) return;
+          pzData.wounds = d.players;
+          applyLiveWounds();
+          renderOverview(); renderPlayers();
+          if (leafletMap) redrawPlayers();
         } catch {}
       });
 
