@@ -151,10 +151,10 @@
         const info = await infoRes.json();
         MAP_CONF.x0 = info.x0;
         MAP_CONF.y0 = info.y0;
-        // cell_rects: [[cx_min, cy_min, cx_max, cy_max]] in cell coords (1 cell = 300 squares)
+        // cell_rects: [[x, y, width, height]] in cell coords (pzmap2dzi format; 1 cell = 300 squares)
         if (info.cell_rects && info.cell_rects[0]) {
-          const [cxMin, cyMin, cxMax, cyMax] = info.cell_rects[0];
-          MAP_CONF.bounds = { xMin: cxMin * 300, yMin: cyMin * 300, xMax: cxMax * 300, yMax: cyMax * 300 };
+          const [cx, cy, cw, ch] = info.cell_rects[0];
+          MAP_CONF.bounds = { xMin: cx * 300, yMin: cy * 300, xMax: (cx + cw) * 300, yMax: (cy + ch) * 300 };
         }
       } catch(e) {
         console.warn('DZI load failed', e);
