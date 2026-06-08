@@ -94,7 +94,16 @@
     .table-row:last-child { border-bottom: none; }
 
     /* Storage */
-    #storage-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .storage-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .storage-toolbar input[type=text] { flex: 1; min-width: 160px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 13px; }
+    .storage-toolbar select { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 8px; color: var(--text); font-size: 12px; }
+    .storage-toolbar .storage-min { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+    .storage-toolbar .storage-min input { width: 56px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px; color: var(--text); }
+    #storage-updated { font-size: 11px; color: var(--muted); margin-left: auto; }
+    #storage-summary { font-size: 12px; color: var(--muted); margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 14px; }
+    #storage-summary b { color: var(--text); }
+    #storage-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+    .storage-list-flat { display: block !important; }
     .storage-town { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
     .storage-town-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
     .storage-cat { border-top: 1px solid var(--border); }
@@ -102,6 +111,13 @@
     .storage-cat summary::-webkit-details-marker { display: none; }
     .storage-cat summary::before { content: '▸'; margin-right: 6px; color: var(--muted); transition: transform 0.15s; }
     .storage-cat[open] summary::before { transform: rotate(90deg); }
+    .storage-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; cursor: pointer; border-radius: 4px; }
+    .storage-item:hover { background: var(--surface2); }
+    .storage-item img { width: 22px; height: 22px; object-fit: contain; image-rendering: pixelated; flex-shrink: 0; }
+    .storage-item .si-name { flex: 1; }
+    .storage-item .si-count { font-weight: 600; }
+    .storage-item .si-loc { display: none; font-size: 11px; color: var(--muted); padding: 2px 0 6px 30px; }
+    .storage-item.open .si-loc { display: block; }
 
     /* Vehicle cards */
     .vehicle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
@@ -301,14 +317,29 @@
 
         <!-- Storage -->
         <div class="view" id="view-storage">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-            <input type="text" id="storage-search" placeholder="Filter items..." oninput="renderStorage()"
-              style="flex:1;min-width:180px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;">
-            <span id="storage-updated" style="font-size:11px;color:var(--muted);"></span>
+          <div class="storage-toolbar">
+            <input type="text" id="storage-search" placeholder="Search items..." oninput="renderStorage()">
+            <select id="storage-town" onchange="renderStorage()"><option value="">All towns</option></select>
+            <select id="storage-cat" onchange="renderStorage()">
+              <option value="">All categories</option>
+              <option value="food">Food</option><option value="medical">Medical</option>
+              <option value="ammo">Ammo</option><option value="weapons">Weapons</option>
+              <option value="tools">Tools</option><option value="other">Other</option>
+            </select>
+            <select id="storage-sort" onchange="renderStorage()">
+              <option value="count">Sort: Count</option>
+              <option value="name">Sort: Name</option>
+            </select>
+            <label class="storage-min">Min <input type="number" id="storage-min" min="0" value="0" oninput="renderStorage()"></label>
+            <select id="storage-group" onchange="renderStorage()">
+              <option value="town">Group: Town → Category</option>
+              <option value="cat">Group: Category → Town</option>
+              <option value="flat">Flat list</option>
+            </select>
+            <span id="storage-updated"></span>
           </div>
-          <div id="storage-list">
-            <div class="loading">Loading storage...</div>
-          </div>
+          <div id="storage-summary"></div>
+          <div id="storage-list"><div class="loading">Loading storage...</div></div>
         </div>
 
         <!-- Map -->
@@ -724,49 +755,139 @@
       return (fullType || '').replace(/^Base\./, '').replace(/_/g, ' ');
     }
 
+    // Item-icon map (Base.X -> Item_Y.png), loaded once. Icons live in /static/item-icons/.
+    let ICON_MAP = null;
+    function loadIconMap() {
+      return fetch(`${API_BASE}/static/item-icons/icon-map.json`)
+        .then(r => r.ok ? r.json() : {}).then(m => { ICON_MAP = m || {}; }).catch(() => { ICON_MAP = {}; });
+    }
+    function itemIcon(fullType) {
+      const f = ICON_MAP && ICON_MAP[fullType];
+      if (!f) return '';
+      return `<img src="${API_BASE}/static/item-icons/${f}" loading="lazy" onerror="this.style.display='none'">`;
+    }
+
+    // Which crates hold a given item (from per-crate container data) — for click-to-locate.
+    function cratesWithItem(fullType, town) {
+      const conts = (pzData.storage?.containers) || [];
+      return conts.filter(c => (!town || c.town === town) && c.items && c.items[fullType]);
+    }
+
+    function storageItemRow(fullType, count, town) {
+      const id = 'si_' + Math.random().toString(36).slice(2);
+      return `<div class="storage-item" onclick="toggleStorageItem(this,'${fullType.replace(/'/g,'')}','${(town||'').replace(/'/g,'')}')">
+        ${itemIcon(fullType)}
+        <span class="si-name">${prettifyStorageItem(fullType)}</span>
+        <span class="si-count">${count}</span>
+        <div class="si-loc"></div>
+      </div>`;
+    }
+
+    window.toggleStorageItem = function(el, fullType, town) {
+      el.classList.toggle('open');
+      const loc = el.querySelector('.si-loc');
+      if (el.classList.contains('open') && loc && !loc.dataset.filled) {
+        const crates = cratesWithItem(fullType, town);
+        loc.dataset.filled = '1';
+        loc.innerHTML = crates.length
+          ? crates.map(c => `<span style="cursor:pointer;color:var(--accent)" onclick="event.stopPropagation();jumpToCrate(${c.x},${c.y})">📦 (${c.x},${c.y}) ×${c.items[fullType]}</span>`).join('<br>')
+          : 'location unknown';
+      }
+    };
+
+    window.jumpToCrate = function(x, y) {
+      setView('map');
+      setTimeout(() => { if (leafletMap) { leafletMap.setView(pzToLatLng(x, y), TILE_ZOOM_MAX + 1);
+        document.getElementById('map-show-crates').checked = true; redrawOverlays(); } }, 100);
+    };
+
     function renderStorage() {
       const storage = pzData.storage || {};
       const towns = storage.towns || {};
       const filter = (document.getElementById('storage-search')?.value || '').toLowerCase();
+      const townFilter = document.getElementById('storage-town')?.value || '';
+      const catFilter  = document.getElementById('storage-cat')?.value || '';
+      const sortMode   = document.getElementById('storage-sort')?.value || 'count';
+      const minCount   = +(document.getElementById('storage-min')?.value || 0);
+      const groupMode  = document.getElementById('storage-group')?.value || 'town';
 
       const upd = document.getElementById('storage-updated');
-      if (upd) upd.textContent = storage.updated ? `Last scanned ${formatLastConn(new Date(storage.updated * 1000).toISOString())}` : '';
+      if (upd) upd.textContent = storage.updated ? `Scanned ${formatLastConn(new Date(storage.updated * 1000).toISOString())}` : '';
 
+      // Populate the town dropdown once from the data
+      const townSel = document.getElementById('storage-town');
       const townNames = Object.keys(towns).sort();
-      const cards = townNames.map(town => {
-        const cats = towns[town] || {};
-        const catSections = Object.keys(STORAGE_CAT_META).map(cat => {
-          const items = cats[cat] || {};
-          let entries = Object.entries(items);
-          if (filter) entries = entries.filter(([type]) => prettifyStorageItem(type).toLowerCase().includes(filter));
-          if (entries.length === 0) return '';
-          entries.sort((a, b) => b[1] - a[1]);
-          const total = entries.reduce((s, [, c]) => s + c, 0);
-          const meta = STORAGE_CAT_META[cat];
-          const rows = entries.map(([type, count]) =>
-            `<div class="table-row" style="grid-template-columns:1fr auto;padding:4px 0;">
-              <span style="font-size:12px;">${prettifyStorageItem(type)}</span>
-              <span style="font-size:12px;font-weight:600;">${count}</span>
-            </div>`).join('');
-          return `<details class="storage-cat">
-            <summary><span>${meta.icon} ${meta.label}</span><span style="color:var(--muted);font-size:11px;">${total}</span></summary>
-            <div style="padding:4px 8px 8px;">${rows}</div>
-          </details>`;
-        }).join('');
+      if (townSel && townSel.options.length <= 1 && townNames.length) {
+        townNames.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; townSel.appendChild(o); });
+      }
 
-        const hasAny = catSections.trim().length > 0;
-        return `<div class="storage-town">
-          <div class="storage-town-title">🏘️ ${town}</div>
-          ${hasAny ? catSections : '<div style="font-size:12px;color:var(--muted);padding:6px 0;">No matching items</div>'}
-        </div>`;
-      }).join('');
+      // Flatten into rows: {town, cat, item, count}, applying all filters
+      const rows = [];
+      let grandTotal = 0, uniqueItems = new Set();
+      for (const town of townNames) {
+        if (townFilter && town !== townFilter) continue;
+        const cats = towns[town] || {};
+        for (const cat of Object.keys(STORAGE_CAT_META)) {
+          if (catFilter && cat !== catFilter) continue;
+          const items = cats[cat] || {};
+          for (const [item, count] of Object.entries(items)) {
+            if (count < minCount) continue;
+            if (filter && !prettifyStorageItem(item).toLowerCase().includes(filter)) continue;
+            rows.push({ town, cat, item, count });
+            grandTotal += count; uniqueItems.add(item);
+          }
+        }
+      }
+
+      const sortRows = arr => arr.sort((a, b) =>
+        sortMode === 'name' ? prettifyStorageItem(a.item).localeCompare(prettifyStorageItem(b.item)) : b.count - a.count);
+
+      // Summary
+      const sum = document.getElementById('storage-summary');
+      const crateCount = (storage.containers || []).length;
+      if (sum) sum.innerHTML = rows.length
+        ? `<span><b>${grandTotal.toLocaleString()}</b> items</span><span><b>${uniqueItems.size}</b> unique</span><span><b>${crateCount}</b> crates</span>`
+        : '';
 
       const list = document.getElementById('storage-list');
+      list.classList.toggle('storage-list-flat', groupMode === 'flat');
+
       if (!townNames.length) {
-        list.innerHTML = '<div class="loading">No storage data yet (mod scans loaded chunks only — needs players near container stashes)</div>';
-      } else {
-        list.innerHTML = cards;
+        list.innerHTML = '<div class="loading">No storage data yet (mod scans loaded chunks only — needs players near player crates)</div>';
+        return;
       }
+      if (!rows.length) { list.innerHTML = '<div class="loading">No items match the filters</div>'; return; }
+
+      const itemHtml = r => storageItemRow(r.item, r.count, r.town);
+
+      if (groupMode === 'flat') {
+        sortRows(rows);
+        list.innerHTML = `<div class="storage-town"><div class="storage-town-title">All items (${rows.length})</div>${rows.map(itemHtml).join('')}</div>`;
+        return;
+      }
+
+      // Grouped: outer = town or category
+      const outerKeys = groupMode === 'cat' ? Object.keys(STORAGE_CAT_META) : townNames.filter(t => !townFilter || t === townFilter);
+      list.innerHTML = outerKeys.map(outer => {
+        const grp = groupMode === 'cat' ? rows.filter(r => r.cat === outer) : rows.filter(r => r.town === outer);
+        if (!grp.length) return '';
+        const innerKeys = groupMode === 'cat'
+          ? [...new Set(grp.map(r => r.town))].sort()
+          : Object.keys(STORAGE_CAT_META);
+        const title = groupMode === 'cat' ? `${STORAGE_CAT_META[outer].icon} ${STORAGE_CAT_META[outer].label}` : `🏘️ ${outer}`;
+        const sections = innerKeys.map(inner => {
+          const sub = groupMode === 'cat' ? grp.filter(r => r.town === inner) : grp.filter(r => r.cat === inner);
+          if (!sub.length) return '';
+          sortRows(sub);
+          const total = sub.reduce((s, r) => s + r.count, 0);
+          const label = groupMode === 'cat' ? `🏘️ ${inner}` : `${STORAGE_CAT_META[inner].icon} ${STORAGE_CAT_META[inner].label}`;
+          return `<details class="storage-cat" open>
+            <summary><span>${label}</span><span style="color:var(--muted);font-size:11px;">${total}</span></summary>
+            <div style="padding:2px 4px 8px;">${sub.map(itemHtml).join('')}</div>
+          </details>`;
+        }).join('');
+        return `<div class="storage-town"><div class="storage-town-title">${title}</div>${sections}</div>`;
+      }).join('');
     }
 
     // ── Map ──────────────────────────────────────────────────────────────────
@@ -1239,7 +1360,7 @@
       };
     }
 
-    window.addEventListener('load', async () => { await loadTileInfo(); startSSE(); });
+    window.addEventListener('load', async () => { await Promise.all([loadTileInfo(), loadIconMap()]); startSSE(); });
   </script>
 </body>
 </html>
