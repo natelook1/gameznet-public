@@ -44,7 +44,7 @@
     .iso-marker.farm   { font-size: 11px; line-height: 1; }
     .iso-marker.trap   { font-size: 11px; line-height: 1; }
     .iso-marker.rare   { font-size: 13px; line-height: 1; filter: drop-shadow(0 0 3px #fde047); }
-    .iso-marker.crate  { font-size: 12px; line-height: 1; cursor: help; }
+    .iso-marker.crate  { font-size: 12px; line-height: 1; cursor: help; pointer-events: auto; }
 
     .iso-label { position: absolute; pointer-events: none; transform: translateX(-50%); white-space: nowrap; font-size: 11px; font-weight: 700; color: #22c55e; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 6px #000; top: 10px; left: 50%; }
     .iso-label.bitten   { color: #ef4444; }
@@ -354,6 +354,9 @@ const TOWN_ZONES = [
               .sort((a, b) => b[1] - a[1])
               .map(([ft, n]) => `${ft.replace(/^Base\./, '')} x${n}`)
               .join('\n');
+            // OSD overlays pass mouse events through by default; force this marker to
+            // receive hover so the native title tooltip works.
+            el.style.pointerEvents = 'auto';
             el.title = `Crate (${total} items)\n${lines}`;
           }
         });
