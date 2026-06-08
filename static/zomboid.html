@@ -780,15 +780,34 @@
     // Tile offsets are separate for X and Y since the grid is not square.
 
     const PZ_SCALE = 300 / 16;    // 18.75 game tiles per world unit
-    const CELL_MIN_X = 8;
-    const CELL_MAX_X = 48;
-    const CELL_MIN_Y = 16;
-    const CELL_MAX_Y = 40;
-    const TILE_ZOOM_MAX = 4;
-    const MAP_MIN_X = CELL_MIN_X * 300;
-    const MAP_MAX_X = CELL_MAX_X * 300;
-    const MAP_MIN_Y = CELL_MIN_Y * 300;
-    const MAP_MAX_Y = CELL_MAX_Y * 300;
+    // Tile calibration — defaults overwritten by info.json (written by the renderer)
+    // so the frontend always matches whatever tiles are actually deployed. This
+    // decouples a frontend deploy from a tile re-render. Defaults mirror the current
+    // live render as a safety net if info.json can't be fetched.
+    let CELL_MIN_X = 8, CELL_MAX_X = 48, CELL_MIN_Y = 16, CELL_MAX_Y = 40;
+    let TILE_ZOOM_MAX = 4;
+    let TILE_SIZE = 256;
+    let MAP_MIN_X, MAP_MAX_X, MAP_MIN_Y, MAP_MAX_Y;
+    function recalcMapBounds() {
+      MAP_MIN_X = CELL_MIN_X * 300; MAP_MAX_X = CELL_MAX_X * 300;
+      MAP_MIN_Y = CELL_MIN_Y * 300; MAP_MAX_Y = CELL_MAX_Y * 300;
+    }
+    recalcMapBounds();
+
+    async function loadTileInfo() {
+      try {
+        const r = await fetch(`${API_BASE}/static/map-tiles/Zomboid/info.json`, { cache: 'no-store' });
+        if (!r.ok) return;
+        const d = await r.json();
+        if (d.cell_x_min != null) CELL_MIN_X = d.cell_x_min;
+        if (d.cell_x_max != null) CELL_MAX_X = d.cell_x_max;
+        if (d.cell_y_min != null) CELL_MIN_Y = d.cell_y_min;
+        if (d.cell_y_max != null) CELL_MAX_Y = d.cell_y_max;
+        if (d.zoom_max  != null) TILE_ZOOM_MAX = d.zoom_max;
+        if (d.tile_size != null) TILE_SIZE = d.tile_size;
+        recalcMapBounds();
+      } catch (_) {}
+    }
 
     function pzToLatLng(x, y) { return L.latLng(-y / PZ_SCALE, x / PZ_SCALE); }
 
@@ -797,7 +816,9 @@
       leafletMap = L.map('leaflet-map', {
         crs: L.CRS.Simple,
         minZoom: 1,
-        maxZoom: TILE_ZOOM_MAX,
+        // Tiles exist up to TILE_ZOOM_MAX; allow zooming 2 levels past for the higher-res
+        // 512px tiles (Leaflet upscales but each tile holds 2x the rendered detail).
+        maxZoom: TILE_ZOOM_MAX + 2,
         zoomSnap: 0.5,
         attributionControl: false,
       });
@@ -823,7 +844,7 @@
           return img;
         }
       });
-      new PzTileLayer({ tileSize: 256, opacity: 0.9 }).addTo(leafletMap);
+      new PzTileLayer({ tileSize: TILE_SIZE, maxNativeZoom: TILE_ZOOM_MAX, opacity: 0.9 }).addTo(leafletMap);
 
       const mapBounds = L.latLngBounds(
         pzToLatLng(MAP_MIN_X, MAP_MAX_Y),
@@ -1218,7 +1239,7 @@
       };
     }
 
-    window.addEventListener('load', startSSE);
+    window.addEventListener('load', async () => { await loadTileInfo(); startSSE(); });
   </script>
 </body>
 </html>

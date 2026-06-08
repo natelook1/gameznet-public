@@ -67,19 +67,8 @@
     <div class="topbar-sep"></div>
 
     <select id="layer-sel" onchange="setLayer(+this.value)">
-      <option value="0">Ground Floor</option>
-      <option value="1">Floor 1</option>
       <option value="2">Floor 2</option>
-      <option value="3">Floor 3</option>
-      <option value="4">Floor 4</option>
-      <option value="5">Floor 5</option>
-      <option value="6">Floor 6</option>
-      <option value="7">Floor 7</option>
     </select>
-
-    <input type="range" id="roof-opacity" min="0" max="100" value="0" step="10"
-      title="Roof opacity" oninput="setRoofOpacity(+this.value)"
-      style="width:80px;accent-color:var(--accent);">
 
     <div class="topbar-sep"></div>
 
@@ -503,29 +492,16 @@ const TOWN_ZONES = [
     async function init() {
       await loadDziInfo();
 
-      // Probe which layers exist sequentially — stop at first 404 to avoid console spam
-      const layerExists = [false,false,false,false,false,false,false,false];
-      for (let i = 0; i < 8; i++) {
-        const ok = await fetch(`/static/map-tiles/iso/base/layer${i}.dzi`, {method:'HEAD'})
-          .then(r => r.ok).catch(() => false);
-        if (!ok) break;
-        layerExists[i] = true;
-      }
-
-      // Populate layer selector with only available layers
+      // Locked to Floor 2 only — it's the clearest view and avoids floor-switch clutter.
+      const LOCKED_LAYER = 2;
+      currentLayer = LOCKED_LAYER;
       const sel = document.getElementById('layer-sel');
-      sel.innerHTML = '';
-      layerExists.forEach((exists, i) => {
-        if (!exists) return;
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = i === 0 ? 'Ground Floor' : `Floor ${i}`;
-        sel.appendChild(opt);
-      });
+      sel.innerHTML = '<option value="2">Floor 2</option>';
+      sel.value = String(LOCKED_LAYER);
 
       viewer = OpenSeadragon({
         element: document.getElementById('osd'),
-        tileSources: `/static/map-tiles/iso/base/layer0.dzi`,
+        tileSources: `/static/map-tiles/iso/base/layer${LOCKED_LAYER}.dzi`,
         sequenceMode: false,
         homeFillsViewer: false,
         showZoomControl: false,
