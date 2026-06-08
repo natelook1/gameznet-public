@@ -428,12 +428,14 @@
     function renderOverview() {
       const players = pzData.players || [];
       const stats = pzData.stats || {};
+      // Live mod players key by username (e.g. "Osy86"); roster has p.username. Match on that.
       const liveNames = new Set((pzData.livePlayers || []).map(p => p.name));
+      const isLive = p => liveNames.has(p.username) || liveNames.has(p.name);
       const infected = players.filter(p => p.infected_risk && !p.isDead);
 
-      const onlineCount = players.length > 0 && liveNames.size > 0
-        ? players.filter(p => liveNames.has(p.name)).length
-        : liveNames.size || players.length;
+      // Online = roster players matched to the live mod feed. If the mod feed is empty
+      // (server offline / no players), show 0 online — never fall back to "everyone".
+      const onlineCount = liveNames.size > 0 ? players.filter(isLive).length : 0;
       document.getElementById('stat-players').textContent = onlineCount + ' / ' + players.length;
       document.getElementById('stat-infected').textContent = infected.length > 0 ? infected.length + ' ⚠️' : '0';
       document.getElementById('stat-infected').style.color = infected.length > 0 ? 'var(--red)' : 'var(--green)';
@@ -464,7 +466,7 @@
       const rows = players.map(p => {
         const hours = stats.hours?.[p.username] ?? p.hours ?? 0;
         const deaths = stats.deaths?.[p.username] ?? 0;
-        const isOnline = liveNames.has(p.name);
+        const isOnline = isLive(p);
         const statusHtml = p.isDead
           ? '<span style="color:var(--muted)">Dead</span>'
           : p.infected_risk
@@ -541,7 +543,7 @@
           .sort((a, b) => b[1] - a[1])
           .map(([cat, count]) => `<div class="kills-row"><span>${cat}</span><span>${count}</span></div>`).join('');
 
-        const isOnline = liveNames.has(p.name);
+        const isOnline = liveNames.has(p.username) || liveNames.has(p.name);
         return `<div class="player-card${p.infected_risk ? ' infected' : ''}${p.isDead ? ' dead' : ''}">
           <div class="player-name">
             ${p.name}
