@@ -93,6 +93,16 @@
     .table-row:hover { background: var(--surface2); }
     .table-row:last-child { border-bottom: none; }
 
+    /* Storage */
+    #storage-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .storage-town { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+    .storage-town-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+    .storage-cat { border-top: 1px solid var(--border); }
+    .storage-cat summary { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 7px 0; font-size: 13px; font-weight: 600; list-style: none; }
+    .storage-cat summary::-webkit-details-marker { display: none; }
+    .storage-cat summary::before { content: '▸'; margin-right: 6px; color: var(--muted); transition: transform 0.15s; }
+    .storage-cat[open] summary::before { transform: rotate(90deg); }
+
     /* Vehicle cards */
     .vehicle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
     .vehicle-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
@@ -148,6 +158,7 @@
         <div class="nav-item" data-view="players">🧟 Players</div>
         <div class="nav-item" data-view="stats">📈 Stats</div>
         <div class="nav-item" data-view="vehicles">🚗 Vehicles</div>
+        <div class="nav-item" data-view="storage">📦 Storage</div>
         <div class="nav-item" data-view="map">🗺️ Map</div>
       </div>
 
@@ -288,6 +299,18 @@
           </div>
         </div>
 
+        <!-- Storage -->
+        <div class="view" id="view-storage">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <input type="text" id="storage-search" placeholder="Filter items..." oninput="renderStorage()"
+              style="flex:1;min-width:180px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;">
+            <span id="storage-updated" style="font-size:11px;color:var(--muted);"></span>
+          </div>
+          <div id="storage-list">
+            <div class="loading">Loading storage...</div>
+          </div>
+        </div>
+
         <!-- Map -->
         <div class="view" id="view-map">
           <div id="map-inner">
@@ -321,6 +344,7 @@
     <div class="mobile-nav-item" data-view="players"><span class="tab-icon">🧟</span><span>Players</span></div>
     <div class="mobile-nav-item" data-view="stats"><span class="tab-icon">📈</span><span>Stats</span></div>
     <div class="mobile-nav-item" data-view="vehicles"><span class="tab-icon">🚗</span><span>Vehicles</span></div>
+    <div class="mobile-nav-item" data-view="storage"><span class="tab-icon">📦</span><span>Storage</span></div>
     <div class="mobile-nav-item" data-view="map"><span class="tab-icon">🗺️</span><span>Map</span></div>
   </nav>
 
@@ -328,7 +352,7 @@
     const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
       ? 'https://gameznet.looknet.ca' : '';
 
-    let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {} };
+    let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {}, storage: {} };
     let leafletMap = null;
     let playerMarkers = [];
 
@@ -340,9 +364,10 @@
       document.querySelectorAll('.nav-item[data-view], .mobile-nav-item[data-view]').forEach(i => {
         i.classList.toggle('active', i.dataset.view === name);
       });
-      const titles = { overview:'Overview', players:'Players', stats:'Stats', vehicles:'Vehicles', map:'Map' };
+      const titles = { overview:'Overview', players:'Players', stats:'Stats', vehicles:'Vehicles', storage:'Storage', map:'Map' };
       document.getElementById('page-title').textContent = titles[name] || name;
       if (name === 'map') setTimeout(() => { if (!leafletMap) initMap(); else { leafletMap.invalidateSize(); redrawPlayers(); } }, 50);
+      if (name === 'storage') renderStorage();
     }
 
     document.querySelectorAll('.nav-item[data-view], .mobile-nav-item[data-view]').forEach(el => {
@@ -681,6 +706,65 @@
       document.getElementById('vehicles-list').innerHTML = cards;
     }
 
+    // ── Storage ────────────────────────────────────────────────────────────────
+    const STORAGE_CAT_META = {
+      food:    { icon: '🥫', label: 'Food' },
+      medical: { icon: '💊', label: 'Medical' },
+      ammo:    { icon: '🔫', label: 'Ammo' },
+      weapons: { icon: '🔪', label: 'Weapons' },
+      tools:   { icon: '🔧', label: 'Tools' },
+      other:   { icon: '📦', label: 'Other' },
+    };
+
+    function prettifyStorageItem(fullType) {
+      return (fullType || '').replace(/^Base\./, '').replace(/_/g, ' ');
+    }
+
+    function renderStorage() {
+      const storage = pzData.storage || {};
+      const towns = storage.towns || {};
+      const filter = (document.getElementById('storage-search')?.value || '').toLowerCase();
+
+      const upd = document.getElementById('storage-updated');
+      if (upd) upd.textContent = storage.updated ? `Last scanned ${formatLastConn(new Date(storage.updated * 1000).toISOString())}` : '';
+
+      const townNames = Object.keys(towns).sort();
+      const cards = townNames.map(town => {
+        const cats = towns[town] || {};
+        const catSections = Object.keys(STORAGE_CAT_META).map(cat => {
+          const items = cats[cat] || {};
+          let entries = Object.entries(items);
+          if (filter) entries = entries.filter(([type]) => prettifyStorageItem(type).toLowerCase().includes(filter));
+          if (entries.length === 0) return '';
+          entries.sort((a, b) => b[1] - a[1]);
+          const total = entries.reduce((s, [, c]) => s + c, 0);
+          const meta = STORAGE_CAT_META[cat];
+          const rows = entries.map(([type, count]) =>
+            `<div class="table-row" style="grid-template-columns:1fr auto;padding:4px 0;">
+              <span style="font-size:12px;">${prettifyStorageItem(type)}</span>
+              <span style="font-size:12px;font-weight:600;">${count}</span>
+            </div>`).join('');
+          return `<details class="storage-cat">
+            <summary><span>${meta.icon} ${meta.label}</span><span style="color:var(--muted);font-size:11px;">${total}</span></summary>
+            <div style="padding:4px 8px 8px;">${rows}</div>
+          </details>`;
+        }).join('');
+
+        const hasAny = catSections.trim().length > 0;
+        return `<div class="storage-town">
+          <div class="storage-town-title">🏘️ ${town}</div>
+          ${hasAny ? catSections : '<div style="font-size:12px;color:var(--muted);padding:6px 0;">No matching items</div>'}
+        </div>`;
+      }).join('');
+
+      const list = document.getElementById('storage-list');
+      if (!townNames.length) {
+        list.innerHTML = '<div class="loading">No storage data yet (mod scans loaded chunks only — needs players near container stashes)</div>';
+      } else {
+        list.innerHTML = cards;
+      }
+    }
+
     // ── Map ──────────────────────────────────────────────────────────────────
 
     // CRS.Simple: 1 unit = 1/PZ_SCALE PZ game tiles. tileSize=256.
@@ -988,6 +1072,11 @@
         .then(r => r.json())
         .then(d => { if (!d.error) { pzData.vehicles = d.vehicles || []; renderVehicles(); renderOverview(); if (leafletMap) redrawVehicles(); } })
         .catch(() => {});
+
+      fetch(`${API_BASE}/api/pz/storage`)
+        .then(r => r.json())
+        .then(d => { if (!d.error) { pzData.storage = d; renderStorage(); } })
+        .catch(() => {});
     }
 
     function startSSE() {
@@ -1052,6 +1141,15 @@
           if (d.error) return;
           pzData.overlays = d;
           if (leafletMap) redrawOverlays();
+        } catch {}
+      });
+
+      sseSource.addEventListener('storage', e => {
+        try {
+          const d = JSON.parse(e.data);
+          if (d.error) return;
+          pzData.storage = d;
+          renderStorage();
         } catch {}
       });
 
