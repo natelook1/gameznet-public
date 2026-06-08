@@ -32,8 +32,12 @@
     #viewer-wrap { flex: 1; position: relative; overflow: hidden; }
     #osd { width: 100%; height: 100%; background: #0a0a0e; }
 
-    /* Marker styles */
-    .iso-marker { position: absolute; pointer-events: none; transform: translate(-50%, -50%); }
+    /* Marker styles. z-index layering: crates/loot lowest, world overlays mid,
+       players/zombies always on top so they're never hidden. */
+    .iso-marker { position: absolute; pointer-events: none; transform: translate(-50%, -50%); z-index: 20; }
+    .iso-marker.crate { z-index: 5; }
+    .iso-marker.rare, .iso-marker.vehicle, .iso-marker.fire, .iso-marker.farm, .iso-marker.trap, .iso-marker.death { z-index: 10; }
+    .iso-marker.player, .iso-marker.zombie { z-index: 40; }
     .iso-marker.player { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #000; box-shadow: 0 0 8px currentColor; }
     .iso-marker.player.alive   { background: #22c55e; color: #22c55e; }
     .iso-marker.player.bitten  { background: #ef4444; color: #ef4444; }
