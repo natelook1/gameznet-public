@@ -327,10 +327,12 @@
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-dead" checked onchange="redrawOverlays()"> Dead</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-density" onchange="redrawOverlays()"> Density</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-towns" onchange="redrawTowns()"> Towns</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-rare" checked onchange="redrawOverlays()"> Rare</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-crates" onchange="redrawOverlays()"> Crates</label>
                 <button id="map-fullscreen-btn" onclick="toggleMapFullscreen()">⛶</button>
                 <button onclick="openIsoViewer()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:12px;">Iso View</button>
               </div>
-              <div style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap</div>
+              <div style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap &nbsp;💎 rare &nbsp;📦 crate</div>
             </div>
           </div>
         </div>
@@ -352,7 +354,7 @@
     const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
       ? 'https://gameznet.looknet.ca' : '';
 
-    let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {}, storage: {} };
+    let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {}, storage: {}, rare: { spawns: [] } };
     let leafletMap = null;
     let playerMarkers = [];
 
@@ -994,6 +996,41 @@
           overlayMarkers.push(rect);
         });
       }
+
+      const showRare   = document.getElementById('map-show-rare')?.checked;
+      const showCrates = document.getElementById('map-show-crates')?.checked;
+
+      if (showRare) {
+        (pzData.rare?.spawns || []).forEach(s => {
+          if (s.x == null || s.y == null) return;
+          if (s.x < MAP_MIN_X || s.x > MAP_MAX_X || s.y < MAP_MIN_Y || s.y > MAP_MAX_Y) return;
+          const emoji = s.kind === 'zombie' ? '🧟' : s.kind === 'ground' ? '🎒' : '💎';
+          const m = L.marker(pzToLatLng(s.x, s.y), {
+            icon: L.divIcon({ className: '', html: `<div style="font-size:14px;line-height:1;text-shadow:0 0 3px #000;">${emoji}</div>`, iconSize: [16, 16], iconAnchor: [8, 8] }),
+            zIndexOffset: 200,
+          }).addTo(leafletMap);
+          const lbl = s.kind === 'zombie' ? (s.why || 'special zombie') : (s.label || (s.item || '').replace(/^Base\./, ''));
+          m.bindTooltip(lbl, { direction: 'top', offset: [0, -6], className: 'player-label' });
+          overlayMarkers.push(m);
+        });
+      }
+
+      if (showCrates) {
+        (pzData.storage?.containers || []).forEach(c => {
+          if (c.x == null || c.y == null) return;
+          if (c.x < MAP_MIN_X || c.x > MAP_MAX_X || c.y < MAP_MIN_Y || c.y > MAP_MAX_Y) return;
+          const items = c.items || {};
+          const total = Object.values(items).reduce((s, n) => s + n, 0);
+          const lines = Object.entries(items).sort((a, b) => b[1] - a[1])
+            .map(([ft, n]) => `${ft.replace(/^Base\./, '')} ×${n}`).join('<br>');
+          const m = L.marker(pzToLatLng(c.x, c.y), {
+            icon: L.divIcon({ className: '', html: `<div style="font-size:12px;line-height:1;text-shadow:0 0 3px #000;">📦</div>`, iconSize: [14, 14], iconAnchor: [7, 7] }),
+            zIndexOffset: -20,
+          }).addTo(leafletMap);
+          m.bindTooltip(`<b>Crate (${total})</b><br>${lines}`, { direction: 'top', offset: [0, -6], className: 'player-label' });
+          overlayMarkers.push(m);
+        });
+      }
     }
 
     // Town zones derived from spawnpoints.lua cell bounding boxes
@@ -1077,7 +1114,12 @@
 
       fetch(`${API_BASE}/api/pz/storage`)
         .then(r => r.json())
-        .then(d => { if (!d.error) { pzData.storage = d; renderStorage(); } })
+        .then(d => { if (!d.error) { pzData.storage = d; renderStorage(); if (leafletMap) redrawOverlays(); } })
+        .catch(() => {});
+
+      fetch(`${API_BASE}/api/pz/rare`)
+        .then(r => r.json())
+        .then(d => { if (!d.error) { pzData.rare = d; if (leafletMap) redrawOverlays(); } })
         .catch(() => {});
     }
 
@@ -1152,6 +1194,16 @@
           if (d.error) return;
           pzData.storage = d;
           renderStorage();
+          if (leafletMap) redrawOverlays();
+        } catch {}
+      });
+
+      sseSource.addEventListener('rare', e => {
+        try {
+          const d = JSON.parse(e.data);
+          if (d.error) return;
+          pzData.rare = d;
+          if (leafletMap) redrawOverlays();
         } catch {}
       });
 
