@@ -93,31 +93,53 @@
     .table-row:hover { background: var(--surface2); }
     .table-row:last-child { border-bottom: none; }
 
-    /* Storage */
-    .storage-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
-    .storage-toolbar input[type=text] { flex: 1; min-width: 160px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 13px; }
-    .storage-toolbar select { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 8px; color: var(--text); font-size: 12px; }
-    .storage-toolbar .storage-min { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
-    .storage-toolbar .storage-min input { width: 56px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px; color: var(--text); }
-    #storage-updated { font-size: 11px; color: var(--muted); margin-left: auto; }
-    #storage-summary { font-size: 12px; color: var(--muted); margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 14px; }
-    #storage-summary b { color: var(--text); }
-    #storage-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
-    .storage-list-flat { display: block !important; }
-    .storage-town { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
-    .storage-town-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
-    .storage-cat { border-top: 1px solid var(--border); }
-    .storage-cat summary { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 7px 0; font-size: 13px; font-weight: 600; list-style: none; }
-    .storage-cat summary::-webkit-details-marker { display: none; }
-    .storage-cat summary::before { content: '▸'; margin-right: 6px; color: var(--muted); transition: transform 0.15s; }
-    .storage-cat[open] summary::before { transform: rotate(90deg); }
-    .storage-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; cursor: pointer; border-radius: 4px; }
-    .storage-item:hover { background: var(--surface2); }
-    .storage-item img { width: 22px; height: 22px; object-fit: contain; image-rendering: pixelated; flex-shrink: 0; }
-    .storage-item .si-name { flex: 1; }
-    .storage-item .si-count { font-weight: 600; }
-    .storage-item .si-loc { display: none; font-size: 11px; color: var(--muted); padding: 2px 0 6px 30px; }
+    /* Improved Storage Styles */
+    .storage-header-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px; margin-bottom: 10px; }
+    .storage-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .storage-toolbar input[type=text], .storage-toolbar select, .storage-toolbar input[type=number] {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 13px; outline: none; transition: border-color 0.2s;
+    }
+    .storage-toolbar input[type=text] { flex: 1; min-width: 200px; }
+    .storage-toolbar input[type=text]:focus, .storage-toolbar select:focus, .storage-toolbar input[type=number]:focus { border-color: var(--accent); }
+    .storage-min { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    .storage-min input { width: 60px; text-align: center; }
+    
+    .storage-summary-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; border-top: 1px solid var(--border); padding-top: 14px; }
+    .storage-stats { display: flex; flex-wrap: wrap; gap: 10px; }
+    .storage-stat-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; }
+    .storage-stat-pill b { color: var(--text); font-weight: 600; }
+    #storage-updated { font-size: 11px; color: var(--muted); }
+
+    .storage-section { margin-bottom: 32px; }
+    .storage-section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    .storage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+    
+    .storage-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+    .storage-card details summary { background: var(--surface2); padding: 12px 16px; font-weight: 600; font-size: 13px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; list-style: none; border-bottom: 1px solid transparent; transition: background 0.2s; }
+    .storage-card details summary::-webkit-details-marker { display: none; }
+    .storage-card details summary:hover { background: var(--border); }
+    .storage-card details[open] summary { border-bottom-color: var(--border); }
+    .storage-card details summary .chevron { color: var(--muted); display: inline-block; transition: transform 0.2s; margin-right: 6px; }
+    .storage-card details[open] summary .chevron { transform: rotate(90deg); }
+    
+    .storage-card-content { padding: 8px; max-height: 350px; overflow-y: auto; }
+    /* Scrollbar for content */
+    .storage-card-content::-webkit-scrollbar { width: 6px; }
+    .storage-card-content::-webkit-scrollbar-track { background: transparent; }
+    .storage-card-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .storage-card-content::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    .storage-item { display: flex; align-items: center; gap: 10px; padding: 6px 10px; font-size: 13px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; transition: background 0.2s, border-color 0.2s; }
+    .storage-item:hover { background: var(--surface2); border-color: var(--border); }
+    .storage-item img { width: 24px; height: 24px; object-fit: contain; image-rendering: pixelated; flex-shrink: 0; background: rgba(0,0,0,0.2); border-radius: 4px; padding: 2px; }
+    .storage-item .si-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+    .storage-item .si-count { font-weight: 600; font-variant-numeric: tabular-nums; background: var(--surface2); padding: 2px 8px; border-radius: 12px; font-size: 11px; border: 1px solid var(--border); color: var(--text); }
+    .storage-item.open { background: var(--surface2); border-color: var(--border); flex-wrap: wrap; }
+    .storage-item .si-loc { width: 100%; display: none; font-size: 11px; color: var(--muted); padding: 8px; margin-top: 2px; background: rgba(0,0,0,0.2); border-radius: 6px; line-height: 1.5; }
     .storage-item.open .si-loc { display: block; }
+    
+    .storage-item-flat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+    .storage-item-flat:hover { border-color: var(--muted); }
 
     /* Vehicle cards */
     .vehicle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
@@ -160,6 +182,7 @@
       .player-grid { grid-template-columns: 1fr; }
       .vehicle-grid { grid-template-columns: 1fr; }
       .mobile-nav { display: flex; flex-shrink: 0; background: var(--surface); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom, 0px); height: calc(58px + env(safe-area-inset-bottom, 0px)); }
+      .storage-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -317,28 +340,33 @@
 
         <!-- Storage -->
         <div class="view" id="view-storage">
-          <div class="storage-toolbar">
-            <input type="text" id="storage-search" placeholder="Search items..." oninput="renderStorage()">
-            <select id="storage-town" onchange="renderStorage()"><option value="">All towns</option></select>
-            <select id="storage-cat" onchange="renderStorage()">
-              <option value="">All categories</option>
-              <option value="food">Food</option><option value="medical">Medical</option>
-              <option value="ammo">Ammo</option><option value="weapons">Weapons</option>
-              <option value="tools">Tools</option><option value="other">Other</option>
-            </select>
-            <select id="storage-sort" onchange="renderStorage()">
-              <option value="count">Sort: Count</option>
-              <option value="name">Sort: Name</option>
-            </select>
-            <label class="storage-min">Min <input type="number" id="storage-min" min="0" value="0" oninput="renderStorage()"></label>
-            <select id="storage-group" onchange="renderStorage()">
-              <option value="town">Group: Town → Category</option>
-              <option value="cat">Group: Category → Town</option>
-              <option value="flat">Flat list</option>
-            </select>
-            <span id="storage-updated"></span>
+          <div class="storage-header-panel">
+            <div class="storage-toolbar">
+              <input type="text" id="storage-search" placeholder="Search items..." oninput="renderStorage()">
+              <select id="storage-town" onchange="renderStorage()"><option value="">All towns</option></select>
+              <select id="storage-cat" onchange="renderStorage()">
+                <option value="">All categories</option>
+                <option value="food">Food</option><option value="medical">Medical</option>
+                <option value="ammo">Ammo</option><option value="weapons">Weapons</option>
+                <option value="tools">Tools</option><option value="other">Other</option>
+              </select>
+              <select id="storage-sort" onchange="renderStorage()">
+                <option value="count">Sort: Count</option>
+                <option value="name">Sort: Name</option>
+              </select>
+              <label class="storage-min">Min. Count <input type="number" id="storage-min" min="0" value="0" oninput="renderStorage()"></label>
+              <select id="storage-group" onchange="renderStorage()">
+                <option value="town">Group: Town → Category</option>
+                <option value="cat">Group: Category → Town</option>
+                <option value="flat">Flat List</option>
+              </select>
+            </div>
+            
+            <div class="storage-summary-row">
+              <div class="storage-stats" id="storage-summary"></div>
+              <span id="storage-updated"></span>
+            </div>
           </div>
-          <div id="storage-summary"></div>
           <div id="storage-list"><div class="loading">Loading storage...</div></div>
         </div>
 
@@ -780,11 +808,11 @@
       return conts.filter(c => (!town || c.town === town) && c.items && c.items[fullType]);
     }
 
-    function storageItemRow(fullType, count, town) {
-      const id = 'si_' + Math.random().toString(36).slice(2);
-      return `<div class="storage-item" onclick="toggleStorageItem(this,'${fullType.replace(/'/g,'')}','${(town||'').replace(/'/g,'')}')">
+    function storageItemRow(fullType, count, town, isFlatMode = false) {
+      const flatClass = isFlatMode ? ' storage-item-flat' : '';
+      return `<div class="storage-item${flatClass}" onclick="toggleStorageItem(this,'${fullType.replace(/'/g,'')}','${(town||'').replace(/'/g,'')}')">
         ${itemIcon(fullType)}
-        <span class="si-name">${prettifyStorageItem(fullType)}</span>
+        <span class="si-name" title="${prettifyStorageItem(fullType)}">${prettifyStorageItem(fullType)}</span>
         <span class="si-count">${count}</span>
         <div class="si-loc"></div>
       </div>`;
@@ -797,7 +825,7 @@
         const crates = cratesWithItem(fullType, town);
         loc.dataset.filled = '1';
         loc.innerHTML = crates.length
-          ? crates.map(c => `<span style="cursor:pointer;color:var(--accent)" onclick="event.stopPropagation();jumpToCrate(${c.x},${c.y})">📦 (${c.x},${c.y}) ×${c.items[fullType]}</span>`).join('<br>')
+          ? crates.map(c => `<span style="cursor:pointer;color:var(--accent);display:inline-block;margin-right:8px;" onclick="event.stopPropagation();jumpToCrate(${c.x},${c.y})">📦 (${c.x},${c.y}) ×${c.items[fullType]}</span>`).join('')
           : 'location unknown';
       }
     };
@@ -853,11 +881,12 @@
       const sum = document.getElementById('storage-summary');
       const crateCount = (storage.containers || []).length;
       if (sum) sum.innerHTML = rows.length
-        ? `<span><b>${grandTotal.toLocaleString()}</b> items</span><span><b>${uniqueItems.size}</b> unique</span><span><b>${crateCount}</b> crates</span>`
+        ? `<div class="storage-stat-pill">Items <b>${grandTotal.toLocaleString()}</b></div>
+           <div class="storage-stat-pill">Unique <b>${uniqueItems.size}</b></div>
+           <div class="storage-stat-pill">Crates <b>${crateCount}</b></div>`
         : '';
 
       const list = document.getElementById('storage-list');
-      list.classList.toggle('storage-list-flat', groupMode === 'flat');
 
       if (!townNames.length) {
         list.innerHTML = '<div class="loading">No storage data yet (mod scans loaded chunks only — needs players near player crates)</div>';
@@ -865,11 +894,17 @@
       }
       if (!rows.length) { list.innerHTML = '<div class="loading">No items match the filters</div>'; return; }
 
-      const itemHtml = r => storageItemRow(r.item, r.count, r.town);
+      const itemHtml = (r, flat = false) => storageItemRow(r.item, r.count, r.town, flat);
 
       if (groupMode === 'flat') {
         sortRows(rows);
-        list.innerHTML = `<div class="storage-town"><div class="storage-town-title">All items (${rows.length})</div>${rows.map(itemHtml).join('')}</div>`;
+        list.innerHTML = `
+          <div class="storage-section">
+            <div class="storage-section-title">📦 All Items <span style="margin-left:auto; font-size:14px; color:var(--muted); font-weight:400;">${grandTotal.toLocaleString()} total</span></div>
+            <div class="storage-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+              ${rows.map(r => itemHtml(r, true)).join('')}
+            </div>
+          </div>`;
         return;
       }
 
@@ -882,18 +917,40 @@
           ? [...new Set(grp.map(r => r.town))].sort()
           : Object.keys(STORAGE_CAT_META);
         const title = groupMode === 'cat' ? `${STORAGE_CAT_META[outer].icon} ${STORAGE_CAT_META[outer].label}` : `🏘️ ${outer}`;
+        const sectionTotalCount = grp.reduce((s, r) => s + r.count, 0);
+
         const sections = innerKeys.map(inner => {
           const sub = groupMode === 'cat' ? grp.filter(r => r.town === inner) : grp.filter(r => r.cat === inner);
           if (!sub.length) return '';
           sortRows(sub);
           const total = sub.reduce((s, r) => s + r.count, 0);
           const label = groupMode === 'cat' ? `🏘️ ${inner}` : `${STORAGE_CAT_META[inner].icon} ${STORAGE_CAT_META[inner].label}`;
-          return `<details class="storage-cat" open>
-            <summary><span>${label}</span><span style="color:var(--muted);font-size:11px;">${total}</span></summary>
-            <div style="padding:2px 4px 8px;">${sub.map(itemHtml).join('')}</div>
-          </details>`;
+          
+          return `
+            <div class="storage-card">
+              <details>
+                <summary>
+                  <div style="display:flex;align-items:center;">
+                    <span class="chevron">▸</span>
+                    <span>${label}</span>
+                  </div>
+                  <span class="si-count">${total}</span>
+                </summary>
+                <div class="storage-card-content">
+                  ${sub.map(r => itemHtml(r)).join('')}
+                </div>
+              </details>
+            </div>`;
         }).join('');
-        return `<div class="storage-town"><div class="storage-town-title">${title}</div>${sections}</div>`;
+        
+        return `
+          <div class="storage-section">
+            <div class="storage-section-title">
+              ${title}
+              <span style="margin-left:auto; font-size:14px; color:var(--muted); font-weight:400;">${sectionTotalCount.toLocaleString()} items</span>
+            </div>
+            <div class="storage-grid">${sections}</div>
+          </div>`;
       }).join('');
     }
 
@@ -955,17 +1012,18 @@
         createTile(coords, done) {
           const img = document.createElement('img');
           const scale = Math.pow(2, coords.z - TILE_ZOOM_MAX);
-          const ox = Math.floor(CELL_MIN_X * scale);
-          const oy = Math.floor(CELL_MIN_Y * scale);
-          const ftx = coords.x - ox;
-          const fty = coords.y - oy;
-          const tilesX = (CELL_MAX_X - CELL_MIN_X) * scale;
-          const tilesY = (CELL_MAX_Y - CELL_MIN_Y) * scale;
-          if (ftx < 0 || fty < 0 || ftx >= tilesX || fty >= tilesY) {
+          
+          const minX = Math.floor(CELL_MIN_X * scale);
+          const minY = Math.floor(CELL_MIN_Y * scale);
+          const maxX = Math.ceil(CELL_MAX_X * scale);
+          const maxY = Math.ceil(CELL_MAX_Y * scale);
+          
+          if (coords.x < minX || coords.y < minY || coords.x >= maxX || coords.y >= maxY) {
             img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
             done(null, img); return img;
           }
-          const url = `/static/map-tiles/Zomboid/${coords.z}/${ftx}/${fty}.png`;
+          
+          const url = `/static/map-tiles/Zomboid/${coords.z}/${coords.x}/${coords.y}.png`;
           img.src = url;
           img.onload = () => done(null, img);
           img.onerror = () => { console.warn(`[PZ] tile 404: ${url}`); done(null, img); };
