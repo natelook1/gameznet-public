@@ -751,7 +751,14 @@
       other:   { icon: '📦', label: 'Other' },
     };
 
+    // Display-name map (Base.X -> "Box of 9mm Bullets"), from the game's item scripts.
+    let NAME_MAP = null;
+    function loadNameMap() {
+      return fetch(`${API_BASE}/static/item-icons/name-map.json`)
+        .then(r => r.ok ? r.json() : {}).then(m => { NAME_MAP = m || {}; }).catch(() => { NAME_MAP = {}; });
+    }
     function prettifyStorageItem(fullType) {
+      if (NAME_MAP && NAME_MAP[fullType]) return NAME_MAP[fullType];
       return (fullType || '').replace(/^Base\./, '').replace(/_/g, ' ');
     }
 
@@ -1360,7 +1367,7 @@
       };
     }
 
-    window.addEventListener('load', async () => { await Promise.all([loadTileInfo(), loadIconMap()]); startSSE(); });
+    window.addEventListener('load', async () => { await Promise.all([loadTileInfo(), loadIconMap(), loadNameMap()]); startSSE(); });
   </script>
 </body>
 </html>
