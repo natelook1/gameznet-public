@@ -416,13 +416,11 @@
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"> Farming</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"> Traps</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-dead" checked onchange="mapRedrawAll()"> Dead</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-density" onchange="mapRedrawAll()"> Density</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-heatmap" onchange="mapRedrawAll()"> Heatmap</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"> Towns</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-rare" checked onchange="mapRedrawAll()"> Rare</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-crates" onchange="mapRedrawAll()"> Crates</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;" title="Warning: may show 300+ markers and lag the map"><input type="checkbox" id="map-show-empty-crates" onchange="mapRedrawAll()"> <span style="color:#f59e0b;">Empty crates ⚠</span></label>
-                <!-- Iso-only controls (hidden in top-down mode) -->
-                <label id="iso-only-heatmap" style="display:none;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-heatmap" onchange="isoRedrawMarkers()"> Heatmap</label>
                 <button id="map-fullscreen-btn" onclick="toggleMapFullscreen()">⛶</button>
                 <button id="map-mode-btn" onclick="toggleMapMode()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:12px;">Iso View</button>
               </div>
@@ -1182,7 +1180,7 @@
       const showFarming   = document.getElementById('map-show-farming')?.checked;
       const showTraps     = document.getElementById('map-show-traps')?.checked;
       const showDead      = document.getElementById('map-show-dead')?.checked;
-      const showDensity   = document.getElementById('map-show-density')?.checked;
+      const showDensity   = document.getElementById('map-show-heatmap')?.checked;
 
       const ovl = pzData.overlays || {};
 
@@ -1328,7 +1326,6 @@
       document.getElementById('leaflet-map').style.display = isIso ? 'none' : '';
       document.getElementById('iso-wrap').style.display    = isIso ? 'block' : 'none';
       document.getElementById('map-mode-btn').textContent  = isIso ? 'Top-Down' : 'Iso View';
-      document.getElementById('iso-only-heatmap').style.display = isIso ? 'flex' : 'none';
       if (isIso) {
         initIso();
         isoRedrawMarkers();
@@ -1442,7 +1439,14 @@
           const engine = v.parts?.Engine ?? 0;
           const color  = destroyed ? '#6b7280' : engine > 0.6 ? '#60a5fa' : engine > 0.3 ? '#f59e0b' : '#ef4444';
           const el = isoAddOverlay(v.x, v.y, 0, '', 'vehicle');
-          if (el) { el.style.background = color; el.style.boxShadow = `0 0 4px ${color}`; el.style.opacity = destroyed ? '0.5' : '0.85'; }
+          if (el) {
+            el.style.background = color; el.style.boxShadow = `0 0 4px ${color}`; el.style.opacity = destroyed ? '0.5' : '0.85';
+            const lbl = document.createElement('div');
+            lbl.className = 'iso-label';
+            lbl.style.cssText = 'color:#93c5fd;font-size:9px;top:8px;';
+            lbl.textContent = v.type || '';
+            el.appendChild(lbl);
+          }
         });
       }
 
@@ -1482,6 +1486,7 @@
           if (total === 0 && !showEmpty) return;
           const el = isoAddOverlay(c.x, c.y, c.z || 0, '📦', 'crate');
           if (el) {
+            if (total === 0) { el.style.opacity = '0.35'; el.style.filter = 'grayscale(1)'; }
             const lines = Object.entries(c.items || {}).sort((a,b) => b[1]-a[1]).map(([ft,n]) => `${ft.replace(/^Base\./,'')} x${n}`).join('\n');
             el.style.pointerEvents = 'auto';
             el.title = total === 0 ? 'Crate (empty)' : `Crate (${total} items)\n${lines}`;
