@@ -994,13 +994,15 @@
       } catch (_) {}
     }
 
-    function pzToLatLng(x, y) { return L.latLng(-y / PZ_SCALE, x / PZ_SCALE); }
+    function pzToLatLng(x, y) {
+      return L.latLng(-(y - CELL_MIN_Y * 300) / PZ_SCALE, (x - CELL_MIN_X * 300) / PZ_SCALE);
+    }
 
     function initMap() {
       if (leafletMap) return;
       leafletMap = L.map('leaflet-map', {
         crs: L.CRS.Simple,
-        minZoom: 1,
+        minZoom: 0,
         // Tiles exist up to TILE_ZOOM_MAX; allow zooming 2 levels past for the higher-res
         // 512px tiles (Leaflet upscales but each tile holds 2x the rendered detail).
         maxZoom: TILE_ZOOM_MAX + 2,
@@ -1037,7 +1039,8 @@
         pzToLatLng(MAP_MAX_X, MAP_MIN_Y)
       );
       leafletMap.fitBounds(mapBounds);
-      leafletMap.setMaxBounds(mapBounds);
+      // Pad max bounds so the edges of the rendered map remain reachable when panning.
+      leafletMap.setMaxBounds(mapBounds.pad(0.2));
       redrawPlayers();
       redrawVehicles();
       redrawOverlays();
