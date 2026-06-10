@@ -971,13 +971,14 @@
     let CELL_MIN_X = 0, CELL_MAX_X = 66, CELL_MIN_Y = 0, CELL_MAX_Y = 53;
     let TILE_ZOOM_MAX = 4;
     let TILE_SIZE = 512;
-    // PZ_SCALE: converts PZ game coords to Leaflet world units.
-    // At max zoom, 1 Leaflet tile = TILE_SIZE px = 1 PZ cell = 300 game tiles.
-    // So PZ_SCALE = TILE_SIZE / 300. Recomputed in recalcMapBounds after info.json loads.
-    let PZ_SCALE = TILE_SIZE / 300;
+    // PZ_SCALE: converts PZ game coords to Leaflet CRS.Simple world units.
+    // In CRS.Simple, tile (tx,ty) at zoom TILE_ZOOM_MAX covers world [tx*TILE_SIZE, (tx+1)*TILE_SIZE].
+    // Our tile tx covers PZ coords [tx*300, (tx+1)*300].
+    // So: world = pz * TILE_SIZE/300, i.e. PZ_SCALE = 300/TILE_SIZE (used as divisor: world = pz/PZ_SCALE).
+    let PZ_SCALE = 300 / TILE_SIZE;
     let MAP_MIN_X, MAP_MAX_X, MAP_MIN_Y, MAP_MAX_Y;
     function recalcMapBounds() {
-      PZ_SCALE = TILE_SIZE / 300;
+      PZ_SCALE = 300 / TILE_SIZE;
       MAP_MIN_X = CELL_MIN_X * 300; MAP_MAX_X = CELL_MAX_X * 300;
       MAP_MIN_Y = CELL_MIN_Y * 300; MAP_MAX_Y = CELL_MAX_Y * 300;
     }
@@ -1009,7 +1010,7 @@
       if (leafletMap) return;
       leafletMap = L.map('leaflet-map', {
         crs: L.CRS.Simple,
-        minZoom: 0,
+        minZoom: -2,
         // Tiles exist up to TILE_ZOOM_MAX; allow zooming 2 levels past for the higher-res
         // 512px tiles (Leaflet upscales but each tile holds 2x the rendered detail).
         maxZoom: TILE_ZOOM_MAX + 2,
