@@ -994,6 +994,8 @@
       } catch (_) {}
     }
 
+    // PZ world coords -> Leaflet LatLng. Subtract the tile grid origin so that
+    // the top-left rendered cell (CELL_MIN_X, CELL_MIN_Y) maps to Leaflet (0,0).
     function pzToLatLng(x, y) {
       return L.latLng(-(y - CELL_MIN_Y * 300) / PZ_SCALE, (x - CELL_MIN_X * 300) / PZ_SCALE);
     }
@@ -1014,18 +1016,20 @@
         createTile(coords, done) {
           const img = document.createElement('img');
           const scale = Math.pow(2, coords.z - TILE_ZOOM_MAX);
-          
-          const minX = Math.floor(CELL_MIN_X * scale);
-          const minY = Math.floor(CELL_MIN_Y * scale);
-          const maxX = Math.ceil(CELL_MAX_X * scale);
-          const maxY = Math.ceil(CELL_MAX_Y * scale);
-          
-          if (coords.x < minX || coords.y < minY || coords.x >= maxX || coords.y >= maxY) {
+
+          // Leaflet tile coords are 0-based; our tiles on disk are indexed by cell number.
+          // Add the cell origin so coords (0,0) maps to the first real tile (CELL_MIN_X, CELL_MIN_Y).
+          const tileX = coords.x + Math.round(CELL_MIN_X * scale);
+          const tileY = coords.y + Math.round(CELL_MIN_Y * scale);
+          const totalX = Math.round((CELL_MAX_X - CELL_MIN_X) * scale);
+          const totalY = Math.round((CELL_MAX_Y - CELL_MIN_Y) * scale);
+
+          if (coords.x < 0 || coords.y < 0 || coords.x >= totalX || coords.y >= totalY) {
             img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
             done(null, img); return img;
           }
-          
-          const url = `/static/map-tiles/Zomboid/${coords.z}/${coords.x}/${coords.y}.png`;
+
+          const url = `/static/map-tiles/Zomboid/${coords.z}/${tileX}/${tileY}.png`;
           img.src = url;
           img.onload = () => done(null, img);
           img.onerror = () => { console.warn(`[PZ] tile 404: ${url}`); done(null, img); };
@@ -1039,7 +1043,6 @@
         pzToLatLng(MAP_MAX_X, MAP_MIN_Y)
       );
       leafletMap.fitBounds(mapBounds);
-      // Pad max bounds so the edges of the rendered map remain reachable when panning.
       leafletMap.setMaxBounds(mapBounds.pad(0.2));
       redrawPlayers();
       redrawVehicles();
