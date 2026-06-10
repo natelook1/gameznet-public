@@ -1413,7 +1413,8 @@
       const inBounds = (x, y) => !b || (x >= b.xMin && x <= b.xMax && y >= b.yMin && y <= b.yMax);
 
       if (chk('map-show-players')) {
-        (pzData.players || []).forEach(p => {
+        const playerSource = pzData.livePlayers.length > 0 ? pzData.livePlayers : pzData.players;
+        playerSource.forEach(p => {
           if (p.x == null || p.y == null) return;
           const online = p.isOnline !== false;
           const cls = p.isDead ? 'player dead' : p.infected_risk ? 'player bitten' : online ? 'player alive' : 'player offline';
@@ -1429,7 +1430,7 @@
 
       const isDestroyed = v => { const vals = Object.values(v.parts || {}); return !vals.length || vals.every(c => c === 0); };
       if (chk('map-show-vehicles') || chk('map-show-destroyed')) {
-        (ovl.vehicles || []).filter(v => inBounds(v.x, v.y)).forEach(v => {
+        (pzData.vehicles || []).filter(v => inBounds(v.x, v.y)).forEach(v => {
           const destroyed = isDestroyed(v);
           if (destroyed && !chk('map-show-destroyed')) return;
           if (!destroyed && !chk('map-show-vehicles')) return;
