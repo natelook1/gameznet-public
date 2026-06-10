@@ -1234,13 +1234,17 @@
           if (c.x < MAP_MIN_X || c.x > MAP_MAX_X || c.y < MAP_MIN_Y || c.y > MAP_MAX_Y) return;
           const items = c.items || {};
           const total = Object.values(items).reduce((s, n) => s + n, 0);
+          const isEmpty = total === 0;
           const lines = Object.entries(items).sort((a, b) => b[1] - a[1])
             .map(([ft, n]) => `${ft.replace(/^Base\./, '')} ×${n}`).join('<br>');
+          const icon = isEmpty
+            ? `<div style="font-size:12px;line-height:1;opacity:0.35;filter:grayscale(1);">📦</div>`
+            : `<div style="font-size:12px;line-height:1;text-shadow:0 0 3px #000;">📦</div>`;
           const m = L.marker(pzToLatLng(c.x, c.y), {
-            icon: L.divIcon({ className: '', html: `<div style="font-size:12px;line-height:1;text-shadow:0 0 3px #000;">📦</div>`, iconSize: [14, 14], iconAnchor: [7, 7] }),
-            zIndexOffset: -20,
+            icon: L.divIcon({ className: '', html: icon, iconSize: [14, 14], iconAnchor: [7, 7] }),
+            zIndexOffset: isEmpty ? -30 : -20,
           }).addTo(leafletMap);
-          m.bindTooltip(`<b>Crate (${total})</b><br>${lines}`, { direction: 'top', offset: [0, -6], className: 'player-label' });
+          m.bindTooltip(isEmpty ? '<b>Crate (empty)</b>' : `<b>Crate (${total})</b><br>${lines}`, { direction: 'top', offset: [0, -6], className: 'player-label' });
           overlayMarkers.push(m);
         });
       }
