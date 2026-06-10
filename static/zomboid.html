@@ -964,16 +964,20 @@
     // pzToLatLng: lat = -y/PZ_SCALE, lng = x/PZ_SCALE
     // Tile offsets are separate for X and Y since the grid is not square.
 
-    const PZ_SCALE = 300 / 16;    // 18.75 game tiles per world unit
+    // PZ_SCALE: converts PZ game coords to Leaflet world units.
+    // At max zoom, 1 Leaflet tile = TILE_SIZE px = 1 PZ cell = 300 game tiles.
+    // So PZ_SCALE = TILE_SIZE / 300. Updated after info.json loads.
+    let PZ_SCALE = TILE_SIZE / 300;
     // Tile calibration — defaults overwritten by info.json (written by the renderer)
     // so the frontend always matches whatever tiles are actually deployed. This
     // decouples a frontend deploy from a tile re-render. Defaults mirror the current
     // live render as a safety net if info.json can't be fetched.
-    let CELL_MIN_X = 8, CELL_MAX_X = 48, CELL_MIN_Y = 16, CELL_MAX_Y = 40;
+    let CELL_MIN_X = 0, CELL_MAX_X = 66, CELL_MIN_Y = 0, CELL_MAX_Y = 53;
     let TILE_ZOOM_MAX = 4;
-    let TILE_SIZE = 256;
+    let TILE_SIZE = 512;
     let MAP_MIN_X, MAP_MAX_X, MAP_MIN_Y, MAP_MAX_Y;
     function recalcMapBounds() {
+      PZ_SCALE = TILE_SIZE / 300;
       MAP_MIN_X = CELL_MIN_X * 300; MAP_MAX_X = CELL_MAX_X * 300;
       MAP_MIN_Y = CELL_MIN_Y * 300; MAP_MAX_Y = CELL_MAX_Y * 300;
     }
@@ -994,10 +998,11 @@
       } catch (_) {}
     }
 
-    // PZ world coords -> Leaflet LatLng. Subtract the tile grid origin so that
-    // the top-left rendered cell (CELL_MIN_X, CELL_MIN_Y) maps to Leaflet (0,0).
+    // PZ world coords (game tiles) -> Leaflet LatLng.
+    // At zoom max: 1 tile = TILE_SIZE px = 300 game tiles, so scale = TILE_SIZE/300.
+    // Tile file (x,y) covers PZ world [x*300 .. (x+1)*300] in both axes.
     function pzToLatLng(x, y) {
-      return L.latLng(-(y - CELL_MIN_Y * 300) / PZ_SCALE, (x - CELL_MIN_X * 300) / PZ_SCALE);
+      return L.latLng(-y / PZ_SCALE, x / PZ_SCALE);
     }
 
     function initMap() {
@@ -1017,19 +1022,17 @@
           const img = document.createElement('img');
           const scale = Math.pow(2, coords.z - TILE_ZOOM_MAX);
 
-          // Leaflet tile coords are 0-based; our tiles on disk are indexed by cell number.
-          // Add the cell origin so coords (0,0) maps to the first real tile (CELL_MIN_X, CELL_MIN_Y).
-          const tileX = coords.x + Math.round(CELL_MIN_X * scale);
-          const tileY = coords.y + Math.round(CELL_MIN_Y * scale);
-          const totalX = Math.round((CELL_MAX_X - CELL_MIN_X) * scale);
-          const totalY = Math.round((CELL_MAX_Y - CELL_MIN_Y) * scale);
+          const minX = Math.floor(CELL_MIN_X * scale);
+          const minY = Math.floor(CELL_MIN_Y * scale);
+          const maxX = Math.ceil(CELL_MAX_X * scale);
+          const maxY = Math.ceil(CELL_MAX_Y * scale);
 
-          if (coords.x < 0 || coords.y < 0 || coords.x >= totalX || coords.y >= totalY) {
+          if (coords.x < minX || coords.y < minY || coords.x >= maxX || coords.y >= maxY) {
             img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
             done(null, img); return img;
           }
 
-          const url = `/static/map-tiles/Zomboid/${coords.z}/${tileX}/${tileY}.png`;
+          const url = `/static/map-tiles/Zomboid/${coords.z}/${coords.x}/${coords.y}.png`;
           img.src = url;
           img.onload = () => done(null, img);
           img.onerror = () => { console.warn(`[PZ] tile 404: ${url}`); done(null, img); };
@@ -1044,7 +1047,7 @@
       );
       leafletMap.setMaxBounds(mapBounds.pad(0.2));
       // Default view: Riverside area. redrawPlayers will re-center on live players if present.
-      leafletMap.setView(pzToLatLng(6400, 5400), 3);
+      leafletMap.setView(pzToLatLng(6300, 5400), TILE_ZOOM_MAX - 1);
       redrawPlayers();
       redrawVehicles();
       redrawOverlays();
