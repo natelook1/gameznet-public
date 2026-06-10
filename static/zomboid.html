@@ -6,6 +6,7 @@
   <title>Project Zomboid</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/static/iso/openseadragon/openseadragon.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -157,10 +158,34 @@
     #map-inner:-moz-full-screen    { height: 100vh; border-radius: 0; }
     #map-inner:fullscreen          { height: 100vh; border-radius: 0; }
     #leaflet-map { width: 100%; height: 100%; background: #0f1a0f; }
+    #iso-wrap { width: 100%; height: 100%; display: none; }
+    #iso-osd  { width: 100%; height: 100%; background: #0a0a0e; }
+    #iso-heatmap-canvas, #iso-towns-canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
     #map-controls { position: absolute; bottom: 12px; left: 12px; z-index: 1000; background: rgba(15,15,19,0.85); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--text); backdrop-filter: blur(4px); }
     #map-controls label { color: var(--text); }
     #map-fullscreen-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 3px 8px; border-radius: 5px; cursor: pointer; font-size: 14px; line-height: 1; }
     .player-label { background: transparent; border: none; box-shadow: none; color: #22c55e; font-size: 11px; font-weight: 700; text-shadow: 0 0 3px #000, 0 0 3px #000; white-space: nowrap; }
+    /* Iso marker styles */
+    .iso-marker { position: absolute; pointer-events: none; transform: translate(-50%,-50%); z-index: 20; }
+    .iso-marker.crate { z-index: 5; }
+    .iso-marker.rare, .iso-marker.vehicle, .iso-marker.fire, .iso-marker.farm, .iso-marker.trap, .iso-marker.death { z-index: 10; }
+    .iso-marker.player { z-index: 40; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #000; box-shadow: 0 0 8px currentColor; }
+    .iso-marker.player.alive   { background: #22c55e; color: #22c55e; }
+    .iso-marker.player.bitten  { background: #ef4444; color: #ef4444; }
+    .iso-marker.player.dead    { background: #6b7280; color: #6b7280; }
+    .iso-marker.player.offline { background: #6b7280; color: #6b7280; opacity: 0.5; }
+    .iso-marker.death  { font-size: 11px; line-height: 1; }
+    .iso-marker.fire   { font-size: 13px; line-height: 1; }
+    .iso-marker.farm   { font-size: 11px; line-height: 1; }
+    .iso-marker.trap   { font-size: 11px; line-height: 1; }
+    .iso-marker.rare   { font-size: 13px; line-height: 1; filter: drop-shadow(0 0 3px #fde047); }
+    .iso-marker.crate  { font-size: 12px; line-height: 1; cursor: help; pointer-events: auto; }
+    .iso-marker.vehicle { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; border: 1px solid #000; box-shadow: 0 0 4px #fbbf24; }
+    .iso-marker.town-label { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; border: 1px solid; background: rgba(0,0,0,0.5); white-space: nowrap; text-shadow: 0 0 4px #000; }
+    .iso-label { position: absolute; pointer-events: none; transform: translateX(-50%); white-space: nowrap; font-size: 11px; font-weight: 700; color: #22c55e; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 6px #000; top: 10px; left: 50%; }
+    .iso-label.bitten  { color: #ef4444; }
+    .iso-label.dead    { color: #9ca3af; }
+    .iso-label.offline { color: #9ca3af; opacity: 0.55; }
 
     .loading { text-align: center; padding: 40px; color: var(--muted); }
     .error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 14px; color: #fca5a5; font-size: 13px; }
@@ -373,25 +398,34 @@
         <!-- Map -->
         <div class="view" id="view-map">
           <div id="map-inner">
+            <!-- Top-down Leaflet view -->
             <div id="leaflet-map"></div>
+            <!-- Isometric OSD view (hidden until toggled) -->
+            <div id="iso-wrap">
+              <div id="iso-osd"></div>
+              <canvas id="iso-heatmap-canvas"></canvas>
+              <canvas id="iso-towns-canvas"></canvas>
+            </div>
             <div id="map-controls">
               <div id="map-gametime" style="font-size:12px;margin-bottom:8px;color:var(--text);opacity:0.9;display:none;"></div>
               <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-players" checked onchange="redrawPlayers()"> Players</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-vehicles" checked onchange="redrawVehicles()"> Vehicles</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-destroyed" onchange="redrawVehicles()"> Wrecked</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-campfires" checked onchange="redrawOverlays()"> Campfires</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-farming" checked onchange="redrawOverlays()"> Farming</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-traps" checked onchange="redrawOverlays()"> Traps</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-dead" checked onchange="redrawOverlays()"> Dead</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-density" onchange="redrawOverlays()"> Density</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-towns" onchange="redrawTowns()"> Towns</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-rare" checked onchange="redrawOverlays()"> Rare</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-crates" onchange="redrawOverlays()"> Crates</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-players" checked onchange="mapRedrawAll()"> Players</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-vehicles" checked onchange="mapRedrawAll()"> Vehicles</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-destroyed" onchange="mapRedrawAll()"> Wrecked</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-campfires" checked onchange="mapRedrawAll()"> Campfires</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"> Farming</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"> Traps</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-dead" checked onchange="mapRedrawAll()"> Dead</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-density" onchange="mapRedrawAll()"> Density</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"> Towns</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-rare" checked onchange="mapRedrawAll()"> Rare</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-crates" onchange="mapRedrawAll()"> Crates</label>
+                <!-- Iso-only controls (hidden in top-down mode) -->
+                <label id="iso-only-heatmap" style="display:none;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-heatmap" onchange="isoRedrawMarkers()"> Heatmap</label>
                 <button id="map-fullscreen-btn" onclick="toggleMapFullscreen()">⛶</button>
-                <button onclick="openIsoViewer()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:12px;">Iso View</button>
+                <button id="map-mode-btn" onclick="toggleMapMode()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:12px;">Iso View</button>
               </div>
-              <div style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap &nbsp;💎 rare &nbsp;📦 crate</div>
+              <div id="map-legend" style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap &nbsp;💎 rare &nbsp;📦 crate</div>
             </div>
           </div>
         </div>
@@ -956,14 +990,6 @@
 
     // ── Map ──────────────────────────────────────────────────────────────────
 
-    // CRS.Simple: 1 unit = 1/PZ_SCALE PZ game tiles. tileSize=256.
-    // At zoom 4: each Leaflet tile = 256/16 = 16 world units = 16*PZ_SCALE = 320 game tiles.
-    // Wait — we want 1 tile = 1 PZ cell = 300 game tiles at zoom 4.
-    // Use PZ_SCALE = 300/16 = 18.75 so 1 world unit = 18.75 game tiles.
-    // Then at zoom 4: 1 tile = 256/16 world units * 18.75 game tiles/unit = 300 game tiles = 1 cell. ✓
-    // pzToLatLng: lat = -y/PZ_SCALE, lng = x/PZ_SCALE
-    // Tile offsets are separate for X and Y since the grid is not square.
-
     // Tile calibration — defaults overwritten by info.json (written by the renderer)
     // so the frontend always matches whatever tiles are actually deployed. This
     // decouples a frontend deploy from a tile re-render. Defaults mirror the current
@@ -971,12 +997,9 @@
     let CELL_MIN_X = 0, CELL_MAX_X = 66, CELL_MIN_Y = 0, CELL_MAX_Y = 53;
     let TILE_ZOOM_MAX = 4;
     let TILE_SIZE = 512;
-    // PZ_SCALE: converts PZ game coords to Leaflet CRS.Simple world units.
-    // CRS.Simple: at zoom z, tile (tx,ty) covers world [tx*tileSize/2^z, (tx+1)*tileSize/2^z].
-    // At TILE_ZOOM_MAX=4, tileSize=512: tile tx covers world [tx*512/16, (tx+1)*512/16] = [tx*32, (tx+1)*32].
-    // Tile tx also covers PZ coords [tx*300, (tx+1)*300].
-    // So world = pz * 32/300, i.e. PZ_SCALE = 300/32 = 300*2^ZOOM_MAX/tileSize.
-    // Simplified constant for zoom=4, tileSize=512: 300/16 = 18.75. Recomputed after info.json.
+    // PZ game coords → Leaflet world units: world = pz / PZ_SCALE.
+    // At zoom TILE_ZOOM_MAX, tile tx covers pz [tx*300, (tx+1)*300] and world [tx*tileSize/2^zmax, …].
+    // So PZ_SCALE = 300*2^zmax / tileSize = 300/32 = 9.375 for zmax=4, tileSize=512.
     let PZ_SCALE = 300 / (TILE_SIZE / Math.pow(2, TILE_ZOOM_MAX));
     let MAP_MIN_X, MAP_MAX_X, MAP_MIN_Y, MAP_MAX_Y;
     function recalcMapBounds() {
@@ -1001,9 +1024,6 @@
       } catch (_) {}
     }
 
-    // PZ world coords (game tiles) -> Leaflet LatLng.
-    // At zoom max: 1 tile = TILE_SIZE px = 300 game tiles, so scale = TILE_SIZE/300.
-    // Tile file (x,y) covers PZ world [x*300 .. (x+1)*300] in both axes.
     function pzToLatLng(x, y) {
       return L.latLng(-y / PZ_SCALE, x / PZ_SCALE);
     }
@@ -1293,15 +1313,273 @@
       });
     }
 
-    function openIsoViewer() {
-      const center = leafletMap ? leafletMap.getCenter() : null;
-      if (center) {
-        const x = Math.round(center.lng * PZ_SCALE);
-        const y = Math.round(-center.lat * PZ_SCALE);
-        window.open(`/zomboid-iso?x=${x}&y=${y}`, '_blank');
+    // ── Map mode toggle ───────────────────────────────────────────────────────
+
+    let _mapMode = 'topdown'; // 'topdown' | 'iso'
+
+    function toggleMapMode() {
+      _mapMode = _mapMode === 'topdown' ? 'iso' : 'topdown';
+      const isIso = _mapMode === 'iso';
+      document.getElementById('leaflet-map').style.display = isIso ? 'none' : '';
+      document.getElementById('iso-wrap').style.display    = isIso ? 'block' : 'none';
+      document.getElementById('map-mode-btn').textContent  = isIso ? 'Top-Down' : 'Iso View';
+      document.getElementById('iso-only-heatmap').style.display = isIso ? 'flex' : 'none';
+      if (isIso) {
+        initIso();
+        isoRedrawMarkers();
       } else {
-        window.open('/zomboid-iso', '_blank');
+        if (leafletMap) { leafletMap.invalidateSize(); redrawPlayers(); redrawVehicles(); redrawOverlays(); redrawTowns(); }
       }
+    }
+
+    // Single redraw dispatcher — called by shared checkboxes.
+    function mapRedrawAll() {
+      if (_mapMode === 'iso') { isoRedrawMarkers(); }
+      else { redrawPlayers(); redrawVehicles(); redrawOverlays(); redrawTowns(); }
+    }
+
+    // ── Isometric viewer ─────────────────────────────────────────────────────
+
+    const ISO_BASE_GEOM = { GW: 64, GH: 32, LH: 192 };
+    let isoMapConf = { GW: 64, GH: 32, LH: 192, x0: 618496, y0: -229408 };
+    let isoDziInfo = null;
+    let isoViewer  = null;
+    let isoReady   = false;
+    let isoMarkerEls = [];
+
+    async function loadIsoInfo() {
+      try {
+        const [dziRes, infoRes] = await Promise.all([
+          fetch('/static/map-tiles/iso/base/layer0.dzi'),
+          fetch('/static/map-tiles/iso/base/map_info.json'),
+        ]);
+        const xml = new DOMParser().parseFromString(await dziRes.text(), 'text/xml');
+        const img  = xml.querySelector('Image');
+        const size = xml.querySelector('Size');
+        isoDziInfo = {
+          tileSize: +img.getAttribute('TileSize'),
+          overlap:  +img.getAttribute('Overlap'),
+          format:    img.getAttribute('Format'),
+          width:    +size.getAttribute('Width'),
+          height:   +size.getAttribute('Height'),
+        };
+        const info = await infoRes.json();
+        const f = Math.pow(2, info.skip || 0);
+        isoMapConf.x0 = info.x0 / f;
+        isoMapConf.y0 = info.y0 / f;
+        isoMapConf.GW = ISO_BASE_GEOM.GW / f;
+        isoMapConf.GH = ISO_BASE_GEOM.GH / f;
+        isoMapConf.LH = ISO_BASE_GEOM.LH / f;
+        if (info.cell_rects?.[0]) {
+          const [cx, cy, cw, ch] = info.cell_rects[0];
+          isoMapConf.bounds = { xMin: cx*300, yMin: cy*300, xMax: (cx+cw)*300, yMax: (cy+ch)*300 };
+        }
+      } catch(e) { console.warn('ISO DZI load failed', e); }
+    }
+
+    function isoSquareToViewport(sx, sy, layer) {
+      if (!isoDziInfo || !isoViewer) return null;
+      const { GW, GH, LH, x0, y0 } = isoMapConf;
+      const px = x0 + (sx - sy) * GW;
+      const py = y0 + (sx + sy) * GH - (layer || 0) * LH;
+      const item = isoViewer.world.getItemAt(0);
+      if (!item) return null;
+      return item.imageToViewportCoordinates(px, py);
+    }
+
+    function isoClearMarkers() {
+      isoMarkerEls.forEach(el => { try { isoViewer.removeOverlay(el); } catch(_) {} el.remove(); });
+      isoMarkerEls = [];
+    }
+
+    function isoAddOverlay(sx, sy, layer, html, cls) {
+      const vp = isoSquareToViewport(sx, sy, layer);
+      if (!vp) return null;
+      const el = document.createElement('div');
+      el.className = 'iso-marker ' + cls;
+      el.innerHTML = html;
+      isoViewer.addOverlay({ element: el, location: vp, placement: OpenSeadragon.Placement.CENTER });
+      isoMarkerEls.push(el);
+      return el;
+    }
+
+    function isoRedrawMarkers() {
+      if (!isoViewer || !isoDziInfo || !isoReady) return;
+      isoClearMarkers();
+
+      const chk = id => document.getElementById(id)?.checked;
+      const ovl = pzData.overlays || {};
+      const b   = isoMapConf.bounds;
+      const inBounds = (x, y) => !b || (x >= b.xMin && x <= b.xMax && y >= b.yMin && y <= b.yMax);
+
+      if (chk('map-show-players')) {
+        (pzData.players || []).forEach(p => {
+          if (p.x == null || p.y == null) return;
+          const online = p.isOnline !== false;
+          const cls = p.isDead ? 'player dead' : p.infected_risk ? 'player bitten' : online ? 'player alive' : 'player offline';
+          const el = isoAddOverlay(p.x, p.y, p.z || 0, '', cls);
+          if (el) {
+            const lbl = document.createElement('div');
+            lbl.className = 'iso-label' + (p.infected_risk ? ' bitten' : p.isDead ? ' dead' : !online ? ' offline' : '');
+            lbl.textContent = p.name + (p.infected_risk ? ' ⚠' : '');
+            el.appendChild(lbl);
+          }
+        });
+      }
+
+      const isDestroyed = v => { const vals = Object.values(v.parts || {}); return !vals.length || vals.every(c => c === 0); };
+      if (chk('map-show-vehicles') || chk('map-show-destroyed')) {
+        (ovl.vehicles || []).filter(v => inBounds(v.x, v.y)).forEach(v => {
+          const destroyed = isDestroyed(v);
+          if (destroyed && !chk('map-show-destroyed')) return;
+          if (!destroyed && !chk('map-show-vehicles')) return;
+          const engine = v.parts?.Engine ?? 0;
+          const color  = destroyed ? '#6b7280' : engine > 0.6 ? '#60a5fa' : engine > 0.3 ? '#f59e0b' : '#ef4444';
+          const el = isoAddOverlay(v.x, v.y, 0, '', 'vehicle');
+          if (el) { el.style.background = color; el.style.boxShadow = `0 0 4px ${color}`; el.style.opacity = destroyed ? '0.5' : '0.85'; }
+        });
+      }
+
+      if (chk('map-show-dead'))
+        (ovl.dead || []).slice(-5).forEach(d => isoAddOverlay(d.x, d.y, 0, '💀', 'death'));
+
+      if (chk('map-show-campfires')) {
+        (ovl.campfires || []).forEach(pt => isoAddOverlay(pt.x, pt.y, 0, '🔥', 'fire'));
+        (ovl.drums     || []).forEach(pt => isoAddOverlay(pt.x, pt.y, 0, '🛢', 'fire'));
+      }
+
+      if (chk('map-show-farming'))
+        (ovl.farming || []).forEach(pt => isoAddOverlay(pt.x, pt.y, 0, '🌿', 'farm'));
+
+      if (chk('map-show-traps'))
+        (ovl.traps || []).forEach(pt => isoAddOverlay(pt.x, pt.y, 0, '🕷', 'trap'));
+
+      if (chk('map-show-rare'))
+        (pzData.rare?.spawns || []).forEach(s => {
+          if (s.x == null || s.y == null) return;
+          const icon = s.kind === 'zombie' ? '🧟' : s.kind === 'ground' ? '🎒' : '💎';
+          const el = isoAddOverlay(s.x, s.y, s.z || 0, icon, 'rare');
+          if (el) {
+            const lbl = document.createElement('div');
+            lbl.className = 'iso-label';
+            lbl.style.cssText = 'color:#fde047;background:rgba(0,0,0,0.7);padding:1px 4px;border-radius:3px;font-size:9px;';
+            lbl.textContent = s.kind === 'zombie' ? (s.why || 'special') : (s.label || s.item || 'rare');
+            el.appendChild(lbl);
+          }
+        });
+
+      if (chk('map-show-crates'))
+        (pzData.storage?.containers || []).forEach(c => {
+          if (c.x == null || c.y == null) return;
+          const el = isoAddOverlay(c.x, c.y, c.z || 0, '📦', 'crate');
+          if (el) {
+            const total = Object.values(c.items || {}).reduce((s, n) => s + n, 0);
+            const lines = Object.entries(c.items || {}).sort((a,b) => b[1]-a[1]).map(([ft,n]) => `${ft.replace(/^Base\./,'')} x${n}`).join('\n');
+            el.style.pointerEvents = 'auto';
+            el.title = `Crate (${total} items)\n${lines}`;
+          }
+        });
+
+      if (chk('map-show-towns')) isoDrawTowns(true); else isoDrawTowns(false);
+      if (chk('map-show-heatmap'))
+        isoDrawHeatmap(pzData.overlays?.density || [], pzData.liveCells || []);
+      else {
+        const c = document.getElementById('iso-heatmap-canvas');
+        if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
+      }
+    }
+
+    function isoDrawTowns(show) {
+      const canvas = document.getElementById('iso-towns-canvas');
+      if (!canvas || !isoViewer || !isoDziInfo) return;
+      const wrap = document.getElementById('iso-wrap');
+      canvas.width = wrap.clientWidth; canvas.height = wrap.clientHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!show) return;
+      const SQ = 300;
+      TOWN_ZONES.forEach((town, i) => {
+        const color = TOWN_COLORS[i % TOWN_COLORS.length];
+        const corners = [[town.cx0*SQ,town.cy0*SQ],[town.cx1*SQ,town.cy0*SQ],[town.cx1*SQ,town.cy1*SQ],[town.cx0*SQ,town.cy1*SQ]];
+        const pts = corners.map(([sx,sy]) => { const vp = isoSquareToViewport(sx,sy,0); return vp ? isoViewer.viewport.pixelFromPoint(vp) : null; });
+        if (pts.some(p => !p)) return;
+        ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+        pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.closePath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = color + '18'; ctx.fill();
+      });
+    }
+
+    function isoDrawHeatmap(density, liveCells) {
+      const canvas = document.getElementById('iso-heatmap-canvas');
+      if (!canvas || !isoViewer || !isoDziInfo) return;
+      const wrap = document.getElementById('iso-wrap');
+      canvas.width = wrap.clientWidth; canvas.height = wrap.clientHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const liveMap = {};
+      if (liveCells?.length) {
+        const maxLive = Math.max(...liveCells.map(c => c.count));
+        liveCells.forEach(c => { liveMap[`${c.cx},${c.cy}`] = Math.pow(c.count / maxLive, 0.4); });
+      }
+      const zpopCells = (density || []).filter(d => !liveMap[`${d.cx},${d.cy}`]);
+      const maxZpop = zpopCells.length ? Math.max(...zpopCells.map(d => d.score)) : 1;
+      const drawCell = (cx, cy, t, isLive) => {
+        const vp = isoSquareToViewport((cx+0.5)*300, (cy+0.5)*300, 0);
+        if (!vp) return;
+        const pt = isoViewer.viewport.pixelFromPoint(vp);
+        const vp2 = isoSquareToViewport((cx+1)*300, (cy+0.5)*300, 0);
+        const r = vp2 ? Math.max(4, Math.abs(isoViewer.viewport.pixelFromPoint(vp2).x - pt.x) * 0.8) : 8;
+        const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r);
+        if (isLive) { grad.addColorStop(0, `rgba(56,189,248,${(t*0.85).toFixed(2)})`); grad.addColorStop(1, 'rgba(99,102,241,0)'); }
+        else        { grad.addColorStop(0, `rgba(239,68,68,${(t*0.7).toFixed(2)})`);   grad.addColorStop(1, 'rgba(251,146,60,0)'); }
+        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI*2); ctx.fill();
+      };
+      zpopCells.forEach(d => drawCell(d.cx, d.cy, Math.pow(d.score/maxZpop, 0.4), false));
+      Object.entries(liveMap).forEach(([key, t]) => { const [cx,cy] = key.split(',').map(Number); drawCell(cx, cy, t, true); });
+    }
+
+    let _isoInited = false;
+    function initIso() {
+      if (_isoInited) return;
+      _isoInited = true;
+      loadIsoInfo().then(() => {
+        isoViewer = OpenSeadragon({
+          element: document.getElementById('iso-osd'),
+          tileSources: '/static/map-tiles/iso/base/layer2.dzi',
+          sequenceMode: false,
+          homeFillsViewer: false,
+          showZoomControl: false, showHomeControl: false, showFullPageControl: false, showRotationControl: false,
+          constrainDuringPan: false, visibilityRatio: 0.05,
+          prefixUrl: '/static/iso/openseadragon/images/',
+          minZoomImageRatio: 0.1, maxZoomPixelRatio: 4, zoomPerScroll: 1.15,
+          smoothingEnabled: false, background: '#0a0a0e',
+        });
+        isoViewer.addHandler('open', () => {
+          isoReady = true;
+          if (isoDziInfo && isoMapConf.bounds) {
+            const { GW, GH, x0, y0 } = isoMapConf;
+            const b = isoMapConf.bounds;
+            const item0 = isoViewer.world.getItemAt(0);
+            if (item0) {
+              const corners = [[b.xMin,b.yMin],[b.xMax,b.yMin],[b.xMin,b.yMax],[b.xMax,b.yMax]];
+              const vps = corners.map(([sx,sy]) => item0.imageToViewportCoordinates(x0+(sx-sy)*GW, y0+(sx+sy)*GH));
+              const vpXs = vps.map(p=>p.x), vpYs = vps.map(p=>p.y);
+              isoViewer.viewport.fitBounds(new OpenSeadragon.Rect(Math.min(...vpXs), Math.min(...vpYs), Math.max(...vpXs)-Math.min(...vpXs), Math.max(...vpYs)-Math.min(...vpYs)), true);
+            }
+          }
+          isoRedrawMarkers();
+        });
+        isoViewer.addHandler('resize', isoRedrawMarkers);
+        let _raf = null;
+        isoViewer.addHandler('viewport-change', () => {
+          if (_raf) return;
+          _raf = requestAnimationFrame(() => { _raf = null;
+            if (document.getElementById('map-show-towns')?.checked) isoDrawTowns(true);
+            if (document.getElementById('map-show-heatmap')?.checked) isoDrawHeatmap(pzData.overlays?.density||[], pzData.liveCells||[]);
+          });
+        });
+      });
     }
 
     function toggleMapFullscreen() {
@@ -1366,7 +1644,7 @@
           pzData.livePlayers = d.players || [];
           applyLiveWounds();
           renderOverview(); renderPlayers();
-          if (leafletMap) redrawPlayers();
+          if (_mapMode === 'iso') isoRedrawMarkers(); else if (leafletMap) redrawPlayers();
         } catch {}
       });
 
@@ -1374,9 +1652,9 @@
         try {
           const d = JSON.parse(e.data);
           if (d.error || !d.updated) return;
-          // Lua mod is authoritative: real per-part conditions + isWreck flag
           pzData.vehicles = d.vehicles || [];
-          renderVehicles(); renderOverview(); if (leafletMap) redrawVehicles();
+          renderVehicles(); renderOverview();
+          if (_mapMode === 'iso') isoRedrawMarkers(); else if (leafletMap) redrawVehicles();
         } catch {}
       });
 
@@ -1387,7 +1665,7 @@
           pzData.wounds = d.players;
           applyLiveWounds();
           renderOverview(); renderPlayers();
-          if (leafletMap) redrawPlayers();
+          if (_mapMode === 'iso') isoRedrawMarkers(); else if (leafletMap) redrawPlayers();
         } catch {}
       });
 
@@ -1415,7 +1693,7 @@
           const d = JSON.parse(e.data);
           if (d.error) return;
           pzData.overlays = d;
-          if (leafletMap) redrawOverlays();
+          if (_mapMode === 'iso') isoRedrawMarkers(); else if (leafletMap) redrawOverlays();
         } catch {}
       });
 
@@ -1425,7 +1703,7 @@
           if (d.error) return;
           pzData.storage = d;
           renderStorage();
-          if (leafletMap) redrawOverlays();
+          if (_mapMode === 'iso') isoRedrawMarkers(); else if (leafletMap) redrawOverlays();
         } catch {}
       });
 
@@ -1434,7 +1712,7 @@
           const d = JSON.parse(e.data);
           if (d.error) return;
           pzData.rare = d;
-          if (leafletMap) redrawOverlays();
+          if (_mapMode === 'iso') isoRedrawMarkers(); else if (leafletMap) redrawOverlays();
         } catch {}
       });
 
