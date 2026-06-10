@@ -964,10 +964,6 @@
     // pzToLatLng: lat = -y/PZ_SCALE, lng = x/PZ_SCALE
     // Tile offsets are separate for X and Y since the grid is not square.
 
-    // PZ_SCALE: converts PZ game coords to Leaflet world units.
-    // At max zoom, 1 Leaflet tile = TILE_SIZE px = 1 PZ cell = 300 game tiles.
-    // So PZ_SCALE = TILE_SIZE / 300. Updated after info.json loads.
-    let PZ_SCALE = TILE_SIZE / 300;
     // Tile calibration — defaults overwritten by info.json (written by the renderer)
     // so the frontend always matches whatever tiles are actually deployed. This
     // decouples a frontend deploy from a tile re-render. Defaults mirror the current
@@ -975,6 +971,10 @@
     let CELL_MIN_X = 0, CELL_MAX_X = 66, CELL_MIN_Y = 0, CELL_MAX_Y = 53;
     let TILE_ZOOM_MAX = 4;
     let TILE_SIZE = 512;
+    // PZ_SCALE: converts PZ game coords to Leaflet world units.
+    // At max zoom, 1 Leaflet tile = TILE_SIZE px = 1 PZ cell = 300 game tiles.
+    // So PZ_SCALE = TILE_SIZE / 300. Recomputed in recalcMapBounds after info.json loads.
+    let PZ_SCALE = TILE_SIZE / 300;
     let MAP_MIN_X, MAP_MAX_X, MAP_MIN_Y, MAP_MAX_Y;
     function recalcMapBounds() {
       PZ_SCALE = TILE_SIZE / 300;
