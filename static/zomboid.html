@@ -1042,8 +1042,9 @@
         pzToLatLng(MAP_MIN_X, MAP_MAX_Y),
         pzToLatLng(MAP_MAX_X, MAP_MIN_Y)
       );
-      leafletMap.fitBounds(mapBounds);
       leafletMap.setMaxBounds(mapBounds.pad(0.2));
+      // Default view: Riverside area. redrawPlayers will re-center on live players if present.
+      leafletMap.setView(pzToLatLng(6400, 5400), 3);
       redrawPlayers();
       redrawVehicles();
       redrawOverlays();
@@ -1052,6 +1053,7 @@
 
     let vehicleMarkers = [];
     let overlayMarkers = [];
+    let _mapCenteredOnPlayers = false;
 
     function redrawPlayers() {
       if (!leafletMap) return;
@@ -1077,6 +1079,12 @@
         m.bindTooltip(p.name + (roster.infected_risk ? ' ⚠' : ''), { permanent: true, direction: 'top', offset: [0, -6], className: 'player-label' });
         playerMarkers.push(m);
       });
+      // On first draw with real players, center the view on them.
+      if (!_mapCenteredOnPlayers && playerMarkers.length > 0) {
+        _mapCenteredOnPlayers = true;
+        const group = L.featureGroup(playerMarkers);
+        leafletMap.fitBounds(group.getBounds().pad(0.5), { maxZoom: 3 });
+      }
     }
 
     function applyLiveWounds() {
