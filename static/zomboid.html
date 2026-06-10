@@ -420,6 +420,7 @@
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"> Towns</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-rare" checked onchange="mapRedrawAll()"> Rare</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-crates" onchange="mapRedrawAll()"> Crates</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;" title="Warning: may show 300+ markers and lag the map"><input type="checkbox" id="map-show-empty-crates" onchange="mapRedrawAll()"> <span style="color:#f59e0b;">Empty crates ⚠</span></label>
                 <!-- Iso-only controls (hidden in top-down mode) -->
                 <label id="iso-only-heatmap" style="display:none;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-heatmap" onchange="isoRedrawMarkers()"> Heatmap</label>
                 <button id="map-fullscreen-btn" onclick="toggleMapFullscreen()">⛶</button>
@@ -867,7 +868,9 @@
     window.jumpToCrate = function(x, y) {
       setView('map');
       setTimeout(() => { if (leafletMap) { leafletMap.setView(pzToLatLng(x, y), TILE_ZOOM_MAX + 1);
-        document.getElementById('map-show-crates').checked = true; redrawOverlays(); } }, 100);
+        document.getElementById('map-show-crates').checked = true;
+        document.getElementById('map-show-empty-crates').checked = true;
+        redrawOverlays(); } }, 100);
     };
 
     function renderStorage() {
@@ -1245,7 +1248,8 @@
       }
 
       const showRare   = document.getElementById('map-show-rare')?.checked;
-      const showCrates = document.getElementById('map-show-crates')?.checked;
+      const showCrates      = document.getElementById('map-show-crates')?.checked;
+      const showEmptyCrates = document.getElementById('map-show-empty-crates')?.checked;
 
       if (showRare) {
         (pzData.rare?.spawns || []).forEach(s => {
@@ -1269,6 +1273,7 @@
           const items = c.items || {};
           const total = Object.values(items).reduce((s, n) => s + n, 0);
           const isEmpty = total === 0;
+          if (isEmpty && !showEmptyCrates) return;
           const lines = Object.entries(items).sort((a, b) => b[1] - a[1])
             .map(([ft, n]) => `${ft.replace(/^Base\./, '')} ×${n}`).join('<br>');
           const icon = isEmpty
@@ -1469,17 +1474,20 @@
           }
         });
 
-      if (chk('map-show-crates'))
+      if (chk('map-show-crates')) {
+        const showEmpty = chk('map-show-empty-crates');
         (pzData.storage?.containers || []).forEach(c => {
           if (c.x == null || c.y == null) return;
+          const total = Object.values(c.items || {}).reduce((s, n) => s + n, 0);
+          if (total === 0 && !showEmpty) return;
           const el = isoAddOverlay(c.x, c.y, c.z || 0, '📦', 'crate');
           if (el) {
-            const total = Object.values(c.items || {}).reduce((s, n) => s + n, 0);
             const lines = Object.entries(c.items || {}).sort((a,b) => b[1]-a[1]).map(([ft,n]) => `${ft.replace(/^Base\./,'')} x${n}`).join('\n');
             el.style.pointerEvents = 'auto';
-            el.title = `Crate (${total} items)\n${lines}`;
+            el.title = total === 0 ? 'Crate (empty)' : `Crate (${total} items)\n${lines}`;
           }
         });
+      }
 
       if (chk('map-show-towns')) isoDrawTowns(true); else isoDrawTowns(false);
       if (chk('map-show-heatmap'))
