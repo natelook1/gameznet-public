@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Zomboid</title>
+  <link rel="icon" href="/static/gameznet.ico" type="image/x-icon">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="/static/iso/openseadragon/openseadragon.js"></script>
@@ -160,7 +161,7 @@
     #map-inner:-moz-full-screen    { border-radius: 0; }
     #map-inner:fullscreen          { border-radius: 0; }
     #leaflet-map { width: 100%; height: 100%; background: #0f1a0f; }
-    #iso-wrap { width: 100%; height: 100%; display: none; }
+    #iso-wrap { position: relative; width: 100%; height: 100%; display: none; }
     #iso-osd  { width: 100%; height: 100%; background: #0a0a0e; }
     #iso-heatmap-canvas, #iso-towns-canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
     #map-controls { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 1000; background: rgba(15,15,19,0.85); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--text); backdrop-filter: blur(4px); }
@@ -407,6 +408,7 @@
               <div id="iso-osd"></div>
               <canvas id="iso-heatmap-canvas"></canvas>
               <canvas id="iso-towns-canvas"></canvas>
+              <canvas id="iso-markers-canvas" style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
             </div>
             <div id="map-controls">
               <div id="map-gametime" style="font-size:12px;margin-bottom:8px;color:var(--text);opacity:0.9;display:none;"></div>
@@ -1282,6 +1284,7 @@
           const x0 = cx * 300, y0 = cy * 300;
           const x1 = x0 + 300, y1 = y0 + 300;
           const level = densityLevels.find(l => d.score >= l.min);
+          if (!level) return;
           const rect = L.rectangle(
             [pzToLatLng(x0, y1), pzToLatLng(x1, y0)],
             { color: 'transparent', fillColor: level.color, fillOpacity: level.opacity, weight: 0 }
@@ -1475,6 +1478,7 @@
       isoMarkerEls = [];
     }
 
+    // isoAddOverlay kept for players only (OSD overlay, needs DOM label)
     function isoAddOverlay(sx, sy, layer, html, cls) {
       const vp = isoSquareToViewport(sx, sy, layer);
       if (!vp) return null;
@@ -1486,15 +1490,145 @@
       return el;
     }
 
-    function isoRedrawMarkers() {
-      if (!isoViewer || !isoDziInfo || !isoReady) return;
-      isoClearMarkers();
+    // Emoji texture cache for canvas drawing
+    const _isoEmojiCache = new Map();
+    function _isoEmojiImage(emoji, size) {
+      const key = emoji + size;
+      if (_isoEmojiCache.has(key)) return _isoEmojiCache.get(key);
+      const c = document.createElement('canvas');
+      c.width = c.height = size * 2;
+      const ctx = c.getContext('2d');
+      ctx.font = `${Math.round(size * 1.5)}px serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(emoji, size, size);
+      _isoEmojiCache.set(key, c);
+      return c;
+    }
+
+    // Hit list rebuilt each canvas draw — [{x,y,r,label}] in screen coords
+    let _isoCanvasHits = [];
+
+    function isoDrawMarkersCanvas() {
+      const canvas = document.getElementById('iso-markers-canvas');
+      if (!canvas || !isoViewer || !isoDziInfo || !isoReady) return;
+      const wrap = document.getElementById('iso-wrap');
+      canvas.width = wrap.clientWidth; canvas.height = wrap.clientHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      _isoCanvasHits = [];
 
       const chk = id => document.getElementById(id)?.checked;
       const ovl = pzData.overlays || {};
       const b   = isoMapConf.bounds;
       const inBounds = (x, y) => !b || (x >= b.xMin && x <= b.xMax && y >= b.yMin && y <= b.yMax);
 
+      // Use viewportToViewerElementCoordinates — pure matrix math, no reflow
+      function vpToPx(sx, sy, layer) {
+        const vp = isoSquareToViewport(sx, sy, layer || 0);
+        if (!vp) return null;
+        return isoViewer.viewport.viewportToViewerElementCoordinates(vp);
+      }
+
+      function drawEmoji(sx, sy, layer, emoji, size, label, alpha) {
+        const pt = vpToPx(sx, sy, layer);
+        if (!pt) return;
+        const img = _isoEmojiImage(emoji, size);
+        ctx.globalAlpha = alpha ?? 1;
+        ctx.drawImage(img, pt.x - size, pt.y - size, size * 2, size * 2);
+        ctx.globalAlpha = 1;
+        if (label) _isoCanvasHits.push({ x: pt.x, y: pt.y, r: size, label });
+      }
+
+      function drawDot(sx, sy, color, size, alpha, label) {
+        const pt = vpToPx(sx, sy, 0);
+        if (!pt) return;
+        ctx.globalAlpha = alpha ?? 1;
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, size, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.shadowColor = color; ctx.shadowBlur = size * 2;
+        ctx.fill();
+        ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+        if (label) _isoCanvasHits.push({ x: pt.x, y: pt.y, r: size * 2, label });
+      }
+
+      function drawLabel(sx, sy, layer, text, color) {
+        const pt = vpToPx(sx, sy, layer || 0);
+        if (!pt) return;
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'center';
+        const tw = ctx.measureText(text).width + 6;
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(pt.x - tw / 2, pt.y + 6, tw, 13);
+        ctx.fillStyle = color || '#e5e7eb';
+        ctx.fillText(text, pt.x, pt.y + 16);
+      }
+
+      // Vehicles
+      const isDestroyed = v => isVehicleDestroyed(v);
+      if (chk('map-show-vehicles') || chk('map-show-destroyed')) {
+        (pzData.vehicles || []).filter(v => inBounds(v.x, v.y)).forEach(v => {
+          const destroyed = isDestroyed(v);
+          if (destroyed && !chk('map-show-destroyed')) return;
+          if (!destroyed && !chk('map-show-vehicles')) return;
+          const engine = v.parts?.Engine ?? 0;
+          const color  = destroyed ? '#6b7280' : engine > 0.6 ? '#60a5fa' : engine > 0.3 ? '#f59e0b' : '#ef4444';
+          const lbl = `${v.type || 'Vehicle'}\n${destroyed ? 'Destroyed' : Math.round(engine * 100) + '% engine'}`;
+          drawDot(v.x, v.y, color, 5, destroyed ? 0.5 : 0.85, lbl);
+          if (!destroyed) drawLabel(v.x, v.y, 0, v.type || '', '#93c5fd');
+        });
+      }
+
+      // Campfires / drums
+      if (chk('map-show-campfires')) {
+        (ovl.campfires || []).forEach(pt => drawEmoji(pt.x, pt.y, 0, '🔥', 10, 'Campfire'));
+        (ovl.drums     || []).forEach(pt => drawEmoji(pt.x, pt.y, 0, '🛢', 10, 'Metal drum'));
+        (ovl.barrels   || []).forEach(pt => drawEmoji(pt.x, pt.y, 0, '💧', 10, 'Rain barrel'));
+      }
+
+      // Farming / traps
+      if (chk('map-show-farming'))
+        (ovl.farming || []).forEach(pt => drawEmoji(pt.x, pt.y, 0, '🌿', 9, 'Farm plot'));
+      if (chk('map-show-traps'))
+        (ovl.traps || []).forEach(pt => drawEmoji(pt.x, pt.y, 0, '🕷', 9, 'Trap'));
+
+      // Dead players
+      if (chk('map-show-dead'))
+        (ovl.dead || []).slice(-20).forEach(d => drawEmoji(d.x, d.y, 0, '💀', 9, '💀 ' + (d.name || 'Dead player'), 0.8));
+
+      // Rare
+      if (chk('map-show-rare')) {
+        (pzData.rare?.spawns || []).forEach(s => {
+          if (s.x == null || s.y == null) return;
+          if (!rareFilterEnabled(rareItemCategory(s))) return;
+          const emoji = s.kind === 'zombie' ? '🧟' : s.kind === 'ground' ? '🎒' : '💎';
+          const lbl   = s.kind === 'zombie' ? (s.why || 'special zombie') : (s.label || (s.item || '').replace(/^Base\./, ''));
+          drawEmoji(s.x, s.y, s.z || 0, emoji, 11, lbl);
+          drawLabel(s.x, s.y, s.z || 0, lbl.substring(0, 18), '#fde047');
+        });
+      }
+
+      // Crates
+      if (chk('map-show-crates')) {
+        const showEmpty = chk('map-show-empty-crates');
+        (pzData.storage?.containers || []).forEach(c => {
+          if (c.x == null || c.y == null) return;
+          const total = Object.values(c.items || {}).reduce((s, n) => s + n, 0);
+          if (total === 0 && !showEmpty) return;
+          const lines = Object.entries(c.items || {}).sort((a,b)=>b[1]-a[1])
+            .map(([ft,n]) => `${ft.replace(/^Base\./,'')} ×${n}`).join('\n');
+          const lbl = total === 0 ? 'Crate (empty)' : `Crate (${total})\n${lines}`;
+          drawEmoji(c.x, c.y, c.z || 0, '📦', 9, lbl, total === 0 ? 0.3 : 1);
+        });
+      }
+    }
+
+    function isoRedrawMarkers() {
+      if (!isoViewer || !isoDziInfo || !isoReady) return;
+      isoClearMarkers();
+
+      const chk = id => document.getElementById(id)?.checked;
+
+      // Players: stay as OSD overlays so they pan/zoom correctly without canvas redraws
       if (chk('map-show-players')) {
         const playerSource = pzData.livePlayers.length > 0 ? pzData.livePlayers : pzData.players;
         playerSource.forEach(p => {
@@ -1511,70 +1645,8 @@
         });
       }
 
-      const isDestroyed = v => { const vals = Object.values(v.parts || {}); return !vals.length || vals.every(c => c === 0); };
-      if (chk('map-show-vehicles') || chk('map-show-destroyed')) {
-        (pzData.vehicles || []).filter(v => inBounds(v.x, v.y)).forEach(v => {
-          const destroyed = isDestroyed(v);
-          if (destroyed && !chk('map-show-destroyed')) return;
-          if (!destroyed && !chk('map-show-vehicles')) return;
-          const engine = v.parts?.Engine ?? 0;
-          const color  = destroyed ? '#6b7280' : engine > 0.6 ? '#60a5fa' : engine > 0.3 ? '#f59e0b' : '#ef4444';
-          const el = isoAddOverlay(v.x, v.y, 0, '', 'vehicle');
-          if (el) {
-            el.style.background = color; el.style.boxShadow = `0 0 4px ${color}`; el.style.opacity = destroyed ? '0.5' : '0.85';
-            const lbl = document.createElement('div');
-            lbl.className = 'iso-label';
-            lbl.style.cssText = 'color:#93c5fd;font-size:9px;top:8px;';
-            lbl.textContent = v.type || '';
-            el.appendChild(lbl);
-          }
-        });
-      }
-
-      if (chk('map-show-dead'))
-        (ovl.dead || []).slice(-5).forEach(d => isoAddOverlay(d.x, d.y, 0, '💀', 'death'));
-
-      if (chk('map-show-campfires')) {
-        (ovl.campfires || []).forEach(pt => isoAddOverlay(pt.x, pt.y, 0, '🔥', 'fire'));
-        (ovl.drums     || []).forEach(pt => isoAddOverlay(pt.x, pt.y, 0, '🛢', 'fire'));
-      }
-
-      if (chk('map-show-farming'))
-        (ovl.farming || []).forEach(pt => isoAddOverlay(pt.x, pt.y, 0, '🌿', 'farm'));
-
-      if (chk('map-show-traps'))
-        (ovl.traps || []).forEach(pt => isoAddOverlay(pt.x, pt.y, 0, '🕷', 'trap'));
-
-      if (chk('map-show-rare'))
-        (pzData.rare?.spawns || []).forEach(s => {
-          if (s.x == null || s.y == null) return;
-          if (!rareFilterEnabled(rareItemCategory(s))) return;
-          const icon = s.kind === 'zombie' ? '🧟' : s.kind === 'ground' ? '🎒' : '💎';
-          const el = isoAddOverlay(s.x, s.y, s.z || 0, icon, 'rare');
-          if (el) {
-            const lbl = document.createElement('div');
-            lbl.className = 'iso-label';
-            lbl.style.cssText = 'color:#fde047;background:rgba(0,0,0,0.7);padding:1px 4px;border-radius:3px;font-size:9px;';
-            lbl.textContent = s.kind === 'zombie' ? (s.why || 'special') : (s.label || s.item || 'rare');
-            el.appendChild(lbl);
-          }
-        });
-
-      if (chk('map-show-crates')) {
-        const showEmpty = chk('map-show-empty-crates');
-        (pzData.storage?.containers || []).forEach(c => {
-          if (c.x == null || c.y == null) return;
-          const total = Object.values(c.items || {}).reduce((s, n) => s + n, 0);
-          if (total === 0 && !showEmpty) return;
-          const el = isoAddOverlay(c.x, c.y, c.z || 0, '📦', 'crate');
-          if (el) {
-            if (total === 0) { el.style.opacity = '0.35'; el.style.filter = 'grayscale(1)'; }
-            const lines = Object.entries(c.items || {}).sort((a,b) => b[1]-a[1]).map(([ft,n]) => `${ft.replace(/^Base\./,'')} x${n}`).join('\n');
-            el.style.pointerEvents = 'auto';
-            el.title = total === 0 ? 'Crate (empty)' : `Crate (${total} items)\n${lines}`;
-          }
-        });
-      }
+      // All other markers drawn on canvas (no DOM nodes, no OSD layout cost)
+      isoDrawMarkersCanvas();
 
       if (chk('map-show-towns')) isoDrawTowns(true); else isoDrawTowns(false);
       if (chk('map-show-heatmap'))
@@ -1597,7 +1669,7 @@
       TOWN_ZONES.forEach((town, i) => {
         const color = TOWN_COLORS[i % TOWN_COLORS.length];
         const corners = [[town.cx0*SQ,town.cy0*SQ],[town.cx1*SQ,town.cy0*SQ],[town.cx1*SQ,town.cy1*SQ],[town.cx0*SQ,town.cy1*SQ]];
-        const pts = corners.map(([sx,sy]) => { const vp = isoSquareToViewport(sx,sy,0); return vp ? isoViewer.viewport.pixelFromPoint(vp) : null; });
+        const pts = corners.map(([sx,sy]) => { const vp = isoSquareToViewport(sx,sy,0); return vp ? isoViewer.viewport.viewportToViewerElementCoordinates(vp) : null; });
         if (pts.some(p => !p)) return;
         ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
         pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
@@ -1620,16 +1692,49 @@
       }
       const zpopCells = (density || []).filter(d => !liveMap[`${d.cx},${d.cy}`]);
       const maxZpop = zpopCells.length ? Math.max(...zpopCells.map(d => d.score)) : 1;
+      // Pre-compute the four corner offsets of a zpop cell in screen pixels.
+      // Each zpop cell covers 300×300 world squares — map its 4 corners to screen
+      // coords relative to the cell centre so we can draw a proper iso diamond.
+      const vpCtr = isoSquareToViewport(0, 0, 0);
+      const vpE   = isoSquareToViewport(300, 0, 0);   // east  (+x)
+      const vpS   = isoSquareToViewport(0, 300, 0);   // south (+y)
+      let dxE = 0, dyE = 0, dxS = 0, dyS = 0;
+      if (vpCtr && vpE && vpS) {
+        const pc = isoViewer.viewport.pixelFromPoint(vpCtr);
+        const pe = isoViewer.viewport.pixelFromPoint(vpE);
+        const ps = isoViewer.viewport.pixelFromPoint(vpS);
+        dxE = pe.x - pc.x; dyE = pe.y - pc.y;
+        dxS = ps.x - pc.x; dyS = ps.y - pc.y;
+      }
       const drawCell = (cx, cy, t, isLive) => {
         const vp = isoSquareToViewport((cx+0.5)*300, (cy+0.5)*300, 0);
         if (!vp) return;
-        const pt = isoViewer.viewport.pixelFromPoint(vp);
-        const vp2 = isoSquareToViewport((cx+1)*300, (cy+0.5)*300, 0);
-        const r = vp2 ? Math.max(4, Math.abs(isoViewer.viewport.pixelFromPoint(vp2).x - pt.x) * 0.8) : 8;
+        const pt = isoViewer.viewport.viewportToViewerElementCoordinates(vp);
+        // Diamond corners: top=(pt-S), right=(pt+E), bottom=(pt+S), left=(pt-E)
+        const top    = { x: pt.x - dxS, y: pt.y - dyS };
+        const right  = { x: pt.x + dxE, y: pt.y + dyE };
+        const bottom = { x: pt.x + dxS, y: pt.y + dyS };
+        const left   = { x: pt.x - dxE, y: pt.y - dyE };
+        // Radial gradient sized to the half-diagonal of the diamond
+        const r = Math.max(8, Math.hypot(dxE, dyE));
         const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r);
-        if (isLive) { grad.addColorStop(0, `rgba(56,189,248,${(t*0.85).toFixed(2)})`); grad.addColorStop(1, 'rgba(99,102,241,0)'); }
-        else        { grad.addColorStop(0, `rgba(239,68,68,${(t*0.7).toFixed(2)})`);   grad.addColorStop(1, 'rgba(251,146,60,0)'); }
-        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI*2); ctx.fill();
+        if (isLive) {
+          grad.addColorStop(0,   `rgba(56,189,248,${(t*0.85).toFixed(2)})`);
+          grad.addColorStop(0.6, `rgba(99,102,241,${(t*0.45).toFixed(2)})`);
+          grad.addColorStop(1,   'rgba(99,102,241,0)');
+        } else {
+          grad.addColorStop(0,   `rgba(239,68,68,${(t*0.72).toFixed(2)})`);
+          grad.addColorStop(0.6, `rgba(251,146,60,${(t*0.35).toFixed(2)})`);
+          grad.addColorStop(1,   'rgba(251,146,60,0)');
+        }
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(top.x, top.y);
+        ctx.lineTo(right.x, right.y);
+        ctx.lineTo(bottom.x, bottom.y);
+        ctx.lineTo(left.x, left.y);
+        ctx.closePath();
+        ctx.fill();
       };
       zpopCells.forEach(d => drawCell(d.cx, d.cy, Math.pow(d.score/maxZpop, 0.4), false));
       Object.entries(liveMap).forEach(([key, t]) => { const [cx,cy] = key.split(',').map(Number); drawCell(cx, cy, t, true); });
@@ -1673,7 +1778,40 @@
           _raf = requestAnimationFrame(() => { _raf = null;
             if (document.getElementById('map-show-towns')?.checked) isoDrawTowns(true);
             if (document.getElementById('map-show-heatmap')?.checked) isoDrawHeatmap(pzData.overlays?.density||[], pzData.liveCells||[]);
+            isoDrawMarkersCanvas();
           });
+        });
+
+        // Tooltip on canvas hover
+        const isoWrap = document.getElementById('iso-wrap');
+        isoWrap.addEventListener('mousemove', e => {
+          const rect = isoWrap.getBoundingClientRect();
+          const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+          for (const h of _isoCanvasHits) {
+            const dx = mx - h.x, dy = my - h.y;
+            if (dx*dx + dy*dy <= h.r*h.r) {
+              const tip = document.getElementById('pixi-tooltip') || (() => {
+                const d = document.createElement('div');
+                d.id = 'pixi-tooltip';
+                d.style.cssText = 'position:absolute;z-index:9999;pointer-events:none;background:rgba(0,0,0,0.82);color:#e5e7eb;font-size:12px;padding:4px 8px;border-radius:5px;border:1px solid rgba(255,255,255,0.12);max-width:220px;line-height:1.5;white-space:pre-wrap;';
+                document.getElementById('map-inner').appendChild(d);
+                return d;
+              })();
+              tip.innerHTML = h.label.replace(/\n/g, '<br>');
+              tip.style.display = 'block';
+              let tx = e.clientX - rect.left + 12, ty = e.clientY - rect.top - 10;
+              if (tx + 230 > rect.width) tx = e.clientX - rect.left - 230;
+              if (ty < 0) ty = 4;
+              tip.style.left = tx + 'px'; tip.style.top = ty + 'px';
+              return;
+            }
+          }
+          const tip = document.getElementById('pixi-tooltip');
+          if (tip) tip.style.display = 'none';
+        });
+        isoWrap.addEventListener('mouseleave', () => {
+          const tip = document.getElementById('pixi-tooltip');
+          if (tip) tip.style.display = 'none';
         });
       });
     }
