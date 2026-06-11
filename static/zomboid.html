@@ -420,13 +420,21 @@
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-dead" checked onchange="mapRedrawAll()"> Dead</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-heatmap" onchange="mapRedrawAll()"> Heatmap</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"> Towns</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-rare" checked onchange="mapRedrawAll()"> Rare</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-rare" checked onchange="toggleRareFilters();mapRedrawAll()"> Rare</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-crates" onchange="mapRedrawAll()"> Crates</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;" title="Warning: may show 300+ markers and lag the map"><input type="checkbox" id="map-show-empty-crates" onchange="mapRedrawAll()"> <span style="color:#f59e0b;">Empty crates ⚠</span></label>
                 <button id="map-fullscreen-btn" onclick="toggleMapFullscreen()">⛶</button>
                 <button id="map-mode-btn" onclick="toggleMapMode()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:12px;">Iso View</button>
               </div>
               <div id="map-legend" style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap &nbsp;💎 rare &nbsp;📦 crate</div>
+              <div id="map-rare-filters" style="display:none;margin-top:4px;padding:4px 6px;background:rgba(253,224,71,0.08);border:1px solid rgba(253,224,71,0.25);border-radius:5px;font-size:11px;gap:8px;flex-wrap:wrap;align-items:center;">
+                <span style="opacity:0.6;white-space:nowrap;">Rare filters:</span>
+                <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-firearms" checked onchange="mapRedrawAll()"> 🔫 Firearms</label>
+                <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-ammo" checked onchange="mapRedrawAll()"> 🔴 Ammo</label>
+                <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-military" checked onchange="mapRedrawAll()"> 🪖 Military</label>
+                <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-tools" checked onchange="mapRedrawAll()"> 🔧 Tools</label>
+                <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-zombies" checked onchange="mapRedrawAll()"> 🧟 Zombies</label>
+              </div>
             </div>
           </div>
         </div>
@@ -1075,6 +1083,7 @@
       leafletMap.setMaxBounds(mapBounds.pad(0.2));
       // Default view: Riverside area. redrawPlayers will re-center on live players if present.
       leafletMap.setView(pzToLatLng(6300, 5400), TILE_ZOOM_MAX - 1);
+      toggleRareFilters();
       redrawPlayers();
       redrawVehicles();
       redrawOverlays();
@@ -1290,6 +1299,7 @@
         (pzData.rare?.spawns || []).forEach(s => {
           if (s.x == null || s.y == null) return;
           if (s.x < MAP_MIN_X || s.x > MAP_MAX_X || s.y < MAP_MIN_Y || s.y > MAP_MAX_Y) return;
+          if (!rareFilterEnabled(rareItemCategory(s))) return;
           const emoji = s.kind === 'zombie' ? '🧟' : s.kind === 'ground' ? '🎒' : '💎';
           const m = L.marker(pzToLatLng(s.x, s.y), {
             icon: L.divIcon({ className: '', html: `<div style="font-size:14px;line-height:1;text-shadow:0 0 3px #000;">${emoji}</div>`, iconSize: [16, 16], iconAnchor: [8, 8] }),
@@ -1381,6 +1391,28 @@
       } else {
         if (leafletMap) { leafletMap.invalidateSize(); redrawPlayers(); redrawVehicles(); redrawOverlays(); redrawTowns(); }
       }
+    }
+
+    function toggleRareFilters() {
+      const el = document.getElementById('map-rare-filters');
+      if (el) el.style.display = document.getElementById('map-show-rare')?.checked ? 'flex' : 'none';
+    }
+
+    // Returns one of: 'firearms'|'ammo'|'military'|'tools'|'zombies'|null
+    // null means the spawn passes no category (should not happen, but treated as always visible)
+    function rareItemCategory(spawn) {
+      if (spawn.kind === 'zombie') return 'zombies';
+      const t = (spawn.item || '').toLowerCase();
+      if (/pistol|revolver|rifle|shotgun|katana|machete|varmint|assault|hunting/.test(t)) return 'firearms';
+      if (/bullet|shell|ammo|223|308|45box|9mm|556|762/.test(t)) return 'ammo';
+      if (/hat_army|vest_bullet|vest_police|alicepack|gasmask|nightvision|jacket_army|trousers_army/.test(t)) return 'military';
+      if (/generator|blowtorch|propane|weldingmask|sledgehammer|chainsaw|antibiotic/.test(t)) return 'tools';
+      return null;
+    }
+
+    function rareFilterEnabled(category) {
+      if (!category) return true;
+      return document.getElementById(`rare-filter-${category}`)?.checked ?? true;
     }
 
     // Single redraw dispatcher — called by shared checkboxes.
@@ -1516,6 +1548,7 @@
       if (chk('map-show-rare'))
         (pzData.rare?.spawns || []).forEach(s => {
           if (s.x == null || s.y == null) return;
+          if (!rareFilterEnabled(rareItemCategory(s))) return;
           const icon = s.kind === 'zombie' ? '🧟' : s.kind === 'ground' ? '🎒' : '💎';
           const el = isoAddOverlay(s.x, s.y, s.z || 0, icon, 'rare');
           if (el) {
