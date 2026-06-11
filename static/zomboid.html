@@ -1081,8 +1081,10 @@
       updateMapGameTime();
     }
 
-    let vehicleMarkers = [];
+    let vehicleMarkers = [];       // legacy array — replaced by vehicleMarkerMap
     let overlayMarkers = [];
+    let vehicleMarkerMap = new Map(); // id -> {marker, key} for diffing
+    let crateMarkerMap   = new Map(); // "x:y:z:stack" -> marker for diffing
     let _mapCenteredOnPlayers = false;
 
     function redrawPlayers() {
@@ -1137,21 +1139,48 @@
       return vals.length > 0 && vals.every(c => c === 0);
     }
 
+    function _vehicleMarkerKey(v) {
+      const destroyed = isVehicleDestroyed(v);
+      const engine = v.parts?.Engine ?? 0;
+      return `${destroyed ? 1 : 0}:${Math.round(engine * 10)}:${Math.round(v.x)}:${Math.round(v.y)}`;
+    }
+
     function redrawVehicles() {
       if (!leafletMap) return;
-      vehicleMarkers.forEach(m => m.remove());
-      vehicleMarkers = [];
-      if (!document.getElementById('map-show-vehicles')?.checked) return;
+      const showVehicles  = document.getElementById('map-show-vehicles')?.checked;
       const showDestroyed = document.getElementById('map-show-destroyed')?.checked;
+
+      // If both toggles off, clear everything and bail
+      if (!showVehicles && !showDestroyed) {
+        vehicleMarkerMap.forEach(({ marker }) => marker.remove());
+        vehicleMarkerMap.clear();
+        return;
+      }
+
       const vehicles = pzData.vehicles || [];
+      const seen = new Set();
+
       vehicles.forEach(v => {
         if (v.x == null || v.y == null) return;
         if (v.x < MAP_MIN_X || v.x > MAP_MAX_X || v.y < MAP_MIN_Y || v.y > MAP_MAX_Y) return;
         const destroyed = isVehicleDestroyed(v);
         if (destroyed && !showDestroyed) return;
+        if (!destroyed && !showVehicles) return;
+
+        const id = v.id ?? `${v.x}:${v.y}`;
+        seen.add(id);
+        const key = _vehicleMarkerKey(v);
+        const existing = vehicleMarkerMap.get(id);
+
+        // Skip if marker exists and nothing changed
+        if (existing && existing.key === key) return;
+
+        // Remove stale marker
+        if (existing) { existing.marker.remove(); vehicleMarkerMap.delete(id); }
+
         const engine = v.parts?.Engine ?? 0;
         const color = destroyed ? '#4b5563' : engine > 0.6 ? '#22c55e' : engine > 0.3 ? '#f59e0b' : '#ef4444';
-        const m = L.marker(pzToLatLng(v.x, v.y), {
+        const marker = L.marker(pzToLatLng(v.x, v.y), {
           icon: L.divIcon({
             className: '',
             html: `<div style="width:7px;height:7px;background:${color};border:1px solid #000;border-radius:2px;opacity:${destroyed ? 0.5 : 0.85}"></div>`,
@@ -1159,8 +1188,13 @@
           }),
           zIndexOffset: -100,
         }).addTo(leafletMap);
-        m.bindTooltip(`${v.type} (${destroyed ? 'destroyed' : Math.round(engine * 100) + '% engine'})`, { direction: 'top', offset: [0, -4], className: 'player-label' });
-        vehicleMarkers.push(m);
+        marker.bindTooltip(`${v.type} (${destroyed ? 'destroyed' : Math.round(engine * 100) + '% engine'})`, { direction: 'top', offset: [0, -4], className: 'player-label' });
+        vehicleMarkerMap.set(id, { marker, key });
+      });
+
+      // Remove markers for vehicles no longer in data
+      vehicleMarkerMap.forEach(({ marker }, id) => {
+        if (!seen.has(id)) { marker.remove(); vehicleMarkerMap.delete(id); }
       });
     }
 
@@ -1267,6 +1301,8 @@
         });
       }
 
+      // Crates: diff against crateMarkerMap to avoid recreating 400+ markers every tick
+      const seenCrates = new Set();
       if (showCrates) {
         (pzData.storage?.containers || []).forEach(c => {
           if (c.x == null || c.y == null) return;
@@ -1275,19 +1311,29 @@
           const total = Object.values(items).reduce((s, n) => s + n, 0);
           const isEmpty = total === 0;
           if (isEmpty && !showEmptyCrates) return;
+          const id = `${c.x}:${c.y}:${c.z ?? 0}:${c.stack ?? 0}`;
+          seenCrates.add(id);
+          // Key encodes visible state — recreate only if contents changed
+          const key = `${isEmpty ? 0 : 1}:${total}`;
+          if (crateMarkerMap.has(id) && crateMarkerMap.get(id).key === key) return;
+          if (crateMarkerMap.has(id)) { crateMarkerMap.get(id).marker.remove(); crateMarkerMap.delete(id); }
           const lines = Object.entries(items).sort((a, b) => b[1] - a[1])
             .map(([ft, n]) => `${ft.replace(/^Base\./, '')} ×${n}`).join('<br>');
           const icon = isEmpty
             ? `<div style="font-size:12px;line-height:1;opacity:0.35;filter:grayscale(1);">📦</div>`
             : `<div style="font-size:12px;line-height:1;text-shadow:0 0 3px #000;">📦</div>`;
-          const m = L.marker(pzToLatLng(c.x, c.y), {
+          const marker = L.marker(pzToLatLng(c.x, c.y), {
             icon: L.divIcon({ className: '', html: icon, iconSize: [14, 14], iconAnchor: [7, 7] }),
             zIndexOffset: isEmpty ? -30 : -20,
           }).addTo(leafletMap);
-          m.bindTooltip(isEmpty ? '<b>Crate (empty)</b>' : `<b>Crate (${total})</b><br>${lines}`, { direction: 'top', offset: [0, -6], className: 'player-label' });
-          overlayMarkers.push(m);
+          marker.bindTooltip(isEmpty ? '<b>Crate (empty)</b>' : `<b>Crate (${total})</b><br>${lines}`, { direction: 'top', offset: [0, -6], className: 'player-label' });
+          crateMarkerMap.set(id, { marker, key });
         });
       }
+      // Remove markers for crates that disappeared or toggles turned off
+      crateMarkerMap.forEach(({ marker }, id) => {
+        if (!seenCrates.has(id)) { marker.remove(); crateMarkerMap.delete(id); }
+      });
     }
 
     // Town zones derived from spawnpoints.lua cell bounding boxes
