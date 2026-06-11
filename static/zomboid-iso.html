@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Zomboid — Isometric Map</title>
-  <script src="/static/iso/openseadragon/openseadragon.js"></script>
+  <script src="https://static.gameznet.looknet.ca/iso/openseadragon/openseadragon.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -133,8 +133,8 @@
     async function loadDziInfo() {
       try {
         const [dziRes, infoRes] = await Promise.all([
-          fetch('/static/map-tiles/iso/base/layer0.dzi'),
-          fetch('/static/map-tiles/iso/base/map_info.json'),
+          fetch('https://static.gameznet.looknet.ca/map-tiles/iso/base/layer0.dzi'),
+          fetch('https://static.gameznet.looknet.ca/map-tiles/iso/base/map_info.json'),
         ]);
         const txt = await dziRes.text();
         const parser = new DOMParser();
@@ -482,7 +482,7 @@ const TOWN_ZONES = [
     window.setLayer = function(layer) {
       if (!viewer || layer === currentLayer) return;
       currentLayer = layer;
-      const src = `/static/map-tiles/iso/base/layer${layer}.dzi`;
+      const src = `https://static.gameznet.looknet.ca/map-tiles/iso/base/layer${layer}.dzi`;
       viewer.world.removeAll();
       viewer.addTiledImage({ tileSource: src, x: 0, y: 0, width: 1 });
     };
@@ -505,7 +505,7 @@ const TOWN_ZONES = [
 
       viewer = OpenSeadragon({
         element: document.getElementById('osd'),
-        tileSources: `/static/map-tiles/iso/base/layer${LOCKED_LAYER}.dzi`,
+        tileSources: `https://static.gameznet.looknet.ca/map-tiles/iso/base/layer${LOCKED_LAYER}.dzi`,
         sequenceMode: false,
         homeFillsViewer: false,
         showZoomControl: false,
@@ -514,7 +514,7 @@ const TOWN_ZONES = [
         showRotationControl: false,
         constrainDuringPan: false,
         visibilityRatio: 0.05,
-        prefixUrl: '/static/iso/openseadragon/images/',
+        prefixUrl: 'https://static.gameznet.looknet.ca/iso/openseadragon/images/',
         minZoomImageRatio: 0.25,
         maxZoomPixelRatio: 4,
         zoomPerScroll: 1.15,

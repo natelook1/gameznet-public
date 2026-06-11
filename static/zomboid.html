@@ -7,7 +7,7 @@
   <link rel="icon" href="/static/gameznet.ico" type="image/x-icon">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="/static/iso/openseadragon/openseadragon.js"></script>
+  <script src="https://static.gameznet.looknet.ca/iso/openseadragon/openseadragon.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -828,7 +828,7 @@
     // Display-name map (Base.X -> "Box of 9mm Bullets"), from the game's item scripts.
     let NAME_MAP = null;
     function loadNameMap() {
-      return fetch(`${API_BASE}/static/item-icons/name-map.json`)
+      return fetch(`https://static.gameznet.looknet.ca/item-icons/name-map.json`)
         .then(r => r.ok ? r.json() : {}).then(m => { NAME_MAP = m || {}; }).catch(() => { NAME_MAP = {}; });
     }
     function prettifyStorageItem(fullType) {
@@ -836,16 +836,16 @@
       return (fullType || '').replace(/^Base\./, '').replace(/_/g, ' ');
     }
 
-    // Item-icon map (Base.X -> Item_Y.png), loaded once. Icons live in /static/item-icons/.
+    // Item-icon map (Base.X -> Item_Y.png), loaded once. Icons live in R2 under /item-icons/.
     let ICON_MAP = null;
     function loadIconMap() {
-      return fetch(`${API_BASE}/static/item-icons/icon-map.json`)
+      return fetch(`https://static.gameznet.looknet.ca/item-icons/icon-map.json`)
         .then(r => r.ok ? r.json() : {}).then(m => { ICON_MAP = m || {}; }).catch(() => { ICON_MAP = {}; });
     }
     function itemIcon(fullType) {
       const f = ICON_MAP && ICON_MAP[fullType];
       if (!f) return '';
-      return `<img src="${API_BASE}/static/item-icons/${f}" loading="lazy" onerror="this.style.display='none'">`;
+      return `<img src="https://static.gameznet.looknet.ca/item-icons/${f}" loading="lazy" onerror="this.style.display='none'">`;
     }
 
     // Which crates hold a given item (from per-crate container data) — for click-to-locate.
@@ -1025,7 +1025,7 @@
 
     async function loadTileInfo() {
       try {
-        const r = await fetch(`${API_BASE}/static/map-tiles/Zomboid/info.json`, { cache: 'no-store' });
+        const r = await fetch(`https://static.gameznet.looknet.ca/map-tiles/Zomboid/info.json`, { cache: 'no-store' });
         if (!r.ok) return;
         const d = await r.json();
         if (d.cell_x_min != null) CELL_MIN_X = d.cell_x_min;
@@ -1069,7 +1069,7 @@
             done(null, img); return img;
           }
 
-          const url = `/static/map-tiles/Zomboid/${coords.z}/${coords.x}/${coords.y}.png`;
+          const url = `https://static.gameznet.looknet.ca/map-tiles/Zomboid/${coords.z}/${coords.x}/${coords.y}.png`;
           img.src = url;
           img.onload = () => done(null, img);
           img.onerror = () => { console.warn(`[PZ] tile 404: ${url}`); done(null, img); };
@@ -1436,8 +1436,8 @@
     async function loadIsoInfo() {
       try {
         const [dziRes, infoRes] = await Promise.all([
-          fetch('/static/map-tiles/iso/base/layer0.dzi'),
-          fetch('/static/map-tiles/iso/base/map_info.json'),
+          fetch('https://static.gameznet.looknet.ca/map-tiles/iso/base/layer0.dzi'),
+          fetch('https://static.gameznet.looknet.ca/map-tiles/iso/base/map_info.json'),
         ]);
         const xml = new DOMParser().parseFromString(await dziRes.text(), 'text/xml');
         const img  = xml.querySelector('Image');
@@ -1747,12 +1747,12 @@
       loadIsoInfo().then(() => {
         isoViewer = OpenSeadragon({
           element: document.getElementById('iso-osd'),
-          tileSources: '/static/map-tiles/iso/base/layer2.dzi',
+          tileSources: 'https://static.gameznet.looknet.ca/map-tiles/iso/base/layer2.dzi',
           sequenceMode: false,
           homeFillsViewer: false,
           showZoomControl: false, showHomeControl: false, showFullPageControl: false, showRotationControl: false,
           constrainDuringPan: false, visibilityRatio: 0.05,
-          prefixUrl: '/static/iso/openseadragon/images/',
+          prefixUrl: 'https://static.gameznet.looknet.ca/iso/openseadragon/images/',
           minZoomImageRatio: 0.1, maxZoomPixelRatio: 4, zoomPerScroll: 1.15,
           smoothingEnabled: false, background: '#0a0a0e',
         });
