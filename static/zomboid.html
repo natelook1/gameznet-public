@@ -1153,7 +1153,7 @@
     function _vehicleMarkerKey(v) {
       const destroyed = isVehicleDestroyed(v);
       const engine = v.parts?.Engine ?? 0;
-      return `${destroyed ? 1 : 0}:${Math.round(engine * 10)}:${Math.round(v.x)}:${Math.round(v.y)}`;
+      return `${destroyed ? 1 : 0}:${Math.round(engine * 10)}:${v.x.toFixed(1)}:${v.y.toFixed(1)}`;
     }
 
     function redrawVehicles() {
