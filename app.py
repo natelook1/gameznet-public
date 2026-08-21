@@ -143,8 +143,9 @@ _steam_library_cache_time: float = 0.0
 def _build_steam_library_cache() -> dict:
     """
     Scan all Steam library folders for appmanifest_*.acf files and return a
-    mapping of lowercase installdir name → game name. This lets us detect any
-    installed Steam game by checking a process's exe path.
+    mapping of lowercase installdir name → (game name, appid). This lets us
+    detect any installed Steam game by checking a process's exe path, and
+    lets the UI render a real Steam capsule image for any of them.
     """
     import glob as _glob
 
@@ -176,6 +177,8 @@ def _build_steam_library_cache() -> dict:
         for acf in _glob.glob(os.path.join(apps_dir, "appmanifest_*.acf")):
             try:
                 name = installdir = None
+                appid_m = re.search(r'appmanifest_(\d+)\.acf$', acf)
+                appid = int(appid_m.group(1)) if appid_m else None
                 with open(acf, "r", encoding="utf-8", errors="ignore") as f:
                     for line in f:
                         m = re.search(r'"name"\s+"([^"]+)"', line)
@@ -187,7 +190,7 @@ def _build_steam_library_cache() -> dict:
                         if name and installdir:
                             break
                 if name and installdir:
-                    result[installdir.lower()] = name
+                    result[installdir.lower()] = (name, appid)
             except Exception:
                 pass
 
@@ -200,11 +203,12 @@ def _get_steam_library_cache() -> dict:
         _steam_library_cache_time = time.time()
     return _steam_library_cache
 
-def detect_game() -> str | None:
+def detect_game() -> tuple[str, int | None] | None:
     """
     Detect the currently running game by:
     1. Checking process exe paths against the local Steam library (any installed game).
     2. Falling back to the NON_STEAM_PROCESSES list for Battle.net / Wargaming / etc.
+    Returns (game_name, steam_appid) — appid is None for non-Steam games.
     """
     try:
         import psutil
@@ -225,7 +229,7 @@ def detect_game() -> str | None:
                 # 2. Non-Steam launcher fallback (Battle.net, Wargaming, Riot, Epic)
                 match = NON_STEAM_PROCESSES.get(proc_name) or _NON_STEAM_LOWER.get(proc_name.lower())
                 if match:
-                    return match
+                    return (match, None)
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
     except Exception:
@@ -233,14 +237,16 @@ def detect_game() -> str | None:
     return None
 
 def detect_game_steam(steam_id):
-    """Query /api/steam/game on the backend for the player's current game via Steam API."""
+    """Query /api/steam/game on the backend for the player's current game via Steam API.
+    Returns (game_name, steam_appid) or None."""
     import urllib.request
     try:
         url = f"{_backend_url()}/api/steam/game?steam_id={urllib.request.quote(steam_id)}"
         req = urllib.request.Request(url, headers={"User-Agent": "GamezNET"})
         with urllib.request.urlopen(req, timeout=3) as resp:
             data = json.loads(resp.read().decode())
-            return data.get("game") or None
+            game = data.get("game") or None
+            return (game, data.get("game_appid")) if game else None
     except Exception:
         return None
 
@@ -2470,7 +2476,7 @@ def heartbeat_loop():
                     cfg = json.load(f)
                 # Local process scan runs every heartbeat — detects any installed Steam game
                 # or non-Steam launcher game instantly without any network call.
-                game = detect_game()
+                game_info = detect_game()
                 # Steam API poll every 30s as a supplement: picks up games running on other
                 # devices or games where local process detection isn't available.
                 steam_id = cfg.get("steam_id")
@@ -2479,12 +2485,14 @@ def heartbeat_loop():
                     if _steam_counter >= 10:
                         _steam_counter = 0
                         _last_steam_game = detect_game_steam(steam_id)
-                    if not game:
-                        game = _last_steam_game
+                    if not game_info:
+                        game_info = _last_steam_game
+                game, game_appid = game_info if game_info else (None, None)
                 payload = json.dumps({
                     "name": cfg.get("name", ""),
                     "vpn_ip": cfg.get("vpn_ip", ""),
                     "game": game,
+                    "game_appid": game_appid,
                     "hidden": _invisible,
                     "ping": _telemetry.get("ping", None),
                     "version": VERSION,

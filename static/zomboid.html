@@ -457,6 +457,7 @@
   <script>
     const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
       ? 'https://gameznet.looknet.ca' : '';
+    const SSE_BASE = 'https://api-gamez.looknet.ca';
 
     let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {}, storage: {}, rare: { spawns: [] } };
     let leafletMap = null;
@@ -1869,7 +1870,7 @@
     function startSSE() {
       if (sseSource) sseSource.close();
       prefetch();
-      sseSource = new EventSource(`${API_BASE}/api/pz/stream`);
+      sseSource = new EventSource(`${SSE_BASE}/api/pz/stream`);
 
       sseSource.addEventListener('players', e => {
         try {
@@ -1957,7 +1958,8 @@
         _failed = true;
         sseSource.close(); sseSource = null;
         prefetch();
-        setInterval(prefetch, 15000);
+        const iv = setInterval(prefetch, 15000);
+        setTimeout(() => { clearInterval(iv); _failed = false; startSSE(); }, 30000);
       };
     }
 

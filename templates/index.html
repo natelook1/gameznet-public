@@ -1863,6 +1863,7 @@
 
     /* ── Op status label ── */
     .op-status { font-size: 10px; color: var(--text-dim); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .op-playing { color: var(--accent); opacity: 0.9; font-style: normal; }
 
     /* ── Session Scheduler ── */
     .session-card {
@@ -3954,7 +3955,20 @@
       const lbl = el.closest('.online-card')?.querySelector('.section-label');
       if (lbl) lbl.textContent = `Who's Online  ·  ${onlinePlayers.length}`;
       const esc = s => (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-      const steamAppMap = { 'Satisfactory': 526870, 'SCUM': 513710, 'Enshrouded': 1203620, 'Conan Exiles': 440900, 'Project Zomboid': 108600, 'World of Sea Battle': 2251500 };
+      // Fallback appid map for Steam games — only used if the client didn't report game_appid
+      // (older client versions). Newer clients send game_appid directly, so this list no
+      // longer needs to be kept up to date manually.
+      const steamAppMap = { 'Satisfactory': 526870, 'SCUM': 513710, 'Enshrouded': 1203620, 'Conan Exiles': 440900, 'Project Zomboid': 108600, 'World of Sea Battle': 2251500, 'X4: Foundations': 392160 };
+      // Icons for non-Steam launcher games, matched by regex against the detected game name.
+      // Only add entries backed by an asset actually present in static/ — no external CDN
+      // guessing, those links rot/404 silently.
+      const nonSteamIconMap = [
+        [/world of warcraft/i, '/static/WoW_icon.svg'],
+      ];
+      function nonSteamIcon(game) {
+        for (const [re, url] of nonSteamIconMap) if (re.test(game)) return url;
+        return null;
+      }
       function timeAgo(iso) {
         if (!iso) return 'a while ago';
         const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -3979,11 +3993,12 @@
 
         let gameBadgeHtml = '';
         if (p.game && !isOffline) {
-          const appid = steamAppMap[p.game];
+          const appid = p.game_appid || steamAppMap[p.game];
+          const icon = nonSteamIcon(p.game);
           if (appid) {
             gameBadgeHtml = `<img class="op-game-badge" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/capsule_sm_120.jpg" title="Playing: ${esc(p.game)}" onerror="this.style.display='none'">`;
-          } else if (/world of warcraft/i.test(p.game)) {
-            gameBadgeHtml = `<img class="op-game-badge" src="/static/WoW_icon.svg" title="Playing: ${esc(p.game)}" style="object-fit:contain;">`;
+          } else if (icon) {
+            gameBadgeHtml = `<img class="op-game-badge" src="${icon}" title="Playing: ${esc(p.game)}" style="object-fit:contain;">`;
           } else {
             gameBadgeHtml = `<div class="op-game-badge text-badge" title="Playing: ${esc(p.game)}">🎮</div>`;
           }
@@ -4019,6 +4034,7 @@
               <div class="op-name">${esc(p.name)}</div>
               ${!isOffline && p.mobile ? `<div class="op-status" style="color:var(--accent);opacity:0.8;">📱 Mobile</div>` : ''}
               ${!isOffline && !p.mobile && p.status ? `<div class="op-status">${esc(p.status)}</div>` : ''}
+              ${!isOffline && p.game ? `<div class="op-status op-playing">🎮 ${esc(p.game)}</div>` : ''}
               ${lastSeenHtml}
             </div>
             ${steamSub}
