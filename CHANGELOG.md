@@ -12,7 +12,29 @@
 
 ### Known gaps (documented, not fixed this release)
 - **Auto-update (`/api/update`) has no code-signing or checksum verification** — `GamezNET.exe` is currently unsigned. A compromised release pipeline could silently ship a poisoned installer to every player. Real fix is Authenticode code-signing (planned, not yet set up) plus signature verification in the update flow — deliberately deferred rather than patched with a stopgap, given how central the git-pull-based install/deploy flow is to this app.
-- See `gameznet-security-audit-2026-08.md` in infra-notes for the full list of remaining findings (RCE in Conan Exiles admin search, blueprint upload path traversal, SVG stored XSS in chat uploads, OAuth account-linking spoofing, missing rate limiting, tokens/sessions that never expire, and network/VPN trust-model items needing UniFi-side verification).
+- See `gameznet-security-audit-2026-08.md` in infra-notes for the full list of remaining findings.
+
+---
+
+## v1.11.1 — 2026-08-22
+
+### Fixed
+- **`/admin/token/revoke` crashed the whole backend process on a missing token** — `req.body.token` was never validated before hitting a `better-sqlite3` query with a required `?` placeholder; `undefined` throws a hard `RangeError` instead of a normal error response. Swarm's restart policy was masking this as a silent process restart. Found live in production logs immediately after a deploy. Added the missing `if (!req.body.token) return res.status(400)...` guard.
+
+---
+
+## v1.11.2 — 2026-08-22
+
+### Fixed
+- **RCE in Conan Exiles admin search** — `GET /api/conan-exiles/admin/search` interpolated the user-controlled `name` param directly into Python source text inside a raw string literal, escaping only SQL-style quotes, which doesn't neutralize Python string-literal syntax. Confirmed exploitable. `name` is now passed as a separate argv entry via `execFileSync('python', ['-c', script, name])` and read from `sys.argv[1]`, never interpolated into the script source. Verified locally and added a regression test with the original injection payload shape.
+- **Blueprint upload path traversal** — `X-Filename`/`X-Blueprint-Folder` headers went straight into `path.join()` with no traversal check; any authenticated player could write files outside `blueprints/`. Added `safeJoin()`, verified against relative traversal, absolute paths, and UNC paths.
+- **Stored XSS via SVG chat uploads** — `/api/chat/uploads/:filename` served `image/svg+xml` inline with no `Content-Disposition` header, unlike the general file-download route. Now forces `attachment` for SVG. Also closed the upload endpoint's `X-Player-Name` fallback that let anyone upload "as" another player with zero proof of identity — now requires `requirePlayer`/`X-Token`.
+- **OAuth account-linking spoofing (BattleNet, Steam)** — `/auth/battlenet` and `/auth/steam` accepted a bare player name with no proof of ownership, round-tripped through the OAuth provider and trusted verbatim in the callback. Both now require a real player token, verified server-side; the resolved name (never attacker input) is what gets linked. `/api/steam/unlink` had the same bare-name pattern for a non-OAuth action, switched to `requirePlayer`/`X-Token`.
+- **Identity spoofing across all chat actions** — `chat/send`/`chat/dm/send` had an optional `X-Token` path that silently fell back to trusting the request body when absent (which the desktop client always did); `chat/typing`/`chat/react`/`chat/delete` had no token support at all. All five now require `requirePlayer` unconditionally.
+- **`requireAdmin` had no rate limiting** — practically brute-forceable at whatever throughput the network allows. Added `express-rate-limit`: 20 failed attempts per 15 minutes per source IP, then 429. Only failed attempts count, so legitimate admin usage is never slowed.
+
+### Deliberately deferred
+- Player token / mobile session expiry, full client-side WireGuard keygen, auto-update code-signing, and the admin panel's `localStorage` session storage were all discussed and intentionally scoped out of this pass — see `gameznet-security-audit-2026-08.md` in infra-notes for the reasoning on each.
 
 ---
 
