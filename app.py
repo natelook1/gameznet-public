@@ -8,6 +8,7 @@ import os
 import sys
 import json
 import ctypes
+import secrets
 import subprocess
 import threading
 import webbrowser
@@ -269,6 +270,11 @@ SERVER_PUBLIC_KEY = "SLG8saonFoQ+B8x59SBeHCXouLTpVhyEYPqiUZoGqgI="
 SERVER_ENDPOINT = "184.66.15.159:51820"
 ALLOWED_IPS = "192.168.8.0/24, 192.168.30.0/24"
 PORT = 7734
+# Random per-process secret, only ever known to the page Flask itself rendered
+# (passed into the template, read from a JS global). Without this, any other
+# local process could POST to the loopback API and trigger actions like RustDesk
+# remote-control without the user ever seeing the GamezNET UI.
+LOCAL_SECRET = secrets.token_hex(32)
 RUSTDESK_VERSION = "1.4.6"  # RustDesk release version — do NOT bump with gameznet version
 RUSTDESK_URL = f"https://github.com/rustdesk/rustdesk/releases/download/{RUSTDESK_VERSION}/rustdesk-{RUSTDESK_VERSION}-x86_64.exe"
 
@@ -645,7 +651,7 @@ def check_version():
 
 @app.route("/")
 def index():
-    return render_template("index.html", connected=_connected, worker_url=WORKER_URL)
+    return render_template("index.html", connected=_connected, worker_url=WORKER_URL, local_secret=LOCAL_SECRET)
 
 @app.route("/api/status", methods=["GET"])
 def api_status():
@@ -1168,14 +1174,15 @@ def api_mobile_status():
     try:
         with open(CONFIG_FILE, "r") as f:
             data = json.load(f)
-        private_key = data.get("private_key")
-        if not private_key:
+        token = data.get("token")
+        if not token:
             return jsonify({"error": "Not provisioned"}), 404
         import urllib.request as _ur
         req_obj = _ur.Request(
             f"{_backend_url()}/api/mobile/session-status",
-            data=json.dumps({"private_key": private_key}).encode(),
-            headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}
+            data=b"{}",
+            headers={"Content-Type": "application/json", "User-Agent": "GamezNET", "X-Token": token},
+            method="POST"
         )
         with _ur.urlopen(req_obj, timeout=5) as resp:
             return jsonify(json.loads(resp.read().decode()))
@@ -1192,14 +1199,15 @@ def api_mobile_revoke():
     try:
         with open(CONFIG_FILE, "r") as f:
             data = json.load(f)
-        private_key = data.get("private_key")
-        if not private_key:
+        token = data.get("token")
+        if not token:
             return jsonify({"error": "Not provisioned"}), 404
         import urllib.request as _ur
         req_obj = _ur.Request(
             f"{_backend_url()}/api/mobile/revoke",
-            data=json.dumps({"private_key": private_key}).encode(),
-            headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}
+            data=b"{}",
+            headers={"Content-Type": "application/json", "User-Agent": "GamezNET", "X-Token": token},
+            method="POST"
         )
         with _ur.urlopen(req_obj, timeout=5) as resp:
             return jsonify(json.loads(resp.read().decode()))
@@ -1851,12 +1859,25 @@ def _do_start_host(requester: str, password: str) -> None:
         _host_lock.release()
 
 
+def _require_local_secret():
+    """
+    Gate on LOCAL_SECRET for loopback endpoints that take an active outbound
+    action (launching/controlling RustDesk) rather than just reading local
+    state — without this, any other local process could POST here and pull
+    the machine into an attacker-chosen remote-desktop session with no UI
+    interaction at all.
+    """
+    sent = request.headers.get("X-Local-Secret", "")
+    return secrets.compare_digest(sent, LOCAL_SECRET)
+
 @app.route("/api/remote/start-host", methods=["POST"])
 def api_remote_start_host():
     """
     Kick off host setup in a background thread and return immediately.
     The frontend polls /api/remote/status for the 'ready' state transition.
     """
+    if not _require_local_secret():
+        return jsonify({"error": "Unauthorized"}), 401
     data = request.json or {}
     password = data.get("password", "")
     requester = data.get("requester", "")
@@ -1907,6 +1928,8 @@ def api_remote_start_helper():
     """
     Download RustDesk (if needed) and attempt to connect to the requester.
     """
+    if not _require_local_secret():
+        return jsonify({"error": "Unauthorized"}), 401
     if not _helper_lock.acquire(blocking=False):
         log.info("[RUSTDESK TRACKER] Ignoring duplicate start-helper request")
         return jsonify({"success": True, "ignored": True}), 200

@@ -3172,6 +3172,7 @@
     provisioned: false,
     connected: false,
     busy: false,
+    localSecret: '{{ local_secret }}',
     name: '',
     clientIp: '',
     connectedAt: null,
@@ -4279,7 +4280,7 @@
     if (_previewCache[url] === null) return;
     try {
       if (!_previewCache[url]) {
-        const r = await fetch(`/api/chat/link-preview?url=${encodeURIComponent(url)}`);
+        const r = await fetch(`/api/chat/link-preview?url=${encodeURIComponent(url)}`, { headers: { 'X-Token': state.token } });
         if (!r.ok) { _previewCache[url] = null; return; }
         _previewCache[url] = await r.json();
       }
@@ -6656,7 +6657,7 @@
     const pass = Math.random().toString(36).slice(-8);
     remoteState._sessionPass = pass;
     fetch('/api/remote/start-host', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Local-Secret': state.localSecret },
       body: JSON.stringify({ requester: state.name, password: pass })
     }).catch(() => { if (!remoteState.ended) endRemoteSession(); });
 
@@ -6748,7 +6749,7 @@
             _rpStep(3); // advance immediately — no timer
 
             const helperRes = await fetch('/api/remote/start-helper', {
-              method: 'POST', headers: {'Content-Type':'application/json'},
+              method: 'POST', headers: {'Content-Type':'application/json', 'X-Local-Secret': state.localSecret},
               body: JSON.stringify({ rustdesk_id: sd.rustdesk_id, password: sd.password, helper: state.name })
             });
 
