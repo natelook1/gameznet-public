@@ -256,7 +256,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.11.1"
+VERSION = "1.11.2"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1899,12 +1899,15 @@ def api_remote_start_host():
 @app.route("/api/steam/link", methods=["POST"])
 def api_steam_link():
     """Open Steam OpenID login in the default browser to link the player's Steam account."""
-    data = request.json or {}
-    name = data.get("name", "")
-    if not name:
-        return jsonify({"error": "Missing name"}), 400
+    if not os.path.exists(CONFIG_FILE):
+        return jsonify({"error": "Not provisioned"}), 404
+    with open(CONFIG_FILE, "r") as f:
+        cfg = json.load(f)
+    token = cfg.get("token")
+    if not token:
+        return jsonify({"error": "Not provisioned"}), 404
     import webbrowser
-    webbrowser.open(f"{WORKER_URL}/auth/steam?token={name}")
+    webbrowser.open(f"{WORKER_URL}/auth/steam?token={token}")
     return jsonify({"success": True})
 
 

@@ -4324,7 +4324,7 @@
   window.deleteMsg = async function(id, type) {
     if (!confirm('Delete this message?')) return;
     try {
-      const r = await fetch('/api/chat/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ from_name: state.name, msg_id: id, msg_type: type }) });
+      const r = await fetch('/api/chat/delete', { method: 'POST', headers: {'Content-Type':'application/json', 'X-Token': state.token}, body: JSON.stringify({ msg_id: id, msg_type: type }) });
       if (!r.ok) { toast('Could not delete message', 'danger'); return; }
       const el = document.querySelector(`[data-msg-id="${id}"]`);
       if (el) { el.querySelector('.chat-msg-body').textContent = '[deleted]'; el.querySelector('.chat-msg-body').className = 'chat-msg-body deleted'; el.querySelector('.chat-msg-actions').remove(); }
@@ -4355,7 +4355,7 @@
     const type = msgEl.dataset.msgType;
     if (!id) return;
     try {
-      const r = await fetch('/api/chat/react', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ from_name: state.name, msg_id: id, msg_type: type, emoji }) });
+      const r = await fetch('/api/chat/react', { method: 'POST', headers: {'Content-Type':'application/json', 'X-Token': state.token}, body: JSON.stringify({ msg_id: id, msg_type: type, emoji }) });
       if (r.ok) { const d = await r.json(); renderReactions(id, d.reactions); }
     } catch {}
   }
@@ -4395,7 +4395,7 @@
   function emitTyping() {
     if (!state.name) return;
     const to_name = chatActiveTarget !== 'global' ? chatActiveTarget : undefined;
-    fetch('/api/chat/typing', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ from_name: state.name, ...(to_name ? { to_name } : {}) }) }).catch(()=>{});
+    fetch('/api/chat/typing', { method: 'POST', headers: {'Content-Type':'application/json', 'X-Token': state.token}, body: JSON.stringify({ ...(to_name ? { to_name } : {}) }) }).catch(()=>{});
   }
 
   // ── Read receipts ────────────────────────────────────────────────────────────
@@ -4540,7 +4540,7 @@
     let attachment_id = null;
     if (chatPasteFile) {
       try {
-        const r = await fetch('/api/chat/upload', { method: 'POST', headers: { 'Content-Type': chatPasteFile.blob.type, 'X-Player-Name': state.name }, body: chatPasteFile.blob });
+        const r = await fetch('/api/chat/upload', { method: 'POST', headers: { 'Content-Type': chatPasteFile.blob.type, 'X-Token': state.token }, body: chatPasteFile.blob });
         if (r.ok) { const d = await r.json(); attachment_id = d.id; }
       } catch {}
       clearPasteImage();
@@ -4561,9 +4561,9 @@
       let res;
       const replyId = chatReplyTo?.id ? parseInt(chatReplyTo.id) : undefined;
       if (target === 'global') {
-        res = await fetch('/api/chat/send', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name: state.name, body: sendBody, reply_to_id: replyId, attachment_id }) });
+        res = await fetch('/api/chat/send', { method: 'POST', headers: {'Content-Type':'application/json', 'X-Token': state.token}, body: JSON.stringify({ body: sendBody, reply_to_id: replyId, attachment_id }) });
       } else {
-        res = await fetch('/api/chat/dm/send', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ from_name: state.name, to_name: target, body: sendBody, reply_to_id: replyId, attachment_id }) });
+        res = await fetch('/api/chat/dm/send', { method: 'POST', headers: {'Content-Type':'application/json', 'X-Token': state.token}, body: JSON.stringify({ to_name: target, body: sendBody, reply_to_id: replyId, attachment_id }) });
       }
       if (!res.ok) throw new Error();
       const { sent_at, id: msgId } = await res.json();
@@ -6491,7 +6491,7 @@
   async function unlinkSteam() {
     if (!state.name) return;
     try {
-      await fetch('/api/steam/unlink', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: state.name }) });
+      await fetch('/api/steam/unlink', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Token': state.token }, body: JSON.stringify({}) });
       Object.assign(state, { steam_id: null, steam_name: null, steam_avatar: null, steam_level: 0, steam_game_count: 0, steam_library: null });
       updateSteamUI();
       toast('Steam account unlinked', 'info');
@@ -8441,7 +8441,7 @@
       });
     } catch(e) {}
 
-    const popup = window.open('{{ worker_url }}/auth/battlenet?name=' + encodeURIComponent(state.name), 'bnetauth', 'width=600,height=700');
+    const popup = window.open('{{ worker_url }}/auth/battlenet?token=' + encodeURIComponent(state.token), 'bnetauth', 'width=600,height=700');
     window.addEventListener('message', async function handler(e) {
       if (e.data === 'bnet_auth_success') {
         window.removeEventListener('message', handler);
