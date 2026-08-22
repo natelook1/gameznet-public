@@ -318,6 +318,38 @@ def wg_cli():
         return system
     return None
 
+def tunnel_handshake_is_live(max_age_s=180):
+    """
+    Returns True only if the tunnel interface exists AND has a handshake younger
+    than max_age_s. A running tunnel *service* with no recent handshake (e.g. a
+    peer the UDM has since removed, or a session stale from before a reboot) is
+    NOT considered live — the interface can be Up in Windows while passing no
+    actual traffic to the peer.
+    PersistentKeepalive=25s — a live tunnel handshakes every ~25s, so anything
+    under 3 minutes means the peer is still responding.
+    """
+    wg = wg_cli()
+    if not wg:
+        return False
+    try:
+        CREATE_NO_WINDOW = 0x08000000
+        out = subprocess.check_output(
+            [wg, "show", TUNNEL_NAME],
+            text=True, creationflags=CREATE_NO_WINDOW, timeout=5
+        )
+        h_match = re.search(r"latest handshake: (.+)", out)
+        if not h_match:
+            return False
+        hs = h_match.group(1).strip().lower()
+        age_s = 0
+        m = re.search(r"(\d+)\s+minute", hs)
+        if m: age_s += int(m.group(1)) * 60
+        m = re.search(r"(\d+)\s+second", hs)
+        if m: age_s += int(m.group(1))
+        return age_s < max_age_s
+    except Exception:
+        return False
+
 def _local_url():
     """Return gameznet.local URL if it resolves, otherwise fall back to 127.0.0.1."""
     import socket
@@ -2860,16 +2892,23 @@ if __name__ == "__main__":
     except Exception:
         pass
 
-    # Startup WireGuard cleanup: if tunnel service is running from a previous unclean exit,
-    # send a pre-connect heartbeat to re-add UDM peer if needed, then resume connected state.
-    # If no config exists, uninstall the orphaned tunnel and stay disconnected.
+    # Startup WireGuard cleanup: the tunnel is a Windows service (AUTO_START) and
+    # comes back up on every boot independently of this app — before this code
+    # even runs. A running service is NOT proof the tunnel actually works: the
+    # peer may have no live handshake (UDM rejected/removed it while the PC was
+    # off, or the session went stale across the reboot), in which case the
+    # interface sits "Up" in Windows while passing no real traffic. Only adopt
+    # the tunnel as connected if the handshake is actually live; otherwise tear
+    # it down the same way api_disconnect does, so the app starts clean instead
+    # of silently timing out against a dead tunnel until the user manually
+    # connects/disconnects.
     try:
         CREATE_NO_WINDOW = 0x08000000
-        wg = wg_cli()
-        if wg:
-            result = subprocess.run([wg, "show", TUNNEL_NAME], capture_output=True, creationflags=CREATE_NO_WINDOW, timeout=3)
+        wg_show = wg_cli()
+        if wg_show:
+            result = subprocess.run([wg_show, "show", TUNNEL_NAME], capture_output=True, creationflags=CREATE_NO_WINDOW, timeout=3)
             if result.returncode == 0 and result.stdout.strip():
-                if os.path.exists(CONFIG_FILE):
+                if os.path.exists(CONFIG_FILE) and tunnel_handshake_is_live():
                     try:
                         with open(CONFIG_FILE, "r") as f:
                             _cfg = json.load(f)
@@ -2877,17 +2916,20 @@ if __name__ == "__main__":
                         _hb = json.dumps({"name": _cfg.get("name", ""), "vpn_ip": _cfg.get("vpn_ip", ""), "version": VERSION}).encode()
                         _req = _ur.Request(f"{WORKER_URL}/api/heartbeat", data=_hb, headers={"Content-Type": "application/json", "User-Agent": "GamezNET", "X-Token": _cfg.get("token", "")}, method="POST")
                         _ur.urlopen(_req, timeout=5)
-                        log.info("Startup pre-connect heartbeat sent (tunnel was already running)")
+                        log.info("Startup pre-connect heartbeat sent (tunnel was already running with a live handshake)")
                     except Exception as _e:
                         log.warning("Startup heartbeat failed: %s", _e)
                     _connected = True
                 else:
-                    subprocess.run([wg, "/uninstalltunnelservice", TUNNEL_NAME], capture_output=True, creationflags=CREATE_NO_WINDOW)
-                    log.info("Orphaned tunnel uninstalled on startup (no config found)")
-                    # Flush DNS after uninstalling orphaned tunnel
+                    reason = "no config found" if not os.path.exists(CONFIG_FILE) else "no live handshake (stale/dead peer)"
+                    wg_uninstall = wg_exe()
+                    if wg_uninstall:
+                        subprocess.run([wg_uninstall, "/uninstalltunnelservice", TUNNEL_NAME], capture_output=True, creationflags=CREATE_NO_WINDOW)
+                    log.info("Stale tunnel uninstalled on startup (%s)", reason)
+                    # Flush DNS after uninstalling stale/orphaned tunnel
                     try:
                         subprocess.run(["ipconfig", "/flushdns"], capture_output=True, creationflags=CREATE_NO_WINDOW, timeout=5)
-                        log.debug("DNS cache flushed after orphaned tunnel cleanup")
+                        log.debug("DNS cache flushed after stale tunnel cleanup")
                     except Exception as _flush_err:
                         log.debug("DNS flush failed: %s", _flush_err)
     except Exception:
