@@ -8435,7 +8435,7 @@
     // Force a heartbeat so the player row exists before OAuth callback attempts to update it
     try {
       await fetch('/api/heartbeat', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Token': state.token },
         body: JSON.stringify({ name: state.name, vpn_ip: state.clientIp || '0.0.0.0', version: '1.0.0' })
       });
     } catch(e) {}

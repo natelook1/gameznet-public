@@ -255,7 +255,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.10.15"
+VERSION = "1.11.0"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -385,7 +385,7 @@ def cleanup_tunnel():
             import urllib.request as _ur
             _hb = json.dumps({"name": cfg.get("name", ""), "vpn_ip": cfg.get("vpn_ip", ""), "disconnecting": True}).encode()
             # Always use public WORKER_URL for cleanup heartbeat
-            _req = _ur.Request(f"{WORKER_URL}/api/heartbeat", data=_hb, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}, method="POST")
+            _req = _ur.Request(f"{WORKER_URL}/api/heartbeat", data=_hb, headers={"Content-Type": "application/json", "User-Agent": "GamezNET", "X-Token": cfg.get("token", "")}, method="POST")
             _ur.urlopen(_req, timeout=4)
             log.debug("Cleanup heartbeat sent to %s", WORKER_URL)
         except Exception as _e:
@@ -648,7 +648,7 @@ def api_connect():
         try:
             import urllib.request as _ur
             _hb = json.dumps({"name": config_data.get("name", ""), "vpn_ip": config_data.get("vpn_ip", ""), "version": VERSION}).encode()
-            _req = _ur.Request(f"{WORKER_URL}/api/heartbeat", data=_hb, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}, method="POST")
+            _req = _ur.Request(f"{WORKER_URL}/api/heartbeat", data=_hb, headers={"Content-Type": "application/json", "User-Agent": "GamezNET", "X-Token": config_data.get("token", "")}, method="POST")
             _ur.urlopen(_req, timeout=5)
             log.info("Pre-connect heartbeat sent to public URL")
         except Exception as _e:
@@ -832,7 +832,7 @@ def api_disconnect():
                 req = urllib.request.Request(
                     f"{WORKER_URL}/api/heartbeat",
                     data=payload,
-                    headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
+                    headers={"Content-Type": "application/json", "User-Agent": "GamezNET", "X-Token": cfg.get("token", "")},
                     method="POST"
                 )
                 urllib.request.urlopen(req, timeout=5)
@@ -2502,7 +2502,7 @@ def heartbeat_loop():
                 req = urllib.request.Request(
                     f"{VPN_BACKEND_URL}/api/heartbeat",
                     data=payload,
-                    headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
+                    headers={"Content-Type": "application/json", "User-Agent": "GamezNET", "X-Token": cfg.get("token", "")},
                     method="POST"
                 )
                 urllib.request.urlopen(req, timeout=5)
@@ -2875,7 +2875,7 @@ if __name__ == "__main__":
                             _cfg = json.load(f)
                         import urllib.request as _ur
                         _hb = json.dumps({"name": _cfg.get("name", ""), "vpn_ip": _cfg.get("vpn_ip", ""), "version": VERSION}).encode()
-                        _req = _ur.Request(f"{WORKER_URL}/api/heartbeat", data=_hb, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"}, method="POST")
+                        _req = _ur.Request(f"{WORKER_URL}/api/heartbeat", data=_hb, headers={"Content-Type": "application/json", "User-Agent": "GamezNET", "X-Token": _cfg.get("token", "")}, method="POST")
                         _ur.urlopen(_req, timeout=5)
                         log.info("Startup pre-connect heartbeat sent (tunnel was already running)")
                     except Exception as _e:
