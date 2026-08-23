@@ -256,7 +256,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.11.4"
+VERSION = "1.11.5"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1366,6 +1366,49 @@ def api_reset():
     """Clear provisioned credentials (for re-setup)."""
     if os.path.exists(CONFIG_FILE):
         os.remove(CONFIG_FILE)
+    return jsonify({"success": True})
+
+@app.route("/api/reinstall", methods=["POST"])
+def api_reinstall():
+    """
+    Download the latest installer and launch it interactively (not /VERYSILENT)
+    so the user goes through the real wizard — lets them repair a broken
+    install or revisit options like autostart, unlike the silent in-app update.
+    """
+    if not getattr(sys, "frozen", False):
+        return jsonify({"error": "Reinstall is only available in the packaged app"}), 400
+
+    import urllib.request
+    import ssl
+    try:
+        ctx = ssl.create_default_context()
+        ctx.load_default_certs()
+    except Exception:
+        try:
+            import certifi
+            ctx = ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            ctx = ssl._create_unverified_context()
+
+    try:
+        tmp = os.path.join(tempfile.gettempdir(), "GamezNET-Setup.exe")
+        log.info("Downloading installer for interactive reinstall from %s", INSTALLER_URL)
+        req = urllib.request.Request(INSTALLER_URL, headers={"User-Agent": "GamezNET"})
+        with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+            with open(tmp, "wb") as f:
+                f.write(resp.read())
+    except Exception as e:
+        log.error("Installer download failed: %r", e, exc_info=True)
+        return jsonify({"error": f"Failed to download installer: {repr(e)}"}), 500
+
+    try:
+        # shellexec (via "runas"-capable ShellExecuteW) since the installer
+        # requests admin elevation itself — a plain Popen would fail to elevate.
+        ctypes.windll.shell32.ShellExecuteW(None, "open", tmp, None, None, 1)
+    except Exception as e:
+        log.error("Failed to launch installer: %r", e, exc_info=True)
+        return jsonify({"error": f"Failed to launch installer: {repr(e)}"}), 500
+
     return jsonify({"success": True})
 
 @app.route("/api/logs", methods=["GET"])

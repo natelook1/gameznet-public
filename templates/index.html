@@ -3711,7 +3711,7 @@
 
   // ── Reset ──────────────────────────────────────────────────────────────────
   async function resetConfig() {
-    if (!confirm('This will remove your saved credentials. You will need your invite token again. Continue?')) return;
+    if (!confirm('This will remove your saved credentials and open the installer to reinstall GamezNET. You will need your invite token again. Continue?')) return;
     if (state.connected) {
       await fetch('/api/disconnect', { method: 'POST' });
       state.connected = false;
@@ -3721,7 +3721,18 @@
     state.name = '';
     state.clientIp = '';
     showUnprovisioned();
-    toast('Reset complete. Enter a new token to continue.');
+
+    try {
+      const res = await fetch('/api/reinstall', { method: 'POST' });
+      if (res.ok) {
+        toast('Reset complete. Opening the installer...');
+      } else {
+        const data = await res.json();
+        toast('Reset complete, but could not open the installer: ' + (data.error || 'unknown error'), true);
+      }
+    } catch (e) {
+      toast('Reset complete. Enter a new token to continue.');
+    }
   }
 
   // ── Session Scheduler ──────────────────────────────────────────────────────
