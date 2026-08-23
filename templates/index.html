@@ -3470,6 +3470,7 @@
         const s    = await sres.json();
         state.connected = s.connected;
         state.updateRequired = s.update_required;
+        state.offerAutostart = s.offer_autostart;
         if (s.version) setVersionBadge(s.version, s.update_required);
         setStatus(s.connected ? 'connected' : 'disconnected');
         if (s.connected) startSessionTimer();
@@ -3661,13 +3662,28 @@
 
   // ── Update Trigger ─────────────────────────────────────────────────────────
   async function triggerUpdate() {
+    let enableAutostart = false;
+    if (state.offerAutostart) {
+      enableAutostart = confirm(
+        'Launch GamezNET automatically when Windows starts?\n\n' +
+        'This lets it reconnect on its own if the VPN tunnel comes up broken after a reboot, ' +
+        'instead of staying disconnected until you open the app.\n\n' +
+        'You can change this later in Task Scheduler.'
+      );
+      state.offerAutostart = false; // asked — don't ask again this session
+    }
+
     state.busy = true;
     const btn = document.getElementById('connect-btn');
     btn.textContent = 'Updating...';
     btn.disabled = true;
 
     try {
-      const res = await fetch('/api/update', { method: 'POST' });
+      const res = await fetch('/api/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enable_autostart: enableAutostart })
+      });
       if (res.ok) {
         _showUpdatingOverlay();
         return;

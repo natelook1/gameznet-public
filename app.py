@@ -256,7 +256,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.11.3"
+VERSION = "1.11.4"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -356,6 +356,34 @@ def tunnel_handshake_is_live(max_age_s=180):
     except Exception:
         return False
 
+def autostart_task_exists():
+    """Check whether the GamezNET Task Scheduler autostart entry is registered."""
+    try:
+        CREATE_NO_WINDOW = 0x08000000
+        result = subprocess.run(
+            ["schtasks", "/Query", "/TN", TUNNEL_NAME],
+            capture_output=True, creationflags=CREATE_NO_WINDOW, timeout=5
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+def backend_reachable(timeout_s=3):
+    """
+    TCP-connect to the backend directly (bypassing DNS/Traefik), so a stale
+    WireGuard handshake can't mask a dead route. PersistentKeepalive keeps the
+    handshake fresh against the UDM peer even when routing to gamez-vm itself
+    is broken past that hop, so handshake age alone is not a valid liveness
+    signal for whether the backend is actually reachable.
+    """
+    import socket
+    host, port = "192.168.30.58", 3000
+    try:
+        with socket.create_connection((host, port), timeout=timeout_s):
+            return True
+    except Exception:
+        return False
+
 def _local_url():
     """Return gameznet.local URL if it resolves, otherwise fall back to 127.0.0.1."""
     import socket
@@ -442,6 +470,43 @@ def cleanup_tunnel():
 
 # Register the cleanup function to run when the script terminates
 atexit.register(cleanup_tunnel)
+
+def _register_shutdown_handler():
+    """
+    atexit does not fire on Windows shutdown/logoff (CTRL_SHUTDOWN_EVENT /
+    CTRL_LOGOFF_EVENT) — only on normal interpreter exit. Without this, a
+    tunnel left connected across a reboot is inherited by the WireGuard
+    service's own auto-start, which can come back up handshake-dead and
+    stay that way until the app is manually reconnected. Tearing the tunnel
+    down here means the auto-started tunnel on the next boot starts clean
+    instead of inheriting a stale session.
+    Windows gives control handlers a short grace period before killing the
+    process, so this must return quickly — cleanup_tunnel()'s heartbeat and
+    uninstall calls are both already timeout-bounded.
+    """
+    CTRL_SHUTDOWN_EVENT = 6
+    CTRL_LOGOFF_EVENT = 5
+    CTRL_CLOSE_EVENT = 2
+
+    def _handler(ctrl_type):
+        if ctrl_type in (CTRL_SHUTDOWN_EVENT, CTRL_LOGOFF_EVENT, CTRL_CLOSE_EVENT):
+            log.info("Shutdown/logoff signal received (type=%d) — tearing down tunnel", ctrl_type)
+            cleanup_tunnel()
+        return False  # let other handlers (incl. default) still run
+
+    try:
+        import win32api
+        win32api.SetConsoleCtrlHandler(_handler, True)
+    except Exception:
+        try:
+            HANDLER_ROUTINE = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_uint)
+            global _ctrl_handler_ref
+            _ctrl_handler_ref = HANDLER_ROUTINE(lambda t: bool(_handler(t)))
+            ctypes.windll.kernel32.SetConsoleCtrlHandler(_ctrl_handler_ref, True)
+        except Exception as e:
+            log.debug("Could not register shutdown handler: %s", e)
+
+_register_shutdown_handler()
 
 # ─── Telemetry Engine ─────────────────────────────────────────────────────────
 
@@ -655,13 +720,22 @@ def index():
 
 @app.route("/api/status", methods=["GET"])
 def api_status():
+    offer_autostart = False
+    try:
+        with open(CONFIG_FILE) as f:
+            _cfg = json.load(f)
+        if not _cfg.get("autostart_prompted") and not autostart_task_exists():
+            offer_autostart = True
+    except Exception:
+        pass
     return jsonify({
         "connected": _connected,
         "telemetry": _telemetry,
         "update_required": _update_required,
         "version": VERSION,
         "full_route": _full_route,
-        "player_status": _player_status
+        "player_status": _player_status,
+        "offer_autostart": offer_autostart
     })
 
 @app.route("/api/quit", methods=["GET"])
@@ -2160,6 +2234,17 @@ def api_update():
     import ssl
     import tempfile
 
+    # One-time autostart offer: record that we've asked (regardless of answer)
+    # so /api/status stops requesting the prompt, and enable it now if accepted.
+    enable_autostart = bool((request.json or {}).get("enable_autostart"))
+    try:
+        with open(CONFIG_FILE) as f:
+            _cfg = json.load(f)
+        _cfg["autostart_prompted"] = True
+        _write_config(_cfg)
+    except Exception:
+        pass
+
     # Prefer Windows cert store; fall back to certifi; last resort skip verify
     try:
         ctx = ssl.create_default_context()
@@ -2199,8 +2284,10 @@ def api_update():
             # which kills this process mid-wait, releasing all DLL locks.
             # The installer continues as an independent process, installs files,
             # then its [Run] section (no postinstall flag) launches the new exe.
-            subprocess.run([tmp, "/VERYSILENT", "/NORESTART"],
-                           creationflags=subprocess.CREATE_NO_WINDOW)
+            install_args = [tmp, "/VERYSILENT", "/NORESTART"]
+            if enable_autostart:
+                install_args.append("/TASKS=autostart")
+            subprocess.run(install_args, creationflags=subprocess.CREATE_NO_WINDOW)
             os._exit(0)
 
         threading.Thread(target=_install_and_relaunch, daemon=True).start()
@@ -2934,7 +3021,7 @@ if __name__ == "__main__":
         if wg_show:
             result = subprocess.run([wg_show, "show", TUNNEL_NAME], capture_output=True, creationflags=CREATE_NO_WINDOW, timeout=3)
             if result.returncode == 0 and result.stdout.strip():
-                if os.path.exists(CONFIG_FILE) and tunnel_handshake_is_live():
+                if os.path.exists(CONFIG_FILE) and tunnel_handshake_is_live() and backend_reachable():
                     try:
                         with open(CONFIG_FILE, "r") as f:
                             _cfg = json.load(f)
@@ -2947,7 +3034,12 @@ if __name__ == "__main__":
                         log.warning("Startup heartbeat failed: %s", _e)
                     _connected = True
                 else:
-                    reason = "no config found" if not os.path.exists(CONFIG_FILE) else "no live handshake (stale/dead peer)"
+                    if not os.path.exists(CONFIG_FILE):
+                        reason = "no config found"
+                    elif not tunnel_handshake_is_live():
+                        reason = "no live handshake (stale/dead peer)"
+                    else:
+                        reason = "handshake live but backend unreachable (dead route past the tunnel peer)"
                     wg_uninstall = wg_exe()
                     if wg_uninstall:
                         subprocess.run([wg_uninstall, "/uninstalltunnelservice", TUNNEL_NAME], capture_output=True, creationflags=CREATE_NO_WINDOW)
@@ -2958,6 +3050,19 @@ if __name__ == "__main__":
                         log.debug("DNS cache flushed after stale tunnel cleanup")
                     except Exception as _flush_err:
                         log.debug("DNS flush failed: %s", _flush_err)
+                    # The Windows-auto-started tunnel service can come up dead (no
+                    # handshake ever) when it races network adapter init at boot —
+                    # a plain teardown leaves the user disconnected until they
+                    # manually hit reconnect. Recreate it the same way a manual
+                    # reconnect does, now that the app itself (and networking) is
+                    # fully up, so the user never has to intervene by hand.
+                    if os.path.exists(CONFIG_FILE):
+                        try:
+                            log.info("Recreating tunnel from startup (dead boot-time tunnel)")
+                            with app.test_request_context():
+                                api_connect()
+                        except Exception as _reconnect_err:
+                            log.warning("Startup tunnel recreation failed: %s", _reconnect_err)
     except Exception:
         pass
 
