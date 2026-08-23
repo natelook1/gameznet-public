@@ -2284,9 +2284,12 @@ def api_update():
             # which kills this process mid-wait, releasing all DLL locks.
             # The installer continues as an independent process, installs files,
             # then its [Run] section (no postinstall flag) launches the new exe.
-            install_args = [tmp, "/VERYSILENT", "/NORESTART"]
-            if enable_autostart:
-                install_args.append("/TASKS=autostart")
+            # /TASKS must be passed explicitly either way: Inno Setup applies each
+            # task's own default-checked state on a silent install when /TASKS is
+            # omitted, so a bare /VERYSILENT would create the autostart task
+            # regardless of what the user answered in the in-app prompt.
+            task_arg = "/TASKS=autostart" if enable_autostart else "/TASKS=!autostart"
+            install_args = [tmp, "/VERYSILENT", "/NORESTART", task_arg]
             subprocess.run(install_args, creationflags=subprocess.CREATE_NO_WINDOW)
             os._exit(0)
 
