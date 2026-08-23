@@ -3663,7 +3663,9 @@
   // ── Update Trigger ─────────────────────────────────────────────────────────
   async function triggerUpdate() {
     let enableAutostart = false;
+    let promptShown = false;
     if (state.offerAutostart) {
+      promptShown = true;
       enableAutostart = confirm(
         'Launch GamezNET automatically when Windows starts?\n\n' +
         'This lets it reconnect on its own if the VPN tunnel comes up broken after a reboot, ' +
@@ -3682,7 +3684,7 @@
       const res = await fetch('/api/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enable_autostart: enableAutostart })
+        body: JSON.stringify({ enable_autostart: enableAutostart, autostart_prompt_shown: promptShown })
       });
       if (res.ok) {
         _showUpdatingOverlay();

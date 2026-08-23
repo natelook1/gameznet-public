@@ -2234,16 +2234,22 @@ def api_update():
     import ssl
     import tempfile
 
-    # One-time autostart offer: record that we've asked (regardless of answer)
-    # so /api/status stops requesting the prompt, and enable it now if accepted.
-    enable_autostart = bool((request.json or {}).get("enable_autostart"))
-    try:
-        with open(CONFIG_FILE) as f:
-            _cfg = json.load(f)
-        _cfg["autostart_prompted"] = True
-        _write_config(_cfg)
-    except Exception:
-        pass
+    # One-time autostart offer: only mark it "asked" if the frontend that
+    # called us actually showed the dialog (autostart_prompt_shown=true).
+    # A stale/pre-feature frontend (e.g. a page still open from before this
+    # update landed) won't send that flag — if we set autostart_prompted
+    # unconditionally here, its silent default-declined call would burn the
+    # one-time offer without the user ever having seen it.
+    _update_body = request.json or {}
+    enable_autostart = bool(_update_body.get("enable_autostart"))
+    if _update_body.get("autostart_prompt_shown"):
+        try:
+            with open(CONFIG_FILE) as f:
+                _cfg = json.load(f)
+            _cfg["autostart_prompted"] = True
+            _write_config(_cfg)
+        except Exception:
+            pass
 
     # Prefer Windows cert store; fall back to certifi; last resort skip verify
     try:
