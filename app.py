@@ -54,8 +54,12 @@ NON_STEAM_PROCESSES = {
 
     # ── Wargaming ──────────────────────────────────────────────────────────────
     'WorldOfTanks.exe': 'World of Tanks',
+    'WorldOfTanks64.exe': 'World of Tanks',
+    'wotblitz.exe': 'World of Tanks Blitz',
     'WorldOfWarships.exe': 'World of Warships',
+    'WorldOfWarships64.exe': 'World of Warships',
     'WorldOfWarplanes.exe': 'World of Warplanes',
+    'WorldOfWarplanes64.exe': 'World of Warplanes',
     'WorldOfSeaBattleClient.exe': 'World of Sea Battle',
 
     # ── Riot Games ────────────────────────────────────────────────────────────
