@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.11.8 — 2026-09-05
+
+### Fixed
+- **WoW hub silently dropped every accented character** — `wow_characters` stores names percent-encoded (`bl%C3%A4d%C3%A8s`), while the addon sends real UTF-8. `wowNormIdentity` stripped `[^a-z0-9]` with no decode, and the escape digits are themselves alphanumeric, so the two sides normalised to `blc3a4dc3a8s` vs `blades` and never matched. A character that failed to match resolved to no owner, so every sync counted it `skipped` and `wowPurgeUnregisteredAddonChars` deleted any stored row — meaning it never self-healed. Only unaccented names, which have nothing to encode, ever worked. Now percent-decodes first, then folds accents via NFD, plus an explicit map for letters with no decomposition (`ð ø æ þ ł ß`) which were being deleted outright (`Ðiablø` → `iabl`). Affected 12 characters across 4 players, not just one account.
+- **Battle.net links died every 24 hours** — user access tokens last 24h and the callback stored only `access_token`, so every linked player was quietly unlinked once a day and had to click through the OAuth popup again. Blizzard issues no refresh tokens (`offline_access` is silently dropped from the granted scope, despite `refresh_token` being listed in its discovery document), so renewal now uses the `token_extension` grant, which returns a 90-day token and can be re-applied indefinitely. Links extend at creation and re-extend 5 minutes before expiry.
+- **UI reported LINKED with a dead Battle.net token** — `/api/wow/account/status` derived `linked` from `bnet_battletag`, which the 401 handler left behind when it cleared the token. The character fetch then had no failure branch, so an expired link rendered as an empty character list with no explanation. `linked` now means a usable token exists, and a new `needsReauth` flag drives a RECONNECT badge that distinguishes "was linked" from "never linked".
+
+### Added
+- **Player Estate (housing)** — replaces the "not yet available via the Blizzard API" placeholder, which was outdated once Blizzard shipped housing APIs in 11.2.7. Decor collections come from `/profile/.../collections/decor`; owned houses, neighborhood and house favor come from a new `C_Housing` addon capture, since the Web API exposes no house data (`/profile/.../house/{id}` 404s). Renders in all three paths: the Preact card, the vanilla-JS block in `templates/index.html`, and mobile via `cf-pages/wow.js`. Addon schema 2 → 3, so clients need one `/reload` to resync.
+
+---
+
 ## v1.11.0 — 2026-08-22
 
 ### Fixed
