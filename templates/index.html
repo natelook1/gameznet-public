@@ -8123,7 +8123,6 @@
           No addon data yet. Install the addon from the <span style="color:var(--wow-gold);cursor:pointer;" onclick="wowSwitchTab('addon')">Addon tab</span>,
           log into WoW, then type <span style="color:var(--wow-gold);">/reload</span>.
         </div></div></div>
-        ${wowRenderPrivacyCard()}
       </div>`;
       return;
     }
@@ -8169,7 +8168,6 @@
 
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
       ${content}
-      ${wowRenderPrivacyCard()}
     </div>`;
     if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
   }
@@ -8192,7 +8190,6 @@
           No addon data yet. Install the addon from the <span style="color:var(--wow-gold);cursor:pointer;" onclick="wowSwitchTab('addon')">Addon tab</span>,
           log into WoW, then type <span style="color:var(--wow-gold);">/reload</span>.
         </div></div></div>
-        ${wowRenderPrivacyCard()}
       </div>`;
       return;
     }
@@ -8231,7 +8228,6 @@
 
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
       ${content}
-      ${wowRenderPrivacyCard()}
     </div>`;
     if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
   }
@@ -8246,13 +8242,17 @@
     if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
   }
 
-  // Addon install/uninstall/sync management - its own tab since the install
-  // card no longer needs to be duplicated across Group/Keys/Pulls.
+  // Addon install/uninstall/sync management and privacy controls - both live
+  // only here, not duplicated across Group/Keys/Pulls. Desktop-only: mobile
+  // has no addon management UI (install happens from the desktop app), so it
+  // has nowhere to put privacy either - see WowPrivacy's caller on mobile,
+  // which stays under My Account there instead.
   function wowRenderAddonMgmtTab() {
     const el = document.getElementById('wow-panel-addon');
     if (!el) return;
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
       ${wowRenderAddonInstallCard()}
+      ${wowRenderPrivacyCard()}
     </div>`;
   }
 
