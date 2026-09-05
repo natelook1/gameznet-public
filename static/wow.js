@@ -1723,6 +1723,17 @@ function resetInStr(epoch) {
   return d > 0 ? `${d}d ${h}h` : `${h}h`;
 }
 
+function agoStr(epoch) {
+  if (!epoch) return '—';
+  const ago = Date.now() - epoch * 1000;
+  if (ago < 60000) return 'just now';
+  const mins = Math.floor(ago / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
 // Vault slot types, per C_WeeklyRewards. 1 = raid, 3 = M+, 6 = world/delves.
 const VAULT_TYPE = { 1: 'Raid', 3: 'Mythic+', 5: 'PvP', 6: 'World' };
 
@@ -2246,18 +2257,31 @@ function WowGroup({ addon, addonErr, onReload }) {
 
       <div class="wow-card" style="margin:12px;">
         <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:10px;">ROSTER</div>
-        ${[...chars].sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0)).map(c => html`
-          <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--wow-border2);">
-            <div style="flex:1;min-width:0;">
-              <div style="font-family:var(--wow-display);font-size:12px;color:${c.mine ? 'var(--wow-gold)' : 'var(--wow-text)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                ${c.name} <span style="color:var(--wow-muted);font-size:10px;">${c.player_name}</span>
+        ${[...chars].sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0)).map(c => {
+          const profStr = (c.professions || []).map(p => p.name).filter(Boolean).join(' / ');
+          const lockStr = (c.lockouts || []).map(lo =>
+            `${lo.name}${lo.difficultyName ? ` (${lo.difficultyName})` : ''} ${lo.defeated ?? 0}/${lo.bosses ?? '?'} · resets ${resetInStr(lo.resetsAt)}`
+          ).join(' · ');
+          return html`
+          <div style="padding:8px 0;border-bottom:1px solid var(--wow-border2);">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-family:var(--wow-display);font-size:12px;color:${c.mine ? 'var(--wow-gold)' : 'var(--wow-text)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                  ${c.name} <span style="color:var(--wow-muted);font-size:10px;">${c.player_name}</span>
+                </div>
+                <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${c.spec || ''} ${c.class || ''} · Lvl ${c.level || '?'}${c.faction ? ` · ${c.faction}` : ''}${c.guild ? ` · <${c.guild}>` : ''}</div>
               </div>
-              <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${c.spec || ''} ${c.class || ''} · Lvl ${c.level || '?'}</div>
+              ${c.keystone?.level ? html`<span style="font-family:var(--wow-display);font-size:12px;color:var(--wow-accent);">🗝 +${c.keystone.level}</span>` : ''}
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">ilvl ${c.ilvl ? Math.round(c.ilvl) : '—'}</div>
+                <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">${c.played ? playedStr(c.played) + ' played' : ''}</div>
+              </div>
             </div>
-            ${c.keystone?.level ? html`<span style="font-family:var(--wow-display);font-size:12px;color:var(--wow-accent);">🗝 +${c.keystone.level}</span>` : ''}
-            <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);width:34px;text-align:right;flex-shrink:0;">${c.ilvl ? Math.round(c.ilvl) : '—'}</div>
+            ${profStr ? html`<div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-top:4px;">🔨 ${profStr}</div>` : ''}
+            ${lockStr ? html`<div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-top:2px;">🏰 ${lockStr}</div>` : ''}
+            <div style="font-family:var(--wow-mono);font-size:8px;color:var(--wow-muted);opacity:0.7;margin-top:4px;">synced ${agoStr(c.updated_at)}</div>
           </div>
-        `)}
+        `;})}
       </div>
 
       ${(agg.items || []).length > 0 && html`
