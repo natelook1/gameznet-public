@@ -2613,9 +2613,11 @@ function WowPulls() {
                   WoW is writing${clStatus.size ? html` (${(clStatus.size / 1048576).toFixed(1)} MB` : ''}${clStatus.size ? html`, last write ${clStatus.ageSeconds}s ago)` : ''}
                   and GamezNET is tailing it.
                   <br/>
-                  Pulls are only recorded for <span style="color:var(--wow-gold);">boss encounters and Mythic+ runs</span> —
-                  open-world and trash mobs never emit an encounter, so nothing appears here from questing.
-                  Run a dungeon or raid boss and it will show up.
+                  Boss encounters and Mythic+ runs are recorded by name; ordinary combat is grouped
+                  into <span style="color:var(--wow-gold);">Open World</span> pulls that close after
+                  5 seconds out of combat. Very short or trivial fights are skipped.
+                  <br/>
+                  Pulls appear within about 10 seconds of a fight ending.
                 </div>`
               : clStatus && clStatus.enabled && clStatus.found
                 ? html`

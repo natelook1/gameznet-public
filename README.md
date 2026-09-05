@@ -444,6 +444,12 @@ All variables are loaded from `/etc/gameznet/.env` at deploy time. Credentials a
 | `/api/wow/account/unlink` | POST | Remove Battle.net link |
 | `/api/wow/bnet/characters` | GET | Characters from linked Battle.net account |
 | `/api/wow/token-price` | GET | Current WoW gold token price |
+| `/api/wow/addon/sync` | POST | Addon snapshot upload (bags, bank, currencies, played, housing) |
+| `/api/wow/addon/data` | GET | Latest addon snapshot for the player's characters |
+| `/api/wow/addon/privacy` | GET/POST | Per-field visibility for addon data (gold, item counts) |
+| `/api/wow/combatlog/events` | POST | Combat log events from the client tailer |
+| `/api/wow/combatlog/recent` | GET | Recent raw combat events |
+| `/api/wow/combatlog/pulls` | GET | Per-encounter summaries — DPS/HPS, deaths, party loadout |
 | `/auth/battlenet` | GET | Start Battle.net OAuth flow |
 | `/auth/youtube` | GET | Start YouTube OAuth flow |
 | `/auth/youtube/callback` | GET | OAuth callback handler |
