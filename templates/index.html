@@ -7584,6 +7584,14 @@
   }
 
   // Item quality colours, matching WoW's tiers.
+  // Container icons, from WoW's own art rather than emoji.
+  const WOW_BAG_ICON = {
+    bags: 'inv_misc_bag_08',
+    bank: 'achievement_guildperk_bountifulbags',
+    reagentBank: 'inv_enchant_dustarcane',
+    accountBank: 'inv_misc_bag_10_blue',
+  };
+
   const WOW_Q_COLOR = ['#9d9d9d', '#ffffff', '#1eff00', '#0070dd', '#a335ee', '#ff8000', '#e6cc80', '#00ccff'];
   function wowQColor(q) {
     return (q != null && WOW_Q_COLOR[q]) ? WOW_Q_COLOR[q] : 'var(--text)';
@@ -7622,10 +7630,10 @@
   // the caller's own characters (or when the bags tier is public).
   function wowRenderInventory(c) {
     const sources = [
-      { id: 'bags',        label: 'Bags',    items: c.bags || [] },
-      { id: 'bank',        label: 'Bank',    items: c.bank || [] },
-      { id: 'reagentBank', label: 'Reagent', items: c.reagentBank || [] },
-      { id: 'accountBank', label: 'Warband', items: c.accountBank || [] },
+      { id: 'bags',        label: 'Bags',    icon: WOW_BAG_ICON.bags,        items: c.bags || [] },
+      { id: 'bank',        label: 'Bank',    icon: WOW_BAG_ICON.bank,        items: c.bank || [] },
+      { id: 'reagentBank', label: 'Reagent', icon: WOW_BAG_ICON.reagentBank, items: c.reagentBank || [] },
+      { id: 'accountBank', label: 'Warband', icon: WOW_BAG_ICON.accountBank, items: c.accountBank || [] },
     ];
     const active = sources.find(s => s.id === wowInvSrc) || sources[0];
     const q = (wowInvSearch || '').trim().toLowerCase();
@@ -7638,7 +7646,9 @@
            style="font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:3px;cursor:pointer;
                   background:${wowInvSrc === sr.id ? 'var(--wow-gold-dim)' : 'var(--surface2)'};
                   color:${wowInvSrc === sr.id ? 'var(--wow-gold)' : 'var(--text-muted)'};">
-        ${sr.label} <span style="opacity:0.6;">${(sr.items || []).length}</span></div>`).join('');
+        <img src="https://wow.zamimg.com/images/wow/icons/small/${sr.icon}.jpg" onerror="this.style.display='none'"
+             style="width:14px;height:14px;border-radius:2px;vertical-align:-2px;margin-right:4px;" />${sr.label}
+        <span style="opacity:0.6;">${(sr.items || []).length}</span></div>`).join('');
 
     const rows = items.length === 0
       ? `<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:8px 0;">
@@ -7669,6 +7679,145 @@
     </div>`;
   }
 
+  // Full character detail: addon data merged with the Blizzard/RIO cache the WoW
+  // tab already loads. Reached by clicking a Hub card. Desktop counterpart of
+  // WowCharDetail in wow.js.
+  let wowDetailChar = null;
+  let wowDetailPane = 'overview';
+
+  function wowOpenDetail(charKey) {
+    wowDetailChar = charKey;
+    wowDetailPane = 'overview';
+    wowInvSrc = 'bags';
+    wowInvSearch = '';
+    wowRenderHubTab();
+  }
+
+  function wowCloseDetail() {
+    wowDetailChar = null;
+    wowRenderHubTab();
+  }
+
+  function wowSetDetailPane(p) {
+    wowDetailPane = p;
+    wowRenderHubTab();
+  }
+
+  function wowDetailStat(label, value, color) {
+    return `<div><div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);">${label}</div>
+      <div style="font-family:var(--display);font-size:16px;color:${color || 'var(--text)'};">${value}</div></div>`;
+  }
+
+  function wowRenderCharDetail(c) {
+    // The API cache is keyed region-realm-name, name url-encoded and lowercased.
+    const ck = `${c.region || 'us'}-${c.realm}-${encodeURIComponent((c.name || '').toLowerCase())}`.toLowerCase();
+    const rio = wowCharCache[ck] || Object.values(wowCharCache).find(v =>
+      (v?._bnet?.profile?.name || '').toLowerCase() === (c.name || '').toLowerCase());
+    const bnet = rio?._bnet || {};
+    const equipped = bnet.equipment?.equipped_items || [];
+
+    const d = c.durability;
+    const bagPct = (c.bagFree != null && c.bagSlots) ? Math.round((1 - c.bagFree / c.bagSlots) * 100) : null;
+    const vaultReady = (c.vault || []).filter(v => v.progress >= v.threshold).length;
+    const score = rio?.mythic_plus_scores_by_season?.[0]?.scores?.all;
+
+    const panes = [
+      { id: 'overview',  label: 'Overview' },
+      { id: 'gear',      label: 'Equipment' },
+      { id: 'inventory', label: 'Inventory' },
+    ];
+    const nav = panes.map(p => `<div onclick="wowSetDetailPane('${p.id}')"
+      style="font-family:var(--display);font-size:11px;letter-spacing:1px;padding:6px 14px;border-radius:4px;cursor:pointer;
+             background:${wowDetailPane === p.id ? 'var(--wow-gold-dim)' : 'var(--surface2)'};
+             color:${wowDetailPane === p.id ? 'var(--wow-gold)' : 'var(--text-muted)'};">${p.label}</div>`).join('');
+
+    let body = '';
+
+    if (wowDetailPane === 'overview') {
+      const stats = [
+        wowDetailStat('GOLD', wowGoldStr(c.gold), 'var(--wow-gold)'),
+        wowDetailStat('ILVL', c.ilvl ? Math.round(c.ilvl) : '—'),
+        score ? wowDetailStat('M+ SCORE', Math.round(score), 'var(--wow-accent)') : '',
+        d?.worstPct != null ? wowDetailStat('DURABILITY', d.worstPct + '%', wowDurColor(d.worstPct)) : '',
+        bagPct != null ? wowDetailStat('BAGS', bagPct + '%', c.bagFree <= 4 ? 'var(--red)' : null) : '',
+        wowDetailStat('PLAYED', wowPlayedStr(c.played)),
+        vaultReady > 0 ? wowDetailStat('VAULT', vaultReady + ' ready', 'var(--wow-gold)') : '',
+        c.keystone?.level ? wowDetailStat('KEYSTONE', '+' + c.keystone.level, 'var(--wow-accent)') : '',
+      ].filter(Boolean).join('');
+
+      const profs = (c.professions || []).length === 0 ? '' : `<div class="card">
+        <div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Professions</div></div>
+        <div class="card-body">${(c.professions || []).map(p => `
+          <div style="display:flex;align-items:center;gap:10px;padding:4px 0;">
+            <span style="flex:1;font-family:var(--mono);font-size:11px;color:var(--text);">${p.name}</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--wow-accent);">${p.rank ?? '—'}${p.maxRank ? ' / ' + p.maxRank : ''}</span>
+          </div>`).join('')}</div></div>`;
+
+      const cds = (c.cooldowns || []).length === 0 ? '' : `<div class="card">
+        <div class="card-header"><div class="card-title"><div class="dot"></div> Cooldowns</div></div>
+        <div class="card-body">${(c.cooldowns || []).map(cd => `
+          <div style="display:flex;align-items:center;gap:10px;padding:3px 0;">
+            <span style="flex:1;font-family:var(--mono);font-size:10px;color:var(--text-muted);">${cd.name || ('spell ' + cd.id)}</span>
+            <span style="font-family:var(--mono);font-size:10px;color:${cd.remaining > 0 ? 'var(--text-muted)' : 'var(--green)'};">${cd.remaining > 0 ? wowCdStr(cd.remaining) : 'ready'}</span>
+          </div>`).join('')}</div></div>`;
+
+      const vault = (c.vault || []).length === 0 ? '' : `<div class="card">
+        <div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Great Vault</div></div>
+        <div class="card-body">${Object.entries((c.vault || []).reduce((acc, v) => { (acc[v.type] = acc[v.type] || []).push(v); return acc; }, {})).map(([type, slots]) => `
+          <div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+            <span style="width:70px;font-family:var(--mono);font-size:10px;color:var(--text-muted);">${WOW_VAULT_TYPE[type] || ('type ' + type)}</span>
+            ${slots.map(sl => `<span style="font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:3px;
+              background:${sl.progress >= sl.threshold ? 'var(--wow-gold-dim)' : 'var(--surface2)'};
+              color:${sl.progress >= sl.threshold ? 'var(--wow-gold)' : 'var(--text-muted)'};">${sl.progress}/${sl.threshold}${sl.level ? ' · +' + sl.level : ''}</span>`).join('')}
+          </div>`).join('')}</div></div>`;
+
+      const locks = (c.lockouts || []).length === 0 ? '' : `<div class="card">
+        <div class="card-header"><div class="card-title"><div class="dot"></div> Lockouts</div></div>
+        <div class="card-body">${(c.lockouts || []).map(lo => `
+          <div style="display:flex;align-items:center;gap:10px;padding:3px 0;">
+            <span style="flex:1;font-family:var(--mono);font-size:10px;color:var(--text-muted);">${lo.name}${lo.difficultyName ? ' (' + lo.difficultyName + ')' : ''}</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--wow-accent);">${lo.defeated ?? 0}/${lo.bosses ?? '?'}</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${wowResetInStr(lo.resetsAt)}</span>
+          </div>`).join('')}</div></div>`;
+
+      body = `<div class="card"><div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:14px;">${stats}</div>
+        ${c.keystone?.name ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:10px;">Holding: ${c.keystone.name}</div>` : ''}
+      </div></div>${profs}${cds}${vault}${locks}`;
+    }
+
+    if (wowDetailPane === 'gear') {
+      body = equipped.length === 0
+        ? `<div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">
+             Equipment data not loaded yet. It comes from the Blizzard API and may take a moment on first open.</div></div></div>`
+        : `<div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Equipped</div></div>
+           <div class="card-body">${equipped.map(it => `
+             <div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border);">
+               <span style="width:90px;font-family:var(--mono);font-size:9px;color:var(--text-muted);text-transform:capitalize;">
+                 ${(it.slot?.name || it.slot?.type || '').toString().toLowerCase().replace(/_/g, ' ')}</span>
+               <a href="https://www.wowhead.com/item=${it.item?.id}" target="_blank" rel="noopener" data-wowhead="item=${it.item?.id}"
+                  style="flex:1;min-width:0;font-family:var(--mono);font-size:11px;text-decoration:none;color:var(--text);
+                         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.name}</a>
+               <span style="font-family:var(--display);font-size:12px;color:var(--wow-accent);">${it.level?.value ?? ''}</span>
+             </div>`).join('')}</div></div>`;
+    }
+
+    if (wowDetailPane === 'inventory') {
+      body = `<div class="card"><div class="card-body">${wowRenderInventory(c)}</div></div>`;
+    }
+
+    return `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div onclick="wowCloseDetail()" style="font-family:var(--mono);font-size:11px;color:var(--wow-accent);cursor:pointer;
+             padding:5px 10px;background:var(--surface2);border-radius:3px;">&lsaquo; back</div>
+        <div style="font-family:var(--display);font-size:17px;color:var(--wow-gold);">${c.name}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${c.realm} · ${c.spec || ''} ${c.class || ''} · ${c.level || '?'}</div>
+      </div>
+      <div style="display:flex;gap:6px;">${nav}</div>
+      ${body}
+    </div>`;
+  }
+
   function wowRenderHubTab() {
     const el = document.getElementById('wow-panel-hub');
     if (!el) return;
@@ -7688,6 +7837,16 @@
             then log into WoW and type <span style="color:var(--wow-gold);">/reload</span>.
           </div></div></div></div>`;
       return;
+    }
+
+    if (wowDetailChar) {
+      const sel = mine.find(x => x.char_key === wowDetailChar);
+      if (sel) {
+        el.innerHTML = wowRenderCharDetail(sel);
+        if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
+        return;
+      }
+      wowDetailChar = null;
     }
 
     const totalGold = mine.reduce((n, c) => n + (c.gold || 0), 0);
@@ -7763,14 +7922,11 @@
         ? `<span style="margin-left:auto;font-family:var(--display);font-size:14px;color:var(--wow-accent);" title="${c.keystone.name || ''}">🗝 +${c.keystone.level}</span>`
         : '';
 
-      const invOpen = wowInvChar === c.char_key;
-      const invBtn = `<span onclick="wowToggleInv('${c.char_key}')"
-        style="${c.keystone?.level ? '' : 'margin-left:auto;'}font-family:var(--mono);font-size:10px;padding:3px 9px;
-               border-radius:3px;cursor:pointer;margin-left:10px;
-               background:${invOpen ? 'var(--wow-gold-dim)' : 'var(--surface2)'};
-               color:${invOpen ? 'var(--wow-gold)' : 'var(--text-muted)'};">🎒 items</span>`;
+      const invOpen = false;
+      const invBtn = `<span style="${c.keystone?.level ? '' : 'margin-left:auto;'}font-family:var(--mono);font-size:14px;
+               color:var(--text-muted);margin-left:10px;">&rsaquo;</span>`;
 
-      return `<div class="card"><div class="card-header">
+      return `<div class="card" style="cursor:pointer;" onclick="wowOpenDetail('${c.char_key}')"><div class="card-header">
         <div class="card-title"><div class="dot dot-gold"></div> ${c.name}
           <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);font-weight:400;margin-left:8px;">${c.realm} · ${c.spec || ''} ${c.class || ''} · ${c.level || '?'}</span>
         </div>${keyBadge}${invBtn}</div>
