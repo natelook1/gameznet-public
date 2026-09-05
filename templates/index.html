@@ -3036,6 +3036,7 @@
         <div class="nav-tab tab-pve" data-wow-tab="pve" onclick="wowSwitchTab('pve')"><span class="tab-icon">⚔️</span> PVE</div>
         <div class="nav-tab tab-pvp" data-wow-tab="pvp" onclick="wowSwitchTab('pvp')"><span class="tab-icon">🏆</span> PVP</div>
         <div class="nav-tab tab-account" data-wow-tab="account" onclick="wowSwitchTab('account')"><span class="tab-icon">👤</span> My Account</div>
+        <div class="nav-tab tab-addon" data-wow-tab="addon" onclick="wowSwitchTab('addon')"><span class="tab-icon">🧮</span> Addon</div>
       </div>
 
       <div class="char-bar" id="wowCharBar" style="display:none;"></div>
@@ -3052,6 +3053,7 @@
       <div class="tab-panel" id="wow-panel-pve"><div id="wowHeroPve" class="char-hero" style="display:none;"></div><div class="layout"><div class="col-main"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Equipped Gear</div></div><div class="card-body" id="wowIlvlBlock"><div class="skel" style="height:200px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Raid Progress</div></div><div class="card-body" id="wowRaidBody"><div class="skel" style="height:160px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Recent M+ Runs</div></div><div class="scroll-body" id="wowRecentRuns"><div class="skel" style="height:44px;border-radius:4px;margin-bottom:5px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Season Best Runs</div></div><div class="scroll-body" id="wowBestRuns"><div class="skel" style="height:44px;border-radius:4px;margin-bottom:5px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Best Key Per Dungeon</div></div><div class="card-body" id="wowKeystoneBlock"><div class="skel" style="height:160px;border-radius:4px;"></div></div></div></div><div class="col-side"><div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Mythic+ Score</div></div><div class="card-body"><div class="score-display" id="wowScoreDisplay"><div class="skel score-big" style="width:140px;height:52px;margin:0 auto 8px;"></div></div><div class="score-roles" id="wowScoreRoles"><div class="role-box skel" style="height:54px;"></div></div><div id="wowPrevSeasonScore"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Combat Statistics</div></div><div class="card-body" id="wowStatsBlock"><div class="skel" style="height:160px;border-radius:4px;"></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Great Vault Tracker</div></div><div class="card-body" id="wowWeeklyRuns"><div class="skel" style="height:40px;border-radius:4px;margin-bottom:5px;"></div></div></div></div></div></div>
       <div class="tab-panel" id="wow-panel-pvp"><div id="wowHeroPvp" class="char-hero" style="display:none;"></div><div class="layout"><div class="col-main"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-purple"></div> PVP Rating</div></div><div class="card-body"><div class="pvp-stat-grid" id="wowPvpStats"><div class="pvp-stat-box"><div class="pvp-stat-val" id="wowPvpArena2v2">—</div><div class="pvp-stat-lbl">2v2 Rating</div></div><div class="pvp-stat-box"><div class="pvp-stat-val" id="wowPvpArena3v3">—</div><div class="pvp-stat-lbl">3v3 Rating</div></div><div class="pvp-stat-box"><div class="pvp-stat-val" id="wowPvpRbg">—</div><div class="pvp-stat-lbl">RBG Rating</div></div><div class="pvp-stat-box"><div class="pvp-stat-val" id="wowPvpHonor">—</div><div class="pvp-stat-lbl">Honor Level</div></div></div></div></div><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-purple"></div> Conquest Progress</div></div><div class="card-body" id="wowConquestBlock"><div class="skel" style="height:80px;border-radius:4px;"></div></div></div></div><div class="col-side"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-purple"></div> PVP Gear ilvl</div></div><div class="card-body" id="wowPvpGearBlock"><div class="pvp-note">Data not available.</div></div></div></div></div></div>
       <div class="tab-panel" id="wow-panel-account"><div class="layout-full" style="max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:16px;"><div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Battle.net Account</div><span class="badge badge-dim" id="wowBnetLinkBadge">NOT LINKED</span></div><div class="card-body" id="wowBnetLinkBody"><div style="text-align:center;padding:20px 0;"><div style="font-size:36px;margin-bottom:12px;">🔗</div><div style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--text-muted);margin-bottom:16px;">Link your Battle.net account to auto-discover your characters</div><button class="wow-btn btn-accent" style="font-size:14px;padding:10px 24px;margin-bottom:12px;" onclick="wowLinkBnet()">⚔️ Link Battle.net Account</button><div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">Linking the wrong account? <a href="https://account.battle.net/login/logout" target="_blank" style="color:var(--wow-gold);text-decoration:none;">Log out of Battle.net</a> first.</div></div></div></div><div class="card" id="wowMyRosterCard"><div class="card-header"><div class="card-title"><div class="dot"></div> My Roster</div></div><div class="card-body scroll-body" id="wowMyRosterList" style="padding:0 14px;"></div></div><div class="card" id="wowMyCharsCard" style="display:none;"><div class="card-header"><div class="card-title"><div class="dot"></div> Battle.net Characters</div><div style="display:flex;align-items:center;gap:10px;"><div class="picker-filter active" data-filter="active" onclick="setPickerFilter('active')">Max Level</div><div class="picker-filter" data-filter="all" onclick="setPickerFilter('all')">All</div></div></div><div class="card-body scroll-body" id="wowMyCharsList" style="max-height:400px;padding:0 14px;"></div><div class="card-body" style="border-top:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;"><div style="font-size:11px;color:var(--text-muted);"><span id="wowPickerCount" style="font-family:var(--mono);color:var(--text);font-weight:700;margin-right:8px;">0 / 5 selected</span>(1 Main, up to 4 Alts)</div><button class="wow-btn btn-accent" id="wowPickerSaveBtn" onclick="savePicker()" disabled>Save to Roster</button></div></div></div></div>
+      <div class="tab-panel" id="wow-panel-addon"></div>
     </div>
 
     <!-- ── SETUP (shown when not provisioned) ── -->
@@ -7362,6 +7364,345 @@
     });
   }
 
+  // ── WoW addon data (gold, bags, keystones, lockouts, vault) ────────────────
+  // Desktop counterpart of the WowAddonTab/WowPrivacy components in wow.js.
+  // Kept in parity by hand - the two UIs share no code.
+
+  let wowAddonData = null;
+  let wowAddonErr = null;
+  let wowAddonSubTab = 'group';
+  let wowAddonStatus = null;
+
+  function wowGoldStr(g) {
+    if (g == null) return '—';
+    if (g >= 1000000) return (g / 1000000).toFixed(2) + 'M';
+    if (g >= 1000) return (g / 1000).toFixed(1) + 'k';
+    return String(g);
+  }
+
+  function wowPlayedStr(sec) {
+    if (!sec) return '—';
+    const d = Math.floor(sec / 86400);
+    const h = Math.floor((sec % 86400) / 3600);
+    return d > 0 ? `${d}d ${h}h` : `${h}h`;
+  }
+
+  function wowResetInStr(epoch) {
+    if (!epoch) return '';
+    const left = epoch * 1000 - Date.now();
+    if (left <= 0) return 'expired';
+    // Round up: 4h59m left reads as "5h", not "4h".
+    const totalH = Math.ceil(left / 3600000);
+    const d = Math.floor(totalH / 24);
+    const h = totalH % 24;
+    return d > 0 ? `${d}d ${h}h` : `${h}h`;
+  }
+
+  const WOW_VAULT_TYPE = { 1: 'Raid', 3: 'Mythic+', 5: 'PvP', 6: 'World' };
+
+  async function wowLoadAddon() {
+    try {
+      const res = await wowReq('/api/wow/addon/data');
+      if (!res.ok) throw new Error(res.status === 401 ? 'Not authorised' : `HTTP ${res.status}`);
+      wowAddonData = await res.json();
+      wowAddonErr = null;
+    } catch (e) {
+      wowAddonErr = e.message;
+      wowAddonData = null;
+    }
+    if (wowActiveTab === 'addon') wowRenderAddonTab();
+    if (wowActiveTab === 'overview') wowRenderOverview();
+  }
+
+  // Local-only: the addon install lives on this machine, so these hit Flask
+  // directly rather than the backend. Mobile has no equivalent.
+  async function wowLoadAddonStatus() {
+    try {
+      const res = await fetch('/api/wow/addon/installed');
+      wowAddonStatus = res.ok ? await res.json() : null;
+    } catch (e) { wowAddonStatus = null; }
+  }
+
+  async function wowInstallAddon(force) {
+    const btn = document.getElementById('wowAddonInstallBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Working...'; }
+    try {
+      const res = await fetch('/api/wow/addon/install', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force: !!force })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
+    } catch (e) {
+      alert('Addon install failed: ' + e.message);
+    }
+    await wowLoadAddonStatus();
+    wowRenderAddonTab();
+  }
+
+  async function wowUninstallAddon() {
+    if (!confirm('Remove the GamezNET addon from your WoW install?\n\nSaved data stays on disk, so reinstalling picks up where it left off.')) return;
+    try {
+      const res = await fetch('/api/wow/addon/uninstall', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      alert('Addon uninstall failed: ' + e.message);
+    }
+    await wowLoadAddonStatus();
+    wowRenderAddonTab();
+  }
+
+  async function wowRefreshAddonNow() {
+    const btn = document.getElementById('wowAddonSyncBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Syncing...'; }
+    try {
+      const res = await fetch('/api/wow/addon/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
+    } catch (e) {
+      alert('Sync failed: ' + e.message);
+    }
+    await wowLoadAddon();
+    wowRenderAddonTab();
+  }
+
+  function wowSetAddonSubTab(t) {
+    wowAddonSubTab = t;
+    wowRenderAddonTab();
+  }
+
+  async function wowSetPrivacy(field, tier) {
+    try {
+      const res = await wowReq('/api/wow/addon/privacy', {
+        method: 'POST',
+        body: JSON.stringify({ field, tier })
+      });
+      if (res.ok) {
+        const d = await res.json();
+        if (wowAddonData) wowAddonData.privacy = d.privacy;
+      }
+    } catch (e) {}
+    wowRenderAddonTab();
+  }
+
+  function wowRenderAddonInstallCard() {
+    const st = wowAddonStatus;
+    let body;
+    if (!st) {
+      body = `<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">Checking local WoW install...</div>`;
+    } else if (!st.targets || st.targets.length === 0) {
+      body = `<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:1.7;">
+        No World of Warcraft installation found on this PC.<br/>
+        If WoW is installed somewhere unusual, the addon can be copied manually into
+        <span style="color:var(--wow-gold);">_retail_\\Interface\\AddOns\\</span>.
+      </div>`;
+    } else {
+      const t = st.targets[0];
+      const installed = t.installed;
+      const current = t.current;
+      body = `
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span class="badge ${installed ? (current ? 'badge-free' : 'badge-dim') : 'badge-dim'}">
+            ${installed ? (current ? 'INSTALLED v' + t.version : 'OUT OF DATE v' + t.version) : 'NOT INSTALLED'}
+          </span>
+          <button class="wow-btn btn-accent" id="wowAddonInstallBtn" onclick="wowInstallAddon(${installed && current ? 'true' : 'false'})">
+            ${installed ? (current ? 'Reinstall' : 'Update to v' + st.bundle_version) : 'Install Addon'}
+          </button>
+          ${installed ? `<button class="wow-btn" onclick="wowUninstallAddon()">Uninstall</button>` : ''}
+          ${installed ? `<button class="wow-btn" id="wowAddonSyncBtn" onclick="wowRefreshAddonNow()">Sync Now</button>` : ''}
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.7;">
+          ${t.path}<br/>
+          WoW writes addon data only on logout or <span style="color:var(--wow-gold);">/reload</span> - nothing appears here until then.
+        </div>`;
+    }
+    return `<div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> GamezNET Addon</div></div><div class="card-body">${body}</div></div>`;
+  }
+
+  function wowRenderPrivacyCard() {
+    const priv = wowAddonData?.privacy;
+    if (!priv) return '';
+    const FIELDS = [
+      { id: 'gold',       label: 'Gold',            hint: 'aggregate = group total + your rank only' },
+      { id: 'currencies', label: 'Currencies',      hint: 'valorstones, crests, flightstones' },
+      { id: 'counts',     label: 'Bag/bank counts', hint: 'how full your bags are, not what is in them' },
+      { id: 'bags',       label: 'Bag contents',    hint: 'the actual items in bags, bank and warband' },
+      { id: 'played',     label: 'Played time',     hint: '/played per character' },
+    ];
+    const TIERS = ['private', 'aggregate', 'public'];
+    const rows = FIELDS.map(f => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:var(--display);font-size:12px;color:var(--text);">${f.label}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);">${f.hint}</div>
+        </div>
+        <div style="display:flex;gap:4px;">
+          ${TIERS.map(t => `
+            <div onclick="wowSetPrivacy('${f.id}','${t}')"
+                 style="font-family:var(--mono);font-size:9px;padding:4px 8px;border-radius:3px;cursor:pointer;text-transform:uppercase;
+                        background:${priv[f.id] === t ? 'var(--wow-gold-dim)' : 'var(--surface2)'};
+                        color:${priv[f.id] === t ? 'var(--wow-gold)' : 'var(--text-muted)'};">
+              ${t === 'aggregate' ? 'agg' : t}
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+    return `<div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Addon Privacy</div></div><div class="card-body">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:10px;line-height:1.7;">
+        Controls what other GamezNET players see. Enforced on the server - nobody, including the admin, sees more than this allows.
+      </div>${rows}</div></div>`;
+  }
+
+  function wowRenderAddonTab() {
+    const el = document.getElementById('wow-panel-addon');
+    if (!el) return;
+
+    const installCard = wowRenderAddonInstallCard();
+
+    if (wowAddonErr) {
+      el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
+        ${installCard}
+        <div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--red);">Addon data unavailable: ${wowAddonErr}</div></div></div>
+      </div>`;
+      return;
+    }
+
+    const chars = wowAddonData?.characters || [];
+    if (chars.length === 0) {
+      el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
+        ${installCard}
+        <div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:1.7;">
+          No addon data yet. Install the addon above, log into WoW, then type <span style="color:var(--wow-gold);">/reload</span>.
+        </div></div></div>
+        ${wowRenderPrivacyCard()}
+      </div>`;
+      return;
+    }
+
+    const agg = wowAddonData.aggregate || {};
+    const mine = chars.filter(c => c.mine);
+
+    const subTabs = [
+      { id: 'group', label: 'Group' },
+      { id: 'keys',  label: 'Keys & Lockouts' },
+      { id: 'mine',  label: 'My Characters' },
+    ];
+    const nav = `<div style="display:flex;gap:6px;margin-bottom:4px;">${subTabs.map(t => `
+      <div onclick="wowSetAddonSubTab('${t.id}')"
+           style="font-family:var(--display);font-size:11px;letter-spacing:1px;padding:6px 14px;border-radius:4px;cursor:pointer;
+                  background:${wowAddonSubTab === t.id ? 'var(--wow-gold-dim)' : 'var(--surface2)'};
+                  color:${wowAddonSubTab === t.id ? 'var(--wow-gold)' : 'var(--text-muted)'};">${t.label}</div>`).join('')}</div>`;
+
+    let content = '';
+
+    if (wowAddonSubTab === 'group') {
+      const mats = (agg.items || []).slice(0, 25).map(it => `
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
+          <a href="https://www.wowhead.com/item=${it.id}" target="_blank" rel="noopener" data-wowhead="item=${it.id}"
+             style="flex:1;min-width:0;font-family:var(--mono);font-size:11px;color:var(--text);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            ${it.name || ('item ' + it.id)}</a>
+          <span style="font-family:var(--display);font-size:12px;color:var(--wow-accent);">${it.total}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">on ${it.holders}</span>
+        </div>`).join('');
+      content = `
+        <div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Group Totals</div></div><div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;">
+            <div><div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">COMBINED GOLD</div>
+              <div style="font-family:var(--display);font-size:22px;color:var(--wow-gold);">${wowGoldStr(agg.gold?.total)}</div>
+              <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${agg.gold?.players || 0} player(s)</div></div>
+            <div><div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">YOUR GOLD</div>
+              <div style="font-family:var(--display);font-size:22px;color:var(--text);">${wowGoldStr(agg.gold?.myTotal)}</div>
+              <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${agg.gold?.myRank ? `rank #${agg.gold.myRank} of ${agg.gold.players}` : 'not ranked'}</div></div>
+            <div><div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">CHARACTERS</div>
+              <div style="font-family:var(--display);font-size:22px;color:var(--text);">${chars.length}</div>
+              <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${mine.length} yours</div></div>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:12px;line-height:1.7;">
+            Others' exact gold stays hidden - only the combined total and your own rank are shared.
+          </div>
+        </div></div>
+        ${mats ? `<div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Group Mats</div></div><div class="scroll-body" style="padding:0 14px;">${mats}</div></div>` : ''}`;
+    }
+
+    if (wowAddonSubTab === 'keys') {
+      const withKeys = chars.filter(c => c.keystone && c.keystone.level)
+        .sort((a, b) => (b.keystone.level || 0) - (a.keystone.level || 0));
+      const keyRows = withKeys.length === 0
+        ? `<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">Nobody is holding a keystone.</div>`
+        : withKeys.map(c => `
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:var(--display);font-size:13px;color:var(--text);">${c.name} <span style="color:var(--text-muted);font-size:10px;">${c.player_name}</span></div>
+              <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${c.keystone.name || 'unknown dungeon'}</div>
+            </div>
+            <div style="font-family:var(--display);font-size:18px;color:var(--wow-accent);">+${c.keystone.level}</div>
+          </div>`).join('');
+
+      const withLock = chars.filter(c => (c.lockouts || []).length > 0);
+      const lockRows = withLock.length === 0
+        ? `<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">No active lockouts.</div>`
+        : withLock.map(c => `
+          <div style="margin-bottom:10px;">
+            <div style="font-family:var(--display);font-size:12px;color:var(--text);">${c.name} <span style="color:var(--text-muted);">${c.player_name}</span></div>
+            ${(c.lockouts || []).map(lo => `
+              <div style="display:flex;align-items:center;gap:10px;padding:4px 0 4px 12px;">
+                <span style="flex:1;font-family:var(--mono);font-size:10px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                  ${lo.name} ${lo.difficultyName ? `(${lo.difficultyName})` : ''}</span>
+                <span style="font-family:var(--mono);font-size:10px;color:var(--wow-accent);">${lo.defeated ?? 0}/${lo.bosses ?? '?'}</span>
+                <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${wowResetInStr(lo.resetsAt)}</span>
+              </div>`).join('')}
+          </div>`).join('');
+
+      content = `
+        <div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Keystones Held</div></div><div class="card-body">${keyRows}</div></div>
+        <div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Raid Lockouts</div></div><div class="card-body">${lockRows}</div></div>`;
+    }
+
+    if (wowAddonSubTab === 'mine') {
+      content = mine.length === 0
+        ? `<div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">None of your own characters have synced yet.</div></div></div>`
+        : mine.map(c => {
+            const vaultByType = (c.vault || []).reduce((acc, v) => { (acc[v.type] = acc[v.type] || []).push(v); return acc; }, {});
+            const vaultRows = Object.entries(vaultByType).map(([type, slots]) => `
+              <div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+                <span style="width:70px;font-family:var(--mono);font-size:10px;color:var(--text-muted);">${WOW_VAULT_TYPE[type] || ('type ' + type)}</span>
+                ${slots.map(s => `<span style="font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:3px;
+                    background:${s.progress >= s.threshold ? 'var(--wow-gold-dim)' : 'var(--surface2)'};
+                    color:${s.progress >= s.threshold ? 'var(--wow-gold)' : 'var(--text-muted)'};">
+                    ${s.progress}/${s.threshold}${s.level ? ` · +${s.level}` : ''}</span>`).join('')}
+              </div>`).join('');
+            return `<div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> ${c.name}
+              <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);font-weight:400;margin-left:8px;">${c.realm} · ${c.spec || ''} ${c.class || ''} · ${c.level || '?'}</span>
+              </div></div><div class="card-body">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:12px;">
+                <div><div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);">GOLD</div><div style="font-family:var(--display);font-size:15px;color:var(--wow-gold);">${wowGoldStr(c.gold)}</div></div>
+                <div><div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);">ILVL</div><div style="font-family:var(--display);font-size:15px;color:var(--text);">${c.ilvl ? Math.round(c.ilvl) : '—'}</div></div>
+                <div><div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);">BAGS</div><div style="font-family:var(--display);font-size:15px;color:var(--text);">${c.bagItemCount ?? '—'}</div></div>
+                <div><div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);">BANK</div><div style="font-family:var(--display);font-size:15px;color:var(--text);">${c.bankItemCount ?? '—'}</div></div>
+                <div><div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);">PLAYED</div><div style="font-family:var(--display);font-size:15px;color:var(--text);">${wowPlayedStr(c.played)}</div></div>
+              </div>
+              ${vaultRows ? `<div style="margin-top:12px;"><div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-bottom:5px;">GREAT VAULT</div>${vaultRows}</div>` : ''}
+            </div></div>`;
+          }).join('');
+    }
+
+    el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
+      ${installCard}
+      ${nav}
+      ${content}
+      ${wowRenderPrivacyCard()}
+    </div>`;
+    if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
+  }
+
   function wowSwitchTab(tab) {
     document.querySelectorAll('#wow-section .nav-tab').forEach(t => t.classList.remove('active'));
     const targetTab = document.querySelector(`#wow-section [data-wow-tab="${tab}"]`);
@@ -7377,6 +7718,7 @@
     wowActiveTab = tab;
     if (isCharTab) wowRenderCharTab();
     if (tab === 'account') wowRenderAccountTab();
+    if (tab === 'addon') { wowLoadAddonStatus().then(wowRenderAddonTab); wowRenderAddonTab(); }
     if (isCharTab) wowBuildCharBar();
   }
 
@@ -7576,6 +7918,7 @@
       }
       const charRes = await wowReq('/api/wow/characters');
       if (charRes.ok) wowCharacters = await charRes.json();
+      wowLoadAddon();
       wowReq('/api/wow/token-price').then(r=>r.json()).then(p=>{
         const price = p?.price ? Math.floor(p.price / 10000).toLocaleString() : '---';
         const tEl = document.getElementById('wowTokenPrice');
@@ -7650,6 +7993,7 @@
       if (!main) return '';
       const { c: cfg, i } = main;
       const c = wowCharCache[`${cfg.region}-${cfg.realm}-${cfg.name}`];
+      const ad = (wowAddonData?.characters || []).find(x => x.name && x.realm && `${x.name}-${x.realm}`.toLowerCase() === `${cfg.display_name}-${cfg.realm}`.toLowerCase());
       const ilvl = c?._bnet?.profile?.equipped_item_level ?? c?.gear?.item_level_equipped ?? '—';
       const score = c?.mythic_plus_scores_by_season?.[0]?.scores?.all;
       let raid = '—';
@@ -7673,7 +8017,7 @@
         return `<div class="alt-chip" onclick="wowSelectChar(${ai}); wowSwitchTab('world');" title="${ac.display_name} · ${ac.spec||''} ${ac.class||''} · ${ac.realm}${altLastSeen ? ` · Last online ${altLastSeen}` : ''}"><img src="${wowCharAvatar(ac)}" onerror="this.style.display='none'" />${ac.display_name}</div>`;
       }).join('');
       const barKey = (cfg.class || '').toLowerCase().includes('death knight') ? 'dk' : (cfg.class || '').toLowerCase().includes('demon hunter') ? 'dh' : (cfg.class || '').toLowerCase().split(' ')[0] || 'default';
-      return `<div class="player-card"><div class="player-card-bar ${barKey}"></div><div class="player-main" onclick="wowSelectChar(${i}); wowSwitchTab('world');"><img class="player-main-avatar" src="${wowCharAvatar(cfg)}" onerror="this.style.opacity='0.3'" /><div class="player-main-info"><div class="player-name-row"><div class="player-name">${playerName}</div><div class="player-online-dot offline" title="${lastSeen ? `Last online ${lastSeen}` : 'Last login unknown'}"></div>${lastSeen ? `<span style="font-size:10px;color:var(--text-muted);margin-left:4px;">${lastSeen}</span>` : ''}</div><div class="char-name">${cfg.display_name} ${cfg.is_main ? '<span style="font-size:12px;color:var(--wow-gold);">★</span>' : ''}${rosterCeBadge}</div>${activeTitle ? `<div style="font-size:10px;color:var(--wow-gold);opacity:0.8;margin-bottom:2px;font-style:italic;">${activeTitle}</div>` : ''}<div class="char-sub">${cfg.spec||''} ${cfg.class||''} · ${cfg.realm}</div><div class="char-stats"><span class="cs cs-ilvl">${ilvl} ilvl</span>${score ? `<span class="cs cs-score">${Math.round(score)} M+</span>` : ''}${raid !== '—' ? `<span class="cs cs-raid">${raid}</span>` : ''}</div></div><div class="main-nav-btn"><div class="nav-btn pve" onclick="event.stopPropagation(); wowSelectChar(${i}); wowSwitchTab('pve');">⚔ PVE</div><div class="nav-btn pvp" onclick="event.stopPropagation(); wowSelectChar(${i}); wowSwitchTab('pvp');">🏆 PVP</div><div class="nav-btn lvl" onclick="event.stopPropagation(); wowSelectChar(${i}); wowSwitchTab('world');">🌍 WRLD</div></div></div>${alts.length ? `<div class="player-alts"><div class="alts-label">Alts</div>${altChips}</div>` : ''}</div>`;
+      return `<div class="player-card"><div class="player-card-bar ${barKey}"></div><div class="player-main" onclick="wowSelectChar(${i}); wowSwitchTab('world');"><img class="player-main-avatar" src="${wowCharAvatar(cfg)}" onerror="this.style.opacity='0.3'" /><div class="player-main-info"><div class="player-name-row"><div class="player-name">${playerName}</div><div class="player-online-dot offline" title="${lastSeen ? `Last online ${lastSeen}` : 'Last login unknown'}"></div>${lastSeen ? `<span style="font-size:10px;color:var(--text-muted);margin-left:4px;">${lastSeen}</span>` : ''}</div><div class="char-name">${cfg.display_name} ${cfg.is_main ? '<span style="font-size:12px;color:var(--wow-gold);">★</span>' : ''}${rosterCeBadge}</div>${activeTitle ? `<div style="font-size:10px;color:var(--wow-gold);opacity:0.8;margin-bottom:2px;font-style:italic;">${activeTitle}</div>` : ''}<div class="char-sub">${cfg.spec||''} ${cfg.class||''} · ${cfg.realm}</div><div class="char-stats"><span class="cs cs-ilvl">${ilvl} ilvl</span>${score ? `<span class="cs cs-score">${Math.round(score)} M+</span>` : ''}${raid !== '—' ? `<span class="cs cs-raid">${raid}</span>` : ''}${ad?.gold != null ? `<span class="cs cs-gold" style="color:var(--wow-gold);">${wowGoldStr(ad.gold)}g</span>` : ''}${ad?.keystone?.level ? `<span class="cs cs-key" style="color:var(--wow-accent);">🗝 +${ad.keystone.level}</span>` : ''}</div></div><div class="main-nav-btn"><div class="nav-btn pve" onclick="event.stopPropagation(); wowSelectChar(${i}); wowSwitchTab('pve');">⚔ PVE</div><div class="nav-btn pvp" onclick="event.stopPropagation(); wowSelectChar(${i}); wowSwitchTab('pvp');">🏆 PVP</div><div class="nav-btn lvl" onclick="event.stopPropagation(); wowSelectChar(${i}); wowSwitchTab('world');">🌍 WRLD</div></div></div>${alts.length ? `<div class="player-alts"><div class="alts-label">Alts</div>${altChips}</div>` : ''}</div>`;
     }).join('') || '<div class="empty" style="grid-column: 1/-1;">No characters found. Add some in My Account!</div>';
     
     const quickStatsEl = document.getElementById('wowQuickStats');
