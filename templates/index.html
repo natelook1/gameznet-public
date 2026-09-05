@@ -7380,6 +7380,7 @@
   let wowAddonErr = null;
   let wowAddonStatus = null;
   let wowPullsData = null;
+  let _wowPullsPoll = null;   // auto-refresh timer, only while the Pulls tab is open
   let wowPullsErr = null;
   let wowExpandedPull = null;
 
@@ -8320,6 +8321,19 @@
     if (tab === 'pulls') {
       if (!wowPullsData && !wowPullsErr) wowLoadPulls();
       wowRenderPullsTab();
+      // The Pulls tab is meant to sit open on a second monitor while playing,
+      // so it refreshes itself - a pull lands up to 10s after a fight ends and
+      // nobody is going to alt-tab and hit reload between every fight. The
+      // interval is cleared whenever another tab is shown.
+      if (!_wowPullsPoll) {
+        _wowPullsPoll = setInterval(() => {
+          if (document.hidden) return;
+          wowLoadPulls();   // re-renders itself when the pulls tab is active
+        }, 10000);
+      }
+    } else if (_wowPullsPoll) {
+      clearInterval(_wowPullsPoll);
+      _wowPullsPoll = null;
     }
     if (tab === 'addon') { wowLoadAddonStatus().then(wowRenderAddonMgmtTab); wowRenderAddonMgmtTab(); }
     if (tab === 'hub') wowRenderHubTab();

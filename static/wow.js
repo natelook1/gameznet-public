@@ -2584,11 +2584,31 @@ function WowPulls() {
 
   useEffect(() => {
     loadPulls();
-    // Served by the local client (app.py), not the backend.
-    fetch('/api/wow/combatlog/status')
-      .then(r => r.ok ? r.json() : null)
-      .then(setClStatus)
-      .catch(() => setClStatus(null));
+    const loadStatus = () => {
+      // Served by the local client (app.py), not the backend.
+      fetch('/api/wow/combatlog/status')
+        .then(r => r.ok ? r.json() : null)
+        .then(setClStatus)
+        .catch(() => setClStatus(null));
+    };
+    loadStatus();
+
+    // This tab is meant to sit open on a second monitor while you play, so it
+    // has to refresh itself - the tailer posts a pull up to POLL_INTERVAL (10s)
+    // after a fight ends, and nobody is going to alt-tab and hit the reload
+    // arrow between every pull. Skip the poll while the tab is hidden so a
+    // backgrounded window is not fetching all day.
+    const iv = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      loadPulls();
+      loadStatus();
+    }, 10000);
+
+    // Coming back to the window should show current data immediately rather
+    // than up to 10s of staleness.
+    const onVisible = () => { if (!document.hidden) { loadPulls(); loadStatus(); } };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVisible); };
   }, []);
 
   if (pullsErr) {
