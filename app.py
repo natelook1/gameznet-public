@@ -21,6 +21,8 @@ from logging.handlers import RotatingFileHandler
 from io import BytesIO
 from flask import Flask, request, jsonify, render_template, send_from_directory
 
+import wow_addon
+
 # ─── Logging ──────────────────────────────────────────────────────────────────
 
 LOG_FILE = os.path.join(os.path.expanduser("~"), "gameznet.log")
@@ -1209,6 +1211,125 @@ def api_config():
         })
     except Exception as e:
         return jsonify({"provisioned": False, "name": "", "client_ip": ""}), 500
+
+def _player_token():
+    """Read the player's API token from config, or None if not provisioned."""
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            return json.load(f).get("token") or None
+    except Exception:
+        return None
+
+
+def _wow_path_override():
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            return json.load(f).get("wow_path") or None
+    except Exception:
+        return None
+
+
+@app.route("/api/wow/addon/install", methods=["POST"])
+def api_wow_addon_install():
+    """Install or repair the bundled addon into every WoW install found."""
+    data = request.get_json(silent=True) or {}
+    result = wow_addon.install_addon(
+        _wow_path_override(), force=bool(data.get("force")), log=log
+    )
+    return jsonify(result), (200 if result.get("ok") else 500)
+
+
+@app.route("/api/wow/addon/uninstall", methods=["POST"])
+def api_wow_addon_uninstall():
+    """Remove the addon. Pass purge=true to also drop SavedVariables + cache."""
+    data = request.get_json(silent=True) or {}
+    result = wow_addon.uninstall_addon(_wow_path_override(), log=log)
+    if data.get("purge"):
+        result["purged"] = wow_addon.purge_saved_variables(_wow_path_override(), log=log)["removed"]
+    return jsonify(result)
+
+
+@app.route("/api/wow/addon/installed", methods=["GET"])
+def api_wow_addon_installed():
+    """Per-install addon state, for rendering the install/uninstall button."""
+    return jsonify(wow_addon.addon_status(_wow_path_override()))
+
+
+@app.route("/api/wow/addon/status", methods=["GET"])
+def api_wow_addon_status():
+    """Local addon state: where the SavedVariables file is and what we cached."""
+    paths = wow_addon.find_saved_variables(_wow_path_override())
+    cache = wow_addon.read_cache()
+    return jsonify({
+        "installed": bool(paths),
+        "paths": paths,
+        "schema": wow_addon.SCHEMA,
+        "cached_chars": len(cache.get("chars") or {}),
+        "updated": cache.get("updated", 0),
+    })
+
+
+@app.route("/api/wow/addon/local", methods=["GET"])
+def api_wow_addon_local():
+    """The full local snapshot - never filtered, never leaves this machine."""
+    return jsonify(wow_addon.read_cache())
+
+
+@app.route("/api/wow/addon/refresh", methods=["POST"])
+def api_wow_addon_refresh():
+    """Re-parse SavedVariables now and push to the backend."""
+    try:
+        payload, synced = wow_addon.refresh(
+            _backend_url(), _player_token(), log, _wow_path_override()
+        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 409
+    if payload is None:
+        return jsonify({"error": "No GamezNET addon data found. Is the addon installed?"}), 404
+    return jsonify({
+        "ok": True,
+        "synced": synced,
+        "chars": len(payload.get("chars") or {}),
+        "updated": payload.get("updated"),
+    })
+
+
+@app.route("/api/wow/addon/path", methods=["POST"])
+def api_wow_addon_path():
+    """Set an explicit WoW install path for non-standard installs."""
+    data = request.get_json(silent=True) or {}
+    path = (data.get("path") or "").strip()
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            cfg = json.load(f)
+    except Exception:
+        return jsonify({"error": "Not provisioned"}), 400
+    if path:
+        cfg["wow_path"] = path
+    else:
+        cfg.pop("wow_path", None)
+    _write_config(cfg)
+    return jsonify({"ok": True, "paths": wow_addon.find_saved_variables(path or None)})
+
+
+@app.route("/api/wow/addon/proxy", methods=["GET"])
+def api_wow_addon_proxy():
+    """Proxy the backend's group view (visibility filtering happens there)."""
+    import urllib.request
+    token = _player_token()
+    if not token:
+        return jsonify({"error": "Not provisioned"}), 401
+    try:
+        req = urllib.request.Request(
+            f"{_backend_url()}/api/wow/addon/data",
+            headers={"X-Token": token, "User-Agent": "GamezNET"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.read(), resp.status, {"Content-Type": "application/json"}
+    except Exception as e:
+        log.debug("wow addon proxy failed: %s", e)
+        return jsonify({"error": str(e)}), 502
+
 
 @app.route("/api/mobile-token", methods=["GET"])
 def api_mobile_token():
@@ -3150,6 +3271,9 @@ if __name__ == "__main__":
 
     # Start Heartbeat Thread
     threading.Thread(target=heartbeat_loop, daemon=True).start()
+
+    # Watch WoW SavedVariables for GamezNET addon exports
+    wow_addon.start_watcher(_backend_url, _player_token, log, _wow_path_override)
 
     # Start Flask in background thread
     # Use waitress instead of Flask dev server for better frozen app stability

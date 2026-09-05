@@ -479,6 +479,18 @@ const TOWN_ZONES = [
     // Each layer's DZI has its tile grid offset vertically by layer*LAYER_HEIGHT.
     // Loading multiple layers simultaneously causes OSD to composite them, producing
     // the diagonal split-map artifact. Load only the active layer's DZI at a time.
+    //
+    // NOTE: dropdown currently locked to Floor 2 only (see LOCKED_LAYER below), so
+    // this function is effectively dead code. If floor-switching is re-enabled:
+    // this does NOT preserve view position/zoom across switches (jumps to the new
+    // image's default fit). Fixed version exists in tools/local_viewer/viewer.html —
+    // key fix: viewer's 'open' event does NOT fire for world.addTiledImage() (only
+    // for the viewer's initial single-image open() path), so any position-restore
+    // logic hung on addHandler('open', ...) here silently never runs. Use
+    // addTiledImage's own `success` callback instead, and reproject the saved
+    // viewport center through game-square coordinates (not raw pixel rects) since
+    // each layer has a different LH-based vertical offset in the same coordinate
+    // space — copying pixel bounds directly lands you on a different in-game spot.
     window.setLayer = function(layer) {
       if (!viewer || layer === currentLayer) return;
       currentLayer = layer;
