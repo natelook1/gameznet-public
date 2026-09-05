@@ -8140,6 +8140,20 @@
     const agg = wowAddonData.aggregate || {};
     const mine = chars.filter(c => c.mine);
 
+    // Public-tier fields (name/class/spec/level/ilvl/keystone) for every
+    // player's characters, not just your own - gold stays out of this row
+    // entirely (aggregate-only by default; c.gold is only ever populated by
+    // the backend when it's yours or the owner set it public).
+    const rosterRows = [...chars].sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0)).map(c => `
+      <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:var(--display);font-size:13px;color:${c.mine ? 'var(--wow-gold)' : 'var(--text)'};">${c.name} <span style="color:var(--text-muted);font-size:10px;">${c.player_name}</span></div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${c.spec || ''} ${c.class || ''} · ${c.realm || ''} · Lvl ${c.level || '?'}</div>
+        </div>
+        ${c.keystone?.level ? `<span style="font-family:var(--display);font-size:13px;color:var(--wow-accent);" title="${c.keystone.name || ''}">🗝 +${c.keystone.level}</span>` : ''}
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text-muted);width:44px;text-align:right;flex-shrink:0;">${c.ilvl ? Math.round(c.ilvl) : '—'}</div>
+      </div>`).join('');
+
     const playedRows = chars.filter(c => c.played).sort((a, b) => b.played - a.played).map(c => `
       <div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--border);">
         <div style="flex:1;min-width:0;">
@@ -8173,6 +8187,7 @@
           Others' exact gold stays hidden - only the combined total and your own rank are shared.
         </div>
       </div></div>
+      <div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Roster</div></div><div class="card-body">${rosterRows}</div></div>
       ${mats ? `<div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Group Mats</div></div><div class="scroll-body" style="padding:0 14px;">${mats}</div></div>` : ''}
       ${playedRows ? `<div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Time Played</div></div><div class="card-body">${playedRows}</div></div>` : ''}`;
 
@@ -9340,12 +9355,30 @@
       saveBtn.disabled = currentState === wowPickerDbState;
     }
 
+    if (chars.length === 0) {
+      // Previously rendered as a silently blank box whenever the current
+      // filter matched nothing - most confusingly right after a fresh
+      // Battle.net link/relink, where it looked like the picker was broken
+      // rather than "no characters (yet) at this filter."
+      if (wowAvailableChars.length === 0) {
+        el.innerHTML = `<div class="empty">No characters found on this Battle.net account. If you just linked, try refreshing this tab.</div>`;
+      } else if (wowPickerFilter === 'active') {
+        el.innerHTML = `
+          <div class="empty">All ${wowAvailableChars.length} character(s) on this account are below level 90.
+            <span onclick="setPickerFilter('all')" style="color:var(--accent);cursor:pointer;">Show all</span>
+          </div>`;
+      } else {
+        el.innerHTML = `<div class="empty">No characters match this filter.</div>`;
+      }
+      return;
+    }
+
     el.innerHTML = chars.map(c => {
       const idKey = c.name.toLowerCase() + '-' + c.realm.slug;
       const selected = wowPickerSelections.has(idKey);
       const isMain = idKey === wowPickerMainChar;
       const disabled = !selected && wowPickerSelections.size >= 5;
-      
+
       return `
         <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);opacity:${disabled?'0.4':'1'};">
           <input type="checkbox" ${selected?'checked':''} ${disabled&&!selected?'disabled':''}

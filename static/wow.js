@@ -2244,6 +2244,22 @@ function WowGroup({ addon, addonErr, onReload }) {
         </div>
       </div>
 
+      <div class="wow-card" style="margin:12px;">
+        <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:10px;">ROSTER</div>
+        ${[...chars].sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0)).map(c => html`
+          <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--wow-border2);">
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:var(--wow-display);font-size:12px;color:${c.mine ? 'var(--wow-gold)' : 'var(--wow-text)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                ${c.name} <span style="color:var(--wow-muted);font-size:10px;">${c.player_name}</span>
+              </div>
+              <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${c.spec || ''} ${c.class || ''} · Lvl ${c.level || '?'}</div>
+            </div>
+            ${c.keystone?.level ? html`<span style="font-family:var(--wow-display);font-size:12px;color:var(--wow-accent);">🗝 +${c.keystone.level}</span>` : ''}
+            <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);width:34px;text-align:right;flex-shrink:0;">${c.ilvl ? Math.round(c.ilvl) : '—'}</div>
+          </div>
+        `)}
+      </div>
+
       ${(agg.items || []).length > 0 && html`
         <div class="wow-card" style="margin:12px;">
           <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:10px;">GROUP MATS</div>
