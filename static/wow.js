@@ -2598,6 +2598,21 @@ function WowPulls() {
     // after a fight ends, and nobody is going to alt-tab and hit the reload
     // arrow between every pull. Skip the poll while the tab is hidden so a
     // backgrounded window is not fetching all day.
+    // SSE gets a new pull on screen as soon as the backend ingests it, instead
+    // of waiting out this component's own interval on top of the tailer's.
+    // The poll below stays as the fallback: EventSource cannot send an auth
+    // header, so this only connects where the session rides a cookie, and it
+    // is one more thing that can silently drop.
+    let es = null;
+    try {
+      const tok = localStorage.getItem('gzn_token');
+      es = tok ? new EventSource(`${API}/api/wow/combatlog/stream?token=${encodeURIComponent(tok)}`) : null;
+      if (es) es.onmessage = (m) => {
+        try { if (JSON.parse(m.data)?.type === 'pull') loadPulls(); } catch {}
+      };
+      if (es) es.onerror = () => { try { es.close(); } catch {} es = null; };
+    } catch { es = null; }
+
     const iv = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return;
       loadPulls();
@@ -2608,7 +2623,7 @@ function WowPulls() {
     // than up to 10s of staleness.
     const onVisible = () => { if (!document.hidden) { loadPulls(); loadStatus(); } };
     document.addEventListener('visibilitychange', onVisible);
-    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVisible); };
+    return () => { clearInterval(iv); if (es) { try { es.close(); } catch {} } document.removeEventListener('visibilitychange', onVisible); };
   }, []);
 
   if (pullsErr) {
