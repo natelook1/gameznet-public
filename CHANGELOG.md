@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.11.9 — 2026-09-05
+
+### Added
+- **Combat logging no longer has to be re-enabled every session** — `/combatlog` does not persist across logins, so logging silently stopped on every session and the Pulls tab went quiet until the player remembered to re-run it. Opt in once with `/gzn log on` and the addon re-enables it on login. `LoggingCombat` is rate limited to 5 calls per 10 seconds shared across every addon and the `/combatlog` command itself, and returns `nil` when throttled (meaning "unknown", not "off"), so this fires only on login/zone events, queries before writing, and backs off on `nil` rather than burning a budget other addons depend on. `/gzn log` reports both the addon setting and WoW's real state. Addon bundle 1.2.0 → 1.3.0; schema stays 3, so no `/reload` is needed.
+
+### Fixed
+- **Player Estate card would have crashed for anyone without a house** — an empty Lua table parses as `{}`, and the card called `.filter()` on `housing.houses`, which throws on an object. Since nobody owns a plot yet this was the common case, and it would have stayed hidden until someone bought one. `_ARRAY_FIELDS` only coerces top-level keys and `houses` is nested, so it is normalised explicitly; the frontend also tolerates a map from older clients.
+- **Pulls tab told working setups to set themselves up** — with no pulls recorded it showed the same "enable combat logging with `/combatlog`" message whether logging was off, broken, or working perfectly, with no indication that open-world kills never produce a pull. `/api/wow/combatlog/status` now reports the log's size and seconds since WoW last wrote it, so the empty state distinguishes "logging is live, you just have not pulled a boss" from "a log exists but has gone quiet, re-run `/combatlog`" from "tailing is off in GamezNET".
+
+---
+
 ## v1.11.8 — 2026-09-05
 
 ### Fixed

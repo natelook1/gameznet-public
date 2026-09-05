@@ -152,7 +152,10 @@ The **Discord** tab is a full embedded Discord experience — no Discord account
 
 ![WoW Tab](static/ss-wow.png)
 
-The **WoW** tab is a full guild roster and character tracker — no addons or third-party sites required.
+The **WoW** tab is a full guild roster and character tracker. The roster, profiles and token
+price work with no addon at all; the optional bundled **GamezNET addon** adds what the
+Blizzard API does not expose — bags, bank, currencies, played time, housing, and live combat
+log pulls.
 
 - **Guild roster** — browse all characters added to the network, with class icons, realm, and region
 - **Character profiles** — click any character to see their Raider.io score, progression, and recent activity
@@ -160,8 +163,26 @@ The **WoW** tab is a full guild roster and character tracker — no addons or th
 - **WoW Token price** — live gold token price shown in the tab header
 - **Link your Battle.net account** — sign in with Battle.net to automatically import your own characters. Your characters stay synced and are visible to other players on the network
 - **Main / Alt designation** — mark characters as mains or alts; alts are nested under the main in the roster
+- **Player Estate** — collected housing decor (from the Blizzard API) plus owned houses,
+  neighborhood and house favor (captured by the addon, since no Web API exposes them)
+- **Pulls** — per-encounter DPS/HPS, deaths and party loadout, tailed live from WoW's combat
+  log. Only boss encounters and Mythic+ runs are recorded; open-world and trash mobs emit no
+  encounter, so questing never produces a pull
 
 **Setup (admin):** Configure Battle.net API credentials in the Admin Panel → Integrations tab. Players can then link their own accounts from the WoW tab.
+
+**Setup (addon, optional):** The addon installs with the client. After the first login run
+`/reload` once so WoW writes its saved data. Combat logging is opt-in and off by default:
+
+| Command | Effect |
+|---|---|
+| `/gzn` | Capture now and report what was stored |
+| `/gzn log on` | Auto-enable combat logging on every login (`/combatlog` alone does not persist) |
+| `/gzn log` | Show the addon setting and WoW's actual logging state |
+| `/gzn reset` | Clear stored character data |
+
+Combat log tailing must also be enabled in the GamezNET client itself — the addon setting and
+the client toggle are independent, and both are required before pulls are reported.
 
 ---
 
