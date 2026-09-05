@@ -1549,6 +1549,12 @@ function WowAccount({ me, characters, onRefresh, privacy, onPrivacyChange }) {
           if (charsRes.ok) {
             const charsData = await charsRes.json();
             setBnetChars(Array.isArray(charsData) ? charsData : []);
+          } else if (charsRes.status === 401) {
+            // The server already tried to refresh silently, so a 401 here means
+            // the link really is dead. Say so instead of rendering an empty
+            // character list with no explanation.
+            setBnetChars([]);
+            setBnetStatus(st => ({ ...(st || {}), linked: false, needsReauth: true }));
           }
           setBnetLoading(false);
         }
@@ -1658,7 +1664,11 @@ function WowAccount({ me, characters, onRefresh, privacy, onPrivacyChange }) {
       <div class="wow-card" style="max-width: 700px; margin: 0 auto 16px;">
         <div class="card-header">
           <div class="card-title"><div class="dot dot-gold"></div>Battle.net Account</div>
-          ${bnetStatus?.linked ? html`<span class="wow-badge badge-free">LINKED</span>` : html`<span class="wow-badge badge-dim">NOT LINKED</span>`}
+          ${bnetStatus?.linked
+            ? html`<span class="wow-badge badge-free">LINKED</span>`
+            : bnetStatus?.needsReauth
+              ? html`<span class="wow-badge badge-dim" style="border-color:var(--wow-red);color:var(--wow-red);">RECONNECT</span>`
+              : html`<span class="wow-badge badge-dim">NOT LINKED</span>`}
         </div>
         <div class="card-body">
           ${bnetStatus?.linked ? html`
