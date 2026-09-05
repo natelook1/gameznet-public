@@ -1744,7 +1744,91 @@ function cdStr(sec) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+// Quality colours match WoW's item tiers so the grid reads at a glance.
+const Q_COLOR = ['#9d9d9d', '#ffffff', '#1eff00', '#0070dd', '#a335ee', '#ff8000', '#e6cc80', '#00ccff'];
+
+function qColor(q) {
+  return (q != null && Q_COLOR[q]) ? Q_COLOR[q] : 'var(--wow-text)';
+}
+
+// Inventory browser for one character. Owner-only by construction: the backend
+// returns bags/bank/reagentBank/accountBank only when `mine` (or the bags tier
+// is public), so there is nothing to hide here.
+function WowInventory({ character, onClose }) {
+  const [src, setSrc] = useState('bags');
+  const [search, setSearch] = useState('');
+
+  const c = character;
+  const SOURCES = [
+    { id: 'bags',        label: 'Bags',    items: c.bags || [] },
+    { id: 'bank',        label: 'Bank',    items: c.bank || [] },
+    { id: 'reagentBank', label: 'Reagent', items: c.reagentBank || [] },
+    { id: 'accountBank', label: 'Warband', items: c.accountBank || [] },
+  ];
+
+  const active = SOURCES.find(s => s.id === src) || SOURCES[0];
+  const q = search.trim().toLowerCase();
+  const items = (active.items || [])
+    .filter(it => !q || (it.name || '').toLowerCase().includes(q))
+    .sort((a, b) => (b.quality ?? 0) - (a.quality ?? 0) || (a.name || '').localeCompare(b.name || ''));
+
+  return html`
+    <div class="wow-card" style="margin:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-gold);">${c.name}</div>
+        <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${c.realm}</div>
+        <div style="margin-left:auto;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);cursor:pointer;padding:4px 8px;"
+             onClick=${onClose}>✕ close</div>
+      </div>
+
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">
+        ${SOURCES.map(s => html`
+          <div onClick=${() => setSrc(s.id)}
+               style="font-family:var(--wow-mono);font-size:10px;padding:4px 9px;border-radius:3px;cursor:pointer;
+                      background:${src === s.id ? 'var(--wow-gold-dim)' : 'var(--wow-surface2)'};
+                      color:${src === s.id ? 'var(--wow-gold)' : 'var(--wow-muted)'};">
+            ${s.label} <span style="opacity:0.6;">${(s.items || []).length}</span>
+          </div>
+        `)}
+      </div>
+
+      <input type="text" value=${search} placeholder="Filter items…"
+             onInput=${e => setSearch(e.target.value)}
+             style="width:100%;box-sizing:border-box;background:var(--wow-bg);border:1px solid var(--wow-border2);
+                    color:var(--wow-text);font-family:var(--wow-mono);font-size:11px;padding:6px 8px;border-radius:3px;margin-bottom:8px;" />
+
+      ${items.length === 0
+        ? html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);padding:8px 0;">
+            ${q ? 'Nothing matches that filter.' : `${active.label} is empty.`}
+          </div>`
+        : html`<div style="max-height:340px;overflow-y:auto;">
+            ${items.map(it => html`
+              <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--wow-border2);">
+                ${it.icon ? html`<img src="https://wow.zamimg.com/images/wow/icons/small/${it.icon}.jpg"
+                     onError=${e => { e.target.style.visibility = 'hidden'; }}
+                     style="width:18px;height:18px;border-radius:2px;flex-shrink:0;" />`
+                  : html`<div style="width:18px;height:18px;flex-shrink:0;"></div>`}
+                <a href="https://www.wowhead.com/item=${it.id}" target="_blank" rel="noopener"
+                   data-wowhead="item=${it.id}"
+                   style="flex:1;min-width:0;font-family:var(--wow-mono);font-size:11px;text-decoration:none;
+                          color:${qColor(it.quality)};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                  ${it.name || ('item ' + it.id)}
+                </a>
+                ${it.count > 1 ? html`<span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">×${it.count}</span>` : ''}
+              </div>
+            `)}
+          </div>`}
+
+      <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-top:8px;">
+        ${items.length} of ${(active.items || []).length} stack${(active.items || []).length === 1 ? '' : 's'}
+        ${active.id === 'bags' && c.bagFree != null ? ` · ${c.bagFree} free slot${c.bagFree === 1 ? '' : 's'}` : ''}
+      </div>
+    </div>
+  `;
+}
+
 function WowHub({ addon, addonErr, onReload }) {
+  const [invChar, setInvChar] = useState(null);
   if (addonErr) {
     return html`<div class="wow-card" style="margin:12px;">
       <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-red);margin-bottom:6px;">Addon data unavailable</div>
@@ -1849,6 +1933,11 @@ function WowHub({ addon, addonErr, onReload }) {
               ${c.keystone?.level ? html`
                 <div style="margin-left:auto;font-family:var(--wow-display);font-size:13px;color:var(--wow-accent);"
                      title="${c.keystone.name || ''}">🗝 +${c.keystone.level}</div>` : ''}
+              <div onClick=${() => setInvChar(invChar === c.char_key ? null : c.char_key)}
+                   style="${c.keystone?.level ? '' : 'margin-left:auto;'}font-family:var(--wow-mono);font-size:10px;
+                          padding:3px 8px;border-radius:3px;cursor:pointer;
+                          background:${invChar === c.char_key ? 'var(--wow-gold-dim)' : 'var(--wow-surface2)'};
+                          color:${invChar === c.char_key ? 'var(--wow-gold)' : 'var(--wow-muted)'};">🎒 items</div>
             </div>
 
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:8px;">
@@ -1907,6 +1996,7 @@ function WowHub({ addon, addonErr, onReload }) {
               </div>
             `}
           </div>
+          ${invChar === c.char_key && html`<${WowInventory} character=${c} onClose=${() => setInvChar(null)} />`}
         `;
       })}
     </div>

@@ -7583,6 +7583,92 @@
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   }
 
+  // Item quality colours, matching WoW's tiers.
+  const WOW_Q_COLOR = ['#9d9d9d', '#ffffff', '#1eff00', '#0070dd', '#a335ee', '#ff8000', '#e6cc80', '#00ccff'];
+  function wowQColor(q) {
+    return (q != null && WOW_Q_COLOR[q]) ? WOW_Q_COLOR[q] : 'var(--text)';
+  }
+
+  // Which character's inventory is expanded, and the current source/filter.
+  let wowInvChar = null;
+  let wowInvSrc = 'bags';
+  let wowInvSearch = '';
+
+  function wowToggleInv(charKey) {
+    if (wowInvChar === charKey) {
+      wowInvChar = null;
+    } else {
+      wowInvChar = charKey;
+      wowInvSrc = 'bags';
+      wowInvSearch = '';
+    }
+    wowRenderHubTab();
+  }
+
+  function wowSetInvSrc(src) {
+    wowInvSrc = src;
+    wowRenderHubTab();
+  }
+
+  function wowSetInvSearch(v) {
+    wowInvSearch = v;
+    wowRenderHubTab();
+    // Re-focus and restore the caret, since the panel is re-rendered wholesale.
+    const el = document.getElementById('wowInvSearch');
+    if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+  }
+
+  // Owner-only by construction: the backend returns bag/bank contents only for
+  // the caller's own characters (or when the bags tier is public).
+  function wowRenderInventory(c) {
+    const sources = [
+      { id: 'bags',        label: 'Bags',    items: c.bags || [] },
+      { id: 'bank',        label: 'Bank',    items: c.bank || [] },
+      { id: 'reagentBank', label: 'Reagent', items: c.reagentBank || [] },
+      { id: 'accountBank', label: 'Warband', items: c.accountBank || [] },
+    ];
+    const active = sources.find(s => s.id === wowInvSrc) || sources[0];
+    const q = (wowInvSearch || '').trim().toLowerCase();
+    const items = (active.items || [])
+      .filter(it => !q || (it.name || '').toLowerCase().includes(q))
+      .sort((a, b) => (b.quality ?? 0) - (a.quality ?? 0) || (a.name || '').localeCompare(b.name || ''));
+
+    const tabs = sources.map(sr => `
+      <div onclick="wowSetInvSrc('${sr.id}')"
+           style="font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:3px;cursor:pointer;
+                  background:${wowInvSrc === sr.id ? 'var(--wow-gold-dim)' : 'var(--surface2)'};
+                  color:${wowInvSrc === sr.id ? 'var(--wow-gold)' : 'var(--text-muted)'};">
+        ${sr.label} <span style="opacity:0.6;">${(sr.items || []).length}</span></div>`).join('');
+
+    const rows = items.length === 0
+      ? `<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:8px 0;">
+           ${q ? 'Nothing matches that filter.' : `${active.label} is empty.`}</div>`
+      : items.map(it => `
+          <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);">
+            ${it.icon
+              ? `<img src="https://wow.zamimg.com/images/wow/icons/small/${it.icon}.jpg" onerror="this.style.visibility='hidden'" style="width:18px;height:18px;border-radius:2px;flex-shrink:0;" />`
+              : `<div style="width:18px;height:18px;flex-shrink:0;"></div>`}
+            <a href="https://www.wowhead.com/item=${it.id}" target="_blank" rel="noopener" data-wowhead="item=${it.id}"
+               style="flex:1;min-width:0;font-family:var(--mono);font-size:11px;text-decoration:none;
+                      color:${wowQColor(it.quality)};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              ${it.name || ('item ' + it.id)}</a>
+            ${it.count > 1 ? `<span style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">×${it.count}</span>` : ''}
+          </div>`).join('');
+
+    return `<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">${tabs}</div>
+      <input type="text" id="wowInvSearch" value="${(wowInvSearch || '').replace(/"/g, '&quot;')}"
+             placeholder="Filter items..." oninput="wowSetInvSearch(this.value)"
+             style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);
+                    color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 8px;border-radius:3px;margin-bottom:8px;" />
+      <div style="max-height:360px;overflow-y:auto;">${rows}</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-top:8px;">
+        ${items.length} of ${(active.items || []).length} stack${(active.items || []).length === 1 ? '' : 's'}
+        ${active.id === 'bags' && c.bagFree != null ? ` · ${c.bagFree} free slot${c.bagFree === 1 ? '' : 's'}` : ''}
+      </div>
+    </div>`;
+  }
+
   function wowRenderHubTab() {
     const el = document.getElementById('wow-panel-hub');
     if (!el) return;
@@ -7677,19 +7763,27 @@
         ? `<span style="margin-left:auto;font-family:var(--display);font-size:14px;color:var(--wow-accent);" title="${c.keystone.name || ''}">🗝 +${c.keystone.level}</span>`
         : '';
 
+      const invOpen = wowInvChar === c.char_key;
+      const invBtn = `<span onclick="wowToggleInv('${c.char_key}')"
+        style="${c.keystone?.level ? '' : 'margin-left:auto;'}font-family:var(--mono);font-size:10px;padding:3px 9px;
+               border-radius:3px;cursor:pointer;margin-left:10px;
+               background:${invOpen ? 'var(--wow-gold-dim)' : 'var(--surface2)'};
+               color:${invOpen ? 'var(--wow-gold)' : 'var(--text-muted)'};">🎒 items</span>`;
+
       return `<div class="card"><div class="card-header">
         <div class="card-title"><div class="dot dot-gold"></div> ${c.name}
           <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);font-weight:400;margin-left:8px;">${c.realm} · ${c.spec || ''} ${c.class || ''} · ${c.level || '?'}</span>
-        </div>${keyBadge}</div>
+        </div>${keyBadge}${invBtn}</div>
         <div class="card-body">
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:12px;">${stats}</div>
-          ${cds}${locks}
+          ${cds}${locks}${invOpen ? wowRenderInventory(c) : ''}
         </div></div>`;
     }).join('');
 
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
       ${summary}${alertCard}${cards}
     </div>`;
+    if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
   }
 
   function wowRenderAddonTab() {
