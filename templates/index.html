@@ -3040,6 +3040,7 @@
         <div class="nav-tab" data-wow-tab="group" onclick="wowSwitchTab('group')"><span class="tab-icon">💰</span> Group</div>
         <div class="nav-tab" data-wow-tab="keys" onclick="wowSwitchTab('keys')"><span class="tab-icon">🗝️</span> Keys &amp; Lockouts</div>
         <div class="nav-tab" data-wow-tab="pulls" onclick="wowSwitchTab('pulls')"><span class="tab-icon">⚔️</span> Pulls</div>
+        <div class="nav-tab" data-wow-tab="addon" onclick="wowSwitchTab('addon')"><span class="tab-icon">🧮</span> Addon</div>
       </div>
 
       <div class="char-bar" id="wowCharBar" style="display:none;"></div>
@@ -3060,6 +3061,7 @@
       <div class="tab-panel" id="wow-panel-group"></div>
       <div class="tab-panel" id="wow-panel-keys"></div>
       <div class="tab-panel" id="wow-panel-pulls"></div>
+      <div class="tab-panel" id="wow-panel-addon"></div>
     </div>
 
     <!-- ── SETUP (shown when not provisioned) ── -->
@@ -7980,7 +7982,7 @@
       el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;">
         <div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Nothing synced yet</div></div><div class="card-body">
           <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:1.7;">
-            Install the GamezNET addon from the <span style="color:var(--wow-gold);cursor:pointer;" onclick="wowSwitchTab('group')">Group tab</span>,
+            Install the GamezNET addon from the <span style="color:var(--wow-gold);cursor:pointer;" onclick="wowSwitchTab('addon')">Addon tab</span>,
             then log into WoW and type <span style="color:var(--wow-gold);">/reload</span>.
           </div></div></div></div>`;
       return;
@@ -8091,24 +8093,24 @@
 
   // Group, Keys & Lockouts, and Pulls were previously sub-tabs nested under a
   // single "Addon" tab; promoted to top-level tabs since Pulls in particular
-  // was too many clicks deep to check during a raid. This re-renders whichever
-  // of the three is currently visible - install/privacy/refresh actions live
-  // on all three tabs but only one is on-screen at a time.
+  // was too many clicks deep to check during a raid. Install/uninstall/sync
+  // now live on their own Addon tab instead of being duplicated at the top of
+  // Group/Keys/Pulls. This re-renders whichever of the four is currently
+  // visible after an action that could affect any of them (privacy change,
+  // addon install/refresh, pull expand/collapse).
   function wowRenderCurrentAddonTab() {
     if (wowActiveTab === 'group') wowRenderGroupTab();
     else if (wowActiveTab === 'keys') wowRenderKeysTab();
     else if (wowActiveTab === 'pulls') wowRenderPullsTab();
+    else if (wowActiveTab === 'addon') wowRenderAddonMgmtTab();
   }
 
   function wowRenderGroupTab() {
     const el = document.getElementById('wow-panel-group');
     if (!el) return;
 
-    const installCard = wowRenderAddonInstallCard();
-
     if (wowAddonErr) {
       el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
-        ${installCard}
         <div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--red);">Addon data unavailable: ${wowAddonErr}</div></div></div>
       </div>`;
       return;
@@ -8117,9 +8119,9 @@
     const chars = wowAddonData?.characters || [];
     if (chars.length === 0) {
       el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
-        ${installCard}
         <div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:1.7;">
-          No addon data yet. Install the addon above, log into WoW, then type <span style="color:var(--wow-gold);">/reload</span>.
+          No addon data yet. Install the addon from the <span style="color:var(--wow-gold);cursor:pointer;" onclick="wowSwitchTab('addon')">Addon tab</span>,
+          log into WoW, then type <span style="color:var(--wow-gold);">/reload</span>.
         </div></div></div>
         ${wowRenderPrivacyCard()}
       </div>`;
@@ -8166,7 +8168,6 @@
       ${playedRows ? `<div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Time Played</div></div><div class="card-body">${playedRows}</div></div>` : ''}`;
 
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
-      ${installCard}
       ${content}
       ${wowRenderPrivacyCard()}
     </div>`;
@@ -8177,11 +8178,8 @@
     const el = document.getElementById('wow-panel-keys');
     if (!el) return;
 
-    const installCard = wowRenderAddonInstallCard();
-
     if (wowAddonErr) {
       el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
-        ${installCard}
         <div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--red);">Addon data unavailable: ${wowAddonErr}</div></div></div>
       </div>`;
       return;
@@ -8190,9 +8188,9 @@
     const chars = wowAddonData?.characters || [];
     if (chars.length === 0) {
       el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
-        ${installCard}
         <div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:1.7;">
-          No addon data yet. Install the addon above, log into WoW, then type <span style="color:var(--wow-gold);">/reload</span>.
+          No addon data yet. Install the addon from the <span style="color:var(--wow-gold);cursor:pointer;" onclick="wowSwitchTab('addon')">Addon tab</span>,
+          log into WoW, then type <span style="color:var(--wow-gold);">/reload</span>.
         </div></div></div>
         ${wowRenderPrivacyCard()}
       </div>`;
@@ -8232,7 +8230,6 @@
       <div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Raid Lockouts</div></div><div class="card-body">${lockRows}</div></div>`;
 
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
-      ${installCard}
       ${content}
       ${wowRenderPrivacyCard()}
     </div>`;
@@ -8243,14 +8240,20 @@
     const el = document.getElementById('wow-panel-pulls');
     if (!el) return;
 
-    // Pulls come from the live combat log tail, not the addon's SavedVariables,
-    // so this tab stays usable even when there is no addon data at all.
-    const installCard = wowRenderAddonInstallCard();
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
-      ${installCard}
       ${wowRenderPullsSubTab()}
     </div>`;
     if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
+  }
+
+  // Addon install/uninstall/sync management - its own tab since the install
+  // card no longer needs to be duplicated across Group/Keys/Pulls.
+  function wowRenderAddonMgmtTab() {
+    const el = document.getElementById('wow-panel-addon');
+    if (!el) return;
+    el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
+      ${wowRenderAddonInstallCard()}
+    </div>`;
   }
 
   function wowSwitchTab(tab) {
@@ -8268,13 +8271,13 @@
     wowActiveTab = tab;
     if (isCharTab) wowRenderCharTab();
     if (tab === 'account') wowRenderAccountTab();
-    if (tab === 'group') { wowLoadAddonStatus().then(wowRenderGroupTab); wowRenderGroupTab(); }
-    if (tab === 'keys') { wowLoadAddonStatus().then(wowRenderKeysTab); wowRenderKeysTab(); }
+    if (tab === 'group') wowRenderGroupTab();
+    if (tab === 'keys') wowRenderKeysTab();
     if (tab === 'pulls') {
-      wowLoadAddonStatus().then(wowRenderPullsTab);
       if (!wowPullsData && !wowPullsErr) wowLoadPulls();
       wowRenderPullsTab();
     }
+    if (tab === 'addon') { wowLoadAddonStatus().then(wowRenderAddonMgmtTab); wowRenderAddonMgmtTab(); }
     if (tab === 'hub') wowRenderHubTab();
     if (isCharTab) wowBuildCharBar();
   }
