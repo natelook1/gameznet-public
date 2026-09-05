@@ -8722,7 +8722,34 @@
 
     const housingBlock = document.getElementById('wowHousingBlock');
     if (housingBlock) {
-      housingBlock.innerHTML = `<div class="empty" style="padding:16px;gap:8px;"><div style="font-size:28px;">🏕️</div><div style="font-size:13px;color:var(--text-muted);text-align:center;line-height:1.5;">Player Estate data is not yet available via the Blizzard API.<br/><span style="font-size:11px;">Check back once Blizzard publishes housing endpoints.</span></div></div>`;
+      // Decor comes from /collections/decor. An owned house has no Web API
+      // (/profile/.../house/{id} 404s), so it only shows in the app's WoW tab
+      // where the addon capture is available.
+      const decorCollected = bnet?.decor?.decor_collected || [];
+      if (decorCollected.length > 0) {
+        const totalDecor = decorCollected.reduce((n, d) => n + (d.quantity || 1), 0);
+        // The page's other `esc` helpers are scoped inside unrelated functions,
+        // so keep a local one here - decor names are Blizzard-supplied strings
+        // that land in both an attribute and a text node.
+        const hEsc = v => (v || '').toString()
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        const chips = decorCollected.slice(0, 12).map(d => {
+          const nm = hEsc(d.decor?.name || 'Unknown');
+          const qty = (d.quantity || 1) > 1 ? ' ×' + d.quantity : '';
+          return `<span style="font-size:11px;color:var(--text-muted);background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:2px 6px;" title="${nm}${qty}">${nm}${qty}</span>`;
+        }).join('');
+        const more = decorCollected.length > 12
+          ? `<span style="font-size:11px;color:var(--text-muted);padding:2px 6px;">+${decorCollected.length - 12} more</span>` : '';
+        housingBlock.innerHTML =
+          `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">`
+          + `<span style="font-size:13px;font-weight:600;">Decor Collected</span>`
+          + `<span style="font-size:11px;color:var(--gold,#c8a45c);">${decorCollected.length.toLocaleString()} unique`
+          + (totalDecor !== decorCollected.length ? ` · ${totalDecor.toLocaleString()} total` : '')
+          + `</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}${more}</div>`;
+      } else {
+        housingBlock.innerHTML = `<div class="empty" style="padding:16px;gap:8px;"><div style="font-size:28px;">🏕️</div><div style="font-size:13px;color:var(--text-muted);text-align:center;line-height:1.5;">No estate data yet.<br/><span style="font-size:11px;">Collect decor or claim a plot to see it here.</span></div></div>`;
+      }
     }
 
     const specBlock = document.getElementById('wowSpecBlock');

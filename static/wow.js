@@ -598,7 +598,7 @@ function getDungeonUnlocks(lvl) {
   ];
 }
 
-function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collectionsRef, dataTick }) {
+function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collectionsRef, dataTick, addon }) {
   const [colView, setColView] = useState(null); // 'mounts' | 'pets' | null
   const [colSearch, setColSearch] = useState('');
   const [colCompareIdx, setColCompareIdx] = useState(-1);
@@ -613,6 +613,12 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
   const cacheKey = `${character.region}-${character.realm}-${character.name}`;
   const c = charCacheRef.current[cacheKey] || {};
   const bnet = c._bnet || {};
+
+  // The addon roster is keyed "Name-Realm" and is the only source for an owned
+  // house (no Web API exposes one), so pair it with the Blizzard cache here.
+  const addonHousing = (addon?.characters || [])
+    .find(ac => `${ac.name}-${ac.realm}`.toLowerCase() === `${character.name}-${character.realm}`.toLowerCase())
+    ?.housing || null;
 
   const lvl = bnet?.profile?.level || c.level || 90;
   const maxLvl = 90;
@@ -932,15 +938,78 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
     return html`<div class="empty" style="padding:16px;">Profession data unavailable.</div>`;
   };
 
-  const renderHousing = () => html`
-    <div class="empty" style="padding:16px;gap:8px;">
-      <div style="font-size:28px;">🏕️</div>
-      <div style="font-size:13px;color:var(--wow-muted);text-align:center;line-height:1.5;">
-        Player Estate data is not yet available via the Blizzard API.<br/>
-        <span style="font-size:11px;">Check back once Blizzard publishes housing endpoints.</span>
-      </div>
-    </div>
-  `;
+  // Player Estate. Two independent sources, either of which can be absent:
+  //   - bnet.decor  : /collections/decor, the character's collected decor.
+  //   - addonHousing: C_Housing capture (owned houses, neighborhood, favor).
+  // The house itself has no Web API - /profile/.../house/{id} 404s - so an
+  // owned house only ever appears once the addon has run.
+  const renderHousing = () => {
+    const collected = bnet?.decor?.decor_collected || [];
+    const houses = (addonHousing?.houses || []).filter(Boolean);
+    const hasAnything = collected.length > 0 || houses.length > 0;
+
+    if (!hasAnything) {
+      const noAccess = addonHousing && addonHousing.hasAccess === false;
+      return html`
+        <div class="empty" style="padding:16px;gap:8px;">
+          <div style="font-size:28px;">🏕️</div>
+          <div style="font-size:13px;color:var(--wow-muted);text-align:center;line-height:1.5;">
+            ${noAccess
+              ? html`This account does not have housing access yet.`
+              : html`No estate data yet.<br/><span style="font-size:11px;">Collect decor or claim a plot, then log out to sync.</span>`}
+          </div>
+        </div>`;
+    }
+
+    const totalDecor = collected.reduce((n, d) => n + (d.quantity || 1), 0);
+
+    return html`
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${houses.map(h => html`
+          <div style="background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;padding:8px 10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+              <span style="font-family:var(--wow-display);font-size:13px;font-weight:600;">
+                ${h.houseName || 'Unnamed House'}
+              </span>
+              ${h.plotID != null && html`<span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">Plot ${h.plotID}</span>`}
+            </div>
+            ${h.neighborhoodName && html`
+              <div style="font-size:11px;color:var(--wow-muted);margin-top:2px;">${h.neighborhoodName}</div>`}
+          </div>`)}
+
+        ${addonHousing?.favor != null && addonHousing?.favorMax > 0 && html`
+          <div style="background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;padding:8px 10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <span style="font-family:var(--wow-display);font-size:13px;font-weight:600;">House Favor</span>
+              <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);">
+                ${addonHousing.favor.toLocaleString()} / ${addonHousing.favorMax.toLocaleString()}
+              </span>
+            </div>
+            <div style="height:4px;background:var(--wow-bg);border-radius:2px;overflow:hidden;">
+              <div style="height:100%;background:var(--wow-gold);width:${Math.min(100, Math.round((addonHousing.favor / addonHousing.favorMax) * 100))}%"></div>
+            </div>
+          </div>`}
+
+        ${collected.length > 0 && html`
+          <div style="background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;padding:8px 10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-family:var(--wow-display);font-size:13px;font-weight:600;">Decor Collected</span>
+              <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);">
+                ${collected.length.toLocaleString()} unique${totalDecor !== collected.length ? ` · ${totalDecor.toLocaleString()} total` : ''}
+              </span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+              ${collected.slice(0, 12).map(d => html`
+                <span style="font-size:11px;color:var(--wow-muted);background:var(--wow-bg);border:1px solid var(--wow-border);border-radius:3px;padding:2px 6px;"
+                      title="${d.decor?.name || ''}${(d.quantity || 1) > 1 ? ` ×${d.quantity}` : ''}">
+                  ${d.decor?.name || 'Unknown'}${(d.quantity || 1) > 1 ? html` ×${d.quantity}` : ''}
+                </span>`)}
+              ${collected.length > 12 && html`
+                <span style="font-size:11px;color:var(--wow-muted);padding:2px 6px;">+${collected.length - 12} more</span>`}
+            </div>
+          </div>`}
+      </div>`;
+  };
 
   const renderRenown = () => {
     if (bnet && bnet.reputations) {
@@ -2843,7 +2912,7 @@ export function WowTab({ me }) {
       ${loading ? html`<div style="padding: 20px; color: var(--wow-muted);">Loading roster...</div>` : html`
         ${subTab === 'hub'     && html`<${WowHub} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} charCacheRef=${charCacheRef} />`}
         ${subTab === 'overview' && html`<${WowOverview} characters=${characters} charCacheRef=${charCacheRef} affixCacheRef=${affixCacheRef} onSelectChar=${setActiveChar} onSubTab=${setSubTab} dataTick=${dataTick} addon=${addon} />`}
-        ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} dataTick=${dataTick} />`}
+        ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} dataTick=${dataTick} addon=${addon} />`}
         ${subTab === 'pve'      && html`<${WowPVE}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'pvp'      && html`<${WowPVP}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'group'   && html`<${WowGroup} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} />`}
