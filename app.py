@@ -1313,7 +1313,7 @@ def api_wow_addon_local():
 def api_wow_addon_refresh():
     """Re-parse SavedVariables now and push to the backend."""
     try:
-        payload, synced = wow_addon.refresh(
+        payload, sync_result = wow_addon.refresh(
             _backend_url(), _player_token(), log, _wow_path_override()
         )
     except ValueError as e:
@@ -1322,7 +1322,11 @@ def api_wow_addon_refresh():
         return jsonify({"error": "No GamezNET addon data found. Is the addon installed?"}), 404
     return jsonify({
         "ok": True,
-        "synced": synced,
+        "synced": sync_result.get("ok", False),
+        # None means the backend didn't report a count (older server, or the
+        # push itself failed) - the UI should show "unknown", not "0 skipped".
+        "stored": sync_result.get("stored"),
+        "skipped": sync_result.get("skipped"),
         "chars": len(payload.get("chars") or {}),
         "updated": payload.get("updated"),
     })

@@ -7480,6 +7480,16 @@
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
+      // A character with nobody registered to own it (My Account -> main/alt
+      // picker) is dropped by the backend rather than guessed at from
+      // whichever GamezNET login happened to sync it - see server.js's
+      // wowResolveCharacterOwner. Surface that here so it doesn't look like
+      // the sync silently lost a character.
+      if (d.skipped) {
+        toast(`Synced. ${d.skipped} character(s) skipped - not registered in your My Account picker.`);
+      } else if (d.synced) {
+        toast('Addon data synced.');
+      }
     } catch (e) {
       alert('Sync failed: ' + e.message);
     }
