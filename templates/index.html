@@ -8179,14 +8179,6 @@
       </div>`;
     }).join('');
 
-    const playedRows = chars.filter(c => c.played).sort((a, b) => b.played - a.played).map(c => `
-      <div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--border);">
-        <div style="flex:1;min-width:0;">
-          <div style="font-family:var(--display);font-size:12px;color:var(--text);">${c.name} <span style="color:var(--text-muted);font-size:10px;">${c.player_name}</span></div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${c.spec || ''} ${c.class || ''} · ${c.level || '?'}</div>
-        </div>
-        <div style="font-family:var(--display);font-size:14px;color:var(--wow-accent);">${wowPlayedStr(c.played)}</div>
-      </div>`).join('');
     const mats = (agg.items || []).slice(0, 25).map(it => `
       <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
         <a href="https://www.wowhead.com/item=${it.id}" target="_blank" rel="noopener" data-wowhead="item=${it.id}"
@@ -8213,8 +8205,7 @@
         </div>
       </div></div>
       <div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Roster</div></div><div class="card-body">${rosterRows}</div></div>
-      ${mats ? `<div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Group Mats</div></div><div class="scroll-body" style="padding:0 14px;">${mats}</div></div>` : ''}
-      ${playedRows ? `<div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Time Played</div></div><div class="card-body">${playedRows}</div></div>` : ''}`;
+      ${mats ? `<div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Group Mats</div></div><div class="scroll-body" style="padding:0 14px;">${mats}</div></div>` : ''}`;
 
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
       ${content}

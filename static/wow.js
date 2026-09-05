@@ -2301,22 +2301,6 @@ function WowGroup({ addon, addonErr, onReload }) {
         </div>
       `}
 
-      ${chars.some(c => c.played) && html`
-        <div class="wow-card" style="margin:12px;">
-          <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:10px;">TIME PLAYED</div>
-          ${chars.filter(c => c.played).sort((a, b) => b.played - a.played).map(c => html`
-            <div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--wow-border2);">
-              <div style="flex:1;min-width:0;">
-                <div style="font-family:var(--wow-display);font-size:12px;color:var(--wow-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                  ${c.name} <span style="color:var(--wow-muted);font-size:10px;">${c.player_name}</span>
-                </div>
-                <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${c.spec || ''} ${c.class || ''} · ${c.level || '?'}</div>
-              </div>
-              <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-accent);">${playedStr(c.played)}</div>
-            </div>
-          `)}
-        </div>
-      `}
     </div>
   `;
 }
