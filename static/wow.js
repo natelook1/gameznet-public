@@ -1726,6 +1726,193 @@ function resetInStr(epoch) {
 // Vault slot types, per C_WeeklyRewards. 1 = raid, 3 = M+, 6 = world/delves.
 const VAULT_TYPE = { 1: 'Raid', 3: 'Mythic+', 5: 'PvP', 6: 'World' };
 
+// ── Hub: your own characters at a glance (second-screen view) ────────────────
+
+function durColor(pct) {
+  if (pct == null) return 'var(--wow-muted)';
+  if (pct <= 20) return 'var(--wow-red)';
+  if (pct <= 50) return 'var(--wow-gold)';
+  return 'var(--wow-green)';
+}
+
+function cdStr(sec) {
+  if (!sec) return '';
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  if (d > 0) return `${d}d ${h}h`;
+  const m = Math.floor((sec % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function WowHub({ addon, addonErr, onReload }) {
+  if (addonErr) {
+    return html`<div class="wow-card" style="margin:12px;">
+      <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-red);margin-bottom:6px;">Addon data unavailable</div>
+      <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">${addonErr}</div>
+    </div>`;
+  }
+  if (!addon) {
+    return html`<div style="padding:20px;color:var(--wow-muted);font-family:var(--wow-mono);font-size:12px;">Loading…</div>`;
+  }
+
+  const mine = (addon.characters || []).filter(c => c.mine);
+  if (mine.length === 0) {
+    return html`<div class="wow-card" style="margin:12px;">
+      <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-gold);margin-bottom:8px;">Nothing synced yet</div>
+      <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);line-height:1.7;">
+        Install the GamezNET addon from the desktop app, then log into WoW and type
+        <span style="color:var(--wow-accent);">/reload</span>.
+      </div>
+    </div>`;
+  }
+
+  const totalGold = mine.reduce((n, c) => n + (c.gold || 0), 0);
+  const totalPlayed = mine.reduce((n, c) => n + (c.played || 0), 0);
+  const keys = mine.filter(c => c.keystone?.level);
+  const lockouts = mine.filter(c => (c.lockouts || []).length);
+
+  // Things that want attention: low durability, near-full bags, ready vault slots.
+  const alerts = [];
+  for (const c of mine) {
+    const d = c.durability;
+    if (d?.worstPct != null && d.worstPct <= 25) {
+      alerts.push({ kind: 'dur', char: c, text: `${c.name} gear at ${d.worstPct}%` });
+    }
+    if (c.bagFree != null && c.bagSlots && c.bagFree <= 4) {
+      alerts.push({ kind: 'bag', char: c, text: `${c.name} bags nearly full (${c.bagFree} free)` });
+    }
+    const ready = (c.vault || []).filter(v => v.progress >= v.threshold).length;
+    if (ready > 0) {
+      alerts.push({ kind: 'vault', char: c, text: `${c.name} has ${ready} vault reward${ready > 1 ? 's' : ''} ready` });
+    }
+    for (const cd of (c.cooldowns || [])) {
+      if (cd.remaining != null && cd.remaining <= 0) {
+        alerts.push({ kind: 'cd', char: c, text: `${c.name}: ${cd.name || 'cooldown'} ready` });
+      }
+    }
+  }
+
+  return html`
+    <div>
+      <div style="display:flex;align-items:center;padding:10px 12px 0;">
+        <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-muted);">
+          ${mine.length} character${mine.length > 1 ? 's' : ''} synced
+        </div>
+        <div style="margin-left:auto;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);cursor:pointer;padding:5px;"
+             onClick=${onReload}>⟳</div>
+      </div>
+
+      <div class="wow-card" style="margin:12px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;">
+          <div>
+            <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">YOUR GOLD</div>
+            <div style="font-family:var(--wow-display);font-size:20px;color:var(--wow-gold);">${goldStr(totalGold)}</div>
+          </div>
+          <div>
+            <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">TOTAL PLAYED</div>
+            <div style="font-family:var(--wow-display);font-size:20px;color:var(--wow-text);">${playedStr(totalPlayed)}</div>
+          </div>
+          <div>
+            <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">KEYS HELD</div>
+            <div style="font-family:var(--wow-display);font-size:20px;color:${keys.length ? 'var(--wow-accent)' : 'var(--wow-muted)'};">${keys.length}</div>
+          </div>
+          <div>
+            <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">LOCKED TO</div>
+            <div style="font-family:var(--wow-display);font-size:20px;color:var(--wow-text);">${lockouts.length}</div>
+          </div>
+        </div>
+      </div>
+
+      ${alerts.length > 0 && html`
+        <div class="wow-card" style="margin:12px;">
+          <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:8px;">NEEDS ATTENTION</div>
+          ${alerts.map(a => html`
+            <div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+              <span style="font-size:12px;">${a.kind === 'dur' ? '🔧' : a.kind === 'bag' ? '🎒' : a.kind === 'vault' ? '🎁' : '⏳'}</span>
+              <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-text);">${a.text}</span>
+            </div>
+          `)}
+        </div>
+      `}
+
+      ${mine.map(c => {
+        const d = c.durability;
+        const bagPct = (c.bagFree != null && c.bagSlots) ? Math.round((1 - c.bagFree / c.bagSlots) * 100) : null;
+        const vaultReady = (c.vault || []).filter(v => v.progress >= v.threshold).length;
+        return html`
+          <div class="wow-card" style="margin:12px;">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;">
+              <div style="font-family:var(--wow-display);font-size:15px;color:var(--wow-gold);">${c.name}</div>
+              <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">
+                ${c.realm} · ${c.spec || ''} ${c.class || ''} · ${c.level || '?'}
+              </div>
+              ${c.keystone?.level ? html`
+                <div style="margin-left:auto;font-family:var(--wow-display);font-size:13px;color:var(--wow-accent);"
+                     title="${c.keystone.name || ''}">🗝 +${c.keystone.level}</div>` : ''}
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:8px;">
+              <div>
+                <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">GOLD</div>
+                <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-gold);">${goldStr(c.gold)}</div>
+              </div>
+              <div>
+                <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">ILVL</div>
+                <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-text);">${c.ilvl ? Math.round(c.ilvl) : '—'}</div>
+              </div>
+              ${d?.worstPct != null ? html`
+                <div>
+                  <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">DURABILITY</div>
+                  <div style="font-family:var(--wow-display);font-size:13px;color:${durColor(d.worstPct)};">${d.worstPct}%</div>
+                </div>` : ''}
+              ${bagPct != null ? html`
+                <div>
+                  <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">BAGS</div>
+                  <div style="font-family:var(--wow-display);font-size:13px;color:${c.bagFree <= 4 ? 'var(--wow-red)' : 'var(--wow-text)'};">${bagPct}%</div>
+                  <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">${c.bagFree} free</div>
+                </div>` : ''}
+              <div>
+                <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">PLAYED</div>
+                <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-text);">${playedStr(c.played)}</div>
+              </div>
+              ${vaultReady > 0 ? html`
+                <div>
+                  <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">VAULT</div>
+                  <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-gold);">${vaultReady} ready</div>
+                </div>` : ''}
+            </div>
+
+            ${(c.cooldowns || []).length > 0 && html`
+              <div style="margin-top:10px;">
+                <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-bottom:4px;">COOLDOWNS</div>
+                ${(c.cooldowns || []).map(cd => html`
+                  <div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
+                    <span style="flex:1;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cd.name || ('spell ' + cd.id)}</span>
+                    <span style="font-family:var(--wow-mono);font-size:10px;color:${cd.remaining > 0 ? 'var(--wow-muted)' : 'var(--wow-green)'};">${cd.remaining > 0 ? cdStr(cd.remaining) : 'ready'}</span>
+                  </div>
+                `)}
+              </div>
+            `}
+
+            ${(c.lockouts || []).length > 0 && html`
+              <div style="margin-top:10px;">
+                <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-bottom:4px;">LOCKOUTS</div>
+                ${(c.lockouts || []).map(lo => html`
+                  <div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
+                    <span style="flex:1;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${lo.name}${lo.difficultyName ? ` (${lo.difficultyName})` : ''}</span>
+                    <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-accent);">${lo.defeated ?? 0}/${lo.bosses ?? '?'}</span>
+                    <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${resetInStr(lo.resetsAt)}</span>
+                  </div>
+                `)}
+              </div>
+            `}
+          </div>
+        `;
+      })}
+    </div>
+  `;
+}
+
 function WowAddonTab({ addon, addonErr, onReload }) {
   const [tab, setTab] = useState('group');
 
@@ -1758,7 +1945,6 @@ function WowAddonTab({ addon, addonErr, onReload }) {
   const subTabs = [
     { id: 'group', label: 'Group' },
     { id: 'keys',  label: 'Keys' },
-    { id: 'mine',  label: 'My Chars' },
   ];
 
   const renderGroup = () => html`
@@ -1800,6 +1986,23 @@ function WowAddonTab({ addon, addonErr, onReload }) {
             </a>
             <span style="font-family:var(--wow-display);font-size:12px;color:var(--wow-accent);">${it.total}</span>
             <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">×${it.holders}</span>
+          </div>
+        `)}
+      </div>
+    `}
+
+    ${chars.some(c => c.played) && html`
+      <div class="wow-card" style="margin:12px;">
+        <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:10px;">TIME PLAYED</div>
+        ${chars.filter(c => c.played).sort((a, b) => b.played - a.played).map(c => html`
+          <div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--wow-border2);">
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:var(--wow-display);font-size:12px;color:var(--wow-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                ${c.name} <span style="color:var(--wow-muted);font-size:10px;">${c.player_name}</span>
+              </div>
+              <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${c.spec || ''} ${c.class || ''} · ${c.level || '?'}</div>
+            </div>
+            <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-accent);">${playedStr(c.played)}</div>
           </div>
         `)}
       </div>
@@ -1846,62 +2049,6 @@ function WowAddonTab({ addon, addonErr, onReload }) {
     </div>
   `;
 
-  const renderMine = () => html`
-    ${mine.length === 0
-      ? html`<div class="wow-card" style="margin:12px;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">
-          None of your own characters have synced yet.
-        </div>`
-      : mine.map(c => html`
-        <div class="wow-card" style="margin:12px;">
-          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;">
-            <div style="font-family:var(--wow-display);font-size:14px;color:var(--wow-gold);">${c.name}</div>
-            <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${c.realm} · ${c.spec || ''} ${c.class || ''} · ${c.level || '?'}</div>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;">
-            <div>
-              <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">GOLD</div>
-              <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-gold);">${goldStr(c.gold)}</div>
-            </div>
-            <div>
-              <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">ILVL</div>
-              <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-text);">${c.ilvl ? Math.round(c.ilvl) : '—'}</div>
-            </div>
-            <div>
-              <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">BAGS</div>
-              <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-text);">${c.bagItemCount ?? '—'}</div>
-            </div>
-            <div>
-              <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">BANK</div>
-              <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-text);">${c.bankItemCount ?? '—'}</div>
-            </div>
-            <div>
-              <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">PLAYED</div>
-              <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-text);">${playedStr(c.played)}</div>
-            </div>
-          </div>
-          ${(c.vault || []).length > 0 && html`
-            <div style="margin-top:10px;">
-              <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-bottom:4px;">GREAT VAULT</div>
-              ${Object.entries((c.vault || []).reduce((acc, v) => {
-                (acc[v.type] = acc[v.type] || []).push(v); return acc;
-              }, {})).map(([type, slots]) => html`
-                <div style="display:flex;align-items:center;gap:6px;padding:2px 0;">
-                  <span style="width:60px;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${VAULT_TYPE[type] || ('type ' + type)}</span>
-                  ${slots.map(s => html`
-                    <span style="font-family:var(--wow-mono);font-size:10px;padding:1px 5px;border-radius:3px;
-                                 background:${s.progress >= s.threshold ? 'var(--wow-gold-dim)' : 'var(--wow-surface2)'};
-                                 color:${s.progress >= s.threshold ? 'var(--wow-gold)' : 'var(--wow-muted)'};">
-                      ${s.progress}/${s.threshold}${s.level ? ` · +${s.level}` : ''}
-                    </span>
-                  `)}
-                </div>
-              `)}
-            </div>
-          `}
-        </div>
-      `)}
-  `;
-
   return html`
     <div>
       <div style="display:flex;gap:6px;padding:10px 12px 0;">
@@ -1918,7 +2065,6 @@ function WowAddonTab({ addon, addonErr, onReload }) {
       </div>
       ${tab === 'group' && renderGroup()}
       ${tab === 'keys'  && renderKeys()}
-      ${tab === 'mine'  && renderMine()}
     </div>
   `;
 }
@@ -1933,7 +2079,7 @@ function WowPrivacy({ privacy, onChange }) {
     { id: 'currencies', label: 'Currencies',      hint: 'valorstones, crests, flightstones' },
     { id: 'counts',     label: 'Bag/bank counts', hint: 'how full your bags are, not what is in them' },
     { id: 'bags',       label: 'Bag contents',    hint: 'the actual items in bags, bank and warband' },
-    { id: 'played',     label: 'Played time',     hint: '/played per character' },
+    { id: 'played',     label: 'Played time',     hint: '/played per character · public by default' },
   ];
   const TIERS = ['private', 'aggregate', 'public'];
 
@@ -2031,7 +2177,7 @@ function WowCharBar({ characters, activeChar, subTab, onSelect, charCacheRef, da
 export function WowTab({ me }) {
   const [characters, setCharacters] = useState([]);
   const [activeChar, setActiveChar] = useState(-1); // -1 = Overview/Roster
-  const [subTab, setSubTab] = useState('overview');
+  const [subTab, setSubTab] = useState('hub');
   const [loading, setLoading] = useState(true);
   const [dataTick, setDataTick] = useState(0); // Forces re-render when background data loads
   const [resetStr, setResetStr] = useState('—');
@@ -2198,6 +2344,7 @@ export function WowTab({ me }) {
   }, []);
 
   const tabs = [
+    { id: 'hub',      icon: '🏠', label: 'Hub' },
     { id: 'overview', icon: '🌐', label: 'Overview' },
     { id: 'world',    icon: '🌍', label: 'World' },
     { id: 'pve',      icon: '⚔️', label: 'PVE' },
@@ -2242,6 +2389,7 @@ export function WowTab({ me }) {
       </div>
       <${WowCharBar} characters=${characters} activeChar=${activeChar} subTab=${subTab} onSelect=${(idx) => { setActiveChar(idx); if (idx === -1) setSubTab('overview'); else if (subTab === 'overview') setSubTab('world'); }} charCacheRef=${charCacheRef} dataTick=${dataTick} />
       ${loading ? html`<div style="padding: 20px; color: var(--wow-muted);">Loading roster...</div>` : html`
+        ${subTab === 'hub'     && html`<${WowHub} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} />`}
         ${subTab === 'overview' && html`<${WowOverview} characters=${characters} charCacheRef=${charCacheRef} affixCacheRef=${affixCacheRef} onSelectChar=${setActiveChar} onSubTab=${setSubTab} dataTick=${dataTick} addon=${addon} />`}
         ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} dataTick=${dataTick} />`}
         ${subTab === 'pve'      && html`<${WowPVE}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}

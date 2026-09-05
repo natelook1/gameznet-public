@@ -22,6 +22,7 @@ from io import BytesIO
 from flask import Flask, request, jsonify, render_template, send_from_directory
 
 import wow_addon
+import wow_combatlog
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 
@@ -1253,6 +1254,39 @@ def api_wow_addon_uninstall():
 def api_wow_addon_installed():
     """Per-install addon state, for rendering the install/uninstall button."""
     return jsonify(wow_addon.addon_status(_wow_path_override()))
+
+
+def _combatlog_enabled():
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            return bool(json.load(f).get("wow_combatlog", False))
+    except Exception:
+        return False
+
+
+@app.route("/api/wow/combatlog/status", methods=["GET"])
+def api_wow_combatlog_status():
+    """Whether tailing is on, and whether WoW is actually writing a log."""
+    paths = wow_combatlog.find_combat_logs(_wow_path_override())
+    return jsonify({
+        "enabled": _combatlog_enabled(),
+        "logs": paths,
+        "found": bool(paths),
+    })
+
+
+@app.route("/api/wow/combatlog/toggle", methods=["POST"])
+def api_wow_combatlog_toggle():
+    """Opt in or out of live combat log reporting."""
+    data = request.get_json(silent=True) or {}
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            cfg = json.load(f)
+    except Exception:
+        return jsonify({"error": "Not provisioned"}), 400
+    cfg["wow_combatlog"] = bool(data.get("enabled"))
+    _write_config(cfg)
+    return jsonify({"ok": True, "enabled": cfg["wow_combatlog"]})
 
 
 @app.route("/api/wow/addon/status", methods=["GET"])
@@ -3274,6 +3308,16 @@ if __name__ == "__main__":
 
     # Watch WoW SavedVariables for GamezNET addon exports
     wow_addon.start_watcher(_backend_url, _player_token, log, _wow_path_override)
+
+    # Live combat log tail. Opt-in: WoW only writes the file after /combatlog,
+    # and the watcher no-ops when disabled or when no log exists.
+    wow_combatlog.start_watcher(
+        _backend_url,
+        _player_token,
+        log,
+        _wow_path_override,
+        is_enabled=_combatlog_enabled,
+    )
 
     # Start Flask in background thread
     # Use waitress instead of Flask dev server for better frozen app stability
