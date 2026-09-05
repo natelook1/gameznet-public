@@ -7646,8 +7646,11 @@
     const pulls = wowPullsData.pulls || [];
     if (pulls.length === 0) {
       return `<div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:1.7;">
-        No pulls recorded yet. Enable combat logging in-game with <span style="color:var(--wow-gold);">/combatlog</span>
-        (and <span style="color:var(--wow-gold);">/console advancedCombatLogging 1</span> for full detail), then run a dungeon or raid pull.
+        No pulls recorded yet. Enable combat log tailing in GamezNET, then in game run
+        <span style="color:var(--wow-gold);">/gzn log on</span> so logging survives every session
+        (and <span style="color:var(--wow-gold);">/console advancedCombatLogging 1</span> for full detail).
+        Boss encounters and Mythic+ are recorded by name; ordinary combat is grouped into
+        <span style="color:var(--wow-gold);">Open World</span> pulls that close after 5 seconds out of combat.
       </div></div></div>`;
     }
     return pulls.map(wowRenderPullCard).join('');

@@ -2632,10 +2632,13 @@ function WowPulls() {
                 : html`
                   <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);line-height:1.7;">
                     ${clStatus && !clStatus.enabled
-                      ? html`Combat log tailing is <span style="color:var(--wow-gold);">off</span> in GamezNET. Turn it on, then enable logging in-game with `
-                      : html`No pulls recorded yet. Enable combat logging in-game with `}
-                    <span style="color:var(--wow-gold);">/combatlog</span>
-                    (and <span style="color:var(--wow-gold);">/console advancedCombatLogging 1</span> for full detail), then run a dungeon or raid pull.
+                      ? html`Combat log tailing is <span style="color:var(--wow-gold);">off</span> in GamezNET — turn it on in the desktop app, then in game run
+                          <span style="color:var(--wow-gold);">/gzn log on</span> so logging survives each session.`
+                      : html`No pulls recorded yet. In the desktop app, enable combat log tailing; in game run
+                          <span style="color:var(--wow-gold);">/gzn log on</span>
+                          (and <span style="color:var(--wow-gold);">/console advancedCombatLogging 1</span> for full detail).
+                          ${'' /* status is only readable from the desktop client, so on mobile this is all we can say */}
+                          Both boss encounters and ordinary <span style="color:var(--wow-gold);">Open World</span> combat are recorded.`}
                   </div>`}
           </div>`
         : pulls.map(p => html`<${WowPullCard} pull=${p} expanded=${expandedPull === p.id} onToggle=${() => setExpandedPull(expandedPull === p.id ? null : p.id)} />`)}
