@@ -7374,6 +7374,9 @@
   let wowAddonErr = null;
   let wowAddonSubTab = 'group';
   let wowAddonStatus = null;
+  let wowPullsData = null;
+  let wowPullsErr = null;
+  let wowExpandedPull = null;
 
   function wowGoldStr(g) {
     if (g == null) return '—';
@@ -7480,7 +7483,153 @@
 
   function wowSetAddonSubTab(t) {
     wowAddonSubTab = t;
+    if (t === 'pulls' && !wowPullsData && !wowPullsErr) wowLoadPulls();
     wowRenderAddonTab();
+  }
+
+  // ── Per-pull combat log breakdown (live tail, independent of addon sync) ───
+  async function wowLoadPulls() {
+    try {
+      const res = await wowReq('/api/wow/combatlog/pulls?limit=30');
+      if (!res.ok) throw new Error(res.status === 401 ? 'Not authorised' : `HTTP ${res.status}`);
+      wowPullsData = await res.json();
+      wowPullsErr = null;
+    } catch (e) {
+      wowPullsErr = e.message;
+      wowPullsData = null;
+    }
+    if (wowActiveTab === 'addon' && wowAddonSubTab === 'pulls') wowRenderAddonTab();
+  }
+
+  function wowToggleExpandedPull(id) {
+    wowExpandedPull = wowExpandedPull === id ? null : id;
+    wowRenderAddonTab();
+  }
+
+  function wowFmtNum(n) {
+    if (n == null) return '—';
+    if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+    return String(Math.round(n));
+  }
+
+  function wowFmtDuration(ms) {
+    if (!ms) return '—';
+    const totalSec = Math.round(ms / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  function wowRenderPullMeterRow(row, maxTotal, color) {
+    const pct = maxTotal > 0 ? Math.max(4, Math.round((row.total / maxTotal) * 100)) : 0;
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:3px 0;">
+        <div style="width:110px;flex-shrink:0;font-family:var(--display);font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${row.name || row.guid}">${row.name || row.guid}</div>
+        <div style="flex:1;height:14px;background:var(--surface2);border-radius:3px;overflow:hidden;position:relative;">
+          <div style="height:100%;width:${pct}%;background:${color};"></div>
+        </div>
+        <div style="width:70px;flex-shrink:0;text-align:right;font-family:var(--mono);font-size:10px;color:var(--text-muted);">${wowFmtNum(row.total)} <span style="opacity:0.7;">(${wowFmtNum(row.perSecond)}/s)</span></div>
+      </div>`;
+  }
+
+  function wowRenderPullLoadout(combatant) {
+    if (!combatant) return '<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">No loadout captured for this player.</div>';
+    const gearRows = (combatant.gear || []).map(g => `
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid var(--border);">
+        <div style="width:70px;flex-shrink:0;font-family:var(--mono);font-size:9px;color:var(--text-muted);text-transform:uppercase;">${g.slot}</div>
+        <a href="https://www.wowhead.com/item=${g.itemId}" target="_blank" rel="noopener" data-wowhead="item=${g.itemId}${g.gems && g.gems.length ? '&gems=' + g.gems.join(':') : ''}${g.enchants && g.enchants.length ? '&ench=' + g.enchants[0] : ''}"
+           style="flex:1;min-width:0;font-family:var(--mono);font-size:10px;color:var(--text);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">item ${g.itemId}</a>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--wow-accent);">${g.ilvl ?? '—'}</div>
+        ${!g.enchants || g.enchants.length === 0 ? `<span title="No enchant" style="color:var(--red);font-size:11px;">⚠</span>` : ''}
+      </div>`).join('');
+    return `
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:4px;">
+          Spec ID ${combatant.specId ?? '—'} · ${(combatant.talents || []).length} talent(s) selected
+        </div>
+        ${gearRows || '<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">No gear captured.</div>'}
+      </div>`;
+  }
+
+  function wowRenderPullCard(pull) {
+    const isExpanded = wowExpandedPull === pull.id;
+    const statusColor = pull.success === true ? 'var(--green)' : pull.success === false ? 'var(--red)' : 'var(--text-muted)';
+    const statusLabel = pull.success === true ? 'Kill' : pull.success === false ? 'Wipe' : '—';
+    const subtitle = pull.keystoneLevel ? `+${pull.keystoneLevel} Keystone` : (pull.difficulty != null ? `Difficulty ${pull.difficulty}` : '');
+    const maxDamage = Math.max(1, ...pull.damage.map(d => d.total));
+    const maxHealing = Math.max(1, ...pull.healing.map(d => d.total));
+
+    const deathRows = (pull.deaths || []).length === 0
+      ? `<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">No deaths.</div>`
+      : pull.deaths.map(d => `
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);">
+          <span style="font-family:var(--display);font-size:12px;color:var(--text);width:110px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.name}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${d.killingBlow ? `killed by <span style="color:var(--red);">${d.killingBlow.spell}</span> (${d.killingBlow.source})` : 'cause unknown'}</span>
+        </div>`).join('');
+
+    const combatantsByGuid = {};
+    (pull.combatants || []).forEach(c => { combatantsByGuid[c.guid] = c; });
+    const loadoutRows = pull.damage.concat(pull.healing.filter(h => !pull.damage.some(d => d.guid === h.guid)))
+      .map(row => `
+        <div style="margin-bottom:12px;">
+          <div style="font-family:var(--display);font-size:12px;color:var(--wow-gold);margin-bottom:4px;">${row.name || row.guid}</div>
+          ${wowRenderPullLoadout(combatantsByGuid[row.guid])}
+        </div>`).join('');
+
+    return `
+      <div class="card" style="margin-bottom:10px;">
+        <div class="card-header" style="cursor:pointer;" onclick="wowToggleExpandedPull('${pull.id}')">
+          <div class="card-title">
+            <div class="dot" style="background:${statusColor};"></div>
+            ${pull.name || 'Unknown Encounter'}
+            <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-left:8px;">${subtitle}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <span style="font-family:var(--display);font-size:11px;color:${statusColor};">${statusLabel}</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${wowFmtDuration(pull.durationMs)}</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);">${isExpanded ? '▾' : '▸'}</span>
+          </div>
+        </div>
+        ${isExpanded ? `<div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div>
+              <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;margin-bottom:6px;">DAMAGE DONE</div>
+              ${pull.damage.map(r => wowRenderPullMeterRow(r, maxDamage, 'var(--red)')).join('') || '<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">No data.</div>'}
+            </div>
+            <div>
+              <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;margin-bottom:6px;">HEALING DONE</div>
+              ${pull.healing.map(r => wowRenderPullMeterRow(r, maxHealing, 'var(--green)')).join('') || '<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">No data.</div>'}
+            </div>
+          </div>
+          <div style="margin-top:16px;">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;margin-bottom:6px;">DEATHS</div>
+            ${deathRows}
+          </div>
+          <div style="margin-top:16px;">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;margin-bottom:6px;">PARTY LOADOUT</div>
+            ${loadoutRows || '<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">No loadout data captured for this pull.</div>'}
+          </div>
+          <div style="margin-top:12px;font-family:var(--mono);font-size:9px;color:var(--text-muted);">Reported by ${(pull.reportedBy || []).join(', ')}</div>
+        </div>` : ''}
+      </div>`;
+  }
+
+  function wowRenderPullsSubTab() {
+    if (wowPullsErr) {
+      return `<div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--red);">Pull data unavailable: ${wowPullsErr}</div></div></div>`;
+    }
+    if (!wowPullsData) {
+      return `<div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">Loading...</div></div></div>`;
+    }
+    const pulls = wowPullsData.pulls || [];
+    if (pulls.length === 0) {
+      return `<div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:1.7;">
+        No pulls recorded yet. Enable combat logging in-game with <span style="color:var(--wow-gold);">/combatlog</span>
+        (and <span style="color:var(--wow-gold);">/console advancedCombatLogging 1</span> for full detail), then run a dungeon or raid pull.
+      </div></div></div>`;
+    }
+    return pulls.map(wowRenderPullCard).join('');
   }
 
   async function wowSetPrivacy(field, tier) {
@@ -7948,9 +8097,33 @@
 
     const installCard = wowRenderAddonInstallCard();
 
+    const subTabs = [
+      { id: 'group', label: 'Group' },
+      { id: 'keys',  label: 'Keys & Lockouts' },
+      { id: 'pulls', label: 'Pulls' },
+    ];
+    const nav = `<div style="display:flex;gap:6px;margin-bottom:4px;">${subTabs.map(t => `
+      <div onclick="wowSetAddonSubTab('${t.id}')"
+           style="font-family:var(--display);font-size:11px;letter-spacing:1px;padding:6px 14px;border-radius:4px;cursor:pointer;
+                  background:${wowAddonSubTab === t.id ? 'var(--wow-gold-dim)' : 'var(--surface2)'};
+                  color:${wowAddonSubTab === t.id ? 'var(--wow-gold)' : 'var(--text-muted)'};">${t.label}</div>`).join('')}</div>`;
+
+    // Pulls come from the live combat log tail, not the addon's SavedVariables,
+    // so that sub-tab stays usable even when there is no addon data at all.
+    if (wowAddonSubTab === 'pulls') {
+      el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
+        ${installCard}
+        ${nav}
+        ${wowRenderPullsSubTab()}
+      </div>`;
+      if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
+      return;
+    }
+
     if (wowAddonErr) {
       el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
         ${installCard}
+        ${nav}
         <div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--red);">Addon data unavailable: ${wowAddonErr}</div></div></div>
       </div>`;
       return;
@@ -7960,6 +8133,7 @@
     if (chars.length === 0) {
       el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
         ${installCard}
+        ${nav}
         <div class="card"><div class="card-body"><div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:1.7;">
           No addon data yet. Install the addon above, log into WoW, then type <span style="color:var(--wow-gold);">/reload</span>.
         </div></div></div>
@@ -7970,16 +8144,6 @@
 
     const agg = wowAddonData.aggregate || {};
     const mine = chars.filter(c => c.mine);
-
-    const subTabs = [
-      { id: 'group', label: 'Group' },
-      { id: 'keys',  label: 'Keys & Lockouts' },
-    ];
-    const nav = `<div style="display:flex;gap:6px;margin-bottom:4px;">${subTabs.map(t => `
-      <div onclick="wowSetAddonSubTab('${t.id}')"
-           style="font-family:var(--display);font-size:11px;letter-spacing:1px;padding:6px 14px;border-radius:4px;cursor:pointer;
-                  background:${wowAddonSubTab === t.id ? 'var(--wow-gold-dim)' : 'var(--surface2)'};
-                  color:${wowAddonSubTab === t.id ? 'var(--wow-gold)' : 'var(--text-muted)'};">${t.label}</div>`).join('')}</div>`;
 
     let content = '';
 
@@ -8054,6 +8218,7 @@
         <div class="card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Keystones Held</div></div><div class="card-body">${keyRows}</div></div>
         <div class="card"><div class="card-header"><div class="card-title"><div class="dot"></div> Raid Lockouts</div></div><div class="card-body">${lockRows}</div></div>`;
     }
+
 
 
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
