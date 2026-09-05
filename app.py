@@ -1268,10 +1268,26 @@ def _combatlog_enabled():
 def api_wow_combatlog_status():
     """Whether tailing is on, and whether WoW is actually writing a log."""
     paths = wow_combatlog.find_combat_logs(_wow_path_override())
+    # "enabled + found" only proves a file exists - it can be a stale log from a
+    # previous session. Report its size and age so the UI can say "logging is
+    # live, you just have not pulled a boss yet" instead of repeating setup
+    # instructions the player has already followed.
+    size = mtime_age = None
+    if paths:
+        try:
+            st = os.stat(paths[0])
+            size = st.st_size
+            mtime_age = max(0, int(time.time() - st.st_mtime))
+        except OSError:
+            pass
     return jsonify({
         "enabled": _combatlog_enabled(),
         "logs": paths,
         "found": bool(paths),
+        "size": size,
+        # Seconds since WoW last wrote. Small value = actively logging.
+        "ageSeconds": mtime_age,
+        "live": bool(paths and mtime_age is not None and mtime_age < 300),
     })
 
 

@@ -945,7 +945,11 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
   // owned house only ever appears once the addon has run.
   const renderHousing = () => {
     const collected = bnet?.decor?.decor_collected || [];
-    const houses = (addonHousing?.houses || []).filter(Boolean);
+    // An older client may still send houses as a Lua map ({}), not an array.
+    const rawHouses = addonHousing?.houses;
+    const houses = (Array.isArray(rawHouses) ? rawHouses
+      : rawHouses && typeof rawHouses === 'object' ? Object.values(rawHouses)
+      : []).filter(Boolean);
     const hasAnything = collected.length > 0 || houses.length > 0;
 
     if (!hasAnything) {
@@ -2555,6 +2559,10 @@ function WowPulls() {
   const [pullsData, setPullsData] = useState(null);
   const [pullsErr, setPullsErr] = useState(null);
   const [expandedPull, setExpandedPull] = useState(null);
+  // Local client status: is tailing on, and is WoW actually writing right now.
+  // Without this the empty state can only repeat setup instructions, even to a
+  // player whose logging is working fine and simply has not pulled a boss.
+  const [clStatus, setClStatus] = useState(null);
 
   const loadPulls = () => {
     req('/api/wow/combatlog/pulls?limit=30')
@@ -2566,7 +2574,14 @@ function WowPulls() {
       .catch(e => setPullsErr(e.message));
   };
 
-  useEffect(() => { loadPulls(); }, []);
+  useEffect(() => {
+    loadPulls();
+    // Served by the local client (app.py), not the backend.
+    fetch('/api/wow/combatlog/status')
+      .then(r => r.ok ? r.json() : null)
+      .then(setClStatus)
+      .catch(() => setClStatus(null));
+  }, []);
 
   if (pullsErr) {
     return html`<div class="wow-card" style="margin:12px;">
@@ -2588,10 +2603,38 @@ function WowPulls() {
       </div>
       ${pulls.length === 0
         ? html`<div class="wow-card" style="margin:12px;">
-            <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);line-height:1.7;">
-              No pulls recorded yet. Enable combat logging in-game with <span style="color:var(--wow-gold);">/combatlog</span>
-              (and <span style="color:var(--wow-gold);">/console advancedCombatLogging 1</span> for full detail), then run a dungeon or raid pull.
-            </div>
+            ${clStatus && clStatus.enabled && clStatus.live
+              ? html`
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <div class="dot dot-green"></div>
+                  <span style="font-family:var(--wow-display);font-size:13px;font-weight:600;color:var(--wow-green);">Combat logging is live</span>
+                </div>
+                <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);line-height:1.7;">
+                  WoW is writing${clStatus.size ? html` (${(clStatus.size / 1048576).toFixed(1)} MB` : ''}${clStatus.size ? html`, last write ${clStatus.ageSeconds}s ago)` : ''}
+                  and GamezNET is tailing it.
+                  <br/>
+                  Pulls are only recorded for <span style="color:var(--wow-gold);">boss encounters and Mythic+ runs</span> —
+                  open-world and trash mobs never emit an encounter, so nothing appears here from questing.
+                  Run a dungeon or raid boss and it will show up.
+                </div>`
+              : clStatus && clStatus.enabled && clStatus.found
+                ? html`
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <div class="dot dot-gold"></div>
+                    <span style="font-family:var(--wow-display);font-size:13px;font-weight:600;">Tailing, but WoW is not writing</span>
+                  </div>
+                  <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);line-height:1.7;">
+                    A log file exists but has not been written to recently${clStatus.ageSeconds != null ? html` (${Math.round(clStatus.ageSeconds / 60)} min ago)` : ''}.
+                    <span style="color:var(--wow-gold);">/combatlog</span> resets between sessions — re-run it in game.
+                  </div>`
+                : html`
+                  <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);line-height:1.7;">
+                    ${clStatus && !clStatus.enabled
+                      ? html`Combat log tailing is <span style="color:var(--wow-gold);">off</span> in GamezNET. Turn it on, then enable logging in-game with `
+                      : html`No pulls recorded yet. Enable combat logging in-game with `}
+                    <span style="color:var(--wow-gold);">/combatlog</span>
+                    (and <span style="color:var(--wow-gold);">/console advancedCombatLogging 1</span> for full detail), then run a dungeon or raid pull.
+                  </div>`}
           </div>`
         : pulls.map(p => html`<${WowPullCard} pull=${p} expanded=${expandedPull === p.id} onToggle=${() => setExpandedPull(expandedPull === p.id ? null : p.id)} />`)}
     </div>
