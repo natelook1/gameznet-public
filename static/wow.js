@@ -2505,6 +2505,7 @@ function WowPullCard({ pull, expanded, onToggle }) {
     : pull.keystoneLevel ? `+${pull.keystoneLevel} Keystone` : (pull.difficulty != null ? `Difficulty ${pull.difficulty}` : '');
   const maxDamage = Math.max(1, ...pull.damage.map(d => d.total));
   const maxHealing = Math.max(1, ...pull.healing.map(d => d.total));
+  const maxIncoming = Math.max(1, ...(pull.incoming || []).map(d => d.total));
 
   const combatantsByGuid = {};
   (pull.combatants || []).forEach(c => { combatantsByGuid[c.guid] = c; });
@@ -2534,6 +2535,10 @@ function WowPullCard({ pull, expanded, onToggle }) {
           ${pull.healing.length > 0
             ? pull.healing.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxHealing} color="var(--wow-green)" />`)
             : html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No data.</div>`}
+
+          ${(pull.incoming || []).length > 0 && html`
+            <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;margin:14px 0 6px;">DAMAGE TAKEN — FROM ENEMIES</div>
+            ${pull.incoming.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxIncoming} color="var(--wow-gold)" />`)}`}
 
           <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;margin:14px 0 6px;">DEATHS</div>
           ${(pull.deaths || []).length === 0
