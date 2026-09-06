@@ -7524,7 +7524,7 @@
   }
 
   function wowToggleExpandedPull(id) {
-    wowExpandedPull = wowExpandedPull === id ? null : id;
+    wowExpandedPull = String(wowExpandedPull) === String(id) ? null : id;
     wowRenderCurrentAddonTab();
   }
 
@@ -7575,7 +7575,10 @@
   }
 
   function wowRenderPullCard(pull) {
-    const isExpanded = wowExpandedPull === pull.id;
+    // The onclick below passes the id through an HTML attribute, so it arrives
+    // as a string while pull.id is a number - a strict === never matched and
+    // the card could not expand. Compare as strings.
+    const isExpanded = String(wowExpandedPull) === String(pull.id);
     // Open-world pulls have no encounter, so Kill/Wipe and Difficulty mean
     // nothing for them - show total damage instead, which is the only thing
     // distinguishing one from another in the collapsed list.
