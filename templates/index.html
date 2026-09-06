@@ -8,7 +8,12 @@
   <link rel="shortcut icon" href="/static/gameznet.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script>var whTooltips = {colorLinks: true, iconizeLinks: false, renameLinks: false};</script>
+  <script>var whTooltips = {colorLinks: true, iconizeLinks: true, renameLinks: true};</script>
+  <!-- The combat log carries only item IDs, so gear rows read "item 154737"
+       without this. Wowhead's tooltip script resolves the data-wowhead links
+       to real names, icons and quality colours client-side. Loaded async so a
+       slow or blocked CDN never delays the app. -->
+  <script async src="https://wow.zamimg.com/js/tooltips.js"></script>
   <script src="https://wow.zamimg.com/widgets/power.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
@@ -7555,15 +7560,24 @@
       </div>`;
   }
 
+  // Only these slots accept enchants in retail; flagging Head/Neck/Shoulder
+  // etc. as "No enchant" put a red warning on every row, which made the whole
+  // signal meaningless.
+  const WOW_ENCHANTABLE_SLOTS = new Set([
+    'Back', 'Chest', 'Wrist', 'Legs', 'Feet', 'Finger1', 'Finger2',
+    'MainHand', 'OffHand',
+  ]);
+
   function wowRenderPullLoadout(combatant) {
     if (!combatant) return '<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">No loadout captured for this player.</div>';
     const gearRows = (combatant.gear || []).map(g => `
       <div style="display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid var(--border);">
         <div style="width:70px;flex-shrink:0;font-family:var(--mono);font-size:9px;color:var(--text-muted);text-transform:uppercase;">${g.slot}</div>
         <a href="https://www.wowhead.com/item=${g.itemId}" target="_blank" rel="noopener" data-wowhead="item=${g.itemId}${g.gems && g.gems.length ? '&gems=' + g.gems.join(':') : ''}${g.enchants && g.enchants.length ? '&ench=' + g.enchants[0] : ''}"
-           style="flex:1;min-width:0;font-family:var(--mono);font-size:10px;color:var(--text);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">item ${g.itemId}</a>
+           style="flex:1;min-width:0;font-family:var(--mono);font-size:10px;color:var(--text);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Item ${g.itemId}</a>
         <div style="font-family:var(--mono);font-size:10px;color:var(--wow-accent);">${g.ilvl ?? '—'}</div>
-        ${!g.enchants || g.enchants.length === 0 ? `<span title="No enchant" style="color:var(--red);font-size:11px;">⚠</span>` : ''}
+        ${WOW_ENCHANTABLE_SLOTS.has(g.slot) && (!g.enchants || g.enchants.length === 0)
+            ? `<span title="No enchant" style="color:var(--red);font-size:11px;">⚠</span>` : ''}
       </div>`).join('');
     return `
       <div style="display:flex;flex-direction:column;gap:2px;">
