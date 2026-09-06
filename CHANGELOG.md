@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.11.10 — 2026-09-05
+
+### Added
+- **Open-world pulls** — only boss encounters and Mythic+ emitted pulls, so solo and questing play produced nothing at all. Ordinary combat is now grouped into "Open World" pulls: the first damage opens one, five seconds without combat closes it. That threshold is measured on log timestamps rather than wall-clock, since the tailer polls every 10s and a fight ending between polls must still close correctly. A real `ENCOUNTER_START` always takes precedence, so trash pulled on the way to a boss cannot bleed into the boss summary.
+- **Pulls tab refreshes itself** — it loaded once on mount, so the only way to see a new pull was the manual reload arrow, which is unusable for its actual purpose of sitting open on a second monitor. The backend now pushes an SSE nudge the moment a pull is ingested, with a 10s poll as fallback; both skip work while the tab is hidden.
+- **Combat logging survives sessions** — `/combatlog` does not persist across logins. `/gzn log on` makes the addon re-enable it automatically. `LoggingCombat` is rate limited to 5 calls per 10s shared across every addon, so this only fires on login/zone events and backs off when throttled.
+
+### Fixed
+- **Damage totals were wrong in three separate ways** — the log's `amount` field includes overkill, so a swing displayed in game as "4,378 Physical (875,485 Overkill)" was counted as 879,885, inflating DPS roughly 100x. Newer clients also append an `ST`/`AOE` marker that shifted every end-anchored suffix offset, dropping player `SPELL_DAMAGE` entirely; and after trimming it, spell lines were still read at the pre-marker offset, landing on the spell-school field so a 66.6M hit parsed as 30 and floored to zero after overkill. All three verified against the in-game combat text.
+- **World pulls recorded strangers' fights** — any damage line opened a pull, and open-world zones are full of other people, so questing near someone produced a pull containing only their DPS. A pull now only opens on damage from a character this installation plays; once open, all participants are still accumulated.
+- **The last pull of a session was stranded** — a pull only closed when a later log line proved the idle gap had passed, so the final fight before you stopped playing never reported. The tailer now closes it on its own poll cycle.
+- **One-shot kills produced billions of DPS** — a burst inside a single log timestamp has zero measurable duration; those are dropped rather than divided by.
+- **World pulls rendered as "Wipe" with no damage** — `success` was JSON null for a world pull but only `undefined` mapped to NULL, so it stored 0 and showed a red Wipe badge. The `world` flag was also dropped from the pulls response and missing from the desktop card renderer, so the damage badge never appeared in either path.
+- **Failed uploads dropped events** — a brief backend blip silently lost pulls that cannot be re-derived. They now queue and retry, capped at 500.
+
+---
+
 ## v1.11.9 — 2026-09-05
 
 ### Added

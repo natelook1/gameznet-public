@@ -7576,9 +7576,18 @@
 
   function wowRenderPullCard(pull) {
     const isExpanded = wowExpandedPull === pull.id;
-    const statusColor = pull.success === true ? 'var(--green)' : pull.success === false ? 'var(--red)' : 'var(--text-muted)';
-    const statusLabel = pull.success === true ? 'Kill' : pull.success === false ? 'Wipe' : '—';
-    const subtitle = pull.keystoneLevel ? `+${pull.keystoneLevel} Keystone` : (pull.difficulty != null ? `Difficulty ${pull.difficulty}` : '');
+    // Open-world pulls have no encounter, so Kill/Wipe and Difficulty mean
+    // nothing for them - show total damage instead, which is the only thing
+    // distinguishing one from another in the collapsed list.
+    const isWorld = !!pull.world;
+    const totalDamage = (pull.damage || []).reduce((n, d) => n + (d.total || 0), 0);
+    const statusColor = isWorld ? 'var(--text-muted)'
+      : pull.success === true ? 'var(--green)' : pull.success === false ? 'var(--red)' : 'var(--text-muted)';
+    const statusLabel = isWorld
+      ? (totalDamage >= 1000 ? `${Math.round(totalDamage / 1000)}k dmg` : `${totalDamage} dmg`)
+      : pull.success === true ? 'Kill' : pull.success === false ? 'Wipe' : '—';
+    const subtitle = isWorld ? ''
+      : pull.keystoneLevel ? `+${pull.keystoneLevel} Keystone` : (pull.difficulty != null ? `Difficulty ${pull.difficulty}` : '');
     const maxDamage = Math.max(1, ...pull.damage.map(d => d.total));
     const maxHealing = Math.max(1, ...pull.healing.map(d => d.total));
 
