@@ -162,7 +162,7 @@ log pulls.
 - **Collections** — view characters organised by player
 - **WoW Token price** — live gold token price shown in the tab header
 - **Link your Battle.net account** — sign in with Battle.net to automatically import your own characters. Your characters stay synced and are visible to other players on the network
-- **Main / Alt designation** — mark characters as mains or alts; alts are nested under the main in the roster
+- **Main / Alt designation** — alts are nested under the main in the roster. Change your main any time with the ★ Set Main button on any character in your roster; no need to remove and re-add
 - **Player Estate** — collected housing decor (from the Blizzard API) plus owned houses,
   neighborhood and house favor (captured by the addon, since no Web API exposes them)
 - **Pulls** — per-encounter DPS/HPS, deaths and party loadout, tailed live from WoW's combat

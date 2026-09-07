@@ -163,7 +163,14 @@ function injectWowAssets() {
       background: var(--wow-surface2); border: 1px solid var(--wow-border2); border-radius: 4px; padding: 8px 12px;
     }
     .wow-wrap .char-list-avatar { width: 32px; height: 32px; border-radius: 3px; object-fit: cover; background: var(--wow-bg); border: 1px solid var(--wow-border2); flex-shrink: 0; }
-    .wow-wrap .char-list-name { flex: 1; font-family: var(--wow-display); font-size: 13px; font-weight: 600; }
+    .wow-wrap .char-list-name { flex: 1; font-family: var(--wow-display); font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Two action buttons plus a long character name overflow a narrow phone;
+       let the buttons drop to their own line instead of crushing the name. */
+    @media (max-width: 420px) {
+      .wow-wrap .char-list-row { flex-wrap: wrap; }
+      .wow-wrap .char-list-row > button { margin-left: auto; }
+      .wow-wrap .char-list-row > button ~ button { margin-left: 0; }
+    }
     .wow-wrap .char-list-realm { font-size: 10px; color: var(--wow-muted); }
     .wow-wrap .char-list-del { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-red); cursor: pointer; padding: 2px 6px; border: 1px solid rgba(239,68,68,0.3); border-radius: 3px; }
     .wow-wrap .char-list-del:hover { background: rgba(239,68,68,0.12); }
@@ -1580,6 +1587,15 @@ function WowAccount({ me, characters, onRefresh, privacy, onPrivacyChange }) {
 
   const myChars = characters.filter(c => c.player_name === me.name);
 
+  const doSetMain = async (id) => {
+    setBusy(id + '-main');
+    try {
+      await req('/api/wow/characters/main', { method: 'POST', body: JSON.stringify({ id }) });
+      if (onRefresh) onRefresh();
+    } catch(e) {}
+    setBusy(null);
+  };
+
   const doRemoveChar = async (id) => {
     if (!confirm('Remove this character from your roster?')) return;
     const mine = characters.filter(c => c.player_name === me.name && c.id !== id);
@@ -1714,7 +1730,15 @@ function WowAccount({ me, characters, onRefresh, privacy, onPrivacyChange }) {
                       <div class="char-list-name">${c.display_name}</div>
                       <div class="char-list-realm">${[c.spec, c.class].filter(Boolean).join(' ')} · ${c.realm}</div>
                     </div>
-                    <button class="wow-btn btn-ghost" style="font-size:10px;padding:3px 8px;border-color:var(--wow-red);color:var(--wow-red);" disabled=${busy === c.id + '-remove'} onClick=${() => doRemoveChar(c.id)}>Remove</button>
+                    <button
+                      class="wow-btn btn-ghost"
+                      title=${c.is_main ? 'Your main' : 'Make this your main'}
+                      disabled=${!!c.is_main || busy === c.id + '-main'}
+                      onClick=${() => doSetMain(c.id)}
+                      style="font-family:var(--wow-mono);font-size:10px;padding:3px 8px;flex-shrink:0;cursor:${c.is_main ? 'default' : 'pointer'};background:${c.is_main ? 'var(--wow-gold-dim)' : 'transparent'};border-color:${c.is_main ? 'rgba(240,180,41,0.4)' : 'var(--wow-border2)'};color:${c.is_main ? 'var(--wow-gold)' : 'var(--wow-muted)'};opacity:1;">
+                      ★ ${c.is_main ? 'Main' : busy === c.id + '-main' ? '...' : 'Set Main'}
+                    </button>
+                    <button class="wow-btn btn-ghost" style="font-size:10px;padding:3px 8px;border-color:var(--wow-red);color:var(--wow-red);flex-shrink:0;" disabled=${busy === c.id + '-remove'} onClick=${() => doRemoveChar(c.id)}>Remove</button>
                   </div>`;
               })}
             </div>

@@ -9346,13 +9346,28 @@
         <div style="flex:1;">
           <div style="font-family:var(--display);font-size:14px;font-weight:700;">
             ${c.display_name}
-            ${c.is_main ? '<span style="font-size:10px;color:var(--wow-gold);margin-left:6px;">★ Main</span>' : ''}
           </div>
           <div style="font-size:10px;color:var(--text-muted);">${c.class || 'Unknown Class'} · ${c.realm}</div>
         </div>
-        <button class="wow-btn btn-ghost" style="font-size:10px;padding:3px 8px;border-color:var(--danger);color:var(--danger);" onclick="wowRemoveMyChar(${c.id})">Remove</button>
+        <button class="wow-btn btn-ghost"
+          title="${c.is_main ? 'Your main' : 'Make this your main'}"
+          ${c.is_main ? 'disabled' : ''}
+          style="font-family:var(--mono);font-size:10px;padding:3px 8px;flex-shrink:0;cursor:${c.is_main ? 'default' : 'pointer'};background:${c.is_main ? 'rgba(240,180,41,0.12)' : 'transparent'};border-color:${c.is_main ? 'rgba(240,180,41,0.4)' : 'var(--border2)'};color:${c.is_main ? 'var(--wow-gold)' : 'var(--text-muted)'};opacity:1;"
+          onclick="wowSetMyMain(${c.id})">★ ${c.is_main ? 'Main' : 'Set Main'}</button>
+        <button class="wow-btn btn-ghost" style="font-size:10px;padding:3px 8px;border-color:var(--danger);color:var(--danger);flex-shrink:0;" onclick="wowRemoveMyChar(${c.id})">Remove</button>
       </div>`).join('');
   }
+
+  window.wowSetMyMain = async function(id) {
+    try {
+      const res = await wowReq('/api/wow/characters/main', { method: 'POST', body: JSON.stringify({ id }) });
+      if (!res.ok) throw new Error('failed');
+      toast('Main character updated', 'success');
+      await wowLoadAll();
+    } catch(e) {
+      toast('Failed to update main', 'error');
+    }
+  };
 
   window.wowRemoveMyChar = async function(id) {
     if (!confirm('Remove this character from your roster?')) return;

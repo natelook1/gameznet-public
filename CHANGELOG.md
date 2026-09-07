@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.11.15 — 2026-09-06
+
+### Changed
+- **Changing your WoW main no longer means removing and re-adding a character** — the "My Characters" card listed your roster with a ★ marker and a Remove button but no way to change which character was main. The only set-main control lived on the "Battle.net Characters" card below it, which reads as an import list rather than roster management and only appears when Battle.net is linked, so the discoverable path was to remove a character and add it back. Every row now carries a one-click ★ Set Main, gold and disabled on the current main, in both the desktop and mobile clients. Removing your current main still auto-promotes the first remaining alt without asking, which is fine now that correcting it is a single click.
+
+### Fixed
+- **Roster edits wiped avatars and specs** — `/api/wow/characters/sync` deletes and reinserts the player's entire roster on every change, and reinserts only the columns the client posts. `thumbnail`, `spec` and `class_key` are populated lazily by `/api/wow/profile` and never re-sent, so any roster edit dropped them and characters fell back to the grey questionmark icon until each profile was fetched again; `id` and `added_at` were reset too. Promoting a main now goes through a new `POST /api/wow/characters/main` that does two `UPDATE`s in a transaction instead, so nothing is lost. The demoted main is assigned the lowest free `alt_slot` — `/api/wow/characters` only returns rows with `is_main = 1 OR alt_slot IS NOT NULL`, so leaving it NULL would have made the old main disappear from the roster.
+
+---
+
 ## v1.11.10 — 2026-09-05
 
 ### Added
