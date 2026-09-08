@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.11.19 — 2026-09-08
+
+### Fixed
+- **Portrait invalidation missed most gear changes** — it compared average item level rounded to a whole number, but the average is taken over 16 slots: a +4 upgrade moves it 0.25 and rounds to the same integer, while a sidegrade or a transmog does not move it at all. Blizzard re-renders the portrait for all of those. It now compares a per-slot `slot:id:ilvl` fingerprint of the equipped set, sorted so capture order cannot cause a false positive.
+
+### Note
+- Blizzard re-renders character portraits on its own schedule (tied to logout / armory refresh), not when gear changes. When the stored URL already matches what the profile API returns live, the portrait is as current as Blizzard has it, and no amount of polling on our side will produce a newer one.
+
+---
+
 ## v1.11.18 — 2026-09-08
 
 ### Fixed
