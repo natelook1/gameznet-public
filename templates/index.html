@@ -7305,6 +7305,21 @@
   // is over, so that mouseleave never fires and the tooltip is stranded on
   // screen, blocking whatever is under it. Nuke any live tooltip whenever we
   // replace content, then re-link the new anchors.
+  // Wowhead's default entry for an item is its BASE version. Modern
+  // upgradeable gear (Voidbreaker etc.) shares one item ID across upgrade
+  // tiers and armor types, so without context the tooltip shows a different
+  // ilvl, quality and sometimes a different item name than the one actually
+  // equipped - a green Uncommon row with a blue Rare tooltip over it.
+  // bonus_list is what pins it to the player's exact variant.
+  function wowItemAttr(item, ilvl) {
+    if (!item?.item?.id) return '';
+    const parts = [`item=${item.item.id}`];
+    if (ilvl) parts.push(`ilvl=${ilvl}`);
+    const bonus = item.bonus_list;
+    if (Array.isArray(bonus) && bonus.length) parts.push(`bonus=${bonus.join(':')}`);
+    return parts.join('&');
+  }
+
   function wowRefreshTooltips() {
     try {
       document.querySelectorAll('body > .wowhead-tooltip').forEach(t => t.remove());
@@ -9116,7 +9131,7 @@
       bnet.equipment.equipped_items.forEach(item => { if (item.slot?.type) slotMap[item.slot.type] = item; });
       ilvlBlock.innerHTML = `<div style="text-align:center;padding:0 0 14px;"><div style="font-family:var(--mono);font-size:42px;font-weight:700;color:${classClr};line-height:1;">${ilvl || '—'}</div><div style="font-size:10px;color:var(--text-muted);letter-spacing:3px;margin-top:4px;">EQUIPPED ILVL</div></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;">${slotOrder.map(slot => {
         const item = slotMap[slot]; const i_ilvl = item?.level?.value; const qColor = qualityColor[item?.quality?.type ?? 'COMMON'] ?? '#ffffff';
-        return `<div style="background:var(--surface2);border:1px solid ${item ? qColor+'44' : 'var(--border)'};border-radius:4px;padding:7px 10px;display:flex;align-items:center;gap:8px;transition:border-color 0.15s;" onmouseover="this.style.borderColor='${qColor}'" onmouseout="this.style.borderColor='${item ? qColor+'44' : 'var(--border)'}'"><div style="width:30px;height:30px;border-radius:3px;background:${item ? qColor+'18' : 'var(--bg)'};border:1px solid ${item ? qColor+'66' : 'var(--border2)'};flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;">${item ? `<img src="https://wow.zamimg.com/images/wow/icons/medium/inv_misc_questionmark.jpg" data-item-id="${item.item.id}" style="width:100%;height:100%;object-fit:cover;border-radius:2px;" onerror="this.style.display='none'">` : `<div style="width:100%;height:100%;background:repeating-linear-gradient(45deg,var(--border) 0,var(--border) 1px,transparent 0,transparent 50%) 0/6px 6px;opacity:0.4;"></div>`}</div><div style="flex:1;min-width:0;"><div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;">${slotNames[slot]?.toUpperCase()}</div><div style="font-family:var(--display);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><a ${item ? `href="https://www.wowhead.com/item=${item.item.id}" data-wowhead="item=${item.item.id}&ilvl=${i_ilvl}" target="_blank"` : ''} style="color:${item ? qColor : 'var(--border2)'};text-decoration:none;">${item?.name ?? 'Empty'}</a></div></div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:${i_ilvl ? qColor : 'var(--border2)'};flex-shrink:0;">${i_ilvl ?? '—'}</div></div>`;
+        return `<div style="background:var(--surface2);border:1px solid ${item ? qColor+'44' : 'var(--border)'};border-radius:4px;padding:7px 10px;display:flex;align-items:center;gap:8px;transition:border-color 0.15s;" onmouseover="this.style.borderColor='${qColor}'" onmouseout="this.style.borderColor='${item ? qColor+'44' : 'var(--border)'}'"><div style="width:30px;height:30px;border-radius:3px;background:${item ? qColor+'18' : 'var(--bg)'};border:1px solid ${item ? qColor+'66' : 'var(--border2)'};flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;">${item ? `<img src="https://wow.zamimg.com/images/wow/icons/medium/inv_misc_questionmark.jpg" data-item-id="${item.item.id}" style="width:100%;height:100%;object-fit:cover;border-radius:2px;" onerror="this.style.display='none'">` : `<div style="width:100%;height:100%;background:repeating-linear-gradient(45deg,var(--border) 0,var(--border) 1px,transparent 0,transparent 50%) 0/6px 6px;opacity:0.4;"></div>`}</div><div style="flex:1;min-width:0;"><div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;">${slotNames[slot]?.toUpperCase()}</div><div style="font-family:var(--display);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><a ${item ? `href="https://www.wowhead.com/item=${item.item.id}" data-wowhead="${wowItemAttr(item, i_ilvl)}" target="_blank"` : ''} style="color:${item ? qColor : 'var(--border2)'};text-decoration:none;">${item?.name ?? 'Empty'}</a></div></div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:${i_ilvl ? qColor : 'var(--border2)'};flex-shrink:0;">${i_ilvl ?? '—'}</div></div>`;
       }).join('')}</div>`;
       // Async-load actual item icons via Wowhead media CDN after initial render
       ilvlBlock.querySelectorAll('img[data-item-id]').forEach(async img => {
@@ -9298,7 +9313,7 @@
                 <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;">
                   <div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;width:72px;flex-shrink:0;">${slotNames[s]?.toUpperCase()}</div>
                   <div style="flex:1;font-family:var(--display);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                    <a href="https://www.wowhead.com/item=${item.item.id}" data-wowhead="item=${item.item.id}&ilvl=${ilvl}" target="_blank" style="color:${qColors[q]||'#fff'};text-decoration:none;">${item.name}</a>
+                    <a href="https://www.wowhead.com/item=${item.item.id}" data-wowhead="${wowItemAttr(item, ilvl)}" target="_blank" style="color:${qColors[q]||'#fff'};text-decoration:none;">${item.name}</a>
                   </div>
                   <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--purple);flex-shrink:0;">${ilvl}</div>
                 </div>

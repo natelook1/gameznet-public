@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.11.18 — 2026-09-08
+
+### Fixed
+- **Item tooltips disagreed with the gear row they belonged to** — a green Uncommon row could open a blue Rare tooltip showing a different item level, and sometimes a different item entirely (a leather "Voidbreaker's Jacket" row opening a plate "Voidbreaker's Breastplate" tooltip). Modern upgradeable gear shares one item ID across upgrade tiers and armor types, and the links passed only `item` and `ilvl`, so Wowhead rendered the item's base entry rather than the equipped variant. Blizzard already returns `bonus_list` per equipped item, which is exactly what pins it down: with the bonus IDs, item 257184 resolves to q2/ilvl 214/Chest/93 Armor, matching the roster row, where without them it resolved to q3. Passing `ilvl` alone does not fix the colour. Applied in both the desktop and mobile clients.
+
+---
+
 ## v1.11.17 — 2026-09-08
 
 ### Added

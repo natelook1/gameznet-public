@@ -1246,7 +1246,7 @@ function WowPVE({ character, charCacheRef, dataTick }) {
               <div style="flex:1;min-width:0;">
                 <div style="font-size:9px;color:var(--wow-muted);letter-spacing:1px;">${slotNames[slot]?.toUpperCase()}</div>
                 <div style="font-family:var(--wow-display);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                  <a href=${item ? `https://www.wowhead.com/item=${item.item.id}` : null} data-wowhead=${item ? `item=${item.item.id}&ilvl=${i_ilvl}` : null} target="_blank" style="color:${item ? qColor : 'var(--wow-border2)'};text-decoration:none;">${item?.name ?? 'Empty'}</a>
+                  <a href=${item ? `https://www.wowhead.com/item=${item.item.id}` : null} data-wowhead=${item ? wowItemAttr(item, i_ilvl) : null} target="_blank" style="color:${item ? qColor : 'var(--wow-border2)'};text-decoration:none;">${item?.name ?? 'Empty'}</a>
                 </div>
               </div>
               <div style="font-family:var(--wow-mono);font-size:13px;font-weight:700;color:${i_ilvl ? 'var(--wow-gold)' : 'var(--wow-border2)'};flex-shrink:0;">${i_ilvl ?? '—'}</div>
@@ -1475,7 +1475,7 @@ function WowPVP({ character, charCacheRef, dataTick }) {
             <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:3px;">
               <div style="font-size:9px;color:var(--wow-muted);letter-spacing:1px;width:72px;flex-shrink:0;">${slotNames[s]?.toUpperCase()}</div>
               <div style="flex:1;font-family:var(--wow-display);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                <a href="https://www.wowhead.com/item=${item.item.id}" data-wowhead="item=${item.item.id}&ilvl=${ilvl}" target="_blank" style="color:${qColors[q]||'#fff'};text-decoration:none;">${item.name}</a>
+                <a href="https://www.wowhead.com/item=${item.item.id}" data-wowhead="${wowItemAttr(item, ilvl)}" target="_blank" style="color:${qColors[q]||'#fff'};text-decoration:none;">${item.name}</a>
               </div>
               <div style="font-family:var(--wow-mono);font-size:12px;font-weight:700;color:var(--wow-purple);flex-shrink:0;">${ilvl}</div>
             </div>
@@ -1800,6 +1800,19 @@ function WowAccount({ me, characters, onRefresh, privacy, onPrivacyChange }) {
       ` : ''}
     </div>
   `;
+}
+
+// Wowhead's default entry for an item is its BASE version. Upgradeable gear
+// shares one item ID across upgrade tiers and armor types, so without context
+// the tooltip shows a different ilvl, quality and sometimes a different item
+// name than the one equipped. bonus_list pins it to the player's variant.
+function wowItemAttr(item, ilvl) {
+  if (!item?.item?.id) return null;
+  const parts = [`item=${item.item.id}`];
+  if (ilvl) parts.push(`ilvl=${ilvl}`);
+  const bonus = item.bonus_list;
+  if (Array.isArray(bonus) && bonus.length) parts.push(`bonus=${bonus.join(':')}`);
+  return parts.join('&');
 }
 
 // ── Addon data (gold, bags, keystones, lockouts, vault) ──────────────────────
