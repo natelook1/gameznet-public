@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.11.17 — 2026-09-08
+
+### Added
+- **Character portraits now refresh when gear changes** — Blizzard re-renders a portrait when visible gear changes and mints a new hashed URL for it, so a stored URL never looks stale; it just keeps serving the old picture indefinitely. Nothing polled for a new one. The addon sync now clears the cached URL whenever it reports a different ilvl for a character, and the next profile view re-fetches it — one UPDATE on an actual gear change, rather than polling every character on a timer.
+
+### Fixed
+- **Half the roster had no character portrait** — `wow_characters.name` is stored percent-encoded and lowercased, but the thumbnail `UPDATE` in `/api/wow/profile` matched against `req.query.name`, which Express has already decoded back to real UTF-8. The two only agree for plain-ASCII names, so the update silently touched 0 rows for every accented character: 11 of 22 characters had no avatar, and every one of them had an accent in its name. The query now re-encodes exactly the way `/characters/sync` stored it (verified to reproduce the stored key for all 22 rows).
+- **WoW item tooltips stuck to the screen and blocked the page** — the desktop client loaded Wowhead's script twice, as `/js/tooltips.js` and `/widgets/power.js`. Those URLs serve the same file byte for byte, and each does `window.WH = new function(){...}`, so the second load clobbered the first while the first instance's DOM listeners kept running. An orphaned listener shows a tooltip that nothing ever hides. One of the two was also `async`, making the load order — and therefore the bug — intermittent. Now loaded exactly once.
+- **Tooltips also survived re-renders and tab switches** — Wowhead hides a tooltip on the anchor's `mouseleave`, but the Pulls tab re-renders on a 10s poll and tab switches hide panels by CSS class, so the anchor under the cursor was destroyed or hidden without ever firing that event. Every re-render path and `wowSwitchTab` now clears any live tooltip before re-linking.
+
+---
+
 ## v1.11.16 — 2026-09-08
 
 ### Fixed

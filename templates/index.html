@@ -10,10 +10,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script>var whTooltips = {colorLinks: true, iconizeLinks: true, renameLinks: true};</script>
   <!-- The combat log carries only item IDs, so gear rows read "item 154737"
-       without this. Wowhead's tooltip script resolves the data-wowhead links
-       to real names, icons and quality colours client-side. Loaded async so a
-       slow or blocked CDN never delays the app. -->
-  <script async src="https://wow.zamimg.com/js/tooltips.js"></script>
+       without this. Wowhead's script resolves the data-wowhead links to real
+       names, icons and quality colours client-side.
+       LOAD IT EXACTLY ONCE. /js/tooltips.js and /widgets/power.js are the same
+       file (byte for byte); loading both ran two instances over the same
+       elements, and since each does `window.WH = new function(){...}` the
+       second clobbered the first while the first's DOM listeners kept running.
+       Orphaned listeners show a tooltip that nothing ever hides, so it sticks
+       to the page and blocks whatever is under it. -->
   <script src="https://wow.zamimg.com/widgets/power.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
@@ -7296,6 +7300,18 @@
     return WOW_CLASS_COLORS[(className||'').toLowerCase()] || 'var(--accent)';
   }
 
+  // Wowhead renders its tooltip into a detached div and hides it on the
+  // anchor's mouseleave. Re-rendering a panel destroys the anchor the cursor
+  // is over, so that mouseleave never fires and the tooltip is stranded on
+  // screen, blocking whatever is under it. Nuke any live tooltip whenever we
+  // replace content, then re-link the new anchors.
+  function wowRefreshTooltips() {
+    try {
+      document.querySelectorAll('body > .wowhead-tooltip').forEach(t => t.remove());
+    } catch (e) {}
+    if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
+  }
+
   function wowRenderProfBlock(profBlock, allProfs) {
     if (!allProfs || allProfs.length === 0) {
       profBlock.innerHTML = wowBnetConfigured
@@ -8091,7 +8107,7 @@
       const sel = mine.find(x => x.char_key === wowDetailChar);
       if (sel) {
         el.innerHTML = wowRenderCharDetail(sel);
-        if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
+        wowRefreshTooltips();
         return;
       }
       wowDetailChar = null;
@@ -8187,7 +8203,7 @@
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
       ${summary}${alertCard}${cards}
     </div>`;
-    if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
+    wowRefreshTooltips();
   }
 
   // Group, Keys & Lockouts, and Pulls were previously sub-tabs nested under a
@@ -8288,7 +8304,7 @@
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
       ${content}
     </div>`;
-    if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
+    wowRefreshTooltips();
   }
 
   function wowRenderKeysTab() {
@@ -8348,7 +8364,7 @@
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
       ${content}
     </div>`;
-    if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
+    wowRefreshTooltips();
   }
 
   function wowRenderPullsTab() {
@@ -8358,7 +8374,7 @@
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
       ${wowRenderPullsSubTab()}
     </div>`;
-    if (window.$WowheadPower) { try { window.$WowheadPower.refreshLinks(); } catch (e) {} }
+    wowRefreshTooltips();
   }
 
   // Addon install/uninstall/sync management and privacy controls - both live
@@ -8376,6 +8392,10 @@
   }
 
   function wowSwitchTab(tab) {
+    // Switching tabs hides the panel by class rather than removing it, so the
+    // anchor under the cursor never fires mouseleave and its tooltip would
+    // survive onto the new tab.
+    wowRefreshTooltips();
     document.querySelectorAll('#wow-section .nav-tab').forEach(t => t.classList.remove('active'));
     const targetTab = document.querySelector(`#wow-section [data-wow-tab="${tab}"]`);
     if (targetTab) targetTab.classList.add('active');
@@ -8621,7 +8641,7 @@
       if (['world','pve','pvp'].includes(wowActiveTab)) wowRenderCharTab();
       wowRenderAccountTab();
       wowBuildCharBar();
-      if (window.$WowheadPower) setTimeout(() => window.$WowheadPower.refreshLinks(), 100);
+      setTimeout(wowRefreshTooltips, 100);
     } catch(e) {} finally { if(btn) { btn.classList.remove('loading'); btn.textContent = '⟳ REFRESH'; } }
   }
 
