@@ -7502,9 +7502,14 @@
       // whichever GamezNET login happened to sync it - see server.js's
       // wowResolveCharacterOwner. Surface that here so it doesn't look like
       // the sync silently lost a character.
-      if (d.skipped) {
+      // A failed push must say so. Falling through silently here is what made
+      // a backend schema mismatch look like a dead addon: the data parsed
+      // fine, the button reset, and nothing ever said the upload was refused.
+      if (!d.synced) {
+        toast(d.sync_error || 'Parsed the addon data, but could not upload it to GamezNET.', 'error');
+      } else if (d.skipped) {
         toast(`Synced. ${d.skipped} character(s) skipped - not registered in your My Account picker.`);
-      } else if (d.synced) {
+      } else {
         toast('Addon data synced.');
       }
     } catch (e) {

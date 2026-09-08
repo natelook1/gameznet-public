@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.11.16 — 2026-09-08
+
+### Fixed
+- **The WoW hub feed went silent for anyone whose addon had updated** — `ns.SCHEMA` and `wow_addon.py` moved to 3 when housing was wired up, but `WOW_ADDON_SCHEMA` in `server.js` was left at 2, untouched since the ingest pipeline was first built. Every `/api/wow/addon/sync` was refused with `409 Schema mismatch`, so no character data reached the hub. The ingest handler already read `payload.housing`, so schema 3 was fully supported — only the version gate was stale.
+- **A refused upload looked exactly like a dead addon** — `sync_to_backend` caught every exception, including `HTTPError`, and returned a bare `{ok: False}` with the backend's reason discarded and only a `log.debug` behind it. The Addon tab then had no branch for "parsed fine, upload refused", so the sync button reset to idle and said nothing at all. Failures now carry the backend's message, the UI shows it, and the background watcher logs refusals at warning level instead of debug.
+
+### Added
+- **Schema drift is now a test failure** — `test_endpoints.ps1` compares `ns.SCHEMA`, `wow_addon.py`'s `SCHEMA` and the server's live schema, and fails when they disagree. The existing "schema mismatch rejected" check reads the live value from the server by design, so it agrees with whatever the server says and could never have caught this.
+
+---
+
 ## v1.11.15 — 2026-09-06
 
 ### Changed
