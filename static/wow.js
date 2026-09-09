@@ -30,6 +30,112 @@ const CLASS_COLOR = {
 // Shared identity strip. PVE/PVP/World render stats for the selected character
 // but never name it - the char bar was the only cue, so once you scrolled the
 // page was "a level 80 something". This puts the character back on its own data.
+// Slot layout for the paper doll. Left column, right column, then the weapon
+// row underneath - the arrangement every armory site uses, so it reads without
+// a legend.
+const DOLL_LEFT  = ['HEAD','NECK','SHOULDER','BACK','CHEST','WRIST'];
+const DOLL_RIGHT = ['HANDS','WAIST','LEGS','FEET','FINGER_1','FINGER_2'];
+const DOLL_BOTTOM = ['MAIN_HAND','OFF_HAND','TRINKET_1','TRINKET_2'];
+
+const DOLL_NAMES = {
+  HEAD:'Head', NECK:'Neck', SHOULDER:'Shoulders', BACK:'Cloak', CHEST:'Chest',
+  WRIST:'Bracers', HANDS:'Gloves', WAIST:'Belt', LEGS:'Legs', FEET:'Boots',
+  FINGER_1:'Ring 1', FINGER_2:'Ring 2', TRINKET_1:'Trinket 1',
+  TRINKET_2:'Trinket 2', MAIN_HAND:'Weapon', OFF_HAND:'Off Hand',
+};
+
+// One gear slot. The <a data-wowhead> is what gives us a real item icon and the
+// hover tooltip - Wowhead's power.js rewrites it, so no extra API calls per item.
+function DollSlot({ slot, item, side }) {
+  const ilvl = item?.level?.value;
+  const col = item ? qColor(item.quality?.type) : 'var(--wow-border2)';
+  const dur = item?.durability;
+  return html`
+    <div class="doll-slot ${side}" title=${DOLL_NAMES[slot]}>
+      <a class="doll-icon" style="border-color:${col};"
+         href=${item ? `https://www.wowhead.com/item=${item.item.id}` : null}
+         data-wowhead=${item ? wowItemAttr(item, ilvl) : null}
+         target="_blank" rel="noopener"
+         onClick=${e => { if (!item) e.preventDefault(); }}>
+        ${!item ? html`<span class="doll-empty"></span>` : ''}
+      </a>
+      <div class="doll-meta">
+        <div class="doll-slot-name">${DOLL_NAMES[slot]}</div>
+        <div class="doll-item" style="color:${col};">${item?.name || '—'}</div>
+      </div>
+      ${ilvl ? html`<div class="doll-ilvl">${ilvl}</div>` : ''}
+      ${dur?.value != null && dur.value <= 50
+        ? html`<div class="doll-dur" style="color:${durColor(dur.value)};">${dur.value}%</div>` : ''}
+    </div>
+  `;
+}
+
+// Shared gear frame for PVE and PVP. The supporting content differs per tab and
+// is passed in as children, so the two pages stay one layout with two bodies.
+function WowGearFrame({ character, bnet, children }) {
+  const equipped = bnet?.equipment?.equipped_items || [];
+  const slotMap = {};
+  equipped.forEach(i => { if (i.slot?.type) slotMap[i.slot.type] = i; });
+
+  const ilvl = bnet?.profile?.equipped_item_level
+            || bnet?.equipment?.character?.equipped_item_level;
+  const render = (bnet?.media?.assets || []).find(a => a.key === 'main-raw')?.value;
+  const col = classColor(character?.class);
+
+  if (!equipped.length) {
+    return html`
+      <div class="doll-wrap">
+        <div class="doll-none">
+          Equipment comes from the Blizzard API and may take a moment on first open.
+        </div>
+        ${children}
+      </div>`;
+  }
+
+  return html`
+    <div class="doll-wrap">
+      <div class="doll" style="--cc:${col};">
+        <div class="doll-col">${DOLL_LEFT.map(s => html`<${DollSlot} slot=${s} item=${slotMap[s]} side="l" />`)}</div>
+        <div class="doll-mid">
+          ${render ? html`<img class="doll-render" src=${render} alt="" loading="lazy"
+                              onError=${e => { e.target.style.display = 'none'; }} />` : ''}
+          <div class="doll-ilvl-big" style="color:${col};">${ilvl ? Math.round(ilvl) : '—'}</div>
+          <div class="doll-ilvl-lbl">equipped ilvl</div>
+        </div>
+        <div class="doll-col">${DOLL_RIGHT.map(s => html`<${DollSlot} slot=${s} item=${slotMap[s]} side="r" />`)}</div>
+      </div>
+      <div class="doll-bottom">
+        ${DOLL_BOTTOM.map(s => html`<${DollSlot} slot=${s} item=${slotMap[s]} side="b" />`)}
+      </div>
+      ${children}
+    </div>
+  `;
+}
+
+// World is about progression, not gear, so it gets a one-line gear summary
+// rather than the full doll - enough to keep the three tabs a family.
+function WowGearStrip({ character, bnet }) {
+  const equipped = bnet?.equipment?.equipped_items || [];
+  if (!equipped.length) return null;
+  const ilvl = bnet?.profile?.equipped_item_level
+            || bnet?.equipment?.character?.equipped_item_level;
+  const worst = equipped.reduce((w, i) => {
+    const v = i.durability?.value;
+    return (v != null && (w == null || v < w)) ? v : w;
+  }, null);
+  return html`
+    <div class="gear-strip" style="--cc:${classColor(character?.class)};">
+      <span class="gear-strip-lbl">gear</span>
+      <span class="gear-strip-ilvl">${ilvl ? Math.round(ilvl) : '—'}</span>
+      <span class="gear-strip-sub">ilvl</span>
+      ${worst != null ? html`
+        <span class="gear-strip-sep">·</span>
+        <span class="gear-strip-lbl">durability</span>
+        <span class="gear-strip-dur" style="color:${durColor(worst)};">${worst}%</span>` : ''}
+    </div>
+  `;
+}
+
 function WowCharIdent({ character }) {
   if (!character) return null;
   const col = classColor(character.class);
@@ -361,6 +467,45 @@ function injectWowAssets() {
     .wow-wrap .char-ident-meta { font-family: var(--wow-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--wow-dim); }
     .wow-wrap .char-ident-realm { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); }
     .wow-wrap .char-ident-lvl { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); margin-left: auto; }
+
+    /* ── Paper doll (shared by PVE / PVP) ─────────────────────────────────── */
+    .wow-wrap .doll-wrap { padding: 0 12px 14px; }
+    .wow-wrap .doll { display: grid; grid-template-columns: 1fr minmax(120px, 200px) 1fr; gap: 10px; align-items: start; }
+    .wow-wrap .doll-col { display: flex; flex-direction: column; gap: 4px; }
+    .wow-wrap .doll-mid { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 200px; }
+    .wow-wrap .doll-render { width: 100%; max-width: 200px; object-fit: contain; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.6)); }
+    .wow-wrap .doll-ilvl-big { font-family: var(--wow-display); font-size: 34px; font-weight: 700; line-height: 1; margin-top: 6px; }
+    .wow-wrap .doll-ilvl-lbl { font-family: var(--wow-mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--wow-muted); margin-top: 2px; }
+
+    .wow-wrap .doll-slot { display: flex; align-items: center; gap: 7px; background: var(--wow-surface); border: 1px solid var(--wow-border); border-radius: 4px; padding: 4px 6px; min-height: 40px; }
+    .wow-wrap .doll-slot.r { flex-direction: row-reverse; text-align: right; }
+    .wow-wrap .doll-icon { width: 30px; height: 30px; border-radius: 3px; border: 1px solid var(--wow-border2); background: var(--wow-bg); flex-shrink: 0; display: block; }
+    .wow-wrap .doll-icon img { width: 100%; height: 100%; border-radius: 3px; display: block; }
+    .wow-wrap .doll-empty { display: block; width: 100%; height: 100%; }
+    .wow-wrap .doll-meta { flex: 1; min-width: 0; }
+    .wow-wrap .doll-slot-name { font-family: var(--wow-mono); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); }
+    .wow-wrap .doll-item { font-family: var(--wow-display); font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wow-wrap .doll-ilvl { font-family: var(--wow-mono); font-size: 11px; font-weight: 700; color: var(--wow-text); flex-shrink: 0; }
+    .wow-wrap .doll-dur { font-family: var(--wow-mono); font-size: 9px; flex-shrink: 0; }
+
+    .wow-wrap .doll-bottom { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 4px; margin-top: 8px; }
+    .wow-wrap .doll-none { font-family: var(--wow-mono); font-size: 11px; color: var(--wow-muted); background: var(--wow-surface); border: 1px solid var(--wow-border); border-radius: 5px; padding: 14px; line-height: 1.6; }
+
+    /* World keeps a one-line gear summary instead of the full doll. */
+    .wow-wrap .gear-strip { display: flex; align-items: baseline; gap: 7px; padding: 7px 14px; background: var(--wow-surface); border-bottom: 1px solid var(--wow-border); border-left: 3px solid var(--cc, var(--wow-gold)); }
+    .wow-wrap .gear-strip-lbl { font-family: var(--wow-mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--wow-muted); }
+    .wow-wrap .gear-strip-ilvl { font-family: var(--wow-display); font-size: 17px; font-weight: 700; color: var(--wow-text); }
+    .wow-wrap .gear-strip-sub { font-family: var(--wow-mono); font-size: 9px; color: var(--wow-muted); }
+    .wow-wrap .gear-strip-dur { font-family: var(--wow-mono); font-size: 12px; font-weight: 600; }
+    .wow-wrap .gear-strip-sep { color: var(--wow-border2); }
+
+    @media (max-width: 768px) {
+      .wow-wrap .doll { grid-template-columns: 1fr; }
+      .wow-wrap .doll-mid { order: -1; min-height: 0; }
+      .wow-wrap .doll-render { max-width: 150px; }
+      .wow-wrap .doll-slot.r { flex-direction: row; text-align: left; }
+      .wow-wrap .doll-wrap { padding: 0 8px 12px; }
+    }
 
     /* ── Hub ─────────────────────────────────────────────────────────────── */
     .wow-wrap .hub { padding: 10px 12px 16px; }
@@ -1267,6 +1412,7 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
 
   return html`
     <${WowCharIdent} character=${character} />
+    <${WowGearStrip} character=${character} bnet=${bnet} />
     <div class="wow-layout">
       <div class="col-main">
         <div class="wow-card">
@@ -1578,9 +1724,9 @@ function WowPVE({ character, charCacheRef, dataTick }) {
 
   return html`
     <${WowCharIdent} character=${character} />
+    <${WowGearFrame} character=${character} bnet=${bnet}>
     <div class="wow-layout">
       <div class="col-main">
-        <div class="wow-card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Equipped Gear</div></div><div class="card-body">${renderEquipment()}</div></div>
         <div class="wow-card"><div class="card-header"><div class="card-title"><div class="dot"></div> Raid Progress</div></div><div class="card-body">${renderRaid()}</div></div>
         <div class="wow-card"><div class="card-header"><div class="card-title"><div class="dot"></div> Recent M+ Runs</div></div><div class="card-body" style="padding:10px;">${renderRuns(c.mythic_plus_recent_runs)}</div></div>
         <div class="wow-card"><div class="card-header"><div class="card-title"><div class="dot"></div> Season Best Runs</div></div><div class="card-body" style="padding:10px;">${renderRuns(c.mythic_plus_best_runs)}</div></div>
@@ -1592,6 +1738,7 @@ function WowPVE({ character, charCacheRef, dataTick }) {
         <div class="wow-card"><div class="card-header"><div class="card-title"><div class="dot dot-gold"></div> Great Vault Tracker</div></div><div class="card-body">${renderWeekly()}</div></div>
       </div>
     </div>
+    </${WowGearFrame}>
   `;
 }
 
@@ -1655,6 +1802,7 @@ function WowPVP({ character, charCacheRef, dataTick }) {
 
   return html`
     <${WowCharIdent} character=${character} />
+    <${WowGearFrame} character=${character} bnet=${bnet}>
     <div class="wow-layout">
       <div class="col-main">
         <div class="wow-card">
@@ -1704,6 +1852,7 @@ function WowPVP({ character, charCacheRef, dataTick }) {
         </div>
       </div>
     </div>
+    </${WowGearFrame}>
   `;
 }
 
