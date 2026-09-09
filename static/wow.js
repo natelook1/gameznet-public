@@ -13,6 +13,64 @@ const HOST = (typeof window !== 'undefined' && window.GZN_WOW_HOST) || {};
 const API = HOST.apiBase != null ? HOST.apiBase : 'https://gameznet.looknet.ca';
 const RIO = 'https://raider.io/api/v1';
 
+// Blizzard's official class colours, keyed the way the addon sends them
+// (uppercase, no spaces). Used for names, card edges and spec accents so a
+// character reads as itself at a glance instead of as a row of gold text.
+const CLASS_COLOR = {
+  DEATHKNIGHT: '#C41E3A', DEMONHUNTER: '#A330C9', DRUID:   '#FF7C0A',
+  EVOKER:      '#33937F', HUNTER:      '#AAD372', MAGE:    '#3FC7EB',
+  MONK:        '#00FF98', PALADIN:     '#F48CBA', PRIEST:  '#FFFFFF',
+  ROGUE:       '#FFF468', SHAMAN:      '#0070DD', WARLOCK: '#8788EE',
+  WARRIOR:     '#C69B6D',
+};
+
+// Zamimg class icons. All 13 classes follow classicon_<class> exactly - verified
+// against the CDN - so this derives the name instead of hand-mapping it, and a
+// new class would work without a code change.
+// Shared identity strip. PVE/PVP/World render stats for the selected character
+// but never name it - the char bar was the only cue, so once you scrolled the
+// page was "a level 80 something". This puts the character back on its own data.
+function WowCharIdent({ character }) {
+  if (!character) return null;
+  const col = classColor(character.class);
+  const icon = classIcon(character.class);
+  return html`
+    <div class="char-ident" style="--cc:${col};">
+      ${icon ? html`<img class="char-ident-icon" src=${icon} alt="" loading="lazy"
+                        onError=${e => { e.target.style.visibility = 'hidden'; }} />` : ''}
+      <span class="char-ident-name" style="color:${col};">${character.display_name || character.name}</span>
+      <span class="char-ident-meta">${character.spec || ''} ${character.class || ''}</span>
+      <span class="char-ident-realm">${character.realm}</span>
+      ${character.level ? html`<span class="char-ident-lvl">lv ${character.level}</span>` : ''}
+    </div>
+  `;
+}
+
+function classIcon(cls) {
+  const k = String(cls || '').toLowerCase().replace(/[^a-z]/g, '');
+  return k ? `https://wow.zamimg.com/images/wow/icons/medium/classicon_${k}.jpg` : null;
+}
+
+function classColor(cls) {
+  if (!cls) return 'var(--wow-gold)';
+  return CLASS_COLOR[String(cls).toUpperCase().replace(/[^A-Z]/g, '')] || 'var(--wow-gold)';
+}
+
+// Status ramps: a value is only useful if you can see at a glance whether it
+// needs you. Returns a colour, not a label, so callers stay terse.
+function ilvlColor(v) {
+  if (v == null) return 'var(--wow-muted)';
+  if (v >= 200) return 'var(--wow-green)';
+  if (v >= 130) return 'var(--wow-gold)';
+  return 'var(--wow-muted)';
+}
+function bagColor(freePct) {
+  if (freePct == null) return 'var(--wow-muted)';
+  if (freePct <= 10) return 'var(--wow-red)';
+  if (freePct <= 25) return 'var(--wow-warn)';
+  return 'var(--wow-green)';
+}
+
 // Absolute public origin, for things that cannot be relative: OAuth popups and
 // EventSource. Desktop's API base is relative, so fall back to the public URL.
 const PUBLIC_ORIGIN = HOST.publicOrigin || (API || 'https://gameznet.looknet.ca');
@@ -297,6 +355,67 @@ function injectWowAssets() {
       .wow-wrap .wow-layout, .wow-wrap .layout-full { padding: 12px 10px; }
       .wow-wrap .card-header, .wow-wrap .card-body { padding: 10px; }
     }
+    .wow-wrap .char-ident { display: flex; align-items: center; gap: 9px; padding: 8px 14px; background: var(--wow-surface); border-bottom: 1px solid var(--wow-border); border-left: 3px solid var(--cc, var(--wow-gold)); }
+    .wow-wrap .char-ident-icon { width: 22px; height: 22px; border-radius: 3px; border: 1px solid var(--cc, var(--wow-border2)); flex-shrink: 0; }
+    .wow-wrap .char-ident-name { font-family: var(--wow-display); font-size: 16px; font-weight: 700; letter-spacing: 0.4px; }
+    .wow-wrap .char-ident-meta { font-family: var(--wow-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--wow-dim); }
+    .wow-wrap .char-ident-realm { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); }
+    .wow-wrap .char-ident-lvl { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); margin-left: auto; }
+
+    /* ── Hub ─────────────────────────────────────────────────────────────── */
+    .wow-wrap .hub { padding: 10px 12px 16px; }
+    .wow-wrap .hub-bar { display: flex; align-items: center; gap: 10px; padding: 2px 2px 10px; }
+    .wow-wrap .hub-count { font-family: var(--wow-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); }
+    .wow-wrap .hub-pill { font-family: var(--wow-mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+    .wow-wrap .hub-pill.ok   { background: var(--wow-green-dim); color: var(--wow-green); border: 1px solid rgba(34,197,94,0.3); }
+    .wow-wrap .hub-pill.warn { background: var(--wow-gold-dim);  color: var(--wow-gold);  border: 1px solid rgba(240,180,41,0.35); }
+    .wow-wrap .hub-reload { margin-left: auto; font-size: 13px; color: var(--wow-muted); cursor: pointer; padding: 4px 6px; border-radius: 4px; }
+    .wow-wrap .hub-reload:hover { color: var(--wow-accent); background: var(--wow-surface2); }
+
+    .wow-wrap .hub-totals { display: grid; grid-template-columns: repeat(auto-fit,minmax(84px,1fr)); gap: 1px; background: var(--wow-border); border: 1px solid var(--wow-border); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
+    .wow-wrap .hub-total { background: var(--wow-surface); padding: 9px 12px; display: flex; flex-direction: column; gap: 2px; }
+    .wow-wrap .hub-total i { font-family: var(--wow-mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--wow-muted); font-style: normal; }
+    .wow-wrap .hub-total b { font-family: var(--wow-display); font-size: 19px; font-weight: 700; color: var(--wow-text); line-height: 1.1; }
+    .wow-wrap .hub-total b.gold { color: var(--wow-gold); }
+    .wow-wrap .hub-total b.on   { color: var(--wow-accent); }
+    .wow-wrap .hub-total b.off  { color: var(--wow-muted); }
+
+    .wow-wrap .hub-alerts { display: flex; flex-direction: column; gap: 1px; margin-bottom: 12px; border-radius: 6px; overflow: hidden; }
+    .wow-wrap .hub-alert { display: flex; align-items: center; gap: 9px; padding: 8px 12px; background: var(--wow-surface); border-left: 3px solid var(--cc, var(--wow-gold)); cursor: pointer; }
+    .wow-wrap .hub-alert:hover { background: var(--wow-surface2); }
+    .wow-wrap .hub-alert-icon { font-size: 13px; flex-shrink: 0; }
+    .wow-wrap .hub-alert-text { font-family: var(--wow-mono); font-size: 11px; color: var(--wow-text); }
+
+    .wow-wrap .hub-rows { display: flex; flex-direction: column; gap: 6px; }
+    .wow-wrap .hub-row { background: var(--wow-surface); border: 1px solid var(--wow-border); border-left: 3px solid var(--cc, var(--wow-gold)); border-radius: 5px; padding: 8px 12px; cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+    .wow-wrap .hub-row:hover { background: var(--wow-surface2); border-color: var(--wow-border2); border-left-color: var(--cc, var(--wow-gold)); }
+    .wow-wrap .hub-row-top { display: flex; align-items: baseline; gap: 8px; }
+    .wow-wrap .hub-icon { width: 20px; height: 20px; border-radius: 3px; border: 1px solid var(--cc, var(--wow-border2)); flex-shrink: 0; align-self: center; }
+    .wow-wrap .hub-name { font-family: var(--wow-display); font-size: 15px; font-weight: 700; letter-spacing: 0.3px; }
+    .wow-wrap .hub-spec { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    .wow-wrap .hub-realm { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); }
+    .wow-wrap .hub-lvl { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); }
+    .wow-wrap .hub-lvl::before { content: 'lv '; opacity: 0.6; }
+    .wow-wrap .hub-gap { flex: 1; }
+    .wow-wrap .hub-tag { font-family: var(--wow-mono); font-size: 10px; padding: 1px 7px; border-radius: 3px; white-space: nowrap; }
+    .wow-wrap .hub-tag.key   { background: var(--wow-accent-dim); color: var(--wow-accent); border: 1px solid rgba(240,180,41,0.3); }
+    .wow-wrap .hub-tag.vault { background: var(--wow-green-dim);  color: var(--wow-green);  border: 1px solid rgba(34,197,94,0.3); }
+    .wow-wrap .hub-tag.lock  { background: var(--wow-surface2);   color: var(--wow-muted);  border: 1px solid var(--wow-border2); }
+    .wow-wrap .hub-chev { font-family: var(--wow-mono); font-size: 15px; color: var(--wow-border2); margin-left: 2px; }
+    .wow-wrap .hub-row:hover .hub-chev { color: var(--wow-accent); }
+
+    .wow-wrap .hub-row-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 7px; }
+    .wow-wrap .hub-stat { display: inline-flex; align-items: baseline; gap: 5px; }
+    .wow-wrap .hub-stat i { font-family: var(--wow-mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); font-style: normal; }
+    .wow-wrap .hub-stat b { font-family: var(--wow-mono); font-size: 12px; font-weight: 600; color: var(--wow-text); }
+    .wow-wrap .hub-stat b.gold { color: var(--wow-gold); }
+
+    @media (max-width: 768px) {
+      .wow-wrap .hub { padding: 8px 8px 14px; }
+      .wow-wrap .hub-row-stats { gap: 5px 12px; }
+      .wow-wrap .hub-realm { display: none; }
+    }
+
     .wow-wrap .dungeon-list { display: flex; flex-direction: column; gap: 5px; }
     .wow-wrap .dungeon-row { display: flex; align-items: center; gap: 10px; background: var(--wow-surface2); border: 1px solid var(--wow-border); border-radius: 4px; padding: 8px 12px; }
     .wow-wrap .dungeon-icon { font-size: 16px; flex-shrink: 0; }
@@ -1147,6 +1266,7 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
   const dungeons = getDungeonUnlocks(lvl);
 
   return html`
+    <${WowCharIdent} character=${character} />
     <div class="wow-layout">
       <div class="col-main">
         <div class="wow-card">
@@ -1457,6 +1577,7 @@ function WowPVE({ character, charCacheRef, dataTick }) {
   };
 
   return html`
+    <${WowCharIdent} character=${character} />
     <div class="wow-layout">
       <div class="col-main">
         <div class="wow-card"><div class="card-header"><div class="card-title"><div class="dot dot-accent"></div> Equipped Gear</div></div><div class="card-body">${renderEquipment()}</div></div>
@@ -1533,6 +1654,7 @@ function WowPVP({ character, charCacheRef, dataTick }) {
   };
 
   return html`
+    <${WowCharIdent} character=${character} />
     <div class="wow-layout">
       <div class="col-main">
         <div class="wow-card">
@@ -2235,123 +2357,67 @@ function WowHub({ addon, addonErr, onReload, charCacheRef }) {
   }
 
   return html`
-    <div>
-      <div style="display:flex;align-items:center;padding:10px 12px 0;">
-        <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-muted);">
-          ${mine.length} character${mine.length > 1 ? 's' : ''} synced
-        </div>
-        <div style="margin-left:auto;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);cursor:pointer;padding:5px;"
-             onClick=${onReload}>⟳</div>
+    <div class="hub">
+      <div class="hub-bar">
+        <span class="hub-count">${mine.length} character${mine.length > 1 ? 's' : ''} synced</span>
+        ${alerts.length > 0
+          ? html`<span class="hub-pill warn">${alerts.length} need${alerts.length > 1 ? '' : 's'} attention</span>`
+          : html`<span class="hub-pill ok">all clear</span>`}
+        <span class="hub-reload" onClick=${onReload} title="Reload addon data">⟳</span>
       </div>
 
-      <div class="wow-card" style="margin:12px;">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;">
-          <div>
-            <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">YOUR GOLD</div>
-            <div style="font-family:var(--wow-display);font-size:20px;color:var(--wow-gold);">${goldStr(totalGold)}</div>
-          </div>
-          <div>
-            <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">TOTAL PLAYED</div>
-            <div style="font-family:var(--wow-display);font-size:20px;color:var(--wow-text);">${playedStr(totalPlayed)}</div>
-          </div>
-          <div>
-            <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">KEYS HELD</div>
-            <div style="font-family:var(--wow-display);font-size:20px;color:${keys.length ? 'var(--wow-accent)' : 'var(--wow-muted)'};">${keys.length}</div>
-          </div>
-          <div>
-            <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">LOCKED TO</div>
-            <div style="font-family:var(--wow-display);font-size:20px;color:var(--wow-text);">${lockouts.length}</div>
-          </div>
-        </div>
+      <div class="hub-totals">
+        <div class="hub-total"><i>gold</i><b class="gold">${goldStr(totalGold)}</b></div>
+        <div class="hub-total"><i>played</i><b>${playedStr(totalPlayed)}</b></div>
+        <div class="hub-total"><i>keys</i><b class=${keys.length ? 'on' : 'off'}>${keys.length}</b></div>
+        <div class="hub-total"><i>locked</i><b class=${lockouts.length ? 'on' : 'off'}>${lockouts.length}</b></div>
       </div>
 
       ${alerts.length > 0 && html`
-        <div class="wow-card" style="margin:12px;">
-          <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:8px;">NEEDS ATTENTION</div>
+        <div class="hub-alerts">
           ${alerts.map(a => html`
-            <div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
-              <span style="font-size:12px;">${a.kind === 'dur' ? '🔧' : a.kind === 'bag' ? '🎒' : a.kind === 'vault' ? '🎁' : '⏳'}</span>
-              <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-text);">${a.text}</span>
+            <div class="hub-alert" onClick=${() => setDetailChar(a.char.char_key)}
+                 style="--cc:${classColor(a.char.class)};">
+              <span class="hub-alert-icon">${a.kind === 'dur' ? '🔧' : a.kind === 'bag' ? '🎒' : a.kind === 'vault' ? '🎁' : '⏳'}</span>
+              <span class="hub-alert-text">${a.text}</span>
             </div>
           `)}
         </div>
       `}
 
-      ${mine.map(c => {
-        const d = c.durability;
-        const bagPct = (c.bagFree != null && c.bagSlots) ? Math.round((1 - c.bagFree / c.bagSlots) * 100) : null;
-        const vaultReady = (c.vault || []).filter(v => v.progress >= v.threshold).length;
-        return html`
-          <div class="wow-card" style="margin:12px;cursor:pointer;" onClick=${() => setDetailChar(c.char_key)}>
-            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;">
-              <div style="font-family:var(--wow-display);font-size:15px;color:var(--wow-gold);">${c.name}</div>
-              <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">
-                ${c.realm} · ${c.spec || ''} ${c.class || ''} · ${c.level || '?'}
+      <div class="hub-rows">
+        ${mine.map(c => {
+          const col = classColor(c.class);
+          const d = c.durability;
+          const freePct = (c.bagFree != null && c.bagSlots) ? Math.round(c.bagFree / c.bagSlots * 100) : null;
+          const vaultReady = (c.vault || []).filter(v => v.progress >= v.threshold).length;
+          const locked = (c.lockouts || []).length;
+          return html`
+            <div class="hub-row" style="--cc:${col};" onClick=${() => setDetailChar(c.char_key)}>
+              <div class="hub-row-top">
+                ${classIcon(c.class) ? html`<img class="hub-icon" src=${classIcon(c.class)} alt="" loading="lazy"
+                     onError=${e => { e.target.style.visibility = 'hidden'; }} />` : ''}
+                <span class="hub-name" style="color:${col};">${c.name}</span>
+                <span class="hub-spec">${c.spec || ''} ${c.class || ''}</span>
+                <span class="hub-realm">${c.realm}</span>
+                <span class="hub-lvl">${c.level || '?'}</span>
+                <span class="hub-gap"></span>
+                ${c.keystone?.level ? html`<span class="hub-tag key" title=${c.keystone.name || ''}>🗝 +${c.keystone.level}</span>` : ''}
+                ${vaultReady ? html`<span class="hub-tag vault">🎁 ${vaultReady}</span>` : ''}
+                ${locked ? html`<span class="hub-tag lock">🔒 ${locked}</span>` : ''}
+                <span class="hub-chev">›</span>
               </div>
-              ${c.keystone?.level ? html`
-                <div style="margin-left:auto;font-family:var(--wow-display);font-size:13px;color:var(--wow-accent);"
-                     title="${c.keystone.name || ''}">🗝 +${c.keystone.level}</div>` : ''}
-              <div style="${c.keystone?.level ? '' : 'margin-left:auto;'}font-family:var(--wow-mono);font-size:14px;color:var(--wow-muted);">›</div>
+              <div class="hub-row-stats">
+                <span class="hub-stat"><i>ilvl</i><b style="color:${ilvlColor(c.ilvl)};">${c.ilvl ? Math.round(c.ilvl) : '—'}</b></span>
+                <span class="hub-stat"><i>gold</i><b class="gold">${goldStr(c.gold)}</b></span>
+                ${d?.worstPct != null ? html`<span class="hub-stat"><i>dur</i><b style="color:${durColor(d.worstPct)};">${d.worstPct}%</b></span>` : ''}
+                ${freePct != null ? html`<span class="hub-stat"><i>bags</i><b style="color:${bagColor(freePct)};">${c.bagFree} free</b></span>` : ''}
+                <span class="hub-stat"><i>played</i><b>${playedStr(c.played)}</b></span>
+              </div>
             </div>
-
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:8px;">
-              <div>
-                <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">GOLD</div>
-                <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-gold);">${goldStr(c.gold)}</div>
-              </div>
-              <div>
-                <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">ILVL</div>
-                <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-text);">${c.ilvl ? Math.round(c.ilvl) : '—'}</div>
-              </div>
-              ${d?.worstPct != null ? html`
-                <div>
-                  <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">DURABILITY</div>
-                  <div style="font-family:var(--wow-display);font-size:13px;color:${durColor(d.worstPct)};">${d.worstPct}%</div>
-                </div>` : ''}
-              ${bagPct != null ? html`
-                <div>
-                  <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">BAGS</div>
-                  <div style="font-family:var(--wow-display);font-size:13px;color:${c.bagFree <= 4 ? 'var(--wow-red)' : 'var(--wow-text)'};">${bagPct}%</div>
-                  <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">${c.bagFree} free</div>
-                </div>` : ''}
-              <div>
-                <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">PLAYED</div>
-                <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-text);">${playedStr(c.played)}</div>
-              </div>
-              ${vaultReady > 0 ? html`
-                <div>
-                  <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">VAULT</div>
-                  <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-gold);">${vaultReady} ready</div>
-                </div>` : ''}
-            </div>
-
-            ${(c.cooldowns || []).length > 0 && html`
-              <div style="margin-top:10px;">
-                <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-bottom:4px;">COOLDOWNS</div>
-                ${(c.cooldowns || []).map(cd => html`
-                  <div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
-                    <span style="flex:1;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cd.name || ('spell ' + cd.id)}</span>
-                    <span style="font-family:var(--wow-mono);font-size:10px;color:${cd.remaining > 0 ? 'var(--wow-muted)' : 'var(--wow-green)'};">${cd.remaining > 0 ? cdStr(cd.remaining) : 'ready'}</span>
-                  </div>
-                `)}
-              </div>
-            `}
-
-            ${(c.lockouts || []).length > 0 && html`
-              <div style="margin-top:10px;">
-                <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-bottom:4px;">LOCKOUTS</div>
-                ${(c.lockouts || []).map(lo => html`
-                  <div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
-                    <span style="flex:1;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${lo.name}${lo.difficultyName ? ` (${lo.difficultyName})` : ''}</span>
-                    <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-accent);">${lo.defeated ?? 0}/${lo.bosses ?? '?'}</span>
-                    <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${resetInStr(lo.resetsAt)}</span>
-                  </div>
-                `)}
-              </div>
-            `}
-          </div>
-        `;
-      })}
+          `;
+        })}
+      </div>
     </div>
   `;
 }
