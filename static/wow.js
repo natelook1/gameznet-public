@@ -1,14 +1,32 @@
-import { h } from 'https://esm.sh/preact@10';
-import { useState, useEffect, useRef, useCallback } from 'https://esm.sh/preact@10/hooks';
-import htm from 'https://esm.sh/htm@3';
+import { h } from './vendor/preact.mjs';
+import { useState, useEffect, useRef, useCallback } from './vendor/hooks.mjs';
+import htm from './vendor/htm.mjs';
 const html = htm.bind(h);
 
-const API = 'https://gameznet.looknet.ca';
+// Host configuration. Mobile/CF-Pages are served from a different origin than
+// the backend, so they need the absolute URL. The desktop client proxies /api/
+// through its local Flask server (which picks VPN-direct vs public per
+// connection state), so it MUST use a relative base and MUST supply its own
+// token - it stores it under a different localStorage key than mobile does.
+const HOST = (typeof window !== 'undefined' && window.GZN_WOW_HOST) || {};
+
+const API = HOST.apiBase != null ? HOST.apiBase : 'https://gameznet.looknet.ca';
 const RIO = 'https://raider.io/api/v1';
 
+// Absolute public origin, for things that cannot be relative: OAuth popups and
+// EventSource. Desktop's API base is relative, so fall back to the public URL.
+const PUBLIC_ORIGIN = HOST.publicOrigin || (API || 'https://gameznet.looknet.ca');
+
+function authPair() {
+  if (HOST.getAuth) return HOST.getAuth() || {};
+  return {
+    token:   localStorage.getItem('gzn_token'),
+    session: localStorage.getItem('gzn_session')
+  };
+}
+
 function req(path, opts = {}) {
-  const token   = localStorage.getItem('gzn_token');
-  const session = localStorage.getItem('gzn_session');
+  const { token, session } = authPair();
   return fetch(API + path, {
     ...opts,
     headers: {
@@ -39,16 +57,23 @@ function injectWowAssets() {
   fonts.href = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap';
   document.head.appendChild(fonts);
 
-  // Inject WoWHead Config
-  const whCfg = document.createElement('script');
-  whCfg.text = 'var whTooltips = {colorLinks:true, iconizeLinks:false, renameLinks:false};';
-  document.head.appendChild(whCfg);
+  // Wowhead: only inject what the host page has not already provided. The
+  // desktop client sets its own richer whTooltips (iconizeLinks/renameLinks on,
+  // which mobile turns off for small screens) and loads power.js in its <head>.
+  // Re-injecting would redeclare whTooltips and silently downgrade desktop.
+  if (typeof window.whTooltips === 'undefined') {
+    const whCfg = document.createElement('script');
+    whCfg.text = 'var whTooltips = {colorLinks:true, iconizeLinks:false, renameLinks:false};';
+    document.head.appendChild(whCfg);
+  }
 
-  // Inject WoWHead Widget
-  const whScript = document.createElement('script');
-  whScript.id = 'wowhead-widget';
-  whScript.src = 'https://wow.zamimg.com/widgets/power.js';
-  document.head.appendChild(whScript);
+  if (!document.getElementById('wowhead-widget') &&
+      !document.querySelector('script[src*="wow.zamimg.com/widgets/power.js"]')) {
+    const whScript = document.createElement('script');
+    whScript.id = 'wowhead-widget';
+    whScript.src = 'https://wow.zamimg.com/widgets/power.js';
+    document.head.appendChild(whScript);
+  }
 
   // Inject Scoped CSS
   const style = document.createElement('style');
@@ -1615,7 +1640,7 @@ function WowAccount({ me, characters, onRefresh, privacy, onPrivacyChange }) {
       body: JSON.stringify({ name: me.name, vpn_ip: '0.0.0.0', version: '1.0.0' })
     }).catch(()=>{});
 
-    const popupUrl = `${API}/auth/battlenet?name=${encodeURIComponent(me.name)}`;
+    const popupUrl = `${PUBLIC_ORIGIN}/auth/battlenet?name=${encodeURIComponent(me.name)}`;
     const popup = window.open(popupUrl, 'bnetauth', 'width=600,height=700');
     const handler = (e) => {
       if (e.data === 'bnet_auth_success') {
@@ -2647,8 +2672,8 @@ function WowPulls() {
     // is one more thing that can silently drop.
     let es = null;
     try {
-      const tok = localStorage.getItem('gzn_token');
-      es = tok ? new EventSource(`${API}/api/wow/combatlog/stream?token=${encodeURIComponent(tok)}`) : null;
+      const tok = authPair().token;
+      es = tok ? new EventSource(`${PUBLIC_ORIGIN}/api/wow/combatlog/stream?token=${encodeURIComponent(tok)}`) : null;
       if (es) es.onmessage = (m) => {
         try { if (JSON.parse(m.data)?.type === 'pull') loadPulls(); } catch {}
       };
