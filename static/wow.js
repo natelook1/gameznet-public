@@ -262,6 +262,11 @@ function injectWowAssets() {
     .wow-wrap .reset-label   { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); text-transform: uppercase; letter-spacing: 2px; }
     .wow-wrap .reset-time    { font-family: var(--wow-mono); font-size: 15px; color: var(--wow-gold); font-weight: 700; letter-spacing: 3px; }
     .wow-wrap .reset-divider { color: var(--wow-border2); }
+    .wow-wrap .wow-token-chip { display: inline-flex; align-items: center; gap: 6px; cursor: help; }
+    .wow-wrap .wow-token-icon { width: 13px; height: 13px; opacity: 0.9; }
+    .wow-wrap .wow-token-label { font-family: var(--wow-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); }
+    .wow-wrap .wow-token-price { font-family: var(--wow-mono); font-size: 11px; font-weight: 600; color: var(--wow-gold); }
+    .wow-wrap .wow-nav-tabs #wow-host-controls { margin-left: auto; display: flex; align-items: center; gap: 8px; padding-right: 6px; }
     .wow-wrap .level-hero { background: var(--wow-surface2); border: 1px solid var(--wow-border2); border-radius: var(--wow-radius); padding: 20px; display: flex; align-items: center; gap: 20px; }
     .wow-wrap .level-big { font-family: var(--wow-mono); font-size: 64px; font-weight: 700; color: var(--wow-green); line-height: 1; text-shadow: 0 0 30px rgba(34,197,94,0.3); flex-shrink: 0; }
     .wow-wrap .level-info { flex: 1; }
@@ -3069,11 +3074,8 @@ export function WowTab({ me }) {
         <div style="display:flex;align-items:center;gap:12px;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">
           <div style="display:flex;align-items:center;gap:6px;">
             <div style="width:7px;height:7px;border-radius:50%;background:var(--wow-gold);box-shadow:0 0 6px var(--wow-gold);"></div>
-            <span style="color:var(--wow-gold);font-weight:600;">🪙 ${tokenPrice}</span>
+            <span>${characters.length} character${characters.length === 1 ? '' : 's'}</span>
           </div>
-          <!-- Host-supplied controls (desktop fullscreen / addon panel) land
-               here so they sit in the header flow instead of floating over it. -->
-          <div id="wow-host-controls"></div>
         </div>
       </div>
       <div class="reset-banner">
@@ -3081,6 +3083,12 @@ export function WowTab({ me }) {
         <div class="reset-time">${resetStr}</div>
         <div class="reset-divider">|</div>
         <div class="reset-label">tue 15:00 utc · na</div>
+        <div class="reset-divider">|</div>
+        <div class="wow-token-chip" title="WoW Token — current buy price on the US region auction house. Updates roughly every 20 minutes.">
+          <img src="${ASSETS}/wow-token.svg" class="wow-token-icon" alt="" onerror=${e => { e.target.style.display = 'none'; }} />
+          <span class="wow-token-label">token</span>
+          <span class="wow-token-price">${tokenPrice}</span>
+        </div>
       </div>
       <div class="wow-nav-tabs">
         ${tabs.map(t => html`
@@ -3091,6 +3099,9 @@ export function WowTab({ me }) {
             <span class="tab-icon">${t.icon}</span> ${t.label}
           </div>
         `)}
+        <!-- Host-supplied controls (desktop fullscreen) sit at the end of the
+             tab row. Empty on mobile, where it collapses to nothing. -->
+        <div id="wow-host-controls"></div>
       </div>
       <${WowCharBar} characters=${characters} activeChar=${activeChar} subTab=${subTab} onSelect=${(idx) => { setActiveChar(idx); if (idx === -1) setSubTab('overview'); else if (subTab === 'overview') setSubTab('world'); }} charCacheRef=${charCacheRef} dataTick=${dataTick} />
       ${loading ? html`<div style="padding: 20px; color: var(--wow-muted);">Loading roster...</div>` : html`
