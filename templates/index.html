@@ -7613,18 +7613,26 @@
   window.wowSetPrivacy     = wowSetPrivacy;
 </script>
 
-<script type="module">
-  // Shared WoW tab. The desktop client proxies /api/ through its local Flask
-  // server, so apiBase is relative; OAuth popups and the combatlog EventSource
-  // still need the public origin. Desktop stores its token under gz-token, not
-  // the gzn_token that wow.js reads from localStorage on mobile - passing it in
-  // explicitly is what keeps every WoW request authenticated here.
+<script>
+  // MUST be a separate classic script that runs BEFORE the module below.
+  // `import` is hoisted: in a module, the imports are resolved and the imported
+  // module's top-level code runs before any statement written above them. So
+  // setting this inside that module would leave wow.js reading an undefined
+  // config and falling back to the absolute public URL - which 401s here,
+  // because the desktop token never reaches it.
+  //
+  // apiBase is relative so the local Flask server proxies /api/ (VPN-direct vs
+  // public); OAuth popups and the combatlog EventSource still need the public
+  // origin. Desktop stores its token under gz-token, mobile under gzn_token.
   window.GZN_WOW_HOST = {
     apiBase: '',
     publicOrigin: '{{ worker_url }}',
+    assetBase: '/static',
     getAuth: () => ({ token: (window.state && state.token) || localStorage.getItem('gz-token') })
   };
+</script>
 
+<script type="module">
   import { h, render } from '/static/vendor/preact.mjs';
   import { WowTab } from '/static/wow.js';
 
