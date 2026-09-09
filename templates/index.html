@@ -3034,8 +3034,7 @@
       <!-- Fullscreen is desktop-only; the shared component has no equivalent, so
            the button lives out here and toggles the section around the mount. -->
       <div class="wow-desktop-chrome" id="wow-desktop-chrome">
-        <div class="refresh-btn" id="wow-fullscreen-btn" onclick="toggleWowFullscreen()" style="border-color: var(--purple); color: var(--purple);">⌶ FULLSCREEN</div>
-        <div class="refresh-btn" id="wow-addon-btn" onclick="wowToggleAddonPanel()" style="border-color: var(--wow-gold); color: var(--wow-gold);">🧮 ADDON</div>
+        <div class="refresh-btn" id="wow-fullscreen-btn" onclick="toggleWowFullscreen()" style="border-color: var(--purple); color: var(--purple);">⛶ FULLSCREEN</div>
       </div>
 
       <!-- Shared WoW tab (static/wow.js), mounted by the module script below.
@@ -3043,9 +3042,6 @@
            sub-panel, so none of that is hand-written here any more. -->
       <div id="wow-mount"></div>
 
-      <!-- Addon install/uninstall/refresh talk to app.py on this machine and
-           cannot work on mobile, so this panel stays desktop-only. -->
-      <div class="tab-panel" id="wow-panel-addon" style="display:none;"></div>
     </div>
 
     <!-- ── SETUP (shown when not provisioned) ── -->
@@ -7429,15 +7425,14 @@
     }
   };
 
-  // Toggles the desktop-only addon panel over the mounted component.
-  window.wowToggleAddonPanel = function() {
-    const panel = document.getElementById('wow-panel-addon');
-    const mount = document.getElementById('wow-mount');
-    if (!panel || !mount) return;
-    const showing = panel.style.display !== 'none';
-    panel.style.display = showing ? 'none' : 'block';
-    mount.style.display = showing ? 'block' : 'none';
-    if (!showing) { wowLoadAddonStatus().then(wowRenderAddonMgmtTab); }
+  // The Addon tab is a host tab: the component renders the nav entry and an
+  // empty #wow-host-panel for its body, and we fill that in. Selecting any
+  // other tab leaves it the normal way, so there is no mode to get stuck in.
+  window.wowRenderHostPanel = function() {
+    const el = document.getElementById('wow-host-panel');
+    if (!el || el.dataset.filled === '1') return;
+    el.dataset.filled = '1';
+    wowLoadAddonStatus().then(() => wowRenderAddonMgmtTab(el));
   };
 
   async function wowLoadAddonStatus() {
@@ -7601,8 +7596,8 @@
     wowRenderAddonMgmtTab();
   }
 
-  function wowRenderAddonMgmtTab() {
-    const el = document.getElementById('wow-panel-addon');
+  function wowRenderAddonMgmtTab(target) {
+    const el = target || document.getElementById('wow-host-panel');
     if (!el) return;
     el.innerHTML = `<div class="layout-full" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
       ${wowRenderAddonInstallCard()}
@@ -7630,6 +7625,11 @@
     apiBase: '',
     publicOrigin: '{{ worker_url }}',
     assetBase: '/static',
+    // Addon management is desktop-only (app.py writes into the local WoW
+    // folder), so it is declared as an extra nav tab rather than living in
+    // the shared component. Restores the 10th tab the old UI had.
+    extraTabs: [{ id: 'addon', icon: '🧮', label: 'Addon' }],
+    onHostTab: () => window.wowRenderHostPanel && window.wowRenderHostPanel(),
     getAuth: () => ({ token: (window.state && state.token) || localStorage.getItem('gz-token') })
   };
 </script>
@@ -7655,8 +7655,8 @@
     if (!el) return;
     render(h(WowTab, { me: { name: (window.state && state.name) || '' } }), el);
     _wowMounted = true;
-    // Preact renders synchronously, but the slot is created by that render, so
-    // reparent on the next frame.
+    // Preact renders synchronously, but the slots are created by that render,
+    // so fill them on the next frame.
     requestAnimationFrame(placeHostControls);
   };
 

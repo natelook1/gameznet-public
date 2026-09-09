@@ -3043,7 +3043,16 @@ export function WowTab({ me }) {
     { id: 'keys',     icon: '🗝️', label: 'Keys' },
     { id: 'pulls',    icon: '⚔️', label: 'Pulls' },
     { id: 'account',  icon: '👤', label: 'My Account' },
+    // Tabs the host adds - desktop appends Addon here; mobile adds none.
+    ...(HOST.extraTabs || []),
   ];
+
+  // Host tabs render an empty slot; the host fills it. This fires after the
+  // slot is in the DOM and again on every tab change, so switching away and
+  // back re-populates it.
+  useEffect(() => {
+    if ((HOST.extraTabs || []).some(t => t.id === subTab) && HOST.onHostTab) HOST.onHostTab(subTab);
+  }, [subTab]);
 
   const ptrHeight = refreshing ? 44 : Math.min(44, pullY * 0.6);
   const ptrReady = pullY >= PTR_THRESHOLD;
@@ -3093,6 +3102,7 @@ export function WowTab({ me }) {
         ${subTab === 'keys'    && html`<${WowKeys}  addon=${addon} addonErr=${addonErr} onReload=${loadAddon} />`}
         ${subTab === 'pulls'   && html`<${WowPulls} />`}
         ${subTab === 'account' && html`<${WowAccount} me=${me} characters=${characters} onRefresh=${loadCharacters} privacy=${privacy} onPrivacyChange=${setPrivacy} />`}
+        ${(HOST.extraTabs || []).some(t => t.id === subTab) && html`<div id="wow-host-panel"></div>`}
       `}
     </div>
   `;

@@ -250,9 +250,9 @@
 <body>
 <div id="root"></div>
 <script type="module">
-  import { h, render } from 'https://esm.sh/preact@10';
-  import { useState, useEffect, useRef } from 'https://esm.sh/preact@10/hooks';
-  import htm from 'https://esm.sh/htm@3';
+  import { h, render } from '/vendor/preact.mjs';
+  import { useState, useEffect, useRef } from '/vendor/hooks.mjs';
+  import htm from '/vendor/htm.mjs';
   import { WowTab } from '/wow.js?v=1.11.18';
   const html = htm.bind(h);
 
