@@ -489,25 +489,26 @@ function injectWowAssets() {
 
     /* ── Paper doll (shared by PVE / PVP) ─────────────────────────────────── */
     .wow-wrap .doll-wrap { padding: 0 12px 14px; }
-    .wow-wrap .doll { display: grid; grid-template-columns: minmax(0,290px) minmax(220px,340px) minmax(0,290px); gap: 14px; align-items: start; justify-content: center; margin: 0 auto; }
+    .wow-wrap .doll { display: grid; grid-template-columns: minmax(0,290px) minmax(260px,420px) minmax(0,290px); gap: 14px; align-items: start; justify-content: center; margin: 0 auto; }
     .wow-wrap .doll-col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-    .wow-wrap .doll-mid { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 330px; padding-bottom: 14px; }
-    .wow-wrap .doll-render { width: 100%; max-width: 300px; object-fit: contain; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6)); }
+    .wow-wrap .doll-mid { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+    .wow-wrap .doll-render { width: 100%; display: block; filter: drop-shadow(0 8px 26px rgba(0,0,0,0.65)); }
     /* Overlaid on the art, with a fade behind it so the digits stay legible
        whatever the render happens to be doing at that height. */
-    .wow-wrap .doll-mid.has-render .doll-ilvl-wrap { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
-      padding: 6px 22px 7px; border-radius: 8px; border: 1px solid var(--wow-border2);
-      background: rgba(7,9,15,0.82); backdrop-filter: blur(3px); box-shadow: 0 4px 18px rgba(0,0,0,0.55);
+    .wow-wrap .doll-mid.has-render .doll-ilvl-wrap { position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%);
+      padding: 5px 20px 6px; border-radius: 8px; border: 1px solid var(--wow-border2);
+      background: rgba(7,9,15,0.78); backdrop-filter: blur(4px); box-shadow: 0 4px 20px rgba(0,0,0,0.6);
       pointer-events: none; }
     .wow-wrap .doll-ilvl-wrap { text-align: center; }
     .wow-wrap .doll-ilvl-big { font-family: var(--wow-display); font-size: 46px; font-weight: 700; line-height: 1; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
     .wow-wrap .doll-ilvl-lbl { font-family: var(--wow-mono); font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--wow-dim); margin-top: 3px; }
 
-    .wow-wrap .doll-slot { display: flex; align-items: center; gap: 7px; background: var(--wow-surface); border: 1px solid var(--wow-border); border-radius: 4px; padding: 4px 7px; min-width: 0; }
+    .wow-wrap .doll-slot { display: flex; align-items: center; gap: 11px; background: var(--wow-surface); border: 1px solid var(--wow-border); border-radius: 4px; padding: 4px 8px; min-width: 0; }
     .wow-wrap .doll-slot.r { flex-direction: row-reverse; }
     .wow-wrap .doll-slot.r .doll-body { text-align: right; }
     .wow-wrap .doll-slot.r .doll-nums { margin-left: 0; margin-right: auto; }
     .wow-wrap .doll-slot.empty { opacity: 0.4; }
+    .wow-wrap .doll-slot.b { gap: 13px; padding: 5px 10px; }
     .wow-wrap .doll-icon { width: 30px; height: 30px; border-radius: 3px; border: 1px solid var(--wow-border2); background: var(--wow-bg); flex-shrink: 0; display: block; overflow: hidden; }
     .wow-wrap .doll-icon img { width: 100%; height: 100%; display: block; }
     .wow-wrap .doll-icon.empty { border-style: dashed; }
@@ -519,7 +520,7 @@ function injectWowAssets() {
     .wow-wrap .doll-ilvl { font-family: var(--wow-mono); font-size: 12px; font-weight: 700; color: var(--wow-text); min-width: 26px; text-align: right; }
     .wow-wrap .doll-dur { font-size: 11px; font-style: normal; width: 12px; text-align: center; flex-shrink: 0; cursor: help; line-height: 1; }
 
-    .wow-wrap .doll-bottom { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; margin: 10px auto 0; max-width: 948px; }
+    .wow-wrap .doll-bottom { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; margin: 10px auto 0; max-width: 1028px; }
     .wow-wrap .doll-none { font-family: var(--wow-mono); font-size: 11px; color: var(--wow-muted); background: var(--wow-surface); border: 1px solid var(--wow-border); border-radius: 5px; padding: 14px; line-height: 1.6; }
 
     /* World keeps a one-line gear summary instead of the full doll. */
