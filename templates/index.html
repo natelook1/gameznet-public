@@ -2115,6 +2115,8 @@
     #wow-section .wow-desktop-chrome { display: flex; align-items: center; gap: 8px; }
     #wow-section .wow-desktop-chrome .refresh-btn { font-family: var(--wow-mono, var(--mono)); font-size: 10px; letter-spacing: 1px; padding: 3px 9px; border-radius: 4px; cursor: pointer; transition: all 0.15s; background: transparent; }
     #wow-section .wow-desktop-chrome .refresh-btn:hover { background: rgba(255,255,255,0.06); }
+    #wow-section .wow-desktop-chrome .refresh-btn { display: inline-flex; align-items: center; gap: 6px; }
+    #wow-section .fs-icon { width: 11px; height: 11px; flex-shrink: 0; }
     #wow-section #wow-mount { flex: 1; min-height: 0; display: flex; flex-direction: column; }
     #wow-section .wow-wrap { flex: 1; min-height: 0; }
     #wow-section #wow-host-panel { padding: 20px 24px; overflow-y: auto; }
@@ -2824,7 +2826,7 @@
       <!-- Fullscreen is desktop-only; the shared component has no equivalent, so
            the button lives out here and toggles the section around the mount. -->
       <div class="wow-desktop-chrome" id="wow-desktop-chrome">
-        <div class="refresh-btn" id="wow-fullscreen-btn" onclick="toggleWowFullscreen()" style="border-color: var(--purple); color: var(--purple);">⛶ FULLSCREEN</div>
+        <div class="refresh-btn" id="wow-fullscreen-btn" onclick="toggleWowFullscreen()" style="border-color: var(--purple); color: var(--purple);"><svg class="fs-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 5.5v-4h4M14.5 5.5v-4h-4M1.5 10.5v4h4M14.5 10.5v4h-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>FULLSCREEN</span></div>
       </div>
 
       <!-- Shared WoW tab (static/wow.js), mounted by the module script below.
@@ -7204,12 +7206,13 @@
 
     backdrop.style.display = isFullscreen ? 'block' : 'none';
 
+    const label = btn.querySelector('span');
     if (isFullscreen) {
-      btn.textContent = 'EXIT FULLSCREEN';
+      if (label) label.textContent = 'EXIT FULLSCREEN';
       btn.style.borderColor = 'var(--accent)';
       btn.style.color = 'var(--accent)';
     } else {
-      btn.textContent = '⌶ FULLSCREEN';
+      if (label) label.textContent = 'FULLSCREEN';
       btn.style.borderColor = 'var(--purple)';
       btn.style.color = 'var(--purple)';
     }
