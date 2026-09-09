@@ -273,7 +273,8 @@ function injectWowAssets() {
 
     @media (max-width: 768px) {
       .wow-wrap .level-hero { flex-direction: column; text-align: center; padding: 16px; gap: 10px; }
-      .wow-wrap .wow-nav-tabs { padding: 0 10px; }
+      .wow-wrap .wow-topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--wow-surface); border-bottom: 1px solid var(--wow-border); position: sticky; top: 0; z-index: 190; height: 48px; box-sizing: border-box; }
+    .wow-wrap .wow-nav-tabs { padding: 0 10px; position: sticky; top: 48px; z-index: 185; background: var(--wow-surface); height: 40px; box-sizing: border-box; }
       .wow-wrap .wow-nav-tab { padding: 12px 14px; font-size: 12px; }
       .wow-wrap .wow-layout, .wow-wrap .layout-full { padding: 12px 10px; }
       .wow-wrap .card-header, .wow-wrap .card-body { padding: 10px; }
@@ -287,7 +288,7 @@ function injectWowAssets() {
     .wow-wrap .ds-locked   { background: var(--wow-surface); color: var(--wow-muted); border: 1px solid var(--wow-border); }
     .wow-wrap .ds-current  { background: var(--wow-accent-dim); color: var(--wow-accent); border: 1px solid rgba(0,195,255,0.3); }
     
-    .wow-wrap .char-bar { background: var(--wow-surface2); border-bottom: 1px solid var(--wow-border); padding: 0 20px; display: flex; align-items: stretch; position: sticky; top: 48px; z-index: 180; overflow: hidden; }
+    .wow-wrap .char-bar { background: var(--wow-surface2); border-bottom: 1px solid var(--wow-border); padding: 0 20px; display: flex; align-items: stretch; position: sticky; top: 88px; z-index: 180; overflow: hidden; }
     .wow-wrap .char-bar-overview { display: flex; align-items: center; flex-shrink: 0; padding: 0 14px 0 0; margin-right: 4px; border-right: 1px solid var(--wow-border2); }
     .wow-wrap .char-bar-scroll { display: flex; align-items: center; gap: 0; overflow-x: auto; flex: 1; scrollbar-width: none; -ms-overflow-style: none; }
     .wow-wrap .char-bar-scroll::-webkit-scrollbar { display: none; }
@@ -3063,7 +3064,7 @@ export function WowTab({ me }) {
         <div class="wow-ptr-icon ${refreshing ? 'spinning' : (ptrReady ? 'ready' : '')}"
              style="transform:rotate(${refreshing ? 'none' : `${Math.min(pullY * 2.5, 180)}deg`});">⟳</div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--wow-surface);border-bottom:1px solid var(--wow-border);">
+      <div class="wow-topbar">
         <div style="font-family:var(--wow-display);font-size:16px;font-weight:700;color:var(--wow-accent);letter-spacing:2px;">GamezNET <span style="color:var(--wow-border2)">/</span> <span style="color:var(--wow-gold);display:inline-flex;align-items:center;gap:6px;"><img src="${ASSETS}/WoW_icon.svg" style="height:16px;" alt="WoW"/></span></div>
         <div style="display:flex;align-items:center;gap:12px;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">
           <div style="display:flex;align-items:center;gap:6px;">
