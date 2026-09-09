@@ -3061,6 +3061,9 @@ export function WowTab({ me }) {
             <div style="width:7px;height:7px;border-radius:50%;background:var(--wow-gold);box-shadow:0 0 6px var(--wow-gold);"></div>
             <span style="color:var(--wow-gold);font-weight:600;">🪙 ${tokenPrice}</span>
           </div>
+          <!-- Host-supplied controls (desktop fullscreen / addon panel) land
+               here so they sit in the header flow instead of floating over it. -->
+          <div id="wow-host-controls"></div>
         </div>
       </div>
       <div class="reset-banner">
