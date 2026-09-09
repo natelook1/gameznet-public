@@ -117,8 +117,9 @@ function injectWowAssets() {
       align-items: center;
       padding: 0 20px;
       position: sticky;
-      top: 0;
-      z-index: 190;
+      top: 82px;
+      z-index: 185;
+      min-height: 40px;
       overflow-x: auto;
       scrollbar-width: none;
       -webkit-overflow-scrolling: touch;
@@ -258,7 +259,8 @@ function injectWowAssets() {
     .wow-wrap .pvp-note { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); text-align: center; letter-spacing: 1px; padding: 12px; border: 1px dashed var(--wow-border2); border-radius: 4px; }
     .wow-wrap .conquest-bar-wrap { background: var(--wow-bg); border: 1px solid var(--wow-border); border-radius: 4px; height: 12px; overflow: hidden; margin: 8px 0 4px; }
     .wow-wrap .conquest-bar-fill { height: 100%; background: linear-gradient(90deg, var(--wow-purple), #7c3aed); border-radius: 4px; transition: width 0.8s ease; }
-    .wow-wrap .reset-banner { background: linear-gradient(90deg, var(--wow-surface) 0%, rgba(240,180,41,0.06) 50%, var(--wow-surface) 100%); border-bottom: 1px solid rgba(240,180,41,0.2); padding: 7px 20px; display: flex; align-items: center; justify-content: center; gap: 16px; position: sticky; top: 48px; z-index: 188; height: 30px; box-sizing: border-box; }
+    .wow-wrap .wow-topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--wow-surface); border-bottom: 1px solid var(--wow-border); position: sticky; top: 0; z-index: 190; min-height: 48px; box-sizing: border-box; }
+    .wow-wrap .reset-banner { background: linear-gradient(90deg, var(--wow-surface) 0%, rgba(240,180,41,0.06) 50%, var(--wow-surface) 100%); border-bottom: 1px solid rgba(240,180,41,0.2); padding: 6px 20px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 14px; position: sticky; top: 48px; z-index: 188; min-height: 34px; box-sizing: border-box; }
     .wow-wrap .reset-label   { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); text-transform: uppercase; letter-spacing: 2px; }
     .wow-wrap .reset-time    { font-family: var(--wow-mono); font-size: 15px; color: var(--wow-gold); font-weight: 700; letter-spacing: 3px; }
     .wow-wrap .reset-divider { color: var(--wow-border2); }
@@ -278,8 +280,16 @@ function injectWowAssets() {
 
     @media (max-width: 768px) {
       .wow-wrap .level-hero { flex-direction: column; text-align: center; padding: 16px; gap: 10px; }
-      .wow-wrap .wow-topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--wow-surface); border-bottom: 1px solid var(--wow-border); position: sticky; top: 0; z-index: 190; height: 48px; box-sizing: border-box; }
-    .wow-wrap .wow-nav-tabs { padding: 0 10px; position: sticky; top: 78px; z-index: 185; background: var(--wow-surface); height: 40px; box-sizing: border-box; display: flex; align-items: stretch; }
+      .wow-wrap .wow-nav-tabs { padding: 0 6px; }
+      /* Phones cannot fit reset + timer + token on one row, and a wrapped bar
+         has no fixed height for the bars below it to stick under. Let the
+         header stack scroll away on mobile and keep only the nav pinned. */
+      .wow-wrap .wow-topbar { position: static; height: auto; padding: 10px 14px; }
+      .wow-wrap .reset-banner { position: static; padding: 7px 12px; gap: 4px 10px; }
+      .wow-wrap .reset-time { font-size: 13px; letter-spacing: 1.5px; }
+      .wow-wrap .reset-label { letter-spacing: 1px; }
+      .wow-wrap .wow-nav-tabs { position: sticky; top: 0; }
+      .wow-wrap .char-bar { top: 40px; }
       .wow-wrap .wow-nav-tab { padding: 12px 14px; font-size: 12px; }
       .wow-wrap .wow-layout, .wow-wrap .layout-full { padding: 12px 10px; }
       .wow-wrap .card-header, .wow-wrap .card-body { padding: 10px; }
@@ -293,7 +303,7 @@ function injectWowAssets() {
     .wow-wrap .ds-locked   { background: var(--wow-surface); color: var(--wow-muted); border: 1px solid var(--wow-border); }
     .wow-wrap .ds-current  { background: var(--wow-accent-dim); color: var(--wow-accent); border: 1px solid rgba(0,195,255,0.3); }
     
-    .wow-wrap .char-bar { background: var(--wow-surface2); border-bottom: 1px solid var(--wow-border); padding: 0 20px; display: flex; align-items: stretch; position: sticky; top: 118px; z-index: 180; overflow: hidden; }
+    .wow-wrap .char-bar { background: var(--wow-surface2); border-bottom: 1px solid var(--wow-border); padding: 0 20px; display: flex; align-items: stretch; position: sticky; top: 122px; z-index: 180; overflow: hidden; }
     .wow-wrap .char-bar-overview { display: flex; align-items: center; flex-shrink: 0; padding: 0 14px 0 0; margin-right: 4px; border-right: 1px solid var(--wow-border2); }
     .wow-wrap .char-bar-scroll { display: flex; align-items: center; gap: 0; overflow-x: auto; flex: 1; scrollbar-width: none; -ms-overflow-style: none; }
     .wow-wrap .char-bar-scroll::-webkit-scrollbar { display: none; }
