@@ -13,16 +13,17 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0f0f13;
-      --surface: #1a1a21;
-      --surface2: #22222c;
-      --border: #2e2e3a;
-      --accent: #7c6af7;
-      --accent-dim: #3a3470;
-      --green: #22c55e;
-      --red: #ef4444;
-      --text: #e2e2e8;
-      --muted: #6b6b7a;
+      --bg: #07090f;
+      --surface: #0f1623;
+      --surface2: #162030;
+      --border: #162030;
+      --border2: #1e3048;
+      --accent: #00c8ff;
+      --accent-dim: rgba(0,200,255,0.12);
+      --green: #00e87a;
+      --red: #ff3355;
+      --text: #c0d4e8;
+      --muted: #6888a8;
     }
     html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; overflow: hidden; -webkit-font-smoothing: antialiased; }
     #root { height: 100%; display: flex; flex-direction: column; }
@@ -253,7 +254,7 @@
   import { h, render } from '/vendor/preact.mjs';
   import { useState, useEffect, useRef } from '/vendor/hooks.mjs';
   import htm from '/vendor/htm.mjs';
-  import { WowTab } from '/wow.js?v=1.11.21';
+  import { WowTab } from '/wow.js?v=1.11.22';
   const html = htm.bind(h);
 
   const API = 'https://gameznet.looknet.ca';

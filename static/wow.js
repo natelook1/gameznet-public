@@ -83,13 +83,14 @@ function injectWowAssets() {
   style.id = 'wow-styles';
   style.textContent = `
     .wow-wrap {
-      --wow-bg:         #0d0f14;
-      --wow-surface:    #13161e;
+      --wow-bg: #07090f;
+      --wow-surface: #0f1623;
       --wow-surface2:   #1a1e2a;
-      --wow-border:     #252a38;
-      --wow-border2:    #2e3447;
-      --wow-accent:     #00c3ff;
-      --wow-accent-dim: rgba(0,195,255,0.12);
+      --wow-border: #162030;
+      --wow-border2: #1e3048;
+      --wow-accent: #f0b429;
+      --wow-frost:      #00c8ff;
+      --wow-accent-dim: rgba(240,180,41,0.14);
       --wow-gold:       #f0b429;
       --wow-gold-dim:   rgba(240,180,41,0.15);
       --wow-green:      #22c55e;
@@ -97,7 +98,7 @@ function injectWowAssets() {
       --wow-red:        #ef4444;
       --wow-red-dim:    rgba(239,68,68,0.12);
       --wow-purple:     #a855f7;
-      --wow-text:       #e2e8f0;
+      --wow-text: #c0d4e8;
       --wow-muted:      #64748b;
       --wow-dim:        #94a3b8;
       --wow-radius:     6px;
@@ -209,7 +210,7 @@ function injectWowAssets() {
     .wow-wrap .info-box.gold { border-left-color: var(--wow-gold); }
     
     .wow-wrap .score-display { text-align: center; padding: 14px 0 6px; }
-    .wow-wrap .score-big { font-family: var(--wow-mono); font-size: 52px; font-weight: 700; color: var(--wow-accent); line-height: 1; text-shadow: 0 0 30px rgba(0,195,255,0.3); }
+    .wow-wrap .score-big { font-family: var(--wow-mono); font-size: 52px; font-weight: 700; color: var(--wow-accent); line-height: 1; text-shadow: 0 0 30px rgba(0,200,255,0.3); }
     .wow-wrap .score-lbl { font-size: 10px; color: var(--wow-muted); letter-spacing: 3px; margin-top: 4px; }
     .wow-wrap .score-season { font-size: 11px; color: var(--wow-muted); margin-top: 6px; }
     .wow-wrap .score-roles { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 14px; }
@@ -233,7 +234,7 @@ function injectWowAssets() {
     .wow-wrap .boss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 130px), 1fr)); gap: 6px; }
     .wow-wrap .boss-pip { background: var(--wow-surface2); border: 1px solid var(--wow-border); border-radius: 4px; padding: 7px 10px; display: flex; align-items: center; gap: 7px; }
     .wow-wrap .boss-pip.killed-n { border-color: rgba(34,197,94,0.35); }
-    .wow-wrap .boss-pip.killed-h { border-color: rgba(0,195,255,0.35); }
+    .wow-wrap .boss-pip.killed-h { border-color: rgba(0,200,255,0.35); }
     .wow-wrap .boss-pip.killed-m { border-color: rgba(168,85,247,0.4); }
     .wow-wrap .boss-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .wow-wrap .boss-dot.n { background: var(--wow-green); box-shadow: 0 0 4px var(--wow-green); }
@@ -245,7 +246,7 @@ function injectWowAssets() {
     .wow-wrap .raid-name   { font-family: var(--wow-display); font-size: 16px; font-weight: 700; }
     .wow-wrap .diff-pill { font-family: var(--wow-mono); font-size: 10px; padding: 3px 8px; border-radius: 3px; letter-spacing: 1px; }
     .wow-wrap .diff-n { background: var(--wow-green-dim); color: var(--wow-green); border: 1px solid rgba(34,197,94,0.4); }
-    .wow-wrap .diff-h { background: var(--wow-accent-dim); color: var(--wow-accent); border: 1px solid rgba(0,195,255,0.4); }
+    .wow-wrap .diff-h { background: var(--wow-accent-dim); color: var(--wow-accent); border: 1px solid rgba(0,200,255,0.4); }
     .wow-wrap .diff-m { background: rgba(168,85,247,0.12); color: var(--wow-purple); border: 1px solid rgba(168,85,247,0.4); }
     .wow-wrap .weekly-run { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--wow-surface2); border: 1px solid var(--wow-border); border-radius: 4px; margin-bottom: 5px; }
     .wow-wrap .wk-key  { font-family: var(--wow-mono); font-size: 16px; font-weight: 700; color: var(--wow-gold); width: 28px; text-align: center; flex-shrink: 0; }
@@ -265,6 +266,8 @@ function injectWowAssets() {
     .wow-wrap .reset-time    { font-family: var(--wow-mono); font-size: 15px; color: var(--wow-gold); font-weight: 700; letter-spacing: 3px; }
     .wow-wrap .reset-divider { color: var(--wow-border2); }
     .wow-wrap .wow-token-chip { display: inline-flex; align-items: center; gap: 6px; cursor: help; }
+    .wow-wrap .wow-roster-count { display: inline-flex; align-items: center; gap: 6px; }
+    .wow-wrap .wow-roster-count svg { width: 13px; height: 13px; opacity: 0.75; flex-shrink: 0; }
     .wow-wrap .wow-token-icon { width: 13px; height: 13px; opacity: 0.9; }
     .wow-wrap .wow-token-label { font-family: var(--wow-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); }
     .wow-wrap .wow-token-price { font-family: var(--wow-mono); font-size: 11px; font-weight: 600; color: var(--wow-gold); }
@@ -301,7 +304,7 @@ function injectWowAssets() {
     .wow-wrap .dungeon-status { font-family: var(--wow-mono); font-size: 10px; padding: 2px 6px; border-radius: 3px; }
     .wow-wrap .ds-unlocked { background: var(--wow-green-dim); color: var(--wow-green); border: 1px solid rgba(34,197,94,0.3); }
     .wow-wrap .ds-locked   { background: var(--wow-surface); color: var(--wow-muted); border: 1px solid var(--wow-border); }
-    .wow-wrap .ds-current  { background: var(--wow-accent-dim); color: var(--wow-accent); border: 1px solid rgba(0,195,255,0.3); }
+    .wow-wrap .ds-current  { background: var(--wow-accent-dim); color: var(--wow-accent); border: 1px solid rgba(0,200,255,0.3); }
     
     .wow-wrap .char-bar { background: var(--wow-surface2); border-bottom: 1px solid var(--wow-border); padding: 0 20px; display: flex; align-items: stretch; position: sticky; top: 122px; z-index: 180; overflow: hidden; }
     .wow-wrap .char-bar-overview { display: flex; align-items: center; flex-shrink: 0; padding: 0 14px 0 0; margin-right: 4px; border-right: 1px solid var(--wow-border2); }
@@ -314,7 +317,7 @@ function injectWowAssets() {
     .wow-wrap .char-group-chips { display: flex; align-items: center; gap: 3px; padding: 4px 4px 4px; }
     .wow-wrap .char-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 4px; border: 1px solid transparent; background: transparent; cursor: pointer; transition: all 0.15s; font-family: var(--wow-display); font-size: 13px; font-weight: 600; color: var(--wow-muted); white-space: nowrap; flex-shrink: 0; }
     .wow-wrap .char-chip:hover { border-color: var(--wow-border2); color: var(--wow-text); background: var(--wow-bg); }
-    .wow-wrap .char-chip.active { border-color: var(--wow-accent); color: var(--wow-text); background: var(--wow-accent-dim); box-shadow: 0 0 8px rgba(0,195,255,0.1); }
+    .wow-wrap .char-chip.active { border-color: var(--wow-accent); color: var(--wow-text); background: var(--wow-accent-dim); box-shadow: 0 0 8px rgba(0,200,255,0.1); }
     .wow-wrap .char-chip.is-main.active { border-color: var(--wow-gold); background: var(--wow-gold-dim); }
     .wow-wrap .char-chip.is-alt { font-size: 12px; opacity: 0.75; }
     .wow-wrap .char-chip.is-alt:hover, .wow-wrap .char-chip.is-alt.active { opacity: 1; }
@@ -376,7 +379,7 @@ function injectWowAssets() {
     .wow-wrap .char-stats { display: flex; gap: 5px; margin-top: 7px; flex-wrap: wrap; }
     .wow-wrap .cs { font-family: var(--wow-mono); font-size: 10px; padding: 2px 7px; border-radius: 3px; }
     .wow-wrap .cs-ilvl { background: var(--wow-gold-dim); color: var(--wow-gold); border: 1px solid rgba(240,180,41,0.3); }
-    .wow-wrap .cs-score { background: var(--wow-accent-dim); color: var(--wow-accent); border: 1px solid rgba(0,195,255,0.3); }
+    .wow-wrap .cs-score { background: var(--wow-accent-dim); color: var(--wow-accent); border: 1px solid rgba(0,200,255,0.3); }
     .wow-wrap .cs-raid { background: var(--wow-green-dim); color: var(--wow-green); border: 1px solid rgba(34,197,94,0.3); }
     
     .wow-wrap .main-nav-btn { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
@@ -756,8 +759,8 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
 
       if (charB) {
         if (hasA && hasB) {
-          boxStyle = 'background:var(--wow-surface2);border:1px solid rgba(0,195,255,0.4);';
-          badgeHtml = html`<div style="font-family:var(--wow-mono);font-size:9px;background:rgba(0,195,255,0.1);color:var(--wow-accent);padding:2px 6px;border-radius:3px;">Both Have</div>`;
+          boxStyle = 'background:var(--wow-surface2);border:1px solid rgba(0,200,255,0.4);';
+          badgeHtml = html`<div style="font-family:var(--wow-mono);font-size:9px;background:rgba(0,200,255,0.1);color:var(--wow-accent);padding:2px 6px;border-radius:3px;">Both Have</div>`;
         } else if (hasA) {
           boxStyle = 'background:var(--wow-surface2);border:1px solid rgba(34,197,94,0.4);';
           badgeHtml = html`<div style="font-family:var(--wow-mono);font-size:9px;background:rgba(34,197,94,0.1);color:var(--wow-green);padding:2px 6px;border-radius:3px;">${charA.display_name}</div>`;
@@ -1110,7 +1113,7 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
     const specSpecs = specData.specializations || [];
     const activeSpecObj = specSpecs.find(s => s.specialization?.id === specData.active_specialization?.id) || specSpecs[0];
     const glyphs = activeSpecObj?.glyphs?.map(g => g.glyph?.name).filter(Boolean) || [];
-    const specColorMap = { 'Blood':'var(--wow-red)','Frost':'var(--wow-accent)','Unholy':'var(--wow-green)','Havoc':'var(--wow-danger)','Vengeance':'#a335ee','Balance':'var(--wow-gold)','Feral':'var(--wow-warn)','Guardian':'var(--wow-warn)','Restoration':'var(--wow-green)','Beast Mastery':'var(--wow-warn)','Marksmanship':'var(--wow-accent)','Survival':'var(--wow-green)','Arcane':'var(--wow-accent)','Fire':'var(--wow-danger)','Brewmaster':'var(--wow-warn)','Mistweaver':'var(--wow-green)','Windwalker':'var(--wow-red)','Retribution':'var(--wow-gold)','Shadow':'#a335ee','Assassination':'var(--wow-danger)','Outlaw':'var(--wow-warn)','Subtlety':'#a335ee','Elemental':'var(--wow-accent)','Enhancement':'var(--wow-warn)','Affliction':'#a335ee','Demonology':'var(--wow-danger)','Destruction':'var(--wow-danger)','Arms':'var(--wow-danger)','Fury':'var(--wow-danger)','Devastation':'var(--wow-danger)','Preservation':'var(--wow-green)','Augmentation':'var(--wow-warn)' };
+    const specColorMap = { 'Blood':'var(--wow-red)','Frost':'var(--wow-frost)','Unholy':'var(--wow-green)','Havoc':'var(--wow-danger)','Vengeance':'#a335ee','Balance':'var(--wow-gold)','Feral':'var(--wow-warn)','Guardian':'var(--wow-warn)','Restoration':'var(--wow-green)','Beast Mastery':'var(--wow-warn)','Marksmanship':'var(--wow-frost)','Survival':'var(--wow-green)','Arcane':'var(--wow-frost)','Fire':'var(--wow-danger)','Brewmaster':'var(--wow-warn)','Mistweaver':'var(--wow-green)','Windwalker':'var(--wow-red)','Retribution':'var(--wow-gold)','Shadow':'#a335ee','Assassination':'var(--wow-danger)','Outlaw':'var(--wow-warn)','Subtlety':'#a335ee','Elemental':'var(--wow-frost)','Enhancement':'var(--wow-warn)','Affliction':'#a335ee','Demonology':'var(--wow-danger)','Destruction':'var(--wow-danger)','Arms':'var(--wow-danger)','Fury':'var(--wow-danger)','Devastation':'var(--wow-danger)','Preservation':'var(--wow-green)','Augmentation':'var(--wow-warn)' };
     const specColor = specColorMap[activeSpecName] || 'var(--wow-accent)';
     return html`
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
@@ -1797,8 +1800,8 @@ function WowAccount({ me, characters, onRefresh, privacy, onPrivacyChange }) {
           <div class="card-header">
             <div class="card-title"><div class="dot"></div>Battle.net Characters</div>
             <div style="display:flex;align-items:center;gap:10px;">
-              <div class="picker-filter ${pickerFilter === 'active' ? 'active' : ''}" onClick=${() => setPickerFilter('active')} style="font-family:var(--wow-mono);font-size:10px;padding:4px 10px;border-radius:3px;border:1px solid ${pickerFilter === 'active' ? 'rgba(0,195,255,0.4)' : 'var(--wow-border2)'};color:${pickerFilter === 'active' ? 'var(--wow-accent)' : 'var(--wow-muted)'};cursor:pointer;letter-spacing:1px;background:${pickerFilter === 'active' ? 'var(--wow-accent-dim)' : 'transparent'};">Max Level</div>
-              <div class="picker-filter ${pickerFilter === 'all' ? 'active' : ''}" onClick=${() => setPickerFilter('all')} style="font-family:var(--wow-mono);font-size:10px;padding:4px 10px;border-radius:3px;border:1px solid ${pickerFilter === 'all' ? 'rgba(0,195,255,0.4)' : 'var(--wow-border2)'};color:${pickerFilter === 'all' ? 'var(--wow-accent)' : 'var(--wow-muted)'};cursor:pointer;letter-spacing:1px;background:${pickerFilter === 'all' ? 'var(--wow-accent-dim)' : 'transparent'};">All</div>
+              <div class="picker-filter ${pickerFilter === 'active' ? 'active' : ''}" onClick=${() => setPickerFilter('active')} style="font-family:var(--wow-mono);font-size:10px;padding:4px 10px;border-radius:3px;border:1px solid ${pickerFilter === 'active' ? 'rgba(0,200,255,0.4)' : 'var(--wow-border2)'};color:${pickerFilter === 'active' ? 'var(--wow-accent)' : 'var(--wow-muted)'};cursor:pointer;letter-spacing:1px;background:${pickerFilter === 'active' ? 'var(--wow-accent-dim)' : 'transparent'};">Max Level</div>
+              <div class="picker-filter ${pickerFilter === 'all' ? 'active' : ''}" onClick=${() => setPickerFilter('all')} style="font-family:var(--wow-mono);font-size:10px;padding:4px 10px;border-radius:3px;border:1px solid ${pickerFilter === 'all' ? 'rgba(0,200,255,0.4)' : 'var(--wow-border2)'};color:${pickerFilter === 'all' ? 'var(--wow-accent)' : 'var(--wow-muted)'};cursor:pointer;letter-spacing:1px;background:${pickerFilter === 'all' ? 'var(--wow-accent-dim)' : 'transparent'};">All</div>
             </div>
           </div>
           <div class="card-body" style="max-height:400px;overflow-y:auto;padding:0 14px;">
@@ -3082,8 +3085,12 @@ export function WowTab({ me }) {
       <div class="wow-topbar">
         <div style="font-family:var(--wow-display);font-size:16px;font-weight:700;color:var(--wow-accent);letter-spacing:2px;">GamezNET <span style="color:var(--wow-border2)">/</span> <span style="color:var(--wow-gold);display:inline-flex;align-items:center;gap:6px;"><img src="${ASSETS}/WoW_icon.svg" style="height:16px;" alt="WoW"/></span></div>
         <div style="display:flex;align-items:center;gap:12px;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <div style="width:7px;height:7px;border-radius:50%;background:var(--wow-gold);box-shadow:0 0 6px var(--wow-gold);"></div>
+          <div class="wow-roster-count">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="6" cy="5.5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M1.6 13.4c0-2.4 2-4 4.4-4s4.4 1.6 4.4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M11.2 4.2a2.3 2.3 0 0 1 0 4.3M12.4 13.4c0-1.9-.7-3.1-1.9-3.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
             <span>${characters.length} character${characters.length === 1 ? '' : 's'}</span>
           </div>
         </div>
