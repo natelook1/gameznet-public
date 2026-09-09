@@ -5277,7 +5277,7 @@
     dash.style.display = 'none';
     dc.classList.remove('dc-active');
     factory.classList.remove('factory-active');
-    if (name !== 'factory' && _factoryPollTimer) { clearInterval(_factoryPollTimer); _factoryPollTimer = null; clearInterval(_factoryVersionTimer); _factoryVersionTimer = null; _sfDrag = null; }
+    if (name !== 'factory' && _factoryPollTimer) { clearInterval(_factoryPollTimer); _factoryPollTimer = null; clearInterval(_factoryVersionTimer); _factoryVersionTimer = null; }
     conan.classList.remove('conan-active');
     zomboid.classList.remove('zomboid-active');
     files.style.display = 'none';
@@ -7230,6 +7230,153 @@
 </div>
 
 <script>
+  // Satisfactory Map. This lived in the same <script> block as the WoW tab
+  // and is unrelated to it; it is here because that block was replaced.
+  // ── Satisfactory Map ─────────────────────────────────────────────────────
+  const SF_R2_URL = 'https://photos.looknet.ca/satisfactory/latest.sav';
+  const SF_SCIM_BASE = 'https://satisfactory-calculator.com/en/interactive-map';
+  const SF_SCIM_HASH = '#-376193.5,-375000,0.00026';
+
+
+  const SF_LOAD_STEPS = [
+    { pct: 8,  delay: 400,   msg: 'Contacting R2 bucket...' },
+    { pct: 16, delay: 2000,  msg: 'Pulling latest.sav from the void...' },
+    { pct: 24, delay: 4000,  msg: 'Verifying file integrity (vibes check)' },
+    { pct: 33, delay: 6000,  msg: 'Convincing browser this is a good idea' },
+    { pct: 42, delay: 8500,  msg: 'Unpacking factory spaghetti...' },
+    { pct: 51, delay: 11000, msg: 'Parsing conveyor belts (there are SO many)' },
+    { pct: 60, delay: 14000, msg: 'Locating FICSIT approved resource nodes...' },
+    { pct: 69, delay: 17000, msg: 'Rendering Pioneer base camps...' },
+    { pct: 77, delay: 20000, msg: 'Calculating power grid (it\'s a mess)' },
+    { pct: 84, delay: 23000, msg: 'Almost there (probably)' },
+    { pct: 90, delay: 26000, msg: 'Still going... your factory is too big' },
+    { pct: 95, delay: 29000, msg: 'Bribing the map renderer...' },
+    { pct: 98, delay: 32000, msg: 'Any second now...' },
+  ];
+
+  let _sfLoadTimers = [];
+
+  function _sfShowModal() {
+    const backdrop = document.getElementById('factory-modal-backdrop');
+    backdrop.classList.remove('hidden');
+    _sfLoadTimers.forEach(clearTimeout);
+    _sfLoadTimers = [];
+    document.getElementById('factory-modal-bar-fill').style.width = '0%';
+    document.getElementById('factory-modal-pct').textContent = '0%';
+    document.getElementById('factory-modal-step').textContent = 'Initializing...';
+    SF_LOAD_STEPS.forEach(({ pct, delay, msg }) => {
+      _sfLoadTimers.push(setTimeout(() => {
+        document.getElementById('factory-modal-bar-fill').style.width = pct + '%';
+        document.getElementById('factory-modal-pct').textContent = pct + '%';
+        document.getElementById('factory-modal-step').textContent = msg;
+      }, delay));
+    });
+    // Auto-hide 3s after the last step — iframe is always loaded well before this
+    _sfLoadTimers.push(setTimeout(_sfHideModal, 35000));
+    // Click anywhere on backdrop to dismiss early
+    backdrop.onclick = () => _sfHideModal();
+  }
+
+  function _sfHideModal() {
+    _sfLoadTimers.forEach(clearTimeout);
+    _sfLoadTimers = [];
+    document.getElementById('factory-modal-bar-fill').style.width = '100%';
+    document.getElementById('factory-modal-pct').textContent = '100%';
+    document.getElementById('factory-modal-step').textContent = 'Map ready!';
+    const backdrop = document.getElementById('factory-modal-backdrop');
+    backdrop.onclick = null;
+    setTimeout(() => backdrop.classList.add('hidden'), 800);
+  }
+
+  let _factoryInitialized = false;
+  let _factoryPollTimer = null;
+  let _factorySaveVersion = null;
+  let _factoryVersionTimer = null;
+  let _sfSilentSwapping = false;
+
+  async function factoryInit() {
+    if (_factoryInitialized) return;
+    _factoryInitialized = true;
+    const iframe = document.getElementById('factory-iframe');
+    _sfShowModal();
+    iframe.src = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}${SF_SCIM_HASH}`;
+    factoryPollStatus();
+    _factoryPollTimer = setInterval(factoryPollStatus, 10000);
+    _sfInitVersionPoll();
+  }
+
+  function _sfInitVersionPoll() {
+    if (_factoryVersionTimer) return;
+    fetch('/api/satisfactory/save-version').then(r => r.json()).then(d => { _factorySaveVersion = d.version; }).catch(() => {});
+    _factoryVersionTimer = setInterval(_sfCheckVersion, 30000);
+  }
+
+  async function _sfCheckVersion() {
+    if (_sfSilentSwapping) return;
+    try {
+      const r = await fetch('/api/satisfactory/save-version');
+      const d = await r.json();
+      if (_factorySaveVersion !== null && d.version !== _factorySaveVersion) {
+        _factorySaveVersion = d.version;
+        _sfSilentReload();
+      }
+    } catch {}
+  }
+
+  function _sfSilentReload() {
+    _sfSilentSwapping = true;
+    const visible = document.getElementById('factory-iframe');
+    const newSrc = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}&_=${Date.now()}${SF_SCIM_HASH}`;
+
+    const ghost = document.createElement('iframe');
+    ghost.style.cssText = 'position:absolute;width:0;height:0;border:none;visibility:hidden;pointer-events:none;';
+    ghost.src = newSrc;
+    document.body.appendChild(ghost);
+
+    ghost.addEventListener('load', () => {
+      visible.src = newSrc;
+      ghost.remove();
+      _sfSilentSwapping = false;
+    }, { once: true });
+
+    setTimeout(() => {
+      if (_sfSilentSwapping) {
+        visible.src = newSrc;
+        ghost.remove();
+        _sfSilentSwapping = false;
+      }
+    }, 60000);
+  }
+
+  async function factoryPollStatus() {
+    const dot = document.getElementById('factory-status-dot');
+    const txt = document.getElementById('factory-status-text');
+    try {
+      const r = await fetch('/api/satisfactory/players');
+      if (!r.ok) throw new Error('bad status');
+      const data = await r.json();
+      const n = data.serverState?.numConnectedPlayers ?? 0;
+      const name = data.serverState?.activeSessionName ?? '';
+      dot.style.background = '#4caf50';
+      txt.textContent = name ? `${name} · ${n} player${n !== 1 ? 's' : ''} online` : `${n} player${n !== 1 ? 's' : ''} online`;
+    } catch {
+      dot.style.background = 'var(--muted)';
+      txt.textContent = 'server offline';
+    }
+  }
+
+  async function factoryReload() {
+    _factoryInitialized = false;
+    const iframe = document.getElementById('factory-iframe');
+    _sfShowModal();
+    iframe.src = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}&_=${Date.now()}${SF_SCIM_HASH}`;
+    document.getElementById('factory-status-dot').style.background = 'var(--muted)';
+    document.getElementById('factory-status-text').textContent = 'connecting...';
+    factoryPollStatus();
+    fetch('/api/satisfactory/save-version').then(r => r.json()).then(d => { _factorySaveVersion = d.version; }).catch(() => {});
+  }
+
+
   /* ── WoW addon management (DESKTOP ONLY) ────────────────────────────────────
      install/uninstall/refresh/installed are routes on app.py, the local Flask
      client - they write the addon into this machine's WoW folder. They cannot
