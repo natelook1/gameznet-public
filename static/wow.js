@@ -491,8 +491,8 @@ function injectWowAssets() {
     .wow-wrap .doll-wrap { padding: 0 12px 14px; }
     .wow-wrap .doll { display: grid; grid-template-columns: minmax(0,290px) minmax(260px,420px) minmax(0,290px); gap: 14px; align-items: start; justify-content: center; margin: 0 auto; }
     .wow-wrap .doll-col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-    .wow-wrap .doll-mid { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
-    .wow-wrap .doll-render { width: 100%; display: block; filter: drop-shadow(0 8px 26px rgba(0,0,0,0.65)); }
+    .wow-wrap .doll-mid { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow: hidden; height: 430px; }
+    .wow-wrap .doll-render { width: 210%; max-width: none; display: block; margin: -6% 0 0 -55%; filter: drop-shadow(0 8px 26px rgba(0,0,0,0.65)); }
     /* Overlaid on the art, with a fade behind it so the digits stay legible
        whatever the render happens to be doing at that height. */
     .wow-wrap .doll-mid.has-render .doll-ilvl-wrap { position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%);
@@ -536,8 +536,8 @@ function injectWowAssets() {
     @media (max-width: 768px) {
       .wow-wrap .doll-wrap { padding: 0 8px 12px; }
       .wow-wrap .doll { grid-template-columns: 1fr; gap: 4px; }
-      .wow-wrap .doll-mid { order: -1; margin-bottom: 8px; min-height: 0; padding-bottom: 10px; }
-      .wow-wrap .doll-render { max-width: 210px; }
+      .wow-wrap .doll-mid { order: -1; margin-bottom: 8px; height: 300px; padding-bottom: 0; }
+      .wow-wrap .doll-render { width: 190%; margin: -4% 0 0 -45%; }
       .wow-wrap .doll-ilvl-big { font-size: 34px; }
       .wow-wrap .doll-mid.has-render .doll-ilvl-wrap { padding: 5px 16px 6px; bottom: 2px; }
       .wow-wrap .doll-slot.r { flex-direction: row; }
