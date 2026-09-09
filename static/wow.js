@@ -113,11 +113,13 @@ function WowGearFrame({ character, bnet, children }) {
     <div class="doll-wrap">
       <div class="doll" style="--cc:${col};">
         <div class="doll-col">${DOLL_LEFT.map(s => html`<${DollSlot} slot=${s} item=${slotMap[s]} side="l" />`)}</div>
-        <div class="doll-mid">
+        <div class="doll-mid ${render ? 'has-render' : ''}">
           ${render ? html`<img class="doll-render" src=${render} alt="" loading="lazy"
-                              onError=${e => { e.target.style.display = 'none'; }} />` : ''}
-          <div class="doll-ilvl-big" style="color:${col};">${ilvl ? Math.round(ilvl) : '—'}</div>
-          <div class="doll-ilvl-lbl">equipped ilvl</div>
+                              onError=${e => { e.target.closest('.doll-mid')?.classList.remove('has-render'); e.target.style.display = 'none'; }} />` : ''}
+          <div class="doll-ilvl-wrap">
+            <div class="doll-ilvl-big" style="color:${col};">${ilvl ? Math.round(ilvl) : '—'}</div>
+            <div class="doll-ilvl-lbl">equipped ilvl</div>
+          </div>
         </div>
         <div class="doll-col">${DOLL_RIGHT.map(s => html`<${DollSlot} slot=${s} item=${slotMap[s]} side="r" />`)}</div>
       </div>
@@ -487,12 +489,17 @@ function injectWowAssets() {
 
     /* ── Paper doll (shared by PVE / PVP) ─────────────────────────────────── */
     .wow-wrap .doll-wrap { padding: 0 12px 14px; }
-    .wow-wrap .doll { display: grid; grid-template-columns: minmax(0,1fr) minmax(120px,170px) minmax(0,1fr); gap: 10px; align-items: start; max-width: 1020px; margin: 0 auto; }
+    .wow-wrap .doll { display: grid; grid-template-columns: minmax(0,1fr) minmax(200px,300px) minmax(0,1fr); gap: 10px; align-items: start; max-width: 1180px; margin: 0 auto; }
     .wow-wrap .doll-col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-    .wow-wrap .doll-mid { display: flex; flex-direction: column; align-items: center; }
-    .wow-wrap .doll-render { width: 100%; max-width: 190px; object-fit: contain; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.55)); }
-    .wow-wrap .doll-ilvl-big { font-family: var(--wow-display); font-size: 32px; font-weight: 700; line-height: 1; margin-top: 4px; }
-    .wow-wrap .doll-ilvl-lbl { font-family: var(--wow-mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--wow-muted); margin-top: 2px; }
+    .wow-wrap .doll-mid { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-height: 340px; }
+    .wow-wrap .doll-render { width: 100%; max-width: 300px; object-fit: contain; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6)); }
+    /* Overlaid on the art, with a fade behind it so the digits stay legible
+       whatever the render happens to be doing at that height. */
+    .wow-wrap .doll-mid.has-render .doll-ilvl-wrap { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 0 8px;
+      background: linear-gradient(to bottom, transparent, rgba(7,9,15,0.72) 45%, rgba(7,9,15,0.92)); pointer-events: none; }
+    .wow-wrap .doll-ilvl-wrap { text-align: center; }
+    .wow-wrap .doll-ilvl-big { font-family: var(--wow-display); font-size: 54px; font-weight: 700; line-height: 1; text-shadow: 0 2px 12px rgba(0,0,0,0.85); }
+    .wow-wrap .doll-ilvl-lbl { font-family: var(--wow-mono); font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--wow-dim); margin-top: 3px; }
 
     .wow-wrap .doll-slot { display: flex; align-items: center; gap: 8px; background: var(--wow-surface); border: 1px solid var(--wow-border); border-radius: 4px; padding: 5px 7px; min-width: 0; }
     .wow-wrap .doll-slot.r { flex-direction: row-reverse; }
@@ -526,9 +533,10 @@ function injectWowAssets() {
     @media (max-width: 768px) {
       .wow-wrap .doll-wrap { padding: 0 8px 12px; }
       .wow-wrap .doll { grid-template-columns: 1fr; gap: 4px; }
-      .wow-wrap .doll-mid { order: -1; margin-bottom: 6px; }
-      .wow-wrap .doll-render { max-width: 130px; }
-      .wow-wrap .doll-ilvl-big { font-size: 26px; }
+      .wow-wrap .doll-mid { order: -1; margin-bottom: 8px; min-height: 0; }
+      .wow-wrap .doll-render { max-width: 210px; }
+      .wow-wrap .doll-ilvl-big { font-size: 40px; }
+      .wow-wrap .doll-mid.has-render .doll-ilvl-wrap { padding-top: 18px; }
       .wow-wrap .doll-slot.r { flex-direction: row; }
       .wow-wrap .doll-slot.r .doll-body { text-align: left; }
       .wow-wrap .doll-bottom { grid-template-columns: 1fr; margin-top: 4px; }
@@ -2231,8 +2239,15 @@ const WOW_BAG_ICON = {
 
 const Q_COLOR = ['#9d9d9d', '#ffffff', '#1eff00', '#0070dd', '#a335ee', '#ff8000', '#e6cc80', '#00ccff'];
 
+const Q_NAME_INDEX = {
+  POOR: 0, COMMON: 1, UNCOMMON: 2, RARE: 3, EPIC: 4,
+  LEGENDARY: 5, ARTIFACT: 6, HEIRLOOM: 7,
+};
+
 function qColor(q) {
-  return (q != null && Q_COLOR[q]) ? Q_COLOR[q] : 'var(--wow-text)';
+  if (q == null) return 'var(--wow-text)';
+  const i = typeof q === 'string' ? Q_NAME_INDEX[q.toUpperCase()] : q;
+  return (i != null && Q_COLOR[i]) ? Q_COLOR[i] : 'var(--wow-text)';
 }
 
 // Inventory browser for one character. Owner-only by construction: the backend
@@ -2418,32 +2433,10 @@ function WowCharDetail({ character, rio, onBack }) {
     if (e.slot != null) durBySlot[e.slot] = e;
   }
 
-  const renderGear = () => {
-    if (equipped.length === 0) {
-      return html`<div class="wow-card" style="margin:12px;">
-        <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">
-          Equipment data not loaded yet. It comes from the Blizzard API and may take a moment on first open.
-        </div></div>`;
-    }
-    return html`<div class="wow-card" style="margin:12px;">
-      <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:8px;">EQUIPPED</div>
-      ${equipped.map(it => html`
-        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--wow-border2);">
-          <span style="width:74px;font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);text-transform:capitalize;">
-            ${(it.slot?.name || it.slot?.type || '').toString().toLowerCase().replace(/_/g, ' ')}
-          </span>
-          <a href="https://www.wowhead.com/item=${it.item?.id}" target="_blank" rel="noopener"
-             data-wowhead="item=${it.item?.id}"
-             style="flex:1;min-width:0;font-family:var(--wow-mono);font-size:11px;text-decoration:none;
-                    color:${qColor(it.quality?.type === 'EPIC' ? 4 : it.quality?.type === 'RARE' ? 3 : it.quality?.type === 'UNCOMMON' ? 2 : 1)};
-                    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            ${it.name}
-          </a>
-          <span style="font-family:var(--wow-display);font-size:11px;color:var(--wow-accent);">${it.level?.value ?? ''}</span>
-        </div>
-      `)}
-    </div>`;
-  };
+  // Same paper doll the PVE/PVP tabs use, so equipment reads identically
+  // wherever you look at it. The ternary chain that used to translate quality
+  // strings here is gone - qColor handles both forms now.
+  const renderGear = () => html`<${WowGearFrame} character=${character} bnet=${bnet} />`;
 
   return html`
     <div>
