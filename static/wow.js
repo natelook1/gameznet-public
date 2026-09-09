@@ -46,26 +46,42 @@ const DOLL_NAMES = {
 
 // One gear slot. The <a data-wowhead> is what gives us a real item icon and the
 // hover tooltip - Wowhead's power.js rewrites it, so no extra API calls per item.
+// One gear slot. The icon anchor is deliberately empty and marked
+// data-wh-icon-size: Wowhead's power.js is configured with renameLinks and
+// iconizeLinks on the desktop host, so any text inside an <a data-wowhead>
+// gets replaced by the item name AND an icon - which collided with the name
+// this component renders itself. Keeping the anchor childless lets the tooltip
+// work while we control the layout.
 function DollSlot({ slot, item, side }) {
   const ilvl = item?.level?.value;
   const col = item ? qColor(item.quality?.type) : 'var(--wow-border2)';
-  const dur = item?.durability;
+  const dur = item?.durability?.value;
+  if (!item) {
+    return html`
+      <div class="doll-slot empty ${side}">
+        <span class="doll-icon empty"></span>
+        <span class="doll-slot-name">${DOLL_NAMES[slot]}</span>
+      </div>`;
+  }
   return html`
-    <div class="doll-slot ${side}" title=${DOLL_NAMES[slot]}>
-      <a class="doll-icon" style="border-color:${col};"
-         href=${item ? `https://www.wowhead.com/item=${item.item.id}` : null}
-         data-wowhead=${item ? wowItemAttr(item, ilvl) : null}
-         target="_blank" rel="noopener"
-         onClick=${e => { if (!item) e.preventDefault(); }}>
-        ${!item ? html`<span class="doll-empty"></span>` : ''}
+    <div class="doll-slot ${side}" style="--q:${col};">
+      <a class="doll-icon" href=${`https://www.wowhead.com/item=${item.item.id}`}
+         data-wowhead=${wowItemAttr(item, ilvl)} target="_blank" rel="noopener"
+         aria-label=${item.name}>
+        ${item.iconUrl ? html`<img src=${item.iconUrl} alt="" loading="lazy"
+             onError=${e => { e.target.style.display = 'none'; }} />` : ''}
       </a>
-      <div class="doll-meta">
-        <div class="doll-slot-name">${DOLL_NAMES[slot]}</div>
-        <div class="doll-item" style="color:${col};">${item?.name || '—'}</div>
-      </div>
-      ${ilvl ? html`<div class="doll-ilvl">${ilvl}</div>` : ''}
-      ${dur?.value != null && dur.value <= 50
-        ? html`<div class="doll-dur" style="color:${durColor(dur.value)};">${dur.value}%</div>` : ''}
+      <span class="doll-body">
+        <span class="doll-slot-name">${DOLL_NAMES[slot]}</span>
+        <span class="doll-item" style="color:${col};">${item.name}</span>
+      </span>
+      <span class="doll-nums">
+        <i class="doll-dur ${dur != null && dur <= 60 ? 'on' : ''}"
+           style=${dur != null && dur <= 60 ? `color:${durColor(dur)};` : ''}
+           title=${dur != null && dur <= 60 ? `${DOLL_NAMES[slot]} at ${dur}% durability — needs repair` : ''}
+           aria-label=${dur != null && dur <= 60 ? `${dur}% durability` : ''}>${dur != null && dur <= 60 ? '⚒' : ''}</i>
+        <b class="doll-ilvl">${ilvl || '—'}</b>
+      </span>
     </div>
   `;
 }
@@ -470,25 +486,29 @@ function injectWowAssets() {
 
     /* ── Paper doll (shared by PVE / PVP) ─────────────────────────────────── */
     .wow-wrap .doll-wrap { padding: 0 12px 14px; }
-    .wow-wrap .doll { display: grid; grid-template-columns: 1fr minmax(120px, 200px) 1fr; gap: 10px; align-items: start; }
-    .wow-wrap .doll-col { display: flex; flex-direction: column; gap: 4px; }
-    .wow-wrap .doll-mid { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 200px; }
-    .wow-wrap .doll-render { width: 100%; max-width: 200px; object-fit: contain; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.6)); }
-    .wow-wrap .doll-ilvl-big { font-family: var(--wow-display); font-size: 34px; font-weight: 700; line-height: 1; margin-top: 6px; }
+    .wow-wrap .doll { display: grid; grid-template-columns: minmax(0,1fr) minmax(130px,190px) minmax(0,1fr); gap: 8px; align-items: start; max-width: 100%; }
+    .wow-wrap .doll-col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .wow-wrap .doll-mid { display: flex; flex-direction: column; align-items: center; }
+    .wow-wrap .doll-render { width: 100%; max-width: 190px; object-fit: contain; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.55)); }
+    .wow-wrap .doll-ilvl-big { font-family: var(--wow-display); font-size: 32px; font-weight: 700; line-height: 1; margin-top: 4px; }
     .wow-wrap .doll-ilvl-lbl { font-family: var(--wow-mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--wow-muted); margin-top: 2px; }
 
-    .wow-wrap .doll-slot { display: flex; align-items: center; gap: 7px; background: var(--wow-surface); border: 1px solid var(--wow-border); border-radius: 4px; padding: 4px 6px; min-height: 40px; }
-    .wow-wrap .doll-slot.r { flex-direction: row-reverse; text-align: right; }
-    .wow-wrap .doll-icon { width: 30px; height: 30px; border-radius: 3px; border: 1px solid var(--wow-border2); background: var(--wow-bg); flex-shrink: 0; display: block; }
-    .wow-wrap .doll-icon img { width: 100%; height: 100%; border-radius: 3px; display: block; }
-    .wow-wrap .doll-empty { display: block; width: 100%; height: 100%; }
-    .wow-wrap .doll-meta { flex: 1; min-width: 0; }
-    .wow-wrap .doll-slot-name { font-family: var(--wow-mono); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); }
-    .wow-wrap .doll-item { font-family: var(--wow-display); font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .wow-wrap .doll-ilvl { font-family: var(--wow-mono); font-size: 11px; font-weight: 700; color: var(--wow-text); flex-shrink: 0; }
-    .wow-wrap .doll-dur { font-family: var(--wow-mono); font-size: 9px; flex-shrink: 0; }
+    .wow-wrap .doll-slot { display: flex; align-items: center; gap: 8px; background: var(--wow-surface); border: 1px solid var(--wow-border); border-radius: 4px; padding: 5px 7px; min-width: 0; }
+    .wow-wrap .doll-slot.r { flex-direction: row-reverse; }
+    .wow-wrap .doll-slot.r .doll-body { text-align: right; }
+    .wow-wrap .doll-slot.r .doll-nums { margin-left: 0; margin-right: auto; }
+    .wow-wrap .doll-slot.empty { opacity: 0.4; }
+    .wow-wrap .doll-icon { width: 32px; height: 32px; border-radius: 3px; border: 1px solid var(--q, var(--wow-border2)); background: var(--wow-bg); flex-shrink: 0; display: block; overflow: hidden; text-decoration: none; }
+    .wow-wrap .doll-icon img { width: 100%; height: 100%; display: block; }
+    .wow-wrap .doll-icon.empty { border-style: dashed; }
+    .wow-wrap .doll-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .wow-wrap .doll-slot-name { font-family: var(--wow-mono); font-size: 8px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--wow-muted); }
+    .wow-wrap .doll-item { font-family: var(--wow-display); font-size: 11.5px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wow-wrap .doll-nums { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; margin-left: auto; }
+    .wow-wrap .doll-ilvl { font-family: var(--wow-mono); font-size: 12px; font-weight: 700; color: var(--wow-text); min-width: 26px; text-align: right; }
+    .wow-wrap .doll-dur { font-size: 11px; font-style: normal; width: 12px; text-align: center; flex-shrink: 0; cursor: help; line-height: 1; }
 
-    .wow-wrap .doll-bottom { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 4px; margin-top: 8px; }
+    .wow-wrap .doll-bottom { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 4px; margin-top: 8px; }
     .wow-wrap .doll-none { font-family: var(--wow-mono); font-size: 11px; color: var(--wow-muted); background: var(--wow-surface); border: 1px solid var(--wow-border); border-radius: 5px; padding: 14px; line-height: 1.6; }
 
     /* World keeps a one-line gear summary instead of the full doll. */
@@ -499,12 +519,17 @@ function injectWowAssets() {
     .wow-wrap .gear-strip-dur { font-family: var(--wow-mono); font-size: 12px; font-weight: 600; }
     .wow-wrap .gear-strip-sep { color: var(--wow-border2); }
 
+    /* Phones: one column, render on top. A 3-column doll at 390px gives each
+       slot ~110px, which truncates every item name to nothing. */
     @media (max-width: 768px) {
-      .wow-wrap .doll { grid-template-columns: 1fr; }
-      .wow-wrap .doll-mid { order: -1; min-height: 0; }
-      .wow-wrap .doll-render { max-width: 150px; }
-      .wow-wrap .doll-slot.r { flex-direction: row; text-align: left; }
       .wow-wrap .doll-wrap { padding: 0 8px 12px; }
+      .wow-wrap .doll { grid-template-columns: 1fr; gap: 4px; }
+      .wow-wrap .doll-mid { order: -1; margin-bottom: 6px; }
+      .wow-wrap .doll-render { max-width: 130px; }
+      .wow-wrap .doll-ilvl-big { font-size: 26px; }
+      .wow-wrap .doll-slot.r { flex-direction: row; }
+      .wow-wrap .doll-slot.r .doll-body { text-align: left; }
+      .wow-wrap .doll-bottom { grid-template-columns: 1fr; margin-top: 4px; }
     }
 
     /* ── Hub ─────────────────────────────────────────────────────────────── */
@@ -2559,7 +2584,7 @@ function WowHub({ addon, addonErr, onReload, charCacheRef }) {
               <div class="hub-row-stats">
                 <span class="hub-stat"><i>ilvl</i><b style="color:${ilvlColor(c.ilvl)};">${c.ilvl ? Math.round(c.ilvl) : '—'}</b></span>
                 <span class="hub-stat"><i>gold</i><b class="gold">${goldStr(c.gold)}</b></span>
-                ${d?.worstPct != null ? html`<span class="hub-stat"><i>dur</i><b style="color:${durColor(d.worstPct)};">${d.worstPct}%</b></span>` : ''}
+                ${d?.worstPct != null ? html`<span class="hub-stat" title=${d.worstPct <= 60 ? `Worst item at ${d.worstPct}% — needs repair` : `Worst item at ${d.worstPct}%`}><i>dur</i><b style="color:${durColor(d.worstPct)};">${d.worstPct <= 60 ? '⚒ ' : ''}${d.worstPct}%</b></span>` : ''}
                 ${freePct != null ? html`<span class="hub-stat"><i>bags</i><b style="color:${bagColor(freePct)};">${c.bagFree} free</b></span>` : ''}
                 <span class="hub-stat"><i>played</i><b>${playedStr(c.played)}</b></span>
               </div>
