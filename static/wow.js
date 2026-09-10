@@ -530,8 +530,8 @@ function injectWowAssets() {
     /* Wowhead's iconizeLinks is on globally for the other views; inside the
        doll we draw our own icon, so drop the one power.js injects rather
        than let it crowd the name. */
-    .wow-wrap .doll-item .iconsmall, .wow-wrap .doll-item .iconmedium,
-    .wow-wrap .doll-item .iconlarge, .wow-wrap .doll-item .icontiny { display: none !important; }
+    .wow-wrap .doll-item > *, .wow-wrap .doll-item .icon-added,
+    .wow-wrap .doll-item [class*="icon"] { display: none !important; }
     .wow-wrap .doll-item { text-indent: 0 !important; padding-left: 0 !important; background-image: none !important; }
     .wow-wrap .doll-nums { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; margin-left: auto; }
     .wow-wrap .doll-ilvl { font-family: var(--wow-mono); font-size: 12px; font-weight: 700; color: var(--wow-text); min-width: 26px; text-align: right; }
