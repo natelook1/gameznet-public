@@ -44,6 +44,15 @@
   ownership itself has no equivalent public endpoint (Blizzard withdrew
   `/profile/.../house/{id}` for privacy), so a never-synced player shows
   decor progress but never a house, even if they own one.
+- **Decor tiles are now clickable** — opens the item's Wowhead page in a new
+  tab, where Wowhead's own "View in 3D" model viewer already works. No 3D
+  rendering happens in GamezNET itself; this links out to where it already
+  does, the same pattern already used for gear/currencies throughout the
+  app. (Investigated building an in-app 3D house/build viewer the same day —
+  not possible right now for anyone, GamezNET or otherwise: Blizzard's house
+  export API, which even Wowhead's own "Architect" tool depends on, has been
+  disabled since January per Wowhead's own changelog, confirmed still 404
+  live. Worth revisiting if Blizzard re-enables it.)
 
 ### Note
 - Player-vs-player features (seeing other players' houses, a shared
