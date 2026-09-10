@@ -1592,31 +1592,38 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
     // (confirmed live 2026-09-10 on a real decor item) - GamezNET renders
     // nothing 3D itself, just links to where it already works.
     //
-    // The <a data-wowhead> MUST be childless (see the DollSlot comment
-    // above, same fix applied here after hitting the exact bug it warns
-    // about): the desktop host's power.js runs with renameLinks/iconizeLinks
-    // on, which rewrites ANY content inside a data-wowhead anchor with its
-    // own icon+name - that collided with this tile's own icon/badge and
-    // rendered as a broken icon-plus-wrapped-text mess in production
-    // (2026-09-10). Fix: the tile's own rendering lives in a plain sibling
-    // div; the link is an empty, absolutely-positioned overlay on top,
-    // data-wh-icon-size="0" so power.js has nothing to inject even into
-    // that overlay.
+    // This is deliberately NOT a real <a href="wowhead.com/..."> - two
+    // earlier attempts at that both broke the icon grid on the desktop host
+    // in production (2026-09-10, both reported by Nate with screenshots),
+    // and tracing power.js's actual source (a public gist of an older
+    // version - no official docs cover this) explains why the SECOND fix
+    // (data-wowhead removed, still a real href) didn't help either: power.js
+    // does not gate on the data-wowhead attribute at all. It iterates
+    // document.links (every <a>/<area> with an href, full stop) and
+    // regex-matches the HREF itself against wowhead.com/item=<id> etc. -
+    // any link whose href matches gets iconizeLinks/renameLinks treatment
+    // whether or not data-wowhead is present. DollSlot's link survives this
+    // because it wraps real name TEXT that power.js's injected
+    // padding-left+background-image icon and text-replacement land on
+    // harmlessly; this tile has no text node, only a full-size <img>, so the
+    // same injection visually collided both times. Fix: use a <div> with a
+    // click handler that opens the URL via window.open() instead of a real
+    // href - power.js's document.links scan never sees it, because a div
+    // with onClick is not in that collection at all. Costs nothing: the
+    // goal was always the click-through, not a native middle-click/open-in-
+    // new-tab context menu on the tile itself.
     const tile = (name, iconUrl, quantity, owned, itemId) => html`
       <div title=${name + (quantity > 1 ? ` ×${quantity}` : '')}
+           onClick=${itemId ? () => window.open(`https://www.wowhead.com/item=${itemId}`, '_blank', 'noopener') : null}
            style="position:relative;width:40px;height:40px;border-radius:4px;flex-shrink:0;
                   background:var(--wow-bg);border:1px solid ${owned ? 'var(--wow-border)' : 'var(--wow-border2)'};
-                  opacity:${owned ? 1 : 0.35};overflow:hidden;">
+                  opacity:${owned ? 1 : 0.35};overflow:hidden;${itemId ? 'cursor:pointer;' : ''}">
         ${iconUrl ? html`<img src=${iconUrl} alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;"
              onError=${e => { e.target.style.display = 'none'; }} />`
           : html`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px;">🪑</div>`}
         ${quantity > 1 && html`
           <span style="position:absolute;bottom:0;right:0;font-family:var(--wow-mono);font-size:9px;color:#fff;
                         background:rgba(0,0,0,0.75);padding:0 3px;border-radius:2px 0 0 0;line-height:1.4;">×${quantity}</span>`}
-        ${itemId && html`
-          <a href="https://www.wowhead.com/item=${itemId}" target="_blank" rel="noopener"
-             data-wowhead="item=${itemId}" data-wh-icon-size="0"
-             style="position:absolute;inset:0;"></a>`}
       </div>`;
 
     // Access flags is a bitfield (Enum.HouseSettingFlags). Bit meanings below
