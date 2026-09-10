@@ -1590,30 +1590,34 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
     // Clicking a tile opens the decor's Wowhead item page in a new tab,
     // where Wowhead's own "View in 3D" button already exists and works
     // (confirmed live 2026-09-10 on a real decor item) - GamezNET renders
-    // nothing 3D itself, just links to where it already works, same as
-    // every other item link in this app (data-wowhead gives Wowhead's own
-    // power.js script, already loaded, a real tooltip on hover too).
-    // Falls back to a plain non-clickable div when itemId is unresolved
-    // (catalogue miss, or the missing-decor branch predates a full join).
-    const tile = (name, iconUrl, quantity, owned, itemId) => {
-      const inner = html`
-        <div style="position:relative;width:100%;height:100%;background:var(--wow-bg);overflow:hidden;">
-          ${iconUrl ? html`<img src=${iconUrl} alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;"
-               onError=${e => { e.target.style.display = 'none'; }} />`
-            : html`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px;">🪑</div>`}
-          ${quantity > 1 && html`
-            <span style="position:absolute;bottom:0;right:0;font-family:var(--wow-mono);font-size:9px;color:#fff;
-                          background:rgba(0,0,0,0.75);padding:0 3px;border-radius:2px 0 0 0;line-height:1.4;">×${quantity}</span>`}
-        </div>`;
-      const boxStyle = `position:relative;width:40px;height:40px;border-radius:4px;flex-shrink:0;
-                         border:1px solid ${owned ? 'var(--wow-border)' : 'var(--wow-border2)'};
-                         opacity:${owned ? 1 : 0.35};overflow:hidden;display:block;`;
-      return itemId
-        ? html`<a href="https://www.wowhead.com/item=${itemId}" target="_blank" rel="noopener"
-                  data-wowhead="item=${itemId}" title=${name + (quantity > 1 ? ` ×${quantity}` : '')}
-                  style=${boxStyle}>${inner}</a>`
-        : html`<div title=${name + (quantity > 1 ? ` ×${quantity}` : '')} style=${boxStyle}>${inner}</div>`;
-    };
+    // nothing 3D itself, just links to where it already works.
+    //
+    // The <a data-wowhead> MUST be childless (see the DollSlot comment
+    // above, same fix applied here after hitting the exact bug it warns
+    // about): the desktop host's power.js runs with renameLinks/iconizeLinks
+    // on, which rewrites ANY content inside a data-wowhead anchor with its
+    // own icon+name - that collided with this tile's own icon/badge and
+    // rendered as a broken icon-plus-wrapped-text mess in production
+    // (2026-09-10). Fix: the tile's own rendering lives in a plain sibling
+    // div; the link is an empty, absolutely-positioned overlay on top,
+    // data-wh-icon-size="0" so power.js has nothing to inject even into
+    // that overlay.
+    const tile = (name, iconUrl, quantity, owned, itemId) => html`
+      <div title=${name + (quantity > 1 ? ` ×${quantity}` : '')}
+           style="position:relative;width:40px;height:40px;border-radius:4px;flex-shrink:0;
+                  background:var(--wow-bg);border:1px solid ${owned ? 'var(--wow-border)' : 'var(--wow-border2)'};
+                  opacity:${owned ? 1 : 0.35};overflow:hidden;">
+        ${iconUrl ? html`<img src=${iconUrl} alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;"
+             onError=${e => { e.target.style.display = 'none'; }} />`
+          : html`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px;">🪑</div>`}
+        ${quantity > 1 && html`
+          <span style="position:absolute;bottom:0;right:0;font-family:var(--wow-mono);font-size:9px;color:#fff;
+                        background:rgba(0,0,0,0.75);padding:0 3px;border-radius:2px 0 0 0;line-height:1.4;">×${quantity}</span>`}
+        ${itemId && html`
+          <a href="https://www.wowhead.com/item=${itemId}" target="_blank" rel="noopener"
+             data-wowhead="item=${itemId}" data-wh-icon-size="0"
+             style="position:absolute;inset:0;"></a>`}
+      </div>`;
 
     // Access flags is a bitfield (Enum.HouseSettingFlags). Bit meanings below
     // are taken from the wiki's flag list, unverified against a live account
