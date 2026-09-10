@@ -7485,6 +7485,9 @@
   import { WowTab } from '/static/wow.js';
 
   let _wowMounted = false;
+  // True only once a mount has happened with a real (non-empty) player
+  // name - see the wowEnsureMounted comment below for why this exists.
+  let _wowMountedWithName = false;
 
   // The component owns the DOM inside #wow-mount, so the desktop-only buttons
   // cannot be written into its header markup. Relocate them into the slot it
@@ -7507,8 +7510,25 @@
   };
 
   // Mount lazily: the tab is behind a click and the roster fetches are wasted
-  // until it is actually opened.
-  window.wowEnsureMounted = function() { if (!_wowMounted) window.wowRemount(); };
+  // until it is actually opened. wowEnsureMounted only ever calls
+  // wowRemount ONCE (the _wowMounted guard) - if that first mount happens to
+  // race init()'s async /api/config fetch and state.name is still '' at that
+  // instant, `me.name` is baked in empty for the rest of the session: "My
+  // Characters" and the Battle.net picker's pre-selection both silently
+  // fail closed (both filter on me.name), while everything that doesn't
+  // depend on me.name - the roster count, the picker's own character list -
+  // keeps working fine, which is exactly what made this confusing to
+  // diagnose (reported live 2026-09-10; DB/API both confirmed correct at
+  // every layer, a resave through the picker did not fix it because
+  // onRefresh only updates `characters`, never re-mounts with a fresh me).
+  // Fix: if state.name is still empty when the guarded mount fires, don't
+  // let _wowMounted latch permanently - allow one more wowEnsureMounted
+  // call once state.name is actually populated.
+  window.wowEnsureMounted = function() {
+    if (_wowMounted && _wowMountedWithName) return;
+    window.wowRemount();
+    _wowMountedWithName = !!(window.state && state.name);
+  };
 
   // A route may have asked for the WoW tab before this module ran.
   if (window.GZN_WOW_PENDING) { window.GZN_WOW_PENDING = false; window.wowEnsureMounted(); }
