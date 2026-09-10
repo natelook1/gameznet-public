@@ -82,6 +82,28 @@
   that actually holds: the decor tiles now open Wowhead via a plain
   `window.open()` click handler instead of a real `href`, so `power.js`'s
   `document.links` scan never sees them at all.
+- **Desktop's "Addon" tab privacy card was missing the `housing` field
+  entirely** — a separate, hand-maintained vanilla-JS UI (predates the
+  unified Preact WoW tab) that never got updated when `housing` was added
+  to the privacy tier system earlier the same day. Added it there too, and
+  removed the duplicate privacy card that had been living in "My Account"
+  as well — privacy controls now live in exactly one place (Addon tab).
+- **"My Characters" (My Account tab) could show "No characters in your
+  roster" forever, even with a full saved roster and a linked Battle.net
+  account** — the Battle.net picker's pre-selection ("X/5 selected") broke
+  the same way. Root cause, found via a live DevTools session, not
+  guesswork: `window.state` was never assigned anywhere. `state` is
+  declared with `let` in a classic `<script>` tag; the WoW tab's mount code
+  runs inside a separate `<script type="module">` block, which — per how
+  JS module scoping actually works — cannot see a classic script's
+  top-level `let`/`const` bindings at all, and `let` never attaches to
+  `window` on its own either way. So `window.state && state.name` always
+  evaluated to `''`, permanently, in every session, since the WoW tab was
+  built — not a timing race (a first attempted fix assumed exactly that,
+  retried the mount on a timer, and did not help, because there was never
+  a moment `window.state` was going to become truthy). Fixed by actually
+  setting `window.state = state` where the object is declared, and reading
+  `window.state.name` instead of the module-invisible bare identifier.
 
 ### Note
 - Player-vs-player features (seeing other players' houses, a shared
