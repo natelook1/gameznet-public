@@ -2954,6 +2954,22 @@
 
 <script>
   // ── State ─────────────────────────────────────────────────────────────────
+  // window.state is a live REFERENCE to this object (not a copy) - fields on
+  // it get mutated in place elsewhere in this file (state.name = ..., etc.),
+  // so window.state.name always reflects the current value with no extra
+  // sync needed. This must exist: the <script type="module"> block further
+  // down (wowRemount) cannot see this classic <script>'s top-level `let
+  // state` at all - modules have their own isolated top-level scope, no
+  // implicit sharing with classic scripts or with each other. Without this
+  // line, `window.state` is undefined there, `window.state && state.name`
+  // always short-circuits, and every WowTab mount gets `me.name = ''`
+  // permanently - confirmed live 2026-09-10 via a real diagnostic session
+  // (window.state was undefined in DevTools despite state.name === 'Nate'
+  // resolving fine, since the console's own scope is more permissive than
+  // an actual module's). This silently broke "My Characters" and the
+  // Battle.net picker's pre-selection, the only two things in the WoW tab
+  // that read me.name - everything else reads `characters`/`bnetChars`
+  // directly and had no symptom, which is what made this hard to spot.
   let state = {
     provisioned: false,
     connected: false,
@@ -2971,6 +2987,7 @@
     steam_game_count: 0,
     steam_library: null,
   };
+  window.state = state; // see the comment above the declaration
   let pingHistory = [];
 
   // ── Toast ──────────────────────────────────────────────────────────────────
@@ -7476,7 +7493,14 @@
     // the shared component. Restores the 10th tab the old UI had.
     extraTabs: [{ id: 'addon', icon: '🧮', label: 'Addon' }],
     onHostTab: () => window.wowRenderHostPanel && window.wowRenderHostPanel(),
-    getAuth: () => ({ token: (window.state && state.token) || localStorage.getItem('gz-token') })
+    // This is a classic script, so the bare `state` identifier does resolve
+    // here (unlike wowRemount's module block) - but window.state was still
+    // always undefined before window.state = state was added (see that
+    // comment), so this always silently fell through to the localStorage
+    // token instead of the live one. Harmless in practice since the two
+    // stay in sync, but corrected for consistency now that window.state is
+    // real.
+    getAuth: () => ({ token: (window.state && window.state.token) || localStorage.getItem('gz-token') })
   };
 </script>
 
@@ -7485,9 +7509,6 @@
   import { WowTab } from '/static/wow.js';
 
   let _wowMounted = false;
-  // True only once a mount has happened with a real (non-empty) player
-  // name - see the wowEnsureMounted comment below for why this exists.
-  let _wowMountedWithName = false;
 
   // The component owns the DOM inside #wow-mount, so the desktop-only buttons
   // cannot be written into its header markup. Relocate them into the slot it
@@ -7502,7 +7523,25 @@
   window.wowRemount = function() {
     const el = document.getElementById('wow-mount');
     if (!el) return;
-    render(h(WowTab, { me: { name: (window.state && state.name) || '' } }), el);
+    // window.state.name, not the bare `state` identifier - see the real
+    // root cause, found live 2026-09-10: this <script type="module"> block
+    // cannot see the classic <script>'s top-level `let state` at all (module
+    // scripts have their own isolated top-level scope - confirmed, not
+    // theorized: window.state read undefined in a live DevTools session
+    // despite state.name resolving fine there, since the console's own
+    // scope is more permissive than an actual module's). `window.state &&
+    // state.name` used to silently produce '' forever - `window.state` was
+    // always undefined so `&&` short-circuited before ever touching the
+    // bare `state.name`, which would otherwise have THROWN
+    // (ReferenceError: state is not defined) the moment window.state became
+    // truthy. An earlier fix here (retrying the mount, since the wrong
+    // theory at the time was a first-mount timing race) did not help,
+    // because there was no race to retry past - window.state was never
+    // going to become truthy no matter how many times this ran. The real
+    // fix is `window.state = state;` right where `state` is declared
+    // (search this file for that line) plus reading window.state.name here
+    // instead of the invisible bare identifier.
+    render(h(WowTab, { me: { name: (window.state && window.state.name) || '' } }), el);
     _wowMounted = true;
     // Preact renders synchronously, but the slots are created by that render,
     // so fill them on the next frame.
@@ -7510,25 +7549,8 @@
   };
 
   // Mount lazily: the tab is behind a click and the roster fetches are wasted
-  // until it is actually opened. wowEnsureMounted only ever calls
-  // wowRemount ONCE (the _wowMounted guard) - if that first mount happens to
-  // race init()'s async /api/config fetch and state.name is still '' at that
-  // instant, `me.name` is baked in empty for the rest of the session: "My
-  // Characters" and the Battle.net picker's pre-selection both silently
-  // fail closed (both filter on me.name), while everything that doesn't
-  // depend on me.name - the roster count, the picker's own character list -
-  // keeps working fine, which is exactly what made this confusing to
-  // diagnose (reported live 2026-09-10; DB/API both confirmed correct at
-  // every layer, a resave through the picker did not fix it because
-  // onRefresh only updates `characters`, never re-mounts with a fresh me).
-  // Fix: if state.name is still empty when the guarded mount fires, don't
-  // let _wowMounted latch permanently - allow one more wowEnsureMounted
-  // call once state.name is actually populated.
-  window.wowEnsureMounted = function() {
-    if (_wowMounted && _wowMountedWithName) return;
-    window.wowRemount();
-    _wowMountedWithName = !!(window.state && state.name);
-  };
+  // until it is actually opened.
+  window.wowEnsureMounted = function() { if (!_wowMounted) window.wowRemount(); };
 
   // A route may have asked for the WoW tab before this module ran.
   if (window.GZN_WOW_PENDING) { window.GZN_WOW_PENDING = false; window.wowEnsureMounted(); }
