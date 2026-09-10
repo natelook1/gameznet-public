@@ -578,6 +578,64 @@ function injectWowAssets() {
       .wow-wrap .doll-bottom { grid-template-columns: 1fr; margin-top: 4px; }
     }
 
+    .wow-wrap .chardetail { max-width: 1100px; margin: 0 auto; }
+
+    /* ── Character overview ───────────────────────────────────────────────── */
+    .wow-wrap .ov-ident { display: flex; align-items: center; gap: 11px; margin: 12px 12px 0; padding: 10px 13px; background: var(--wow-surface); border: 1px solid var(--wow-border); border-left: 3px solid var(--cc, var(--wow-gold)); border-radius: 6px; }
+    .wow-wrap .ov-ident-icon { width: 34px; height: 34px; border-radius: 4px; border: 1px solid var(--cc, var(--wow-border2)); flex-shrink: 0; }
+    .wow-wrap .ov-ident-body { min-width: 0; }
+    .wow-wrap .ov-ident-name { font-family: var(--wow-display); font-size: 18px; font-weight: 700; letter-spacing: 0.4px; line-height: 1.2; }
+    .wow-wrap .ov-ident-meta { font-family: var(--wow-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--wow-muted); margin-top: 2px; }
+    .wow-wrap .ov-guild { margin-left: auto; font-family: var(--wow-display); font-size: 12px; color: var(--wow-dim); white-space: nowrap; }
+    .wow-wrap .ov-login { font-family: var(--wow-mono); font-size: 9px; color: var(--wow-muted); white-space: nowrap; }
+    .wow-wrap .ov-guild + .ov-login { margin-left: 10px; }
+    .wow-wrap .ov-login:first-of-type { margin-left: auto; }
+
+    .wow-wrap .ov-title { font-family: var(--wow-display); font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--wow-gold); margin-bottom: 9px; }
+    .wow-wrap .ov-hint { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); margin-top: 9px; line-height: 1.6; }
+    .wow-wrap .ov-hint b { color: var(--wow-green); }
+
+    .wow-wrap .ov-coll { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+    .wow-wrap .ov-coll-item { display: flex; flex-direction: column; gap: 2px; }
+    .wow-wrap .ov-coll-item b { font-family: var(--wow-display); font-size: 20px; font-weight: 700; color: var(--wow-text); line-height: 1; }
+    .wow-wrap .ov-coll-item i { font-family: var(--wow-mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); font-style: normal; }
+
+    .wow-wrap .ov-curr { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 6px 14px; }
+    .wow-wrap .ov-curr-item { display: flex; align-items: center; gap: 7px; min-width: 0; cursor: help; }
+    .wow-wrap .ov-curr-item img { width: 18px; height: 18px; border-radius: 3px; flex-shrink: 0; }
+    .wow-wrap .ov-curr-amt { font-family: var(--wow-mono); font-size: 12px; font-weight: 700; color: var(--wow-text); flex-shrink: 0; }
+    .wow-wrap .ov-curr-name { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Collections carry their own colour so the card is not four identical
+       numbers, and the two that lead somewhere say so. */
+    .wow-wrap .ov-coll-item.ach b   { color: var(--wow-gold); }
+    .wow-wrap .ov-coll-item.mounts b { color: var(--wow-accent); }
+    .wow-wrap .ov-coll-item.pets b  { color: var(--wow-green); }
+    .wow-wrap .ov-coll-item.house b { color: var(--wow-purple, #a855f7); }
+    .wow-wrap .ov-coll-item.link { cursor: pointer; border-radius: 4px; margin: -4px -6px; padding: 4px 6px; transition: background 0.12s; }
+    .wow-wrap .ov-coll-item.link:hover { background: var(--wow-surface2); }
+
+    .wow-wrap .ov-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 12px; }
+    .wow-wrap .ov-link { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: var(--wow-surface); border: 1px solid var(--wow-border); border-left: 3px solid var(--wow-border2); border-radius: 5px; cursor: pointer; font-family: var(--wow-display); font-size: 13px; font-weight: 600; color: var(--wow-text); transition: border-color 0.12s, background 0.12s; }
+    .wow-wrap .ov-link:hover { background: var(--wow-surface2); }
+    .wow-wrap .ov-link b { font-size: 15px; font-weight: 400; }
+    .wow-wrap .ov-link i { font-family: var(--wow-mono); font-size: 9px; font-style: normal; color: var(--wow-muted); margin-left: auto; text-align: right; }
+    .wow-wrap .ov-link.pve:hover   { border-left-color: var(--wow-accent); }
+    .wow-wrap .ov-link.pvp:hover   { border-left-color: var(--wow-purple, #a855f7); }
+    .wow-wrap .ov-link.world:hover { border-left-color: var(--wow-green); }
+    .wow-wrap .ov-link.keys:hover  { border-left-color: var(--wow-gold); }
+
+    .wow-wrap .ov-prof { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+    .wow-wrap .ov-prof-name { flex: 0 1 150px; font-family: var(--wow-mono); font-size: 11px; color: var(--wow-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wow-wrap .ov-prof-bar { flex: 1; max-width: 220px; height: 5px; border-radius: 3px; background: var(--wow-bg); border: 1px solid var(--wow-border); overflow: hidden; }
+    .wow-wrap .ov-prof-fill { display: block; height: 100%; background: var(--wow-accent); }
+    .wow-wrap .ov-prof-rank { font-family: var(--wow-mono); font-size: 11px; color: var(--wow-accent); min-width: 62px; text-align: right; }
+
+    @media (max-width: 768px) {
+      .wow-wrap .ov-guild, .wow-wrap .ov-login { display: none; }
+      .wow-wrap .ov-prof-name { flex-basis: 100px; }
+    }
+
     /* ── Group ────────────────────────────────────────────────────────────── */
     .wow-wrap .group { padding: 10px 12px 16px; max-width: 1100px; margin: 0 auto; }
     .wow-wrap .group-bar { display: flex; align-items: center; gap: 8px; padding: 2px 2px 10px; font-family: var(--wow-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); }
@@ -2471,7 +2529,7 @@ function WowInventory({ character, onClose }) {
 
 // Full character detail: addon-sourced data merged with the Blizzard/RIO cache
 // the WoW tab already loads. Reached by clicking a card in the Hub.
-function WowCharDetail({ character, rio, onBack }) {
+function WowCharDetail({ character, rio, onBack, onOpen }) {
   const [pane, setPane] = useState('overview');
   const c = character;
   const bnet = rio?._bnet || {};
@@ -2494,39 +2552,111 @@ function WowCharDetail({ character, rio, onBack }) {
       <div style="font-family:var(--wow-display);font-size:15px;color:${color || 'var(--wow-text)'};">${value}</div>
     </div>`;
 
+  // Identity and collections come from the Blizzard payload already fetched for
+  // the gear frame, so none of this costs an extra request.
+  const bp = bnet.profile || {};
+  const mountCount = (bnet.mounts?.mounts || []).length;
+  const petCount = (bnet.pets?.pets || []).length;
+  const achPoints = bp.achievement_points;
+  const avgIlvl = bp.average_item_level;
+  const eqIlvl = bp.equipped_item_level || (c.ilvl ? Math.round(c.ilvl) : null);
+  // A gap between average and equipped means an upgrade is sitting in the bags.
+  const bagUpgrade = (avgIlvl && eqIlvl && avgIlvl > eqIlvl) ? avgIlvl - eqIlvl : 0;
+  const lastLogin = bp.last_login_timestamp
+    ? agoStr(Math.floor(bp.last_login_timestamp / 1000)) : null;
+  // Only what the character actually holds, most first: the full currency list
+  // is long and mostly zeroes.
+  const currencies = (c.currencies || [])
+    .filter(x => (x.quantity || 0) > 0)
+    .sort((a, b) => (b.quantity || 0) - (a.quantity || 0))
+    .slice(0, 6);
+
   const renderOverview = () => html`
+    <div class="ov-ident" style="--cc:${classColor(c.class)};">
+      ${classIcon(c.class) ? html`<img class="ov-ident-icon" src=${classIcon(c.class)} alt=""
+           onError=${e => { e.target.style.visibility = 'hidden'; }} />` : ''}
+      <div class="ov-ident-body">
+        <div class="ov-ident-name" style="color:${classColor(c.class)};">${c.name}</div>
+        <div class="ov-ident-meta">
+          ${[bp.race?.name, bp.faction?.name, c.spec, c.class].filter(Boolean).join(' · ')}
+        </div>
+      </div>
+      ${c.guild ? html`<div class="ov-guild">${'<' + c.guild + '>'}</div>` : ''}
+      ${lastLogin ? html`<div class="ov-login">seen ${lastLogin}</div>` : ''}
+    </div>
+
     <div class="wow-card" style="margin:12px;">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:10px;">
         ${stat('GOLD', goldStr(c.gold), 'var(--wow-gold)')}
-        ${stat('ILVL', c.ilvl ? Math.round(c.ilvl) : '—')}
+        ${stat('ILVL', eqIlvl ?? '—', ilvlColor(eqIlvl))}
         ${score ? stat('M+ SCORE', Math.round(score), 'var(--wow-accent)') : ''}
         ${d?.worstPct != null ? stat('DURABILITY', d.worstPct + '%', durColor(d.worstPct)) : ''}
         ${bagPct != null ? stat('BAGS', bagPct + '%', c.bagFree <= 4 ? 'var(--wow-red)' : null) : ''}
-        ${stat('PLAYED', playedStr(c.played))}
+        ${stat('PLAYED', playedStr(c.played), 'var(--wow-dim)')}
         ${vaultReady > 0 ? stat('VAULT', vaultReady + ' ready', 'var(--wow-gold)') : ''}
         ${c.keystone?.level ? stat('KEYSTONE', '+' + c.keystone.level, 'var(--wow-accent)') : ''}
       </div>
+      ${bagUpgrade ? html`
+        <div class="ov-hint">Average item level is ${avgIlvl} — an upgrade worth
+          <b>+${bagUpgrade}</b> is sitting in your bags.</div>` : ''}
       ${c.keystone?.name ? html`
-        <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);margin-top:8px;">
-          Holding: ${c.keystone.name}
-        </div>` : ''}
+        <div class="ov-hint">Holding: ${c.keystone.name}</div>` : ''}
     </div>
+
+    ${(achPoints || mountCount || petCount) ? html`
+      <div class="wow-card" style="margin:12px;">
+        <div class="ov-title">Collections</div>
+        <div class="ov-coll">
+          ${achPoints ? html`<div class="ov-coll-item ach"><b>${achPoints.toLocaleString()}</b><i>achievement points</i></div>` : ''}
+          ${mountCount ? html`<div class="ov-coll-item mounts link" onClick=${() => onOpen && onOpen('world', 'mounts')}>
+            <b>${mountCount}</b><i>mounts →</i></div>` : ''}
+          ${petCount ? html`<div class="ov-coll-item pets link" onClick=${() => onOpen && onOpen('world', 'pets')}>
+            <b>${petCount}</b><i>pets →</i></div>` : ''}
+          ${c.housing?.hasAccess ? html`<div class="ov-coll-item house"><b>${c.housing.maxLevel ?? '—'}</b><i>house level</i></div>` : ''}
+        </div>
+      </div>` : ''}
+
+    ${currencies.length > 0 && html`
+      <div class="wow-card" style="margin:12px;">
+        <div class="ov-title">Currencies</div>
+        <div class="ov-curr">
+          ${currencies.map(x => html`
+            <div class="ov-curr-item" title=${x.max ? `${x.quantity} of ${x.max}` : String(x.quantity)}>
+              ${x.icon ? html`<img src=${`https://render.worldofwarcraft.com/us/icons/56/${x.icon}.jpg`} alt=""
+                   onError=${e => { e.target.style.display = 'none'; }} />` : ''}
+              <span class="ov-curr-amt">${(x.quantity || 0).toLocaleString()}</span>
+              <span class="ov-curr-name">${x.name}</span>
+            </div>`)}
+        </div>
+      </div>
+    `}
+
+    ${onOpen ? html`
+      <div class="ov-links">
+        <div class="ov-link pve" onClick=${() => onOpen('pve')}><b>⚔</b> PVE<i>gear, raids, M+</i></div>
+        <div class="ov-link pvp" onClick=${() => onOpen('pvp')}><b>🏆</b> PVP<i>rating, conquest</i></div>
+        <div class="ov-link world" onClick=${() => onOpen('world')}><b>🌍</b> World<i>renown, collections</i></div>
+        <div class="ov-link keys" onClick=${() => onOpen('keys')}><b>🗝</b> Keys<i>vault, lockouts</i></div>
+      </div>` : ''}
 
     ${(c.professions || []).length > 0 && html`
       <div class="wow-card" style="margin:12px;">
-        <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:8px;">PROFESSIONS</div>
-        ${(c.professions || []).map(p => html`
-          <div style="display:flex;align-items:center;gap:10px;padding:4px 0;">
-            <span style="flex:1;font-family:var(--wow-mono);font-size:11px;color:var(--wow-text);">${p.name}</span>
-            <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-accent);">${p.rank ?? '—'}${p.maxRank ? ' / ' + p.maxRank : ''}</span>
-          </div>
-        `)}
+        <div class="ov-title">Professions</div>
+        ${(c.professions || []).map(p => {
+          const pct = (p.rank != null && p.maxRank) ? Math.round(p.rank / p.maxRank * 100) : 0;
+          return html`
+            <div class="ov-prof">
+              <span class="ov-prof-name">${p.name}</span>
+              <span class="ov-prof-bar"><span class="ov-prof-fill" style="width:${pct}%;"></span></span>
+              <span class="ov-prof-rank">${p.rank ?? '?'}${p.maxRank ? ' / ' + p.maxRank : ''}</span>
+            </div>`;
+        })}
       </div>
     `}
 
     ${(c.cooldowns || []).length > 0 && html`
       <div class="wow-card" style="margin:12px;">
-        <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:8px;">COOLDOWNS</div>
+        <div class="ov-title">Cooldowns</div>
         ${(c.cooldowns || []).map(cd => html`
           <div style="display:flex;align-items:center;gap:10px;padding:3px 0;">
             <span style="flex:1;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${cd.name || ('spell ' + cd.id)}</span>
@@ -2538,15 +2668,13 @@ function WowCharDetail({ character, rio, onBack }) {
 
     ${(c.vault || []).length > 0 && html`
       <div class="wow-card" style="margin:12px;">
-        <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:8px;">GREAT VAULT</div>
+        <div class="ov-title">Great Vault</div>
         ${Object.entries((c.vault || []).reduce((acc, v) => { (acc[v.type] = acc[v.type] || []).push(v); return acc; }, {})).map(([type, slots]) => html`
           <div style="display:flex;align-items:center;gap:6px;padding:3px 0;">
-            <span style="width:64px;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${VAULT_TYPE[type] || ('type ' + type)}</span>
-            ${slots.map(sl => html`
-              <span style="font-family:var(--wow-mono);font-size:10px;padding:2px 6px;border-radius:3px;
-                           background:${sl.progress >= sl.threshold ? 'var(--wow-gold-dim)' : 'var(--wow-surface2)'};
-                           color:${sl.progress >= sl.threshold ? 'var(--wow-gold)' : 'var(--wow-muted)'};">
-                ${sl.progress}/${sl.threshold}${sl.level ? ' · +' + sl.level : ''}</span>
+            <span style="width:64px;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${VAULT_TYPE[type] || 'Other'}</span>
+            ${[...slots].sort((a, b) => a.index - b.index).map(sl => html`
+              <span class="k-pip ${sl.progress >= sl.threshold ? 'done' : sl.progress ? 'part' : ''}">
+                ${sl.progress >= sl.threshold ? (sl.level || '✓') : `${sl.progress}/${sl.threshold}`}</span>
             `)}
           </div>
         `)}
@@ -2555,10 +2683,10 @@ function WowCharDetail({ character, rio, onBack }) {
 
     ${(c.lockouts || []).length > 0 && html`
       <div class="wow-card" style="margin:12px;">
-        <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:8px;">LOCKOUTS</div>
+        <div class="ov-title">Raid Lockouts</div>
         ${(c.lockouts || []).map(lo => html`
           <div style="display:flex;align-items:center;gap:10px;padding:3px 0;">
-            <span style="flex:1;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${lo.name}${lo.difficultyName ? ' (' + lo.difficultyName + ')' : ''}</span>
+            <span style="flex:1;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${lo.name}${lo.difficultyName ? ` (${lo.difficultyName})` : ''}</span>
             <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-accent);">${lo.defeated ?? 0}/${lo.bosses ?? '?'}</span>
             <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${resetInStr(lo.resetsAt)}</span>
           </div>
@@ -2580,7 +2708,7 @@ function WowCharDetail({ character, rio, onBack }) {
   const renderGear = () => html`<${WowGearFrame} character=${character} bnet=${bnet} />`;
 
   return html`
-    <div>
+    <div class="chardetail">
       <div style="display:flex;align-items:center;gap:10px;padding:10px 12px 0;">
         <div onClick=${onBack}
              style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-accent);cursor:pointer;padding:4px 8px;
@@ -2607,7 +2735,7 @@ function WowCharDetail({ character, rio, onBack }) {
   `;
 }
 
-function WowHub({ addon, addonErr, onReload, charCacheRef }) {
+function WowHub({ addon, addonErr, onReload, charCacheRef, onOpen }) {
   const [detailChar, setDetailChar] = useState(null);
   if (addonErr) {
     return html`<div class="wow-card" style="margin:12px;">
@@ -2637,7 +2765,7 @@ function WowHub({ addon, addonErr, onReload, charCacheRef }) {
     const cache = charCacheRef?.current || {};
     const rio = cache[ck] || Object.values(cache).find(v =>
       (v?._bnet?.profile?.name || '').toLowerCase() === (selected.name || '').toLowerCase());
-    return html`<${WowCharDetail} character=${selected} rio=${rio} onBack=${() => setDetailChar(null)} />`;
+    return html`<${WowCharDetail} character=${selected} rio=${rio} onBack=${() => setDetailChar(null)} onOpen=${onOpen} />`;
   }
 
   const totalGold = mine.reduce((n, c) => n + (c.gold || 0), 0);
@@ -3560,7 +3688,7 @@ export function WowTab({ me }) {
       </div>
       <${WowCharBar} characters=${characters} activeChar=${activeChar} subTab=${subTab} onSelect=${(idx) => { setActiveChar(idx); if (idx === -1) setSubTab('overview'); else if (subTab === 'overview') setSubTab('world'); }} charCacheRef=${charCacheRef} dataTick=${dataTick} />
       ${loading ? html`<div style="padding: 20px; color: var(--wow-muted);">Loading roster...</div>` : html`
-        ${subTab === 'hub'     && html`<${WowHub} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} charCacheRef=${charCacheRef} />`}
+        ${subTab === 'hub'     && html`<${WowHub} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} charCacheRef=${charCacheRef} onOpen=${(tab) => setSubTab(tab)} />`}
         ${subTab === 'overview' && html`<${WowOverview} characters=${characters} charCacheRef=${charCacheRef} affixCacheRef=${affixCacheRef} onSelectChar=${setActiveChar} onSubTab=${setSubTab} dataTick=${dataTick} addon=${addon} />`}
         ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} dataTick=${dataTick} addon=${addon} />`}
         ${subTab === 'pve'      && html`<${WowPVE}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
