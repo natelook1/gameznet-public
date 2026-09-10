@@ -124,7 +124,10 @@ function WowGearFrame({ character, bnet, children }) {
     <div class="doll-wrap">
       <div class="doll" style="--cc:${col};">
         <div class="doll-col">${DOLL_LEFT.map(s => html`<${DollSlot} slot=${s} item=${slotMap[s]} side="l" />`)}</div>
-        <div class="doll-mid ${render ? 'has-render' : ''}">
+        <div class="doll-mid ${render ? 'has-render' : ''}" style="--cc:${col};">
+          <div class="doll-bg" aria-hidden="true"></div>
+          ${classIcon(character?.class) ? html`<img class="doll-emblem" src=${classIcon(character?.class)} alt=""
+               aria-hidden="true" onError=${e => { e.target.style.display = 'none'; }} />` : ''}
           ${render ? html`<img class="doll-render" src=${render} alt="" loading="lazy"
                               onError=${e => { e.target.closest('.doll-mid')?.classList.remove('has-render'); e.target.style.display = 'none'; }} />` : ''}
           <div class="doll-ilvl-wrap">
@@ -503,6 +506,14 @@ function injectWowAssets() {
     .wow-wrap .doll { display: grid; grid-template-columns: minmax(0,290px) minmax(260px,420px) minmax(0,290px); gap: 14px; align-items: start; justify-content: center; margin: 0 auto; }
     .wow-wrap .doll-col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .wow-wrap .doll-mid { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; height: 260px; overflow: hidden; }
+    /* Class-coloured ground behind the figure: a soft radial in the class
+       colour with the class emblem faint on top of it. Both key off --cc, so
+       every class works without a per-class asset. */
+    .wow-wrap .doll-bg { position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 70% 60% at 50% 42%, rgba(255,255,255,0.07), transparent 72%);
+      background: radial-gradient(ellipse 70% 60% at 50% 42%, color-mix(in srgb, var(--cc) 26%, transparent), transparent 72%); }
+    .wow-wrap .doll-emblem { position: absolute; left: 50%; top: 44%; width: 62%; max-width: 230px;
+      transform: translate(-50%,-50%); opacity: 0.07; pointer-events: none; filter: grayscale(1) contrast(1.2); }
     .wow-wrap .doll-render { position: absolute; left: 50%; top: 0; width: 144%; max-width: none; display: block; margin: 0; transform: translateX(-50%) translateY(-25.9%); filter: drop-shadow(0 8px 26px rgba(0,0,0,0.65)); }
     /* Overlaid on the art, with a fade behind it so the digits stay legible
        whatever the render happens to be doing at that height. */
@@ -530,8 +541,9 @@ function injectWowAssets() {
     /* Wowhead's iconizeLinks is on globally for the other views; inside the
        doll we draw our own icon, so drop the one power.js injects rather
        than let it crowd the name. */
-    .wow-wrap .doll-item > *, .wow-wrap .doll-item .icon-added,
-    .wow-wrap .doll-item [class*="icon"] { display: none !important; }
+    .wow-wrap .doll-item .icon-added,
+    .wow-wrap .doll-item ins, .wow-wrap .doll-item del,
+    .wow-wrap .doll-item [class^="icon"], .wow-wrap .doll-item [class*=" icon"] { display: none !important; }
     .wow-wrap .doll-item { text-indent: 0 !important; padding-left: 0 !important; background-image: none !important; }
     .wow-wrap .doll-nums { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; margin-left: auto; }
     .wow-wrap .doll-ilvl { font-family: var(--wow-mono); font-size: 12px; font-weight: 700; color: var(--wow-text); min-width: 26px; text-align: right; }
