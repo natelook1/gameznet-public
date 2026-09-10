@@ -54,6 +54,35 @@
   disabled since January per Wowhead's own changelog, confirmed still 404
   live. Worth revisiting if Blizzard re-enables it.)
 
+### Fixed
+- **Mount and pet links in the WoW → World → Browse view 404'd on Wowhead**
+  (reported by Nate: `wowhead.com/mount=79` → "Page Not Found"). Root cause:
+  Blizzard's Game Data API ids for mounts/pets are not the ids Wowhead's own
+  pages use at all (e.g. mount id 6 = "Brown Horse" is actually
+  `wowhead.com/spell=458`, not `/mount=6`). **Pets, fully fixed**: a new
+  server-side catalogue (`wow_pet_catalog`, ~2,179 pets) resolves every
+  pet's real Wowhead npc id via Blizzard's own `/data/wow/pet/{id}` detail
+  endpoint — verified live against a real sample, including one entry
+  confirmed resolving correctly on Wowhead itself. **Mounts, partially
+  fixed**: no Web API anywhere exposes the correct id — only the in-game
+  `C_MountJournal.GetMountInfoByID` Lua call does, so `Capture.lua` now
+  reports each collected mount's real spell id at logout (schema 4→5,
+  addon bundle 1.4.0→1.5.0), merged into a shared lookup table. Coverage is
+  only ever as complete as what someone's own addon has actually
+  synced — same partial-coverage nature housing/decor had before enough
+  people updated. A mount or pet with no mapping yet now renders as plain
+  text rather than a link guaranteed to 404.
+- Fixing this took two more attempts than expected, both caused by
+  `power.js` (Wowhead's tooltip script, running on the desktop client with
+  `iconizeLinks`/`renameLinks` both on) rewriting the *contents* of any
+  `<a>` whose `href` matches a Wowhead URL pattern — regardless of the
+  `data-wowhead` attribute, which turned out not to be what it keys on at
+  all. Broke the Player Estate decor icon grid twice in production
+  (reported by Nate with screenshots both times) before landing on the fix
+  that actually holds: the decor tiles now open Wowhead via a plain
+  `window.open()` click handler instead of a real `href`, so `power.js`'s
+  `document.links` scan never sees them at all.
+
 ### Note
 - Player-vs-player features (seeing other players' houses, a shared
   neighborhood roster) and true per-decor duplicate counts/native categories

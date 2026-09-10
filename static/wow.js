@@ -1153,7 +1153,7 @@ function getDungeonUnlocks(lvl) {
   ];
 }
 
-function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collectionsRef, decorCatalogRef, dataTick, addon }) {
+function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collectionsRef, decorCatalogRef, petCatalogRef, mountSpellIdsRef, dataTick, addon }) {
   const [colView, setColView] = useState(null); // 'mounts' | 'pets' | null
   const [colSearch, setColSearch] = useState('');
   const [colCompareIdx, setColCompareIdx] = useState(-1);
@@ -1165,6 +1165,8 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
   const [decorSearch, setDecorSearch] = useState('');
   const [decorShowMissing, setDecorShowMissing] = useState(false);
   const [, forceDecorTick] = useState(0); // re-render once the lazy catalogue fetch below lands
+  const [, forcePetTick] = useState(0); // re-render once the lazy pet catalogue fetch lands
+  const [, forceMountTick] = useState(0); // re-render once the lazy mount spell-id fetch lands
 
   const character = characters[activeChar];
   if (!character) return null;
@@ -1188,7 +1190,40 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
     setColView(type);
     setColSearch('');
     setColCompareIdx(-1);
-    
+
+    // Pet npc-id catalogue, fetched once and shared across the whole WoW
+    // tab (mirrors decorCatalogRef) - only pets need this, mounts have no
+    // equivalent server-side fix (see the wow_mount_spell_ids comment).
+    if (type === 'pets' && petCatalogRef && petCatalogRef.current === null) {
+      petCatalogRef.current = 'loading';
+      req('/api/wow/pet/catalog')
+        .then(res => res.ok ? res.json() : null)
+        .then(d => {
+          const map = new Map();
+          for (const row of (d?.pets || [])) map.set(row.id, row);
+          petCatalogRef.current = map;
+          forcePetTick(t => t + 1);
+        })
+        .catch(() => { petCatalogRef.current = new Map(); forcePetTick(t => t + 1); });
+    }
+
+    // Whatever mount spellIDs someone's addon has already captured -
+    // account-agnostic, shared across the tab. No bulk source exists for
+    // this (see wow_mount_spell_ids), so it is only ever partial coverage,
+    // same nature as housing/decor before enough people have synced.
+    if (type === 'mounts' && mountSpellIdsRef && mountSpellIdsRef.current === null) {
+      mountSpellIdsRef.current = 'loading';
+      req('/api/wow/mount/spell-ids')
+        .then(res => res.ok ? res.json() : null)
+        .then(d => {
+          const map = new Map();
+          for (const row of (d?.mounts || [])) map.set(row.mountId, row.spellId);
+          mountSpellIdsRef.current = map;
+          forceMountTick(t => t + 1);
+        })
+        .catch(() => { mountSpellIdsRef.current = new Map(); forceMountTick(t => t + 1); });
+    }
+
     if (!collectionsRef.current[type]) {
       setLoadingCol(true);
       setColError(false);
@@ -1287,13 +1322,28 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
         }
       }
 
-      const whType = colView === 'mounts' ? 'mount' : 'npc';
-      const whLink = `https://www.wowhead.com/${whType}=${item.id}`;
+      // item.id here is Blizzard's Game Data id (mount.id / pet species.id),
+      // NOT the id Wowhead's own pages use - confirmed live 2026-09-10 that
+      // linking with it directly 404s. Resolve the real Wowhead id from the
+      // matching catalogue/lookup; render plain (unlinked) text rather than
+      // a link that is guaranteed to 404 when no mapping is available yet -
+      // mounts in particular are only ever as complete as what someone's
+      // addon has actually captured (no bulk source exists for them at all).
+      let whHref = null, whType = null, whId = null;
+      if (colView === 'mounts') {
+        const spellId = mountSpellIdsRef?.current instanceof Map ? mountSpellIdsRef.current.get(item.id) : null;
+        if (spellId) { whType = 'spell'; whId = spellId; whHref = `https://www.wowhead.com/spell=${spellId}`; }
+      } else {
+        const petRow = petCatalogRef?.current instanceof Map ? petCatalogRef.current.get(item.id) : null;
+        if (petRow?.npcId) { whType = 'npc'; whId = petRow.npcId; whHref = `https://www.wowhead.com/npc=${petRow.npcId}`; }
+      }
 
       gridItems.push(html`
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:4px;transition:all 0.15s;${boxStyle}">
           <div style="font-family:var(--wow-display);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%;">
-            <a href="${whLink}" target="_blank" style="${textStyle}text-decoration:none;" data-wowhead="${whType}=${item.id}">${item.name}</a>
+            ${whHref
+              ? html`<a href="${whHref}" target="_blank" style="${textStyle}text-decoration:none;" data-wowhead="${whType}=${whId}">${item.name}</a>`
+              : html`<span style="${textStyle}">${item.name}</span>`}
           </div>
           <div style="flex-shrink:0;">${badgeHtml}</div>
         </div>
@@ -3682,6 +3732,15 @@ export function WowTab({ me }) {
   // shared across every character - not per-character like collectionsRef.
   // Fetched once per WoW-tab session, not per character switch.
   const decorCatalogRef = useRef(null);
+  // Static pet reference catalogue (~2,179 rows: species id/name/icon/
+  // Wowhead npc id) - fixes the Browse view's broken pet links, which
+  // otherwise link with Blizzard's species id (wrong id space for Wowhead,
+  // confirmed live 2026-09-10). Same fetch-once-per-session pattern.
+  const petCatalogRef = useRef(null);
+  // Whatever mount id -> spell id mappings someone's addon has captured so
+  // far - not a full catalogue (no bulk source exists for mounts at all),
+  // just whatever /api/wow/mount/spell-ids currently has on file.
+  const mountSpellIdsRef = useRef(null);
   const scrollRef = useRef(null);
   const ptrRef = useRef({ startY: 0, active: false, busy: false });
   const pullYRef = useRef(0);
@@ -3919,7 +3978,7 @@ export function WowTab({ me }) {
       ${loading ? html`<div style="padding: 20px; color: var(--wow-muted);">Loading roster...</div>` : html`
         ${subTab === 'hub'     && html`<${WowHub} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} charCacheRef=${charCacheRef} onOpen=${(tab) => setSubTab(tab)} />`}
         ${subTab === 'overview' && html`<${WowOverview} characters=${characters} charCacheRef=${charCacheRef} affixCacheRef=${affixCacheRef} onSelectChar=${setActiveChar} onSubTab=${setSubTab} dataTick=${dataTick} addon=${addon} />`}
-        ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} decorCatalogRef=${decorCatalogRef} dataTick=${dataTick} addon=${addon} />`}
+        ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} decorCatalogRef=${decorCatalogRef} petCatalogRef=${petCatalogRef} mountSpellIdsRef=${mountSpellIdsRef} dataTick=${dataTick} addon=${addon} />`}
         ${subTab === 'pve'      && html`<${WowPVE}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'pvp'      && html`<${WowPVP}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'group'   && html`<${WowGroup} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} />`}
