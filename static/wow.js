@@ -1150,7 +1150,7 @@ function getDungeonUnlocks(lvl) {
   ];
 }
 
-function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collectionsRef, dataTick, addon }) {
+function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collectionsRef, decorCatalogRef, dataTick, addon }) {
   const [colView, setColView] = useState(null); // 'mounts' | 'pets' | null
   const [colSearch, setColSearch] = useState('');
   const [colCompareIdx, setColCompareIdx] = useState(-1);
@@ -1158,6 +1158,10 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
   const [colError, setColError] = useState(false);
   const [expandedProf, setExpandedProf] = useState(null); // profession name string
   const [profRecipeSearch, setProfRecipeSearch] = useState('');
+  const [decorFilter, setDecorFilter] = useState('all'); // category name or 'all'
+  const [decorSearch, setDecorSearch] = useState('');
+  const [decorShowMissing, setDecorShowMissing] = useState(false);
+  const [, forceDecorTick] = useState(0); // re-render once the lazy catalogue fetch below lands
 
   const character = characters[activeChar];
   if (!character) return null;
@@ -1493,8 +1497,29 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
   // Player Estate. Two independent sources, either of which can be absent:
   //   - bnet.decor  : /collections/decor, the character's collected decor.
   //   - addonHousing: C_Housing capture (owned houses, neighborhood, favor).
-  // The house itself has no Web API - /profile/.../house/{id} 404s - so an
-  // owned house only ever appears once the addon has run.
+  // The house record itself has no Web API - /profile/.../house/{id} exists
+  // but was withdrawn by Blizzard after privacy concerns (still 404s as of
+  // 2026-09, confirmed live against several id's) - so an owned house only
+  // ever appears once the addon has run.
+  //
+  // decorCatalogRef holds the ~2,138-row static reference catalogue
+  // (id/name/icon/category), shared across every character via the ref
+  // threaded down from WowTab. Fetched once, lazily, the first time this
+  // card actually renders - not on every WoW-tab open - since most sessions
+  // never look at housing.
+  if (decorCatalogRef && decorCatalogRef.current === null) {
+    decorCatalogRef.current = 'loading';
+    req('/api/wow/decor/catalog')
+      .then(res => res.ok ? res.json() : null)
+      .then(d => {
+        const map = new Map();
+        for (const row of (d?.decor || [])) map.set(row.id, row);
+        decorCatalogRef.current = map;
+        forceDecorTick(t => t + 1);
+      })
+      .catch(() => { decorCatalogRef.current = new Map(); forceDecorTick(t => t + 1); });
+  }
+
   const renderHousing = () => {
     const collected = bnet?.decor?.decor_collected || [];
     // An older client may still send houses as a Lua map ({}), not an array.
@@ -1518,6 +1543,58 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
     }
 
     const totalDecor = collected.reduce((n, d) => n + (d.quantity || 1), 0);
+
+    // Catalogue may still be loading (string 'loading') or unavailable
+    // (empty Map on fetch failure) - the card degrades to the name-only list
+    // rather than blocking on it, same principle as the rest of the tab.
+    const catalog = decorCatalogRef?.current instanceof Map ? decorCatalogRef.current : null;
+    const catalogReady = catalog != null && catalog.size > 0;
+
+    // Join each collected decor row against the catalogue for icon/category.
+    // decor.id -> catalogue key, verified 100% join rate live (2026-09-09)
+    // against three real collections (341, 184, 53 unique items).
+    const joined = collected.map(d => {
+      const meta = catalog?.get(d.decor?.id);
+      return {
+        id: d.decor?.id,
+        name: meta?.name || d.decor?.name || 'Unknown',
+        quantity: d.quantity || 1,
+        iconUrl: meta?.iconUrl || null,
+        category: meta?.category || 'Other',
+      };
+    });
+
+    const categories = catalogReady
+      ? [...new Set(joined.map(j => j.category))].sort()
+      : [];
+
+    const q = decorSearch.trim().toLowerCase();
+    const ownedIds = new Set(joined.map(j => j.id));
+    const missing = catalogReady && decorShowMissing
+      ? [...catalog.values()].filter(c => !ownedIds.has(c.id))
+      : [];
+
+    const visibleOwned = joined
+      .filter(j => decorFilter === 'all' || j.category === decorFilter)
+      .filter(j => !q || j.name.toLowerCase().includes(q))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const visibleMissing = missing
+      .filter(c => decorFilter === 'all' || c.category === decorFilter)
+      .filter(c => !q || c.name.toLowerCase().includes(q))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const tile = (name, iconUrl, quantity, owned) => html`
+      <div title=${name + (quantity > 1 ? ` ×${quantity}` : '')}
+           style="position:relative;width:40px;height:40px;border-radius:4px;flex-shrink:0;
+                  background:var(--wow-bg);border:1px solid ${owned ? 'var(--wow-border)' : 'var(--wow-border2)'};
+                  opacity:${owned ? 1 : 0.35};overflow:hidden;">
+        ${iconUrl ? html`<img src=${iconUrl} alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;"
+             onError=${e => { e.target.style.display = 'none'; }} />`
+          : html`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px;">🪑</div>`}
+        ${quantity > 1 && html`
+          <span style="position:absolute;bottom:0;right:0;font-family:var(--wow-mono);font-size:9px;color:#fff;
+                        background:rgba(0,0,0,0.75);padding:0 3px;border-radius:2px 0 0 0;line-height:1.4;">×${quantity}</span>`}
+      </div>`;
 
     return html`
       <div style="display:flex;flex-direction:column;gap:8px;">
@@ -1548,21 +1625,59 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
 
         ${collected.length > 0 && html`
           <div style="background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;padding:8px 10px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
               <span style="font-family:var(--wow-display);font-size:13px;font-weight:600;">Decor Collected</span>
               <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);">
                 ${collected.length.toLocaleString()} unique${totalDecor !== collected.length ? ` · ${totalDecor.toLocaleString()} total` : ''}
+                ${catalogReady ? html` · ${Math.round(100 * collected.length / catalog.size)}% of ${catalog.size.toLocaleString()}` : ''}
               </span>
             </div>
-            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
-              ${collected.slice(0, 12).map(d => html`
-                <span style="font-size:11px;color:var(--wow-muted);background:var(--wow-bg);border:1px solid var(--wow-border);border-radius:3px;padding:2px 6px;"
-                      title="${d.decor?.name || ''}${(d.quantity || 1) > 1 ? ` ×${d.quantity}` : ''}">
-                  ${d.decor?.name || 'Unknown'}${(d.quantity || 1) > 1 ? html` ×${d.quantity}` : ''}
-                </span>`)}
-              ${collected.length > 12 && html`
+
+            ${catalogReady && html`
+              <div style="height:4px;background:var(--wow-bg);border-radius:2px;overflow:hidden;margin-top:6px;">
+                <div style="height:100%;background:var(--wow-gold);width:${Math.min(100, Math.round(100 * collected.length / catalog.size))}%"></div>
+              </div>`}
+
+            ${!catalogReady && decorCatalogRef?.current === 'loading' && html`
+              <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);margin-top:6px;">Loading decor catalogue…</div>`}
+
+            ${catalogReady && html`
+              <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;">
+                ${['all', ...categories].map(cat => html`
+                  <div onClick=${() => setDecorFilter(cat)}
+                       style="font-family:var(--wow-mono);font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;text-transform:capitalize;
+                              background:${decorFilter === cat ? 'var(--wow-gold-dim)' : 'var(--wow-surface2)'};
+                              color:${decorFilter === cat ? 'var(--wow-gold)' : 'var(--wow-muted)'};">
+                    ${cat === 'all' ? 'All' : cat}
+                  </div>`)}
+                <div onClick=${() => setDecorShowMissing(!decorShowMissing)}
+                     style="font-family:var(--wow-mono);font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;margin-left:auto;
+                            background:${decorShowMissing ? 'var(--wow-gold-dim)' : 'var(--wow-surface2)'};
+                            color:${decorShowMissing ? 'var(--wow-gold)' : 'var(--wow-muted)'};">
+                  ${decorShowMissing ? '✓ showing missing' : 'show missing'}
+                </div>
+              </div>
+              <input type="text" value=${decorSearch} placeholder="Filter decor…"
+                     onInput=${e => setDecorSearch(e.target.value)}
+                     style="width:100%;box-sizing:border-box;background:var(--wow-bg);border:1px solid var(--wow-border2);
+                            color:var(--wow-text);font-family:var(--wow-mono);font-size:11px;padding:5px 7px;border-radius:3px;margin-top:6px;" />`}
+
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;max-height:260px;overflow-y:auto;">
+              ${catalogReady
+                ? [
+                    ...visibleOwned.map(j => tile(j.name, j.iconUrl, j.quantity, true)),
+                    ...visibleMissing.map(c => tile(c.name, c.iconUrl, 1, false)),
+                  ]
+                : collected.slice(0, 12).map(d => html`
+                    <span style="font-size:11px;color:var(--wow-muted);background:var(--wow-bg);border:1px solid var(--wow-border);border-radius:3px;padding:2px 6px;"
+                          title="${d.decor?.name || ''}${(d.quantity || 1) > 1 ? ` ×${d.quantity}` : ''}">
+                      ${d.decor?.name || 'Unknown'}${(d.quantity || 1) > 1 ? html` ×${d.quantity}` : ''}
+                    </span>`)}
+              ${!catalogReady && decorCatalogRef?.current !== 'loading' && collected.length > 12 && html`
                 <span style="font-size:11px;color:var(--wow-muted);padding:2px 6px;">+${collected.length - 12} more</span>`}
             </div>
+            ${catalogReady && (visibleOwned.length + visibleMissing.length) === 0 && html`
+              <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);padding:8px 0 0;">Nothing matches that filter.</div>`}
           </div>`}
       </div>`;
   };
@@ -3340,6 +3455,7 @@ function WowPrivacy({ privacy, onChange }) {
     { id: 'counts',     label: 'Bag/bank counts', hint: 'how full your bags are, not what is in them' },
     { id: 'bags',       label: 'Bag contents',    hint: 'the actual items in bags, bank and warband' },
     { id: 'played',     label: 'Played time',     hint: '/played per character · public by default' },
+    { id: 'housing',    label: 'Player Estate',   hint: 'house name, plot and neighborhood · aggregate = hidden from others' },
   ];
   const TIERS = ['private', 'aggregate', 'public'];
 
@@ -3453,6 +3569,10 @@ export function WowTab({ me }) {
   const affixCacheRef = useRef(null);
   const bnetTokenRef = useRef(null);
   const collectionsRef = useRef({});
+  // Static decor reference catalogue (~2,138 rows: id/name/icon/category),
+  // shared across every character - not per-character like collectionsRef.
+  // Fetched once per WoW-tab session, not per character switch.
+  const decorCatalogRef = useRef(null);
   const scrollRef = useRef(null);
   const ptrRef = useRef({ startY: 0, active: false, busy: false });
   const pullYRef = useRef(0);
@@ -3690,7 +3810,7 @@ export function WowTab({ me }) {
       ${loading ? html`<div style="padding: 20px; color: var(--wow-muted);">Loading roster...</div>` : html`
         ${subTab === 'hub'     && html`<${WowHub} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} charCacheRef=${charCacheRef} onOpen=${(tab) => setSubTab(tab)} />`}
         ${subTab === 'overview' && html`<${WowOverview} characters=${characters} charCacheRef=${charCacheRef} affixCacheRef=${affixCacheRef} onSelectChar=${setActiveChar} onSubTab=${setSubTab} dataTick=${dataTick} addon=${addon} />`}
-        ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} dataTick=${dataTick} addon=${addon} />`}
+        ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} decorCatalogRef=${decorCatalogRef} dataTick=${dataTick} addon=${addon} />`}
         ${subTab === 'pve'      && html`<${WowPVE}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'pvp'      && html`<${WowPVP}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'group'   && html`<${WowGroup} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} />`}
