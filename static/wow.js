@@ -102,9 +102,20 @@ function WowGearFrame({ character, bnet, children }) {
   if (!equipped.length) {
     return html`
       <div class="doll-wrap">
-        <div class="doll-none">
-          Equipment comes from the Blizzard API and may take a moment on first open.
+        <div class="doll loading">
+          <div class="doll-col">${DOLL_LEFT.map(k => html`<${DollSlot} slot=${k} side="l" />`)}</div>
+          <div class="doll-mid">
+            <div class="doll-ilvl-wrap">
+              <div class="doll-ilvl-big" style="color:${col};">—</div>
+              <div class="doll-ilvl-lbl">equipped ilvl</div>
+            </div>
+          </div>
+          <div class="doll-col">${DOLL_RIGHT.map(k => html`<${DollSlot} slot=${k} side="r" />`)}</div>
         </div>
+        <div class="doll-bottom">
+          ${DOLL_BOTTOM.map(k => html`<${DollSlot} slot=${k} side="b" />`)}
+        </div>
+        <div class="doll-hint">Equipment comes from the Blizzard API and may take a moment on first open.</div>
         ${children}
       </div>`;
   }
@@ -516,11 +527,19 @@ function injectWowAssets() {
     .wow-wrap .doll-slot-name { font-family: var(--wow-mono); font-size: 8px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--wow-muted); }
     .wow-wrap .doll-item { font-family: var(--wow-display); font-size: 11.5px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; display: block; }
     .wow-wrap .doll-item:hover { text-decoration: underline; }
+    /* Wowhead's iconizeLinks is on globally for the other views; inside the
+       doll we draw our own icon, so drop the one power.js injects rather
+       than let it crowd the name. */
+    .wow-wrap .doll-item .iconsmall, .wow-wrap .doll-item .iconmedium,
+    .wow-wrap .doll-item .iconlarge, .wow-wrap .doll-item .icontiny { display: none !important; }
+    .wow-wrap .doll-item { text-indent: 0 !important; padding-left: 0 !important; background-image: none !important; }
     .wow-wrap .doll-nums { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; margin-left: auto; }
     .wow-wrap .doll-ilvl { font-family: var(--wow-mono); font-size: 12px; font-weight: 700; color: var(--wow-text); min-width: 26px; text-align: right; }
     .wow-wrap .doll-dur { font-size: 11px; font-style: normal; width: 12px; text-align: center; flex-shrink: 0; cursor: help; line-height: 1; }
 
     .wow-wrap .doll-bottom { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; margin: 10px auto 0; max-width: 1028px; }
+    .wow-wrap .doll.loading { opacity: 0.45; }
+    .wow-wrap .doll-hint { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); text-align: center; padding: 8px 0 0; }
     .wow-wrap .doll-none { font-family: var(--wow-mono); font-size: 11px; color: var(--wow-muted); background: var(--wow-surface); border: 1px solid var(--wow-border); border-radius: 5px; padding: 14px; line-height: 1.6; }
 
     /* World keeps a one-line gear summary instead of the full doll. */
@@ -536,8 +555,10 @@ function injectWowAssets() {
     @media (max-width: 768px) {
       .wow-wrap .doll-wrap { padding: 0 8px 12px; }
       .wow-wrap .doll { grid-template-columns: 1fr; gap: 4px; }
-      .wow-wrap .doll-mid { order: -1; margin-bottom: 8px; height: 300px; padding-bottom: 0; }
-      .wow-wrap .doll-render { width: 190%; margin: -4% 0 0 -45%; }
+      .wow-wrap .doll-mid { order: -1; margin-bottom: 8px; height: 240px; padding-bottom: 0; }
+      .wow-wrap .doll-render { width: 132%; transform: translateX(-50%) translateY(-24%); }
+      .wow-wrap .doll-slot { gap: 10px; padding: 5px 8px; }
+      .wow-wrap .doll-slot.b { gap: 10px; }
       .wow-wrap .doll-ilvl-big { font-size: 34px; }
       .wow-wrap .doll-mid.has-render .doll-ilvl-wrap { padding: 5px 16px 6px; bottom: 2px; }
       .wow-wrap .doll-slot.r { flex-direction: row; }
@@ -3315,6 +3336,13 @@ export function WowTab({ me }) {
   useEffect(() => {
     if ((HOST.extraTabs || []).some(t => t.id === subTab) && HOST.onHostTab) HOST.onHostTab(subTab);
   }, [subTab]);
+
+  // Expose the component's refresh so host chrome (the desktop REFRESH button)
+  // can drive the same path pull-to-refresh uses on mobile.
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.wowFullRefresh = fullRefresh;
+    return () => { if (typeof window !== 'undefined' && window.wowFullRefresh === fullRefresh) delete window.wowFullRefresh; };
+  });
 
   const ptrHeight = refreshing ? 44 : Math.min(44, pullY * 0.6);
   const ptrReady = pullY >= PTR_THRESHOLD;
