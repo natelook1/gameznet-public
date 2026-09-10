@@ -1,5 +1,39 @@
 # Changelog
 
+## v1.11.40 — 2026-09-10
+
+### Added
+- **Player Estate — decor catalogue + graphical icon grid**. The estate card
+  no longer shows a dozen grey text chips: owned decor now renders as icon
+  tiles (with quantity badges), against a new ~2,138-row catalogue of every
+  housing decor item in the game (id/name/icon/guessed category), so you get
+  a real completion percentage and an owned-vs-missing toggle instead of a
+  bare count. Category filter chips use a 13-bucket name-keyword guesser —
+  Blizzard's API has no category field on decor at all, so this is a
+  heuristic (measured at 46% "Other" on the full catalogue), not a real
+  taxonomy, but it's a lot more useful than nothing. Shipped identically on
+  desktop and mobile.
+- **Player Estate privacy fix**: house name/plot/neighborhood used to be
+  unconditionally visible to every player on the hub — the only WoW addon
+  field with no privacy tier at all. Now defaults to `aggregate` like gold,
+  and is configurable in the same Addon Privacy settings as everything else.
+- **Housing addon capture (schema 3→4)**: `Capture.lua`'s `ScanHousing()`
+  now also reports the tracked house, who can visit your house/plot
+  (`GetHousingAccessFlags`), account-wide decor storage totals (owned vs.
+  cap), house sell-back refund amount, and exterior type/size — six new
+  read-only fields, all logout-safe. Addon bundle 1.3.0 → 1.4.0; existing
+  installs pick it up automatically the next time GamezNET pushes the addon.
+
+### Note
+- Player-vs-player features (seeing other players' houses, a shared
+  neighborhood roster) and true per-decor duplicate counts/native categories
+  (`GetCatalogEntryInfoByItem`, looped over the full catalogue) were
+  deliberately left out of this pass — the former needs an
+  identifier-resolution strategy or an event-driven capture path the addon
+  doesn't have yet, and the latter needs an in-game cost check before
+  committing to a ~2,138-call logout loop. See
+  `infra-notes/notes/gameznet-player-estate-plan.md` for the full writeup.
+
 ## v1.11.19 — 2026-09-08
 
 ### Fixed

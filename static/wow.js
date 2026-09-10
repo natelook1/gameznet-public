@@ -1596,6 +1596,23 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
                         background:rgba(0,0,0,0.75);padding:0 3px;border-radius:2px 0 0 0;line-height:1.4;">×${quantity}</span>`}
       </div>`;
 
+    // Access flags is a bitfield (Enum.HouseSettingFlags). Bit meanings below
+    // are taken from the wiki's flag list, unverified against a live account
+    // with non-default settings - and a "5 audiences x house-or-plot" bitfield
+    // reads as multi-select (e.g. Guild AND Friends both allowed at once),
+    // not a single narrowest-wins choice, so every set bit is shown rather
+    // than picking one. House and plot access share the same five audiences,
+    // just at different bit offsets - one table drives both halves.
+    const ACCESS_AUDIENCES = [
+      ['Anyone', 0x1, 0x20], ['Neighbors', 0x2, 0x40],
+      ['Guild', 0x4, 0x80], ['Friends', 0x8, 0x100], ['Party', 0x10, 0x200],
+    ];
+    const describeAccess = (flags, plotBit) => {
+      if (flags == null) return null;
+      const hits = ACCESS_AUDIENCES.filter(([, houseBit, pBit]) => (flags & (plotBit ? pBit : houseBit)) !== 0);
+      return hits.length ? hits.map(h => h[0]).join('+') : 'Private';
+    };
+
     return html`
       <div style="display:flex;flex-direction:column;gap:8px;">
         ${houses.map(h => html`
@@ -1608,6 +1625,16 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
             </div>
             ${h.neighborhoodName && html`
               <div style="font-size:11px;color:var(--wow-muted);margin-top:2px;">${h.neighborhoodName}</div>`}
+            ${(addonHousing?.exteriorTypeName || addonHousing?.accessFlags != null || addonHousing?.refundAmount != null) && html`
+              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">
+                ${addonHousing.exteriorTypeName && html`<span>🏠 ${addonHousing.exteriorTypeName}</span>`}
+                ${addonHousing.accessFlags != null && html`<span>🚪 ${describeAccess(addonHousing.accessFlags, false)} · 🪧 ${describeAccess(addonHousing.accessFlags, true)}</span>`}
+                ${/* Currency unit (copper vs. a plain gold-style integer) is
+                     unconfirmed for this API - Blizzard's own docs don't say,
+                     and it's not worth guessing wrong on a money figure. Shown
+                     unlabeled rather than mislabeled; fix once verified in-game. */''}
+                ${addonHousing.refundAmount != null && addonHousing.refundAmount > 0 && html`<span>↩ ${addonHousing.refundAmount.toLocaleString()} refund</span>`}
+              </div>`}
           </div>`)}
 
         ${addonHousing?.favor != null && addonHousing?.favorMax > 0 && html`
@@ -1620,6 +1647,20 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
             </div>
             <div style="height:4px;background:var(--wow-bg);border-radius:2px;overflow:hidden;">
               <div style="height:100%;background:var(--wow-gold);width:${Math.min(100, Math.round((addonHousing.favor / addonHousing.favorMax) * 100))}%"></div>
+            </div>
+          </div>`}
+
+        ${addonHousing?.decorStoredTotal != null && addonHousing?.decorStorageMax > 0 && html`
+          <div style="background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;padding:8px 10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <span style="font-family:var(--wow-display);font-size:13px;font-weight:600;">Decor Storage</span>
+              <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);">
+                ${addonHousing.decorStoredTotal.toLocaleString()} / ${addonHousing.decorStorageMax.toLocaleString()}
+                ${addonHousing.decorStoredExempt > 0 ? html` <span style="color:var(--wow-muted);">(${addonHousing.decorStoredExempt} exempt)</span>` : ''}
+              </span>
+            </div>
+            <div style="height:4px;background:var(--wow-bg);border-radius:2px;overflow:hidden;">
+              <div style="height:100%;background:var(--wow-gold);width:${Math.min(100, Math.round((addonHousing.decorStoredTotal / addonHousing.decorStorageMax) * 100))}%"></div>
             </div>
           </div>`}
 
