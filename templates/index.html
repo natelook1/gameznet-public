@@ -3052,6 +3052,7 @@
     document.getElementById('fullroute-btn').style.display = 'inline-block';
     document.getElementById('footer-status-setter').style.display = 'flex';
     setStatus('disconnected');
+    _applyRoute();
     refreshMobileStatus();
     setInterval(refreshMobileStatus, 30000);
   }
@@ -5060,7 +5061,10 @@
   // ── Tab switching ──────────────────────────────────────────────────────────
   function switchTab(name, btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    if (!btn) btn = document.querySelector(`.tab-btn.${name}-tab`) ||
+                    document.querySelector('.tab-btn.home-tab');
+    if (btn) btn.classList.add('active');
+    if (!_routing) _setRoute(name);
     const dash = document.getElementById('dashboard-section');
     const dc   = document.getElementById('discord-section');
     const files = document.getElementById('files-section');
@@ -7200,6 +7204,36 @@
       }
     });
   }
+
+  // ── Tab routing ────────────────────────────────────────────────────────
+  // Hash routes rather than paths: no Flask handler and no CF Pages rewrite is
+  // needed, so the same links work on the desktop client and on mobile, and a
+  // direct visit can never 404. #wow/keys addresses a WoW sub-tab too.
+  const ROUTE_TABS = ['home','discord','files','conan','zomboid','factory','wow'];
+  let _routing = false;
+
+  function _setRoute(name, sub) {
+    const hash = '#' + name + (sub ? '/' + sub : '');
+    if (location.hash !== hash) history.replaceState(null, '', hash);
+  }
+
+  function _applyRoute() {
+    const raw = (location.hash || '').replace(/^#\/?/, '');
+    if (!raw) return;
+    const [tab, sub] = raw.split('/');
+    if (!ROUTE_TABS.includes(tab)) return;
+    _routing = true;
+    try {
+      switchTab(tab, document.querySelector(`.tab-btn.${tab}-tab`));
+      if (tab === 'wow' && sub) window.GZN_WOW_ROUTE = sub;
+    } finally { _routing = false; }
+  }
+
+  window.addEventListener('hashchange', _applyRoute);
+  // The WoW component reports its own sub-tab so #wow/keys survives a refresh.
+  window.wowRouteSubTab = function(sub) {
+    if (!_routing && location.hash.startsWith('#wow')) _setRoute('wow', sub);
+  };
 
   // Drives the shared component's own refresh (the same path pull-to-refresh
   // uses on mobile), with a brief spin so the click is acknowledged.

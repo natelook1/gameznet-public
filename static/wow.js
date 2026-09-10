@@ -578,6 +578,61 @@ function injectWowAssets() {
       .wow-wrap .doll-bottom { grid-template-columns: 1fr; margin-top: 4px; }
     }
 
+    /* ── Keys & Lockouts ──────────────────────────────────────────────────── */
+    .wow-wrap .keys { padding: 10px 12px 16px; }
+    .wow-wrap .keys-bar { display: flex; align-items: center; gap: 8px; padding: 2px 2px 10px; font-family: var(--wow-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); }
+    .wow-wrap .keys-stat b { font-family: var(--wow-display); font-size: 13px; font-weight: 700; color: var(--wow-text); margin-right: 3px; }
+    .wow-wrap .keys-sep { color: var(--wow-border2); }
+    .wow-wrap .keys-reload { margin-left: auto; font-size: 13px; cursor: pointer; padding: 4px 6px; border-radius: 4px; }
+    .wow-wrap .keys-reload:hover { color: var(--wow-accent); background: var(--wow-surface2); }
+
+    .wow-wrap .keys-card { background: var(--wow-surface); border: 1px solid var(--wow-border); border-radius: 6px; padding: 11px 13px; margin-bottom: 10px; }
+    .wow-wrap .keys-title { font-family: var(--wow-display); font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--wow-gold); margin-bottom: 9px; }
+    .wow-wrap .keys-none { font-family: var(--wow-mono); font-size: 11px; color: var(--wow-muted); }
+    .wow-wrap .keys-rows { display: flex; flex-direction: column; gap: 5px; }
+
+    .wow-wrap .k-who { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+    .wow-wrap .k-icon { width: 17px; height: 17px; border-radius: 3px; flex-shrink: 0; }
+    .wow-wrap .k-name { font-family: var(--wow-display); font-size: 13px; font-weight: 700; white-space: nowrap; }
+    .wow-wrap .k-owner { font-family: var(--wow-mono); font-size: 9px; color: var(--wow-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .wow-wrap .k-row { display: flex; align-items: center; gap: 10px; background: var(--wow-surface2); border-left: 3px solid var(--cc, var(--wow-gold)); border-radius: 4px; padding: 7px 10px; }
+    .wow-wrap .k-dungeon { flex: 1; min-width: 0; font-family: var(--wow-mono); font-size: 10px; color: var(--wow-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wow-wrap .k-level { font-family: var(--wow-display); font-size: 17px; font-weight: 700; color: var(--wow-muted); flex-shrink: 0; }
+    .wow-wrap .k-level.mid { color: var(--wow-accent); }
+    .wow-wrap .k-level.high { color: var(--wow-gold); text-shadow: 0 0 10px rgba(240,180,41,0.35); }
+
+    .wow-wrap .k-vault, .wow-wrap .k-lock { background: var(--wow-surface2); border-left: 3px solid var(--cc, var(--wow-gold)); border-radius: 4px; padding: 7px 10px; }
+    .wow-wrap .k-vault-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .wow-wrap .k-ready { margin-left: auto; font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); }
+    .wow-wrap .k-ready.on { color: var(--wow-green); }
+
+    .wow-wrap .k-slots { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+    .wow-wrap .k-group { display: inline-flex; align-items: center; gap: 4px; }
+    .wow-wrap .k-group-lbl { font-family: var(--wow-mono); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); margin-right: 1px; }
+    .wow-wrap .k-pip { font-family: var(--wow-mono); font-size: 9px; min-width: 30px; text-align: center; padding: 2px 5px; border-radius: 3px; background: var(--wow-bg); border: 1px solid var(--wow-border); color: var(--wow-muted); cursor: help; }
+    .wow-wrap .k-pip.part { border-color: var(--wow-border2); color: var(--wow-dim); }
+    .wow-wrap .k-pip.done { background: var(--wow-green-dim); border-color: rgba(34,197,94,0.35); color: var(--wow-green); font-weight: 700; }
+
+    .wow-wrap .k-lo { display: flex; align-items: center; gap: 8px; padding: 3px 0 3px 24px; }
+    .wow-wrap .k-lo-name { flex: 0 1 auto; max-width: 260px; min-width: 0; font-family: var(--wow-mono); font-size: 10px; color: var(--wow-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wow-wrap .k-lo-spacer { flex: 1; }
+    .wow-wrap .k-lo-name i { color: var(--wow-muted); font-style: normal; }
+    .wow-wrap .k-lo-bar { width: 54px; height: 4px; border-radius: 2px; background: var(--wow-bg); border: 1px solid var(--wow-border); overflow: hidden; flex-shrink: 0; }
+    .wow-wrap .k-lo-fill { display: block; height: 100%; background: var(--cc, var(--wow-accent)); }
+    .wow-wrap .k-lo-count { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-text); min-width: 30px; text-align: right; }
+    .wow-wrap .k-lo-reset { font-family: var(--wow-mono); font-size: 9px; color: var(--wow-muted); min-width: 46px; text-align: right; }
+    .wow-wrap .k-lo.done .k-lo-fill { background: var(--wow-green); }
+    .wow-wrap .k-lo.done .k-lo-count { color: var(--wow-green); }
+    .wow-wrap .k-lo.done .k-lo-name { color: var(--wow-muted); }
+
+    @media (max-width: 768px) {
+      .wow-wrap .keys { padding: 8px 8px 14px; }
+      .wow-wrap .k-dungeon { display: none; }
+      .wow-wrap .k-lo { padding-left: 8px; }
+      .wow-wrap .k-lo-bar { display: none; }
+    }
+
     /* ── Hub ─────────────────────────────────────────────────────────────── */
     .wow-wrap .hub { padding: 10px 12px 16px; }
     .wow-wrap .hub-bar { display: flex; align-items: center; gap: 10px; padding: 2px 2px 10px; }
@@ -2748,49 +2803,98 @@ function WowKeys({ addon, addonErr, onReload }) {
   if (empty) return empty;
 
   const chars = addon.characters || [];
-  const withKeys = chars.filter(c => c.keystone && c.keystone.level);
+  const withKeys = [...chars.filter(c => (c.keystone || {}).level)]
+                        .sort((a, b) => (b.keystone.level || 0) - (a.keystone.level || 0));
+  const locked = chars.filter(c => (c.lockouts || []).length > 0);
+  // Vault progress is what keys and lockouts feed into, so it belongs here.
+  const vaults = chars
+    .map(c => ({ c, slots: c.vault || [], ready: (c.vault || []).filter(v => v.progress >= v.threshold).length }))
+    .filter(v => v.slots.length && v.slots.some(x => x.progress > 0))
+    .sort((a, b) => b.ready - a.ready);
+  const totalReady = vaults.reduce((n, v) => n + v.ready, 0);
+
+  const who = c => html`
+    <span class="k-who">
+      ${classIcon(c.class) ? html`<img class="k-icon" src=${classIcon(c.class)} alt=""
+           onError=${e => { e.target.style.visibility = 'hidden'; }} />` : ''}
+      <span class="k-name" style="color:${classColor(c.class)};">${c.name}</span>
+      ${c.mine ? '' : html`<span class="k-owner">${c.player_name}</span>`}
+    </span>`;
 
   return html`
-    <div>
-      <div style="display:flex;padding:10px 12px 0;">
-        <div style="margin-left:auto;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);cursor:pointer;padding:5px;"
-             onClick=${onReload}>⟳</div>
-      </div>
-      <div class="wow-card" style="margin:12px;">
-        <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:10px;">KEYSTONES HELD</div>
-        ${withKeys.length === 0
-          ? html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">Nobody is holding a keystone.</div>`
-          : withKeys.sort((a, b) => (b.keystone.level || 0) - (a.keystone.level || 0)).map(c => html`
-            <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--wow-border2);">
-              <div style="flex:1;min-width:0;">
-                <div style="font-family:var(--wow-display);font-size:12px;color:var(--wow-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                  ${c.name} <span style="color:var(--wow-muted);font-size:10px;">${c.player_name}</span>
-                </div>
-                <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${c.keystone.name || 'unknown dungeon'}</div>
-              </div>
-              <div style="font-family:var(--wow-display);font-size:16px;color:var(--wow-accent);">+${c.keystone.level}</div>
-            </div>
-          `)}
+    <div class="keys">
+      <div class="keys-bar">
+        <span class="keys-stat"><b>${withKeys.length}</b> key${withKeys.length === 1 ? '' : 's'}</span>
+        <span class="keys-sep">·</span>
+        <span class="keys-stat"><b>${totalReady}</b> vault slot${totalReady === 1 ? '' : 's'} ready</span>
+        <span class="keys-sep">·</span>
+        <span class="keys-stat"><b>${locked.length}</b> locked</span>
+        <span class="keys-reload" onClick=${onReload} title="Reload addon data">⟳</span>
       </div>
 
-      <div class="wow-card" style="margin:12px;">
-        <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:10px;">RAID LOCKOUTS</div>
-        ${chars.filter(c => (c.lockouts || []).length > 0).length === 0
-          ? html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No active lockouts.</div>`
-          : chars.filter(c => (c.lockouts || []).length > 0).map(c => html`
-            <div style="margin-bottom:8px;">
-              <div style="font-family:var(--wow-display);font-size:11px;color:var(--wow-text);">${c.name} <span style="color:var(--wow-muted);">${c.player_name}</span></div>
-              ${(c.lockouts || []).map(lo => html`
-                <div style="display:flex;align-items:center;gap:8px;padding:3px 0 3px 10px;">
-                  <span style="flex:1;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                    ${lo.name} ${lo.difficultyName ? `(${lo.difficultyName})` : ''}
-                  </span>
-                  <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-accent);">${lo.defeated ?? 0}/${lo.bosses ?? '?'}</span>
-                  <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${resetInStr(lo.resetsAt)}</span>
-                </div>
-              `)}
-            </div>
-          `)}
+      <div class="keys-card">
+        <div class="keys-title">Keystones</div>
+        ${withKeys.length === 0
+          ? html`<div class="keys-none">Nobody is holding a keystone.</div>`
+          : html`<div class="keys-rows">
+              ${withKeys.map(c => html`
+                <div class="k-row" style="--cc:${classColor(c.class)};">
+                  ${who(c)}
+                  <span class="k-dungeon">${c.keystone.name || 'unknown dungeon'}</span>
+                  <span class="k-level ${c.keystone.level >= 15 ? 'high' : c.keystone.level >= 10 ? 'mid' : ''}">+${c.keystone.level}</span>
+                </div>`)}
+            </div>`}
+      </div>
+
+      <div class="keys-card">
+        <div class="keys-title">Great Vault</div>
+        ${vaults.length === 0
+          ? html`<div class="keys-none">No vault progress yet this week.</div>`
+          : html`<div class="keys-rows">
+              ${vaults.map(({ c, slots, ready }) => html`
+                <div class="k-vault" style="--cc:${classColor(c.class)};">
+                  <div class="k-vault-head">
+                    ${who(c)}
+                    <span class="k-ready ${ready ? 'on' : ''}">${ready}/${slots.length}</span>
+                  </div>
+                  <div class="k-slots">
+                    ${Object.entries(slots.reduce((a, v) => { (a[v.type] = a[v.type] || []).push(v); return a; }, {}))
+                      .map(([type, group]) => html`
+                        <div class="k-group">
+                          <span class="k-group-lbl">${VAULT_TYPE[type] || 'Other'}</span>
+                          ${[...group].sort((a, b) => a.index - b.index).map(v => html`
+                            <span class="k-pip ${v.progress >= v.threshold ? 'done' : v.progress ? 'part' : ''}"
+                                  title="${VAULT_TYPE[type] || 'Slot'} ${v.index}: ${v.progress}/${v.threshold}${v.level ? ` — item level ${v.level}` : ''}">
+                              ${v.progress >= v.threshold ? (v.level || '✓') : `${v.progress}/${v.threshold}`}
+                            </span>`)}
+                        </div>`)}
+                  </div>
+                </div>`)}
+            </div>`}
+      </div>
+
+      <div class="keys-card">
+        <div class="keys-title">Raid Lockouts</div>
+        ${locked.length === 0
+          ? html`<div class="keys-none">No active lockouts.</div>`
+          : html`<div class="keys-rows">
+              ${locked.map(c => html`
+                <div class="k-lock" style="--cc:${classColor(c.class)};">
+                  <div class="k-vault-head">${who(c)}</div>
+                  ${(c.lockouts || []).map(lo => {
+                    const pct = lo.bosses ? Math.round((lo.defeated ?? 0) / lo.bosses * 100) : 0;
+                    const done = lo.bosses && (lo.defeated ?? 0) >= lo.bosses;
+                    return html`
+                      <div class="k-lo ${done ? 'done' : ''}">
+                        <span class="k-lo-name">${lo.name}${lo.difficultyName ? html` <i>${lo.difficultyName}</i>` : ''}</span>
+                        <span class="k-lo-spacer"></span>
+                        <span class="k-lo-bar"><span class="k-lo-fill" style="width:${pct}%;"></span></span>
+                        <span class="k-lo-count">${lo.defeated ?? 0}/${lo.bosses ?? '?'}</span>
+                        <span class="k-lo-reset">${resetInStr(lo.resetsAt)}</span>
+                      </div>`;
+                  })}
+                </div>`)}
+            </div>`}
       </div>
     </div>
   `;
@@ -3157,7 +3261,8 @@ function WowCharBar({ characters, activeChar, subTab, onSelect, charCacheRef, da
 export function WowTab({ me }) {
   const [characters, setCharacters] = useState([]);
   const [activeChar, setActiveChar] = useState(-1); // -1 = Overview/Roster
-  const [subTab, setSubTab] = useState('hub');
+  const [subTab, setSubTab] = useState(
+    (typeof window !== 'undefined' && window.GZN_WOW_ROUTE) || HOST.defaultTab || 'overview');
   const [loading, setLoading] = useState(true);
   const [dataTick, setDataTick] = useState(0); // Forces re-render when background data loads
   const [resetStr, setResetStr] = useState('—');
@@ -3347,6 +3452,8 @@ export function WowTab({ me }) {
   // back re-populates it.
   useEffect(() => {
     if ((HOST.extraTabs || []).some(t => t.id === subTab) && HOST.onHostTab) HOST.onHostTab(subTab);
+    // Report the sub-tab so the host can keep #wow/<sub> in the URL.
+    if (typeof window !== 'undefined' && window.wowRouteSubTab) window.wowRouteSubTab(subTab);
   }, [subTab]);
 
   // Expose the component's refresh so host chrome (the desktop REFRESH button)
