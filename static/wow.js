@@ -578,8 +578,58 @@ function injectWowAssets() {
       .wow-wrap .doll-bottom { grid-template-columns: 1fr; margin-top: 4px; }
     }
 
+    /* ── Group ────────────────────────────────────────────────────────────── */
+    .wow-wrap .group { padding: 10px 12px 16px; max-width: 1100px; margin: 0 auto; }
+    .wow-wrap .group-bar { display: flex; align-items: center; gap: 8px; padding: 2px 2px 10px; font-family: var(--wow-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); }
+    .wow-wrap .group-stat b { font-family: var(--wow-display); font-size: 13px; font-weight: 700; color: var(--wow-text); margin-right: 3px; }
+    .wow-wrap .group-stat.gold b { color: var(--wow-gold); }
+    .wow-wrap .group-sep { color: var(--wow-border2); }
+    .wow-wrap .group-reload { margin-left: auto; font-size: 13px; cursor: pointer; padding: 4px 6px; border-radius: 4px; }
+    .wow-wrap .group-reload:hover { color: var(--wow-accent); background: var(--wow-surface2); }
+    .wow-wrap .group-rank { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-dim); background: var(--wow-surface); border: 1px solid var(--wow-border); border-left: 3px solid var(--wow-gold); border-radius: 5px; padding: 8px 11px; margin-bottom: 10px; line-height: 1.7; }
+    .wow-wrap .group-rank b { color: var(--wow-gold); font-family: var(--wow-display); font-size: 12px; }
+    .wow-wrap .group-rank i { display: block; color: var(--wow-muted); font-style: normal; font-size: 9px; margin-top: 2px; }
+
+    .wow-wrap .g-owner { margin-bottom: 12px; }
+    .wow-wrap .g-owner-head { display: flex; align-items: baseline; gap: 8px; padding: 0 2px 6px; }
+    .wow-wrap .g-owner-name { font-family: var(--wow-display); font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--wow-dim); }
+    .wow-wrap .g-owner-name.mine { color: var(--wow-gold); }
+    .wow-wrap .g-owner-count { font-family: var(--wow-mono); font-size: 9px; color: var(--wow-muted); }
+    .wow-wrap .g-rows { display: flex; flex-direction: column; gap: 5px; }
+
+    .wow-wrap .g-row { background: var(--wow-surface); border: 1px solid var(--wow-border); border-left: 3px solid var(--cc, var(--wow-gold)); border-radius: 5px; padding: 7px 11px; }
+    .wow-wrap .g-row-top { display: flex; align-items: center; gap: 9px; }
+    .wow-wrap .g-icon { width: 18px; height: 18px; border-radius: 3px; flex-shrink: 0; }
+    .wow-wrap .g-name { font-family: var(--wow-display); font-size: 14px; font-weight: 700; white-space: nowrap; }
+    .wow-wrap .g-spec { font-family: var(--wow-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--wow-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wow-wrap .g-gap { flex: 1; }
+    .wow-wrap .g-tag { font-family: var(--wow-mono); font-size: 10px; padding: 1px 7px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; }
+    .wow-wrap .g-tag.key { background: var(--wow-accent-dim); color: var(--wow-accent); border: 1px solid rgba(240,180,41,0.3); }
+    .wow-wrap .g-tag.lock { background: var(--wow-surface2); color: var(--wow-muted); border: 1px solid var(--wow-border2); }
+
+    .wow-wrap .g-row-stats { display: flex; flex-wrap: wrap; gap: 5px 16px; margin-top: 6px; padding-left: 27px; }
+    .wow-wrap .g-stat { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; }
+    .wow-wrap .g-stat i { font-family: var(--wow-mono); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); font-style: normal; }
+    .wow-wrap .g-stat b { font-family: var(--wow-mono); font-size: 11px; font-weight: 600; color: var(--wow-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wow-wrap .g-stat b.gold { color: var(--wow-gold); }
+
+    .wow-wrap .group-card { background: var(--wow-surface); border: 1px solid var(--wow-border); border-radius: 6px; padding: 11px 13px; }
+    .wow-wrap .group-title { font-family: var(--wow-display); font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--wow-gold); margin-bottom: 9px; }
+    .wow-wrap .g-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 2px 16px; }
+    .wow-wrap .g-item { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; }
+    .wow-wrap .g-item a { flex: 1; min-width: 0; font-family: var(--wow-mono); font-size: 10px; color: var(--wow-dim); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wow-wrap .g-item a:hover { color: var(--wow-accent); }
+    .wow-wrap .g-item-total { font-family: var(--wow-display); font-size: 12px; font-weight: 700; color: var(--wow-text); }
+    .wow-wrap .g-item-holders { font-family: var(--wow-mono); font-size: 9px; color: var(--wow-muted); }
+
+    @media (max-width: 768px) {
+      .wow-wrap .group { padding: 8px 8px 14px; }
+      .wow-wrap .g-spec { display: none; }
+      .wow-wrap .g-row-stats { padding-left: 0; gap: 4px 12px; }
+    }
+
     /* ── Keys & Lockouts ──────────────────────────────────────────────────── */
-    .wow-wrap .keys { padding: 10px 12px 16px; }
+    .wow-wrap .keys { padding: 10px 12px 16px; max-width: 1100px; margin: 0 auto; }
     .wow-wrap .keys-bar { display: flex; align-items: center; gap: 8px; padding: 2px 2px 10px; font-family: var(--wow-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); }
     .wow-wrap .keys-stat b { font-family: var(--wow-display); font-size: 13px; font-weight: 700; color: var(--wow-text); margin-right: 3px; }
     .wow-wrap .keys-sep { color: var(--wow-border2); }
@@ -634,7 +684,7 @@ function injectWowAssets() {
     }
 
     /* ── Hub ─────────────────────────────────────────────────────────────── */
-    .wow-wrap .hub { padding: 10px 12px 16px; }
+    .wow-wrap .hub { padding: 10px 12px 16px; max-width: 1100px; margin: 0 auto; }
     .wow-wrap .hub-bar { display: flex; align-items: center; gap: 10px; padding: 2px 2px 10px; }
     .wow-wrap .hub-count { font-family: var(--wow-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); }
     .wow-wrap .hub-pill { font-family: var(--wow-mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
@@ -2713,87 +2763,85 @@ function WowGroup({ addon, addonErr, onReload }) {
 
   const chars = addon.characters || [];
   const agg = addon.aggregate || {};
-  const mine = chars.filter(c => c.mine);
-  const myGold = agg.gold?.myTotal;
+
+  // Group by owner rather than listing everyone's characters in one ilvl-sorted
+  // run - the useful question here is "what does each player have", and the
+  // owner was previously buried in small grey text beside every name.
+  const byOwner = {};
+  for (const c of chars) {
+    const key = c.player_name || 'unknown';
+    (byOwner[key] = byOwner[key] || []).push(c);
+  }
+  const owners = Object.entries(byOwner)
+    .map(([name, list]) => ({
+      name, list: [...list].sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0)),
+      mine: list.some(c => c.mine),
+      best: Math.max(...list.map(c => c.ilvl || 0)),
+    }))
+    .sort((a, b) => (b.mine - a.mine) || (b.best - a.best));
 
   return html`
-    <div>
-      <div style="display:flex;padding:10px 12px 0;">
-        <div style="margin-left:auto;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);cursor:pointer;padding:5px;"
-             onClick=${onReload}>⟳</div>
-      </div>
-      <div class="wow-card" style="margin:12px;">
-        <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:10px;">GROUP TOTALS</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;">
-          <div>
-            <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">COMBINED GOLD</div>
-            <div style="font-family:var(--wow-display);font-size:18px;color:var(--wow-gold);">${goldStr(agg.gold?.total)}</div>
-            <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${agg.gold?.players || 0} player(s)</div>
-          </div>
-          <div>
-            <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">YOUR GOLD</div>
-            <div style="font-family:var(--wow-display);font-size:18px;color:var(--wow-text);">${goldStr(myGold)}</div>
-            <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">
-              ${agg.gold?.myRank ? `rank #${agg.gold.myRank} of ${agg.gold.players}` : 'not ranked'}
-            </div>
-          </div>
-          <div>
-            <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">CHARACTERS</div>
-            <div style="font-family:var(--wow-display);font-size:18px;color:var(--wow-text);">${chars.length}</div>
-            <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${mine.length} yours</div>
-          </div>
-        </div>
-        <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);margin-top:10px;line-height:1.6;">
-          Others' exact gold stays hidden — only the combined total and your own rank are shared.
-        </div>
+    <div class="group">
+      <div class="group-bar">
+        <span class="group-stat"><b>${owners.length}</b> player${owners.length === 1 ? '' : 's'}</span>
+        <span class="group-sep">·</span>
+        <span class="group-stat"><b>${chars.length}</b> character${chars.length === 1 ? '' : 's'}</span>
+        <span class="group-sep">·</span>
+        <span class="group-stat gold"><b>${goldStr(agg.gold?.total)}</b> combined</span>
+        <span class="group-reload" onClick=${onReload} title="Reload addon data">⟳</span>
       </div>
 
-      <div class="wow-card" style="margin:12px;">
-        <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:10px;">ROSTER</div>
-        ${[...chars].sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0)).map(c => {
-          const profStr = (c.professions || []).map(p => p.name).filter(Boolean).join(' / ');
-          const lockStr = (c.lockouts || []).map(lo =>
-            `${lo.name}${lo.difficultyName ? ` (${lo.difficultyName})` : ''} ${lo.defeated ?? 0}/${lo.bosses ?? '?'} · resets ${resetInStr(lo.resetsAt)}`
-          ).join(' · ');
-          return html`
-          <div style="padding:8px 0;border-bottom:1px solid var(--wow-border2);">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="flex:1;min-width:0;">
-                <div style="font-family:var(--wow-display);font-size:12px;color:${c.mine ? 'var(--wow-gold)' : 'var(--wow-text)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                  ${c.name} <span style="color:var(--wow-muted);font-size:10px;">${c.player_name}</span>
-                </div>
-                <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${c.spec || ''} ${c.class || ''} · Lvl ${c.level || '?'}${c.faction ? ` · ${c.faction}` : ''}${c.guild ? ` · <${c.guild}>` : ''}</div>
-              </div>
-              ${c.keystone?.level ? html`<span style="font-family:var(--wow-display);font-size:12px;color:var(--wow-accent);">🗝 +${c.keystone.level}</span>` : ''}
-              <div style="text-align:right;flex-shrink:0;">
-                <div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">ilvl ${c.ilvl ? Math.round(c.ilvl) : '—'}</div>
-                <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">${c.played ? playedStr(c.played) + ' played' : ''}</div>
-              </div>
-            </div>
-            ${profStr ? html`<div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-top:4px;">🔨 ${profStr}</div>` : ''}
-            ${lockStr ? html`<div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-top:2px;">🏰 ${lockStr}</div>` : ''}
-            <div style="font-family:var(--wow-mono);font-size:8px;color:var(--wow-muted);opacity:0.7;margin-top:4px;">synced ${agoStr(c.updated_at)}</div>
+      ${agg.gold?.myRank ? html`
+        <div class="group-rank">Your ${goldStr(agg.gold.myTotal)} ranks
+          <b>#${agg.gold.myRank}</b> of ${agg.gold.players}.
+          <i>Others' exact gold stays hidden — only the combined total and your own rank are shared.</i>
+        </div>` : ''}
+
+      ${owners.map(o => html`
+        <div class="g-owner">
+          <div class="g-owner-head">
+            <span class="g-owner-name ${o.mine ? 'mine' : ''}">${o.name}</span>
+            <span class="g-owner-count">${o.list.length} character${o.list.length === 1 ? '' : 's'}</span>
           </div>
-        `;})}
-      </div>
+          <div class="g-rows">
+            ${o.list.map(c => {
+              const profs = (c.professions || []).map(p => p.name).filter(Boolean);
+              const locks = (c.lockouts || []).length;
+              return html`
+                <div class="g-row" style="--cc:${classColor(c.class)};">
+                  <div class="g-row-top">
+                    ${classIcon(c.class) ? html`<img class="g-icon" src=${classIcon(c.class)} alt=""
+                         onError=${e => { e.target.style.visibility = 'hidden'; }} />` : ''}
+                    <span class="g-name" style="color:${classColor(c.class)};">${c.name}</span>
+                    <span class="g-spec">${c.spec || ''} ${c.class || ''}</span>
+                    <span class="g-gap"></span>
+                    ${c.keystone?.level ? html`<span class="g-tag key">🗝 +${c.keystone.level}</span>` : ''}
+                    ${locks ? html`<span class="g-tag lock">🔒 ${locks}</span>` : ''}
+                  </div>
+                  <div class="g-row-stats">
+                    <span class="g-stat"><i>ilvl</i><b style="color:${ilvlColor(c.ilvl)};">${c.ilvl ? Math.round(c.ilvl) : '—'}</b></span>
+                    ${c.mine && c.gold != null ? html`<span class="g-stat"><i>gold</i><b class="gold">${goldStr(c.gold)}</b></span>` : ''}
+                    ${c.played ? html`<span class="g-stat"><i>played</i><b>${playedStr(c.played)}</b></span>` : ''}
+                    ${profs.length ? html`<span class="g-stat"><i>prof</i><b>${profs.join(' / ')}</b></span>` : ''}
+                  </div>
+                </div>`;
+            })}
+          </div>
+        </div>`)}
 
       ${(agg.items || []).length > 0 && html`
-        <div class="wow-card" style="margin:12px;">
-          <div style="font-family:var(--wow-display);font-size:12px;letter-spacing:1px;color:var(--wow-gold);margin-bottom:10px;">GROUP MATS</div>
-          ${(agg.items || []).slice(0, 20).map(it => html`
-            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--wow-border2);">
-              <a href="https://www.wowhead.com/item=${it.id}" target="_blank" rel="noopener"
-                 data-wowhead="item=${it.id}"
-                 style="flex:1;min-width:0;font-family:var(--wow-mono);font-size:11px;color:var(--wow-text);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                ${it.name || ('item ' + it.id)}
-              </a>
-              <span style="font-family:var(--wow-display);font-size:12px;color:var(--wow-accent);">${it.total}</span>
-              <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">×${it.holders}</span>
-            </div>
-          `)}
-        </div>
-      `}
-
+        <div class="group-card">
+          <div class="group-title">Most Held Items</div>
+          <div class="g-items">
+            ${(agg.items || []).slice(0, 15).map(it => html`
+              <div class="g-item">
+                <a href=${`https://www.wowhead.com/item=${it.id}`} data-wowhead=${`item=${it.id}`}
+                   target="_blank" rel="noopener">${it.name || ('item ' + it.id)}</a>
+                <span class="g-item-total">${it.total}</span>
+                <span class="g-item-holders">×${it.holders}</span>
+              </div>`)}
+          </div>
+        </div>`}
     </div>
   `;
 }
