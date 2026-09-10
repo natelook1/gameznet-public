@@ -2466,9 +2466,6 @@ function WowAccount({ me, characters, onRefresh, privacy, onPrivacyChange }) {
 
   return html`
     <div class="layout-full">
-      <div style="max-width: 700px; margin: 0 auto;">
-        <${WowPrivacy} privacy=${privacy} onChange=${onPrivacyChange} />
-      </div>
       <div class="wow-card" style="max-width: 700px; margin: 0 auto 16px;">
         <div class="card-header">
           <div class="card-title"><div class="dot dot-gold"></div>Battle.net Account</div>
