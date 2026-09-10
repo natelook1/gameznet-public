@@ -7224,8 +7224,11 @@
     if (!ROUTE_TABS.includes(tab)) return;
     _routing = true;
     try {
-      switchTab(tab, document.querySelector(`.tab-btn.${tab}-tab`));
       if (tab === 'wow' && sub) window.GZN_WOW_ROUTE = sub;
+      switchTab(tab, document.querySelector(`.tab-btn.${tab}-tab`));
+      // Module scripts are deferred, so wowEnsureMounted may not exist yet
+      // during init; record the intent and let the module pick it up.
+      if (tab === 'wow') window.GZN_WOW_PENDING = true;
     } finally { _routing = false; }
   }
 
@@ -7505,6 +7508,9 @@
   // Mount lazily: the tab is behind a click and the roster fetches are wasted
   // until it is actually opened.
   window.wowEnsureMounted = function() { if (!_wowMounted) window.wowRemount(); };
+
+  // A route may have asked for the WoW tab before this module ran.
+  if (window.GZN_WOW_PENDING) { window.GZN_WOW_PENDING = false; window.wowEnsureMounted(); }
 </script>
 </body>
 </html>
