@@ -3537,7 +3537,7 @@ function WowPrivacy({ privacy, onChange }) {
     { id: 'counts',     label: 'Bag/bank counts', hint: 'how full your bags are, not what is in them' },
     { id: 'bags',       label: 'Bag contents',    hint: 'the actual items in bags, bank and warband' },
     { id: 'played',     label: 'Played time',     hint: '/played per character · public by default' },
-    { id: 'housing',    label: 'Player Estate',   hint: 'house name, plot and neighborhood · aggregate = hidden from others' },
+    { id: 'housing',    label: 'Player Estate',   hint: 'house name, plot and neighborhood · public by default, aggregate/private both hide it' },
   ];
   const TIERS = ['private', 'aggregate', 'public'];
 

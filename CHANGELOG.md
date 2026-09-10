@@ -15,8 +15,14 @@
   desktop and mobile.
 - **Player Estate privacy fix**: house name/plot/neighborhood used to be
   unconditionally visible to every player on the hub — the only WoW addon
-  field with no privacy tier at all. Now defaults to `aggregate` like gold,
-  and is configurable in the same Addon Privacy settings as everything else.
+  field with no privacy tier at all. Now configurable in the same Addon
+  Privacy settings as everything else, defaulting to `public` — a house is
+  exactly the kind of thing a shared roster exists to show off, matching how
+  it worked before this tier existed. (Briefly defaulted to `aggregate`
+  earlier the same day, which — since a house name has no meaningful group
+  total — collapsed to hidden-from-others and quietly defeated the roster
+  housing view below before anyone had synced against it. Caught and fixed
+  same day; no one had touched their own housing setting yet.)
 - **Housing addon capture (schema 3→4)**: `Capture.lua`'s `ScanHousing()`
   now also reports the tracked house, who can visit your house/plot
   (`GetHousingAccessFlags`), account-wide decor storage totals (owned vs.
