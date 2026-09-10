@@ -653,9 +653,12 @@ function injectWowAssets() {
     .wow-wrap .g-owner-name { font-family: var(--wow-display); font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--wow-dim); }
     .wow-wrap .g-owner-name.mine { color: var(--wow-gold); }
     .wow-wrap .g-owner-count { font-family: var(--wow-mono); font-size: 9px; color: var(--wow-muted); }
+    .wow-wrap .g-owner-house { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); padding: 0 2px 6px; }
+    .wow-wrap .g-owner-house b { color: var(--wow-gold); font-weight: 600; }
     .wow-wrap .g-rows { display: flex; flex-direction: column; gap: 5px; }
 
     .wow-wrap .g-row { background: var(--wow-surface); border: 1px solid var(--wow-border); border-left: 3px solid var(--cc, var(--wow-gold)); border-radius: 5px; padding: 7px 11px; }
+    .wow-wrap .g-row-unsynced { border-left-color: var(--wow-border2); opacity: 0.75; }
     .wow-wrap .g-row-top { display: flex; align-items: center; gap: 9px; }
     .wow-wrap .g-icon { width: 18px; height: 18px; border-radius: 3px; flex-shrink: 0; }
     .wow-wrap .g-name { font-family: var(--wow-display); font-size: 14px; font-weight: 700; white-space: nowrap; }
@@ -3056,11 +3059,24 @@ function WowGroup({ addon, addonErr, onReload }) {
     const key = c.player_name || 'unknown';
     (byOwner[key] = byOwner[key] || []).push(c);
   }
+  // Retail housing is account-wide (one house per account, not per
+  // character - unverified in Blizzard's own docs, but consistent with how
+  // the feature behaves in-game), so a player's synced characters should
+  // report the same house. They can still disagree if only some characters
+  // have logged out since the addon was updated, or since a house was
+  // bought/sold - picking the most recently updated row avoids showing a
+  // stale character's housing over a fresher one from the same owner.
+  const ownerHousing = (list) => {
+    const withHousing = list.filter(c => c.housing).sort((a, b) => (b.updated_at || 0) - (a.updated_at || 0));
+    return withHousing[0]?.housing || null;
+  };
+
   const owners = Object.entries(byOwner)
     .map(([name, list]) => ({
       name, list: [...list].sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0)),
       mine: list.some(c => c.mine),
       best: Math.max(...list.map(c => c.ilvl || 0)),
+      housing: ownerHousing(list),
     }))
     .sort((a, b) => (b.mine - a.mine) || (b.best - a.best));
 
@@ -3087,8 +3103,32 @@ function WowGroup({ addon, addonErr, onReload }) {
             <span class="g-owner-name ${o.mine ? 'mine' : ''}">${o.name}</span>
             <span class="g-owner-count">${o.list.length} character${o.list.length === 1 ? '' : 's'}</span>
           </div>
+          ${o.housing?.houses?.[0] && html`
+            <div class="g-owner-house">
+              🏠 <b>${o.housing.houses[0].houseName || 'Unnamed House'}</b>
+              ${o.housing.houses[0].neighborhoodName ? html` · ${o.housing.houses[0].neighborhoodName}` : ''}
+              ${o.housing.houses[0].plotID != null ? html` · Plot ${o.housing.houses[0].plotID}` : ''}
+            </div>`}
           <div class="g-rows">
             ${o.list.map(c => {
+              // Never-synced registered characters carry almost none of the
+              // usual fields (no addon has ever run for them), so they get
+              // their own compact row rather than a normal one full of dashes.
+              if (c.neverSynced) {
+                return html`
+                  <div class="g-row g-row-unsynced">
+                    <div class="g-row-top">
+                      <span class="g-name" style="color:var(--wow-muted);">${c.name}</span>
+                      <span class="g-spec">${c.realm}</span>
+                      <span class="g-gap"></span>
+                      <span class="g-tag" style="opacity:0.6;">addon not synced</span>
+                    </div>
+                    ${c.publicDecorCount != null && html`
+                      <div class="g-row-stats">
+                        <span class="g-stat"><i>decor</i><b>${c.publicDecorCount.toLocaleString()}</b></span>
+                      </div>`}
+                  </div>`;
+              }
               const profs = (c.professions || []).map(p => p.name).filter(Boolean);
               const locks = (c.lockouts || []).length;
               return html`
@@ -3107,6 +3147,7 @@ function WowGroup({ addon, addonErr, onReload }) {
                     ${c.mine && c.gold != null ? html`<span class="g-stat"><i>gold</i><b class="gold">${goldStr(c.gold)}</b></span>` : ''}
                     ${c.played ? html`<span class="g-stat"><i>played</i><b>${playedStr(c.played)}</b></span>` : ''}
                     ${profs.length ? html`<span class="g-stat"><i>prof</i><b>${profs.join(' / ')}</b></span>` : ''}
+                    ${c.publicDecorCount != null ? html`<span class="g-stat"><i>decor</i><b>${c.publicDecorCount.toLocaleString()}</b></span>` : ''}
                   </div>
                 </div>`;
             })}

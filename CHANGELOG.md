@@ -23,6 +23,21 @@
   cap), house sell-back refund amount, and exterior type/size — six new
   read-only fields, all logout-safe. Addon bundle 1.3.0 → 1.4.0; existing
   installs pick it up automatically the next time GamezNET pushes the addon.
+  Verified live in-game the same day: storage totals confirmed matching the
+  in-game UI (`decorStoredTotal`/`decorStoredExempt`/`decorStorageMax`); the
+  house-scoped fields (refund amount, exterior type, non-zero access flags)
+  still need someone who owns a house to verify.
+- **Group roster now shows housing + decor for everyone, not just yourself
+  in the per-character card**: each owner's card shows their house
+  name/plot/neighborhood (when they own one and their housing privacy is
+  public), and every character now shows a public decor-collection count —
+  including characters registered in GamezNET whose player has **never
+  installed or synced the addon at all**. That last part uses a new
+  server-side cache (`wow_public_decor`, hourly refresh) of Blizzard's
+  public `/collections/decor` endpoint for every registered character; house
+  ownership itself has no equivalent public endpoint (Blizzard withdrew
+  `/profile/.../house/{id}` for privacy), so a never-synced player shows
+  decor progress but never a house, even if they own one.
 
 ### Note
 - Player-vs-player features (seeing other players' houses, a shared
