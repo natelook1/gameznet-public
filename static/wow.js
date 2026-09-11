@@ -1468,6 +1468,148 @@ function WowProfessions({ characters, activeChar, charCacheRef, dataTick, addon 
   `;
 }
 
+// Renders a 30-day min-price history as a plain inline SVG polyline - no
+// charting library is loaded anywhere in this codebase (static/wow.js has
+// no build step and is served raw), and 30 points is a trivial polyline per
+// the AH tab plan doc. history is oldest-first, one row per UTC day,
+// min_price in copper.
+function WowAHSparkline({ history }) {
+  if (!history || history.length < 2) return html`<div style="color:var(--wow-muted);font-size:11px;">Not enough history yet.</div>`;
+  const W = 280, H = 60, PAD = 4;
+  const prices = history.map(h => h.minPrice);
+  const min = Math.min(...prices), max = Math.max(...prices);
+  const span = max - min || 1;
+  const points = history.map((h, i) => {
+    const x = PAD + (i / (history.length - 1)) * (W - PAD * 2);
+    const y = PAD + (1 - (h.minPrice - min) / span) * (H - PAD * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const last = prices[prices.length - 1], first = prices[0];
+  const lineColor = last > first ? 'var(--wow-red)' : last < first ? 'var(--wow-green)' : 'var(--wow-gold)';
+  return html`
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;">
+      <polyline points="${points}" fill="none" stroke="${lineColor}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+    </svg>
+    <div style="display:flex;justify-content:space-between;font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-top:2px;">
+      <span>${history[0].date}</span>
+      <span>${goldStr(Math.floor(min / 10000))}g &ndash; ${goldStr(Math.floor(max / 10000))}g</span>
+      <span>${history[history.length - 1].date}</span>
+    </div>`;
+}
+
+// Auction House tab: search any commodity by name, see its full 30-day
+// history. Deliberately NOT a client-side filter over a pre-fetched list
+// (wow_commodity_names is ~10,123 rows once warm - shipping that whole
+// index to the browser up front was the plan doc's original idea, dropped
+// once search/item's id-range paging turned out not to help here either;
+// a small SQL LIKE query per keystroke is far cheaper). Debounced since
+// this hits the server per query, unlike every other search box in this
+// file (all client-side filters over already-loaded data).
+function WowAH() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [selected, setSelected] = useState(null); // itemId or null
+  const [detail, setDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = query.trim();
+    if (q.length < 2) { setResults([]); setSearching(false); return; }
+    setSearching(true);
+    debounceRef.current = setTimeout(() => {
+      req(`/api/wow/ah/search?q=${encodeURIComponent(q)}`)
+        .then(r => r.ok ? r.json() : { results: [] })
+        .then(data => setResults(data.results || []))
+        .catch(() => setResults([]))
+        .finally(() => setSearching(false));
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [query]);
+
+  const openItem = (itemId) => {
+    setSelected(itemId);
+    setDetail(null);
+    setDetailLoading(true);
+    req(`/api/wow/ah/item/${itemId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(setDetail)
+      .catch(() => setDetail(null))
+      .finally(() => setDetailLoading(false));
+  };
+
+  // Same 7-day trend convention as the reagent prices / WoW Token chip
+  // elsewhere in this file - not a real chart signal, just a light-touch cue.
+  const trendFor = (unitPrice, history) => {
+    if (unitPrice == null || !history?.length) return null;
+    const hist = history;
+    const weekAgo = hist.length >= 8 ? hist[hist.length - 8] : hist[0];
+    if (!weekAgo || unitPrice === weekAgo.minPrice) return null;
+    return unitPrice > weekAgo.minPrice ? 'up' : 'down';
+  };
+
+  return html`
+    <div class="layout-full">
+      <div class="wow-card">
+        <div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Auction House</div></div>
+        <div class="card-body">
+          <input type="text" placeholder="Search any item..." class="admin-input" style="width:100%;max-width:400px;margin-bottom:10px;"
+                 value=${query} onInput=${e => setQuery(e.target.value)} />
+
+          ${selected == null ? html`
+            ${searching ? html`<div style="color:var(--wow-muted);font-size:12px;">Searching...</div>` : ''}
+            ${!searching && query.trim().length >= 2 && results.length === 0 ? html`<div class="empty" style="padding:10px;">No commodities matched.</div>` : ''}
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              ${results.map(r => {
+                const priceGold = r.unitPrice != null ? Math.floor(r.unitPrice / 10000) : null;
+                return html`
+                  <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;cursor:pointer;"
+                       onClick=${() => openItem(r.itemId)}>
+                    ${r.iconUrl
+                      ? html`<img src=${r.iconUrl} style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
+                      : html`<div style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
+                    <span style="flex:1;font-family:var(--wow-mono);font-size:12px;color:var(--wow-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</span>
+                    <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);flex-shrink:0;">${priceGold != null ? goldStr(priceGold) + 'g' : '—'}</span>
+                  </div>`;
+              })}
+            </div>
+          ` : html`
+            <div style="cursor:pointer;color:var(--wow-muted);font-family:var(--wow-mono);font-size:11px;margin-bottom:10px;" onClick=${() => setSelected(null)}>&larr; back to search</div>
+            ${detailLoading ? html`<div style="color:var(--wow-muted);font-size:12px;">Loading...</div>` : ''}
+            ${!detailLoading && !detail ? html`<div class="empty" style="padding:10px;">Item not found.</div>` : ''}
+            ${!detailLoading && detail ? (() => {
+              const priceGold = detail.unitPrice != null ? Math.floor(detail.unitPrice / 10000) : null;
+              const trend = trendFor(detail.unitPrice, detail.history);
+              return html`
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                  ${detail.iconUrl
+                    ? html`<img src=${detail.iconUrl} style="width:40px;height:40px;border-radius:4px;border:1px solid var(--wow-border2);" />`
+                    : html`<div style="width:40px;height:40px;border-radius:4px;border:1px solid var(--wow-border2);"></div>`}
+                  <div style="flex:1;">
+                    <a href="https://www.wowhead.com/item=${detail.itemId}" target="_blank" rel="noopener" class="recipe-link"
+                       style="font-family:var(--wow-display);font-size:15px;color:var(--wow-text);text-decoration:none;">${detail.name || ('Item #' + detail.itemId)}</a>
+                  </div>
+                  <div style="text-align:right;">
+                    <div style="font-family:var(--wow-mono);font-size:16px;color:var(--wow-gold);">
+                      ${priceGold != null ? goldStr(priceGold) + 'g' : '—'}${trend === 'up' ? html`<span style="color:var(--wow-red);"> ▲</span>` : trend === 'down' ? html`<span style="color:var(--wow-green);"> ▼</span>` : ''}
+                    </div>
+                    ${detail.quantity != null ? html`<div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${detail.quantity.toLocaleString()} available</div>` : ''}
+                  </div>
+                </div>
+                <div style="background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;padding:10px;">
+                  <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);margin-bottom:6px;">30-DAY PRICE HISTORY</div>
+                  <${WowAHSparkline} history=${detail.history} />
+                </div>`;
+            })() : ''}
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collectionsRef, decorCatalogRef, petCatalogRef, mountSpellIdsRef, dataTick, addon }) {
   const [colView, setColView] = useState(null); // 'mounts' | 'pets' | null
   const [colSearch, setColSearch] = useState('');
@@ -4249,9 +4391,10 @@ export function WowTab({ me }) {
     { id: 'overview', icon: '🌐', label: 'Overview' },
     { id: 'world',    icon: '🌍', label: 'Collections' },
     { id: 'professions', icon: '🛠️', label: 'Professions' },
+    { id: 'ah',       icon: '📈', label: 'Auction House' },
     { id: 'pve',      icon: '⚔️', label: 'PVE' },
     { id: 'pvp',      icon: '🏆', label: 'PVP' },
-    { id: 'group',    icon: '💰', label: 'Group' },
+    { id: 'group',    icon: '👥', label: 'Group' },
     { id: 'keys',     icon: '🗝️', label: 'Progress' },
     { id: 'pulls',    icon: '⚔️', label: 'Pulls' },
     { id: 'account',  icon: '👤', label: 'My Account' },
@@ -4326,6 +4469,7 @@ export function WowTab({ me }) {
         ${subTab === 'overview' && html`<${WowOverview} characters=${characters} charCacheRef=${charCacheRef} affixCacheRef=${affixCacheRef} onSelectChar=${setActiveChar} onSubTab=${setSubTab} dataTick=${dataTick} addon=${addon} />`}
         ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} decorCatalogRef=${decorCatalogRef} petCatalogRef=${petCatalogRef} mountSpellIdsRef=${mountSpellIdsRef} dataTick=${dataTick} addon=${addon} />`}
         ${subTab === 'professions' && html`<${WowProfessions} characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} dataTick=${dataTick} addon=${addon} />`}
+        ${subTab === 'ah'          && html`<${WowAH} />`}
         ${subTab === 'pve'      && html`<${WowPVE}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'pvp'      && html`<${WowPVP}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'group'   && html`<${WowGroup} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} />`}
