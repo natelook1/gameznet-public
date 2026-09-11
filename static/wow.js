@@ -1087,7 +1087,7 @@ function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, on
               <span class="cs cs-ilvl">${ilvl} ilvl</span>
               ${score ? html`<span class="cs cs-score">${Math.round(score)} M+</span>` : ''}
               ${raid !== '—' ? html`<span class="cs cs-raid">${raid}</span>` : ''}
-              ${ad?.gold != null ? html`<span class="cs cs-gold" style="color:var(--wow-gold);">${goldStr(ad.gold)}g</span>` : ''}
+              ${ad?.gold != null ? html`<span class="cs cs-gold" style="color:var(--wow-gold);">${goldStr(ad.gold)} g</span>` : ''}
               ${ad?.keystone?.level ? html`<span class="cs cs-key" style="color:var(--wow-accent);">🗝 +${ad.keystone.level}</span>` : ''}
             </div>
           </div>
@@ -1483,7 +1483,7 @@ function WowProfessions({ characters, activeChar, charCacheRef, dataTick, addon 
                                     ${priceGold != null && html`
                                       <span title="Lowest current AH price${trend ? (trend === 'up' ? ' — up from a week ago' : ' — down from a week ago') : ''}"
                                             style="font-size:9px;color:var(--wow-gold);flex-shrink:0;white-space:nowrap;">
-                                        ${goldStr(priceGold)}g${trend === 'up' ? html`<span style="color:var(--wow-red);"> ▲</span>` : trend === 'down' ? html`<span style="color:var(--wow-green);"> ▼</span>` : ''}
+                                        ${goldStr(priceGold)} g${trend === 'up' ? html`<span style="color:var(--wow-red);"> ▲</span>` : trend === 'down' ? html`<span style="color:var(--wow-green);"> ▼</span>` : ''}
                                       </span>`}
                                     ${altCount > 0 && html`<span title="${altCount} other quality tier${altCount === 1 ? '' : 's'} also accepted" style="font-size:9px;color:var(--wow-muted);flex-shrink:0;">+${altCount}</span>`}
                                     <span style="color:${have ? 'var(--wow-green)' : 'var(--wow-red)'};font-weight:600;flex-shrink:0;">${bestOwned} / ${rg.quantity}</span>
@@ -1559,6 +1559,18 @@ function WowAH({ tokenPrice, tokenTrend }) {
   const [detailLoading, setDetailLoading] = useState(false);
   const [movers, setMovers] = useState(null); // null = not loaded yet
   const [crafts, setCrafts] = useState(null);
+  // Browse mode (2026-09-11) - a folder-tree style alternative to name
+  // search, matching the real in-game AH's category sidebar. Separate mode
+  // rather than merged into search since browsing has its own navigation
+  // stack (category -> subcategory -> item list -> item detail) that
+  // doesn't map onto a single query string.
+  const [mode, setMode] = useState('search'); // 'search' | 'browse'
+  const [categories, setCategories] = useState(null); // null = not loaded yet
+  const [browseCategory, setBrowseCategory] = useState(null); // {category, subcategory|null} or null
+  const [browseItems, setBrowseItems] = useState(null);
+  const [browseOffset, setBrowseOffset] = useState(0);
+  const [browseTotal, setBrowseTotal] = useState(0);
+  const [browseLoading, setBrowseLoading] = useState(false);
   // Recently viewed - deliberately component state, not localStorage: this
   // is a lightweight "don't lose your place" convenience for the current
   // session, not something that needs to survive a reload or sync across
@@ -1594,6 +1606,29 @@ function WowAH({ tokenPrice, tokenTrend }) {
     req('/api/wow/ah/crafts').then(r => r.ok ? r.json() : null).then(d => setCrafts(d?.crafts || [])).catch(() => setCrafts([]));
   }, []);
 
+  // Category list fetched once on first switch to Browse mode, not on
+  // mount - most sessions probably never open Browse, so this avoids an
+  // extra request most page loads don't need.
+  useEffect(() => {
+    if (mode === 'browse' && categories === null) {
+      req('/api/wow/ah/categories').then(r => r.ok ? r.json() : null).then(d => setCategories(d?.categories || [])).catch(() => setCategories([]));
+    }
+  }, [mode]);
+
+  const openCategory = (category, subcategory, offset) => {
+    setBrowseCategory({ category, subcategory: subcategory || null });
+    setBrowseOffset(offset || 0);
+    setBrowseLoading(true);
+    setBrowseItems(null);
+    const params = new URLSearchParams({ category, offset: String(offset || 0) });
+    if (subcategory) params.set('subcategory', subcategory);
+    req(`/api/wow/ah/browse?${params}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { setBrowseItems(d?.items || []); setBrowseTotal(d?.total || 0); })
+      .catch(() => { setBrowseItems([]); setBrowseTotal(0); })
+      .finally(() => setBrowseLoading(false));
+  };
+
   const openItem = (itemId, hint) => {
     setSelected(itemId);
     setDetail(null);
@@ -1623,7 +1658,7 @@ function WowAH({ tokenPrice, tokenTrend }) {
     return unitPrice > weekAgo.minPrice ? 'up' : 'down';
   };
 
-  const showLanding = selected == null && query.trim().length < 2;
+  const showLanding = mode === 'search' && selected == null && query.trim().length < 2;
   const itemRow = (r, onClick) => {
     const priceGold = r.unitPrice != null ? Math.floor(r.unitPrice / 10000) : null;
     return html`
@@ -1633,7 +1668,7 @@ function WowAH({ tokenPrice, tokenTrend }) {
           ? html`<img src=${r.iconUrl} style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
           : html`<div style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
         <span style="flex:1;font-family:var(--wow-mono);font-size:12px;color:var(--wow-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name || ('Item #' + r.itemId)}</span>
-        <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);flex-shrink:0;">${priceGold != null ? goldStr(priceGold) + 'g' : '—'}</span>
+        <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);flex-shrink:0;">${priceGold != null ? goldStr(priceGold) + ' g' : '—'}</span>
       </div>`;
   };
 
@@ -1643,9 +1678,15 @@ function WowAH({ tokenPrice, tokenTrend }) {
         <div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Auction House</div></div>
         <div class="card-body">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-            <input type="text" placeholder="Search any item..." class="admin-input" style="flex:1;max-width:400px;"
-                   value=${query} onInput=${e => { setQuery(e.target.value); setSelected(null); }} />
-            <div class="wow-token-chip" title="WoW Token — current buy price on the US region auction house.">
+            <div style="display:flex;gap:4px;background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:4px;padding:2px;">
+              <div style="padding:5px 12px;border-radius:3px;cursor:pointer;font-family:var(--wow-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;${mode === 'search' ? 'background:var(--wow-surface2);color:var(--wow-text);' : 'color:var(--wow-muted);'}"
+                   onClick=${() => setMode('search')}>Search</div>
+              <div style="padding:5px 12px;border-radius:3px;cursor:pointer;font-family:var(--wow-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;${mode === 'browse' ? 'background:var(--wow-surface2);color:var(--wow-text);' : 'color:var(--wow-muted);'}"
+                   onClick=${() => { setMode('browse'); setSelected(null); }}>Browse</div>
+            </div>
+            ${mode === 'search' ? html`<input type="text" placeholder="Search any item..." class="admin-input" style="flex:1;max-width:400px;"
+                   value=${query} onInput=${e => { setQuery(e.target.value); setSelected(null); }} />` : ''}
+            <div class="wow-token-chip" style="margin-left:auto;" title="WoW Token — current buy price on the US region auction house.">
               <img src="${ASSETS}/wow-token.svg" class="wow-token-icon" alt="" onerror=${e => { e.target.style.display = 'none'; }} />
               <span class="wow-token-label">token</span>
               <span class="wow-token-price">${tokenPrice}${tokenTrend === 'up' ? html`<span style="color:var(--wow-red);"> ▲</span>` : tokenTrend === 'down' ? html`<span style="color:var(--wow-green);"> ▼</span>` : ''}</span>
@@ -1678,7 +1719,7 @@ function WowAH({ tokenPrice, tokenTrend }) {
                         : html`<div style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
                       <span style="flex:1;font-family:var(--wow-mono);font-size:12px;color:var(--wow-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name || ('Item #' + m.itemId)}</span>
                       <span style="font-family:var(--wow-mono);font-size:11px;color:${up ? 'var(--wow-red)' : 'var(--wow-green)'};flex-shrink:0;">${up ? '▲' : '▼'} ${Math.abs(pct)}%</span>
-                      <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);flex-shrink:0;width:60px;text-align:right;">${priceGold != null ? goldStr(priceGold) + 'g' : '—'}</span>
+                      <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);flex-shrink:0;width:60px;text-align:right;">${priceGold != null ? goldStr(priceGold) + ' g' : '—'}</span>
                     </div>`;
                 })}
               </div>
@@ -1699,14 +1740,14 @@ function WowAH({ tokenPrice, tokenTrend }) {
                         ? html`<img src=${c.iconUrl} style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
                         : html`<div style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
                       <span style="flex:1;font-family:var(--wow-mono);font-size:12px;color:var(--wow-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.outputName || ('Item #' + c.outputItemId)}</span>
-                      <span style="font-family:var(--wow-mono);font-size:11px;color:${profitable ? 'var(--wow-green)' : 'var(--wow-red)'};flex-shrink:0;">${profitable ? '+' : ''}${goldStr(profitGold)}g</span>
+                      <span style="font-family:var(--wow-mono);font-size:11px;color:${profitable ? 'var(--wow-green)' : 'var(--wow-red)'};flex-shrink:0;">${profitable ? '+' : ''}${goldStr(profitGold)} g</span>
                     </div>`;
                 })}
               </div>
             </div>
           ` : ''}
 
-          ${selected == null && query.trim().length >= 2 ? html`
+          ${mode === 'search' && selected == null && query.trim().length >= 2 ? html`
             ${searching ? html`<div style="color:var(--wow-muted);font-size:12px;">Searching...</div>` : ''}
             ${!searching && results.length === 0 ? html`<div class="empty" style="padding:10px;">No commodities matched.</div>` : ''}
             <div style="display:flex;flex-direction:column;gap:4px;">
@@ -1714,8 +1755,49 @@ function WowAH({ tokenPrice, tokenTrend }) {
             </div>
           ` : ''}
 
+          ${mode === 'browse' && selected == null ? html`
+            ${browseCategory == null ? html`
+              ${categories === null ? html`<div style="color:var(--wow-muted);font-size:12px;">Loading categories...</div>` : ''}
+              ${categories && categories.length === 0 ? html`<div class="empty" style="padding:10px;">Category data still building — check back in a day.</div>` : ''}
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                ${(categories || []).map(c => html`
+                  <div>
+                    <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;cursor:pointer;font-family:var(--wow-display);font-weight:600;"
+                         onClick=${() => openCategory(c.category)}>
+                      <span style="flex:1;">${c.category}</span>
+                      <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">${c.count}</span>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;padding-left:8px;">
+                      ${c.subcategories.map(s => html`
+                        <div style="padding:3px 8px;background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;cursor:pointer;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);"
+                             onClick=${() => openCategory(c.category, s.subcategory)}>${s.subcategory} <span style="opacity:0.6;">${s.count}</span></div>
+                      `)}
+                    </div>
+                  </div>
+                `)}
+              </div>
+            ` : html`
+              <div style="cursor:pointer;color:var(--wow-muted);font-family:var(--wow-mono);font-size:11px;margin-bottom:10px;" onClick=${() => { setBrowseCategory(null); setBrowseItems(null); }}>&larr; all categories</div>
+              <div style="font-family:var(--wow-display);font-weight:600;margin-bottom:8px;">${browseCategory.category}${browseCategory.subcategory ? ' / ' + browseCategory.subcategory : ''}</div>
+              ${browseLoading ? html`<div style="color:var(--wow-muted);font-size:12px;">Loading...</div>` : ''}
+              ${!browseLoading && browseItems && browseItems.length === 0 ? html`<div class="empty" style="padding:10px;">No items found.</div>` : ''}
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                ${(browseItems || []).map(r => itemRow(r, () => openItem(r.itemId, r)))}
+              </div>
+              ${browseTotal > 50 ? html`
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">
+                  <span onClick=${() => browseOffset > 0 && openCategory(browseCategory.category, browseCategory.subcategory, Math.max(0, browseOffset - 50))}
+                        style="cursor:${browseOffset > 0 ? 'pointer' : 'default'};opacity:${browseOffset > 0 ? 1 : 0.4};">&larr; prev</span>
+                  <span>${browseOffset + 1}-${Math.min(browseOffset + 50, browseTotal)} of ${browseTotal}</span>
+                  <span onClick=${() => browseOffset + 50 < browseTotal && openCategory(browseCategory.category, browseCategory.subcategory, browseOffset + 50)}
+                        style="cursor:${browseOffset + 50 < browseTotal ? 'pointer' : 'default'};opacity:${browseOffset + 50 < browseTotal ? 1 : 0.4};">next &rarr;</span>
+                </div>
+              ` : ''}
+            `}
+          ` : ''}
+
           ${selected != null ? html`
-            <div style="cursor:pointer;color:var(--wow-muted);font-family:var(--wow-mono);font-size:11px;margin-bottom:10px;" onClick=${() => setSelected(null)}>&larr; back to search</div>
+            <div style="cursor:pointer;color:var(--wow-muted);font-family:var(--wow-mono);font-size:11px;margin-bottom:10px;" onClick=${() => setSelected(null)}>&larr; ${mode === 'browse' ? 'back to browse' : (query.trim().length >= 2 ? 'back to search' : 'back')}</div>
             ${detailLoading ? html`<div style="color:var(--wow-muted);font-size:12px;">Loading...</div>` : ''}
             ${!detailLoading && !detail ? html`<div class="empty" style="padding:10px;">Item not found.</div>` : ''}
             ${!detailLoading && detail ? (() => {
@@ -1732,11 +1814,28 @@ function WowAH({ tokenPrice, tokenTrend }) {
                   </div>
                   <div style="text-align:right;">
                     <div style="font-family:var(--wow-mono);font-size:16px;color:var(--wow-gold);">
-                      ${priceGold != null ? goldStr(priceGold) + 'g' : '—'}${trend === 'up' ? html`<span style="color:var(--wow-red);"> ▲</span>` : trend === 'down' ? html`<span style="color:var(--wow-green);"> ▼</span>` : ''}
+                      ${priceGold != null ? goldStr(priceGold) + ' g' : '—'}${trend === 'up' ? html`<span style="color:var(--wow-red);"> ▲</span>` : trend === 'down' ? html`<span style="color:var(--wow-green);"> ▼</span>` : ''}
                     </div>
                     ${detail.quantity != null ? html`<div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${detail.quantity.toLocaleString()} available</div>` : ''}
                   </div>
                 </div>
+                ${detail.advice ? (() => {
+                  const p = detail.advice.percentile;
+                  // Buying advice: percentile of the current price within
+                  // the stored range for this item (0% = cheapest seen,
+                  // 100% = priciest seen) - see server.js for why percentile
+                  // was picked over a plain average, and why it's withheld
+                  // (advice is null, this block never renders) until
+                  // WOW_AH_ADVICE_MIN_DAYS days of real history exist.
+                  const good = p <= 33, bad = p >= 67;
+                  const label = good ? 'Good time to buy' : bad ? 'Poor time to buy' : 'Average price';
+                  const color = good ? 'var(--wow-green)' : bad ? 'var(--wow-red)' : 'var(--wow-gold)';
+                  return html`
+                    <div style="display:flex;align-items:center;gap:8px;background:var(--wow-surface2);border:1px solid ${color};border-radius:4px;padding:8px 10px;margin-bottom:12px;">
+                      <span style="font-family:var(--wow-display);font-weight:600;color:${color};flex:1;">${label}</span>
+                      <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);" title="Current price's position within the ${detail.advice.daysOfHistory}-day range on file (${goldStr(Math.floor(detail.advice.lowPrice/10000))}g – ${goldStr(Math.floor(detail.advice.highPrice/10000))}g)">${p}th percentile · ${detail.advice.daysOfHistory}d history</span>
+                    </div>`;
+                })() : ''}
                 <div style="background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;padding:10px;">
                   <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);margin-bottom:6px;">30-DAY PRICE HISTORY</div>
                   <${WowAHSparkline} history=${detail.history} />
