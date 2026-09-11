@@ -17,6 +17,19 @@ import atexit
 import re
 import logging
 import tempfile
+# Imported at module level, not inside api_update()/api_reinstall(), on
+# purpose: urllib.request.HTTPSHandler only gets defined if `import ssl`
+# succeeded by the time urllib.request itself first runs (it's inside an
+# `if _have_ssl:` guard in the stdlib source). PyInstaller's static import
+# analysis reliably bundles/orders top-level imports; an import buried
+# inside a route handler, only reachable via that specific request, is
+# exactly the kind of thing that gets missed or mis-ordered in a frozen exe -
+# confirmed live: NameError("name 'HTTPSHandler' is not defined") from inside
+# urlopen() in the packaged app, while `import ssl; import urllib.request`
+# works fine in every unfrozen environment. Importing both here forces ssl
+# to be loaded and HTTPSHandler defined before anything can race it.
+import ssl
+import urllib.request
 from logging.handlers import RotatingFileHandler
 from io import BytesIO
 from flask import Flask, request, jsonify, render_template, send_from_directory
