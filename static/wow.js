@@ -1537,7 +1537,7 @@ function WowAHSparkline({ history }) {
     </svg>
     <div style="display:flex;justify-content:space-between;font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-top:2px;">
       <span>${history[0].date}</span>
-      <span>${goldStr(Math.floor(min / 10000))}g &ndash; ${goldStr(Math.floor(max / 10000))}g</span>
+      <span>${goldStr(Math.floor(min / 10000))}g – ${goldStr(Math.floor(max / 10000))}g</span>
       <span>${history[history.length - 1].date}</span>
     </div>`;
 }
@@ -1777,7 +1777,7 @@ function WowAH({ tokenPrice, tokenTrend }) {
                 `)}
               </div>
             ` : html`
-              <div style="cursor:pointer;color:var(--wow-muted);font-family:var(--wow-mono);font-size:11px;margin-bottom:10px;" onClick=${() => { setBrowseCategory(null); setBrowseItems(null); }}>&larr; all categories</div>
+              <div style="cursor:pointer;color:var(--wow-muted);font-family:var(--wow-mono);font-size:11px;margin-bottom:10px;" onClick=${() => { setBrowseCategory(null); setBrowseItems(null); }}>← all categories</div>
               <div style="font-family:var(--wow-display);font-weight:600;margin-bottom:8px;">${browseCategory.category}${browseCategory.subcategory ? ' / ' + browseCategory.subcategory : ''}</div>
               ${browseLoading ? html`<div style="color:var(--wow-muted);font-size:12px;">Loading...</div>` : ''}
               ${!browseLoading && browseItems && browseItems.length === 0 ? html`<div class="empty" style="padding:10px;">No items found.</div>` : ''}
@@ -1787,17 +1787,17 @@ function WowAH({ tokenPrice, tokenTrend }) {
               ${browseTotal > 50 ? html`
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">
                   <span onClick=${() => browseOffset > 0 && openCategory(browseCategory.category, browseCategory.subcategory, Math.max(0, browseOffset - 50))}
-                        style="cursor:${browseOffset > 0 ? 'pointer' : 'default'};opacity:${browseOffset > 0 ? 1 : 0.4};">&larr; prev</span>
+                        style="cursor:${browseOffset > 0 ? 'pointer' : 'default'};opacity:${browseOffset > 0 ? 1 : 0.4};">← prev</span>
                   <span>${browseOffset + 1}-${Math.min(browseOffset + 50, browseTotal)} of ${browseTotal}</span>
                   <span onClick=${() => browseOffset + 50 < browseTotal && openCategory(browseCategory.category, browseCategory.subcategory, browseOffset + 50)}
-                        style="cursor:${browseOffset + 50 < browseTotal ? 'pointer' : 'default'};opacity:${browseOffset + 50 < browseTotal ? 1 : 0.4};">next &rarr;</span>
+                        style="cursor:${browseOffset + 50 < browseTotal ? 'pointer' : 'default'};opacity:${browseOffset + 50 < browseTotal ? 1 : 0.4};">next →</span>
                 </div>
               ` : ''}
             `}
           ` : ''}
 
           ${selected != null ? html`
-            <div style="cursor:pointer;color:var(--wow-muted);font-family:var(--wow-mono);font-size:11px;margin-bottom:10px;" onClick=${() => setSelected(null)}>&larr; ${mode === 'browse' ? 'back to browse' : (query.trim().length >= 2 ? 'back to search' : 'back')}</div>
+            <div style="cursor:pointer;color:var(--wow-muted);font-family:var(--wow-mono);font-size:11px;margin-bottom:10px;" onClick=${() => setSelected(null)}>← ${mode === 'browse' ? 'back to browse' : (query.trim().length >= 2 ? 'back to search' : 'back')}</div>
             ${detailLoading ? html`<div style="color:var(--wow-muted);font-size:12px;">Loading...</div>` : ''}
             ${!detailLoading && !detail ? html`<div class="empty" style="padding:10px;">Item not found.</div>` : ''}
             ${!detailLoading && detail ? (() => {
