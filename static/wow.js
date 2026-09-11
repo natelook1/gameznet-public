@@ -52,10 +52,23 @@ const DOLL_NAMES = {
 // gets replaced by the item name AND an icon - which collided with the name
 // this component renders itself. Keeping the anchor childless lets the tooltip
 // work while we control the layout.
+// Enchantable slots as of Midnight (12.0) - confirmed live 2026-09-11 against
+// a real /api/wow/profile equipment payload plus Wowhead/wow-professions
+// guides. Midnight added Helm/Shoulder and removed Cloak/Bracer versus the
+// prior expansion, so this list is expansion-specific and will drift again -
+// Legs is deliberately excluded even though "leg enhancements" still exist,
+// because those are a separate Tailoring/Leatherworking mechanic (Spellthreads/
+// Armor Kits) whose payload shape wasn't verified against a real item.
+const ENCHANTABLE_SLOTS = new Set(['HEAD', 'SHOULDER', 'CHEST', 'FINGER_1', 'FINGER_2', 'FEET', 'MAIN_HAND', 'OFF_HAND']);
+
 function DollSlot({ slot, item, side }) {
   const ilvl = item?.level?.value;
   const col = item ? qColor(item.quality?.type) : 'var(--wow-border2)';
   const dur = item?.durability?.value;
+  // Both fields are simply absent when empty (confirmed live against a real
+  // equipment payload) - no need to inspect their inner shape, just presence.
+  const missingEnchant = item && ENCHANTABLE_SLOTS.has(slot) && !(item.enchantments && item.enchantments.length);
+  const emptySockets = item?.sockets ? item.sockets.filter(s => !s.item).length : 0;
   if (!item) {
     return html`
       <div class="doll-slot empty ${side}">
@@ -77,6 +90,12 @@ function DollSlot({ slot, item, side }) {
            data-wh-icon-size="0" target="_blank" rel="noopener">${item.name}</a>
       </span>
       <span class="doll-nums">
+        <i class="doll-warn ${missingEnchant ? 'on' : ''}"
+           title=${missingEnchant ? `${DOLL_NAMES[slot]} has no enchant` : ''}
+           aria-label=${missingEnchant ? 'missing enchant' : ''}>${missingEnchant ? '✨' : ''}</i>
+        <i class="doll-warn ${emptySockets > 0 ? 'on' : ''}"
+           title=${emptySockets > 0 ? `${DOLL_NAMES[slot]} has ${emptySockets} empty socket${emptySockets === 1 ? '' : 's'}` : ''}
+           aria-label=${emptySockets > 0 ? `${emptySockets} empty sockets` : ''}>${emptySockets > 0 ? '💎' : ''}</i>
         <i class="doll-dur ${dur != null && dur <= 60 ? 'on' : ''}"
            style=${dur != null && dur <= 60 ? `color:${durColor(dur)};` : ''}
            title=${dur != null && dur <= 60 ? `${DOLL_NAMES[slot]} at ${dur}% durability — needs repair` : ''}
@@ -558,6 +577,7 @@ function injectWowAssets() {
     .wow-wrap .doll-nums { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; margin-left: auto; }
     .wow-wrap .doll-ilvl { font-family: var(--wow-mono); font-size: 12px; font-weight: 700; color: var(--wow-text); min-width: 26px; text-align: right; }
     .wow-wrap .doll-dur { font-size: 11px; font-style: normal; width: 12px; text-align: center; flex-shrink: 0; cursor: help; line-height: 1; }
+    .wow-wrap .doll-warn { font-size: 11px; font-style: normal; width: 12px; text-align: center; flex-shrink: 0; cursor: help; line-height: 1; }
 
     .wow-wrap .doll-bottom { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; margin: 10px auto 0; max-width: 1028px; }
     .wow-wrap .doll.loading { opacity: 0.45; }
@@ -633,6 +653,7 @@ function injectWowAssets() {
     .wow-wrap .ov-link.pve:hover   { border-left-color: var(--wow-accent); }
     .wow-wrap .ov-link.pvp:hover   { border-left-color: var(--wow-purple, #a855f7); }
     .wow-wrap .ov-link.world:hover { border-left-color: var(--wow-green); }
+    .wow-wrap .ov-link.professions:hover { border-left-color: var(--wow-warn, #f59e0b); }
     .wow-wrap .ov-link.keys:hover  { border-left-color: var(--wow-gold); }
 
     .wow-wrap .ov-prof { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
@@ -727,6 +748,7 @@ function injectWowAssets() {
     .wow-wrap .k-vault-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
     .wow-wrap .k-ready { margin-left: auto; font-family: var(--wow-mono); font-size: 10px; color: var(--wow-muted); }
     .wow-wrap .k-ready.on { color: var(--wow-green); }
+    .wow-wrap .k-weekly-keys { font-family: var(--wow-mono); font-size: 10px; color: var(--wow-accent); }
 
     .wow-wrap .k-slots { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     .wow-wrap .k-group { display: inline-flex; align-items: center; gap: 4px; }
@@ -1005,7 +1027,7 @@ function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, on
           <div class="main-nav-btn">
             <div class="nav-btn pve" onClick=${e => { e.stopPropagation(); onSelectChar(i); onSubTab('pve'); }}>⚔ PVE</div>
             <div class="nav-btn pvp" onClick=${e => { e.stopPropagation(); onSelectChar(i); onSubTab('pvp'); }}>🏆 PVP</div>
-            <div class="nav-btn lvl" onClick=${e => { e.stopPropagation(); onSelectChar(i); onSubTab('world'); }}>🌍 WRLD</div>
+            <div class="nav-btn lvl" onClick=${e => { e.stopPropagation(); onSelectChar(i); onSubTab('world'); }}>🌍 COLL</div>
           </div>
         </div>
         ${alts.length > 0 ? html`
@@ -1163,22 +1185,15 @@ function getDungeonUnlocks(lvl) {
   ];
 }
 
-function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collectionsRef, decorCatalogRef, petCatalogRef, mountSpellIdsRef, dataTick, addon }) {
-  const [colView, setColView] = useState(null); // 'mounts' | 'pets' | null
-  const [colSearch, setColSearch] = useState('');
-  const [colCompareIdx, setColCompareIdx] = useState(-1);
-  const [loadingCol, setLoadingCol] = useState(false);
-  const [colError, setColError] = useState(false);
+// Professions + the materials calculator - split out of WowWorld (2026-09-11)
+// once Collections grew to 9 cards; this one is a self-contained subsystem
+// (its own recipe-detail fetch, its own expand/search state) and deserved a
+// tab of its own rather than another card in an already-thick list.
+function WowProfessions({ characters, activeChar, charCacheRef, dataTick, addon }) {
   const [expandedProf, setExpandedProf] = useState(null); // profession name string
   const [profRecipeSearch, setProfRecipeSearch] = useState('');
   const [recipeDetails, setRecipeDetails] = useState({}); // recipeID -> {iconUrl, productQuality, reagents}
   const [expandedRecipe, setExpandedRecipe] = useState(null); // recipeID or null
-  const [decorFilter, setDecorFilter] = useState('all'); // category name or 'all'
-  const [decorSearch, setDecorSearch] = useState('');
-  const [decorShowMissing, setDecorShowMissing] = useState(false);
-  const [, forceDecorTick] = useState(0); // re-render once the lazy catalogue fetch below lands
-  const [, forcePetTick] = useState(0); // re-render once the lazy pet catalogue fetch lands
-  const [, forceMountTick] = useState(0); // re-render once the lazy mount spell-id fetch lands
 
   // Fetches icon/reagents/quality for whichever profession is expanded, from
   // the shared wow_recipe_details/wow_recipe_icons cache (see server.js) -
@@ -1208,7 +1223,229 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
 
   const character = characters[activeChar];
   if (!character) return null;
-  
+
+  const cacheKey = `${character.region}-${character.realm}-${character.name}`;
+  const c = charCacheRef.current[cacheKey] || {};
+  const bnet = c._bnet || {};
+
+  const addonChar = (addon?.characters || [])
+    .find(ac => `${ac.name}-${ac.realm}`.toLowerCase() === `${character.name}-${character.realm}`.toLowerCase())
+    || null;
+  // Knowledge points and spec-tab state live only in the addon feed
+  // (Blizzard's public Profile API has no Knowledge/spec-tree field at
+  // all), keyed by the real per-tier skillLine id, not the parent
+  // profession id bnet.professions uses.
+  const addonProfSpecs = addonChar?.professionSpecs || [];
+
+  const renderProfessions = () => {
+    if (bnet && bnet.professions) {
+      const primaries = bnet.professions.primaries || [];
+      const secondaries = bnet.professions.secondaries || [];
+      const allProfs = [...primaries, ...secondaries];
+
+      if (allProfs.length > 0) {
+        const iconMap = {
+          'Mining': '⛏️', 'Blacksmithing': '⚒️', 'Herbalism': '🌿', 'Alchemy': '🧪',
+          'Skinning': '🔪', 'Leatherworking': '🧵', 'Tailoring': '🪡', 'Engineering': '⚙️',
+          'Enchanting': '✨', 'Jewelcrafting': '💎', 'Inscription': '📜', 'Cooking': '🍲',
+          'Fishing': '🎣', 'Archaeology': '🏺'
+        };
+
+        const expandedProfData = expandedProf ? allProfs.find(p => p.profession?.name === expandedProf) : null;
+        const filteredRecipes = (() => {
+          if (!expandedProfData) return [];
+          const q = profRecipeSearch.trim().toLowerCase();
+          return (expandedProfData.tiers || []).map(t => ({
+            tierName: t.tier?.name || '',
+            recipes: (t.known_recipes || []).filter(r => !q || r.name.toLowerCase().includes(q))
+          })).filter(t => t.recipes.length > 0);
+        })();
+        const totalKnown = expandedProfData ? (expandedProfData.tiers || []).reduce((n, t) => n + (t.known_recipes?.length || 0), 0) : 0;
+        const expandedProfClean = expandedProf ? expandedProf.replace(/^(Khaz Algar |Dragon Isles |Shadowlands |Kul Tiran |Zandalari )/i, '') : '';
+        const expandedSpecs = expandedProf ? addonProfSpecs.filter(s => s.name && s.name.includes(expandedProfClean)) : [];
+
+        return html`
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 160px), 1fr));gap:10px;">
+            ${allProfs.map(p => {
+              const profName = p.profession?.name || 'Unknown';
+              let tier = p.tiers?.[0] || {};
+              p.tiers?.forEach(t => { if ((t.skill_points||0) > (tier.skill_points||0)) tier = t; });
+
+              const skill = tier.skill_points || 0;
+              const maxSkill = tier.max_skill_points || 100;
+              const profPct = maxSkill > 0 ? Math.min(100, Math.round((skill/maxSkill)*100)) : 0;
+              const recipeCount = (p.tiers || []).reduce((n, t) => n + (t.known_recipes?.length || 0), 0);
+              const isExpanded = expandedProf === profName;
+
+              let icon = '🛠️';
+              for (let key in iconMap) if (profName.includes(key)) icon = iconMap[key];
+              const cleanName = profName.replace(/^(Khaz Algar |Dragon Isles |Shadowlands |Kul Tiran |Zandalari )/i, '');
+
+              // addonProfSpecs entries are named per-tier ("Midnight Mining",
+              // "Khaz Algar Mining"...), not the base profession name bnet
+              // uses - match on substring, then sum unspent Knowledge across
+              // every tier this profession has, since a player can carry
+              // unspent points in more than one tier's tree at once (e.g.
+              // fully spent this tier, 7 sitting idle in the previous one).
+              const specEntries = addonProfSpecs.filter(s => s.name && s.name.includes(cleanName));
+              const knowledgeUnspent = specEntries.reduce((n, s) => n + (s.knowledgeAvailable || 0), 0);
+
+              return html`
+                <div style="background:var(--wow-surface2);border:1px solid ${isExpanded ? 'var(--wow-gold)' : 'var(--wow-border)'};border-radius:4px;padding:10px;cursor:${recipeCount > 0 ? 'pointer' : 'default'};"
+                     onClick=${() => recipeCount > 0 && (isExpanded ? setExpandedProf(null) : (setExpandedProf(profName), setProfRecipeSearch('')))}>
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                    <div style="width:24px;height:24px;background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;">${icon}</div>
+                    <div style="font-family:var(--wow-display);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;" title="${profName}">${cleanName}</div>
+                    ${knowledgeUnspent > 0 ? html`<span title="${knowledgeUnspent} unspent Knowledge point${knowledgeUnspent===1?'':'s'}" style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-bg);background:var(--wow-gold);border-radius:3px;padding:1px 5px;font-weight:700;">📖 ${knowledgeUnspent}</span>` : ''}
+                    ${recipeCount > 0 ? html`<span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${recipeCount}</span>` : ''}
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);margin-bottom:4px;">
+                    <span>Skill</span><span style="color:${profPct===100?'var(--wow-green)':'var(--wow-gold)'};">${skill} / ${maxSkill}</span>
+                  </div>
+                  <div style="height:6px;background:var(--wow-bg);border-radius:3px;overflow:hidden;"><div style="height:100%;background:${profPct===100?'var(--wow-green)':'var(--wow-gold)'};width:${profPct}%;"></div></div>
+                </div>`;
+            })}
+          </div>
+          ${expandedProfData ? html`
+            <div style="margin-top:12px;background:var(--wow-surface2);border:1px solid var(--wow-gold);border-radius:4px;padding:12px;">
+              ${expandedSpecs.length > 0 && html`
+                <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--wow-border2);">
+                  ${expandedSpecs.map(s => html`
+                    <div style="margin-bottom:8px;">
+                      <div style="display:flex;align-items:center;justify-content:space-between;font-family:var(--wow-mono);font-size:11px;margin-bottom:4px;">
+                        <span style="color:var(--wow-text);">${s.name}</span>
+                        <span style="color:${s.knowledgeAvailable > 0 ? 'var(--wow-gold)' : 'var(--wow-muted)'};">📖 ${s.knowledgeAvailable || 0} unspent</span>
+                      </div>
+                      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        ${(s.tabs || []).map(t => {
+                          // ProfessionsSpecTabState: 0 Locked, 1 Unlocked, 2 Unlockable
+                          const label = t.state === 1 ? 'Unlocked' : t.state === 2 ? 'Unlockable' : 'Locked';
+                          const color = t.state === 1 ? 'var(--wow-green)' : t.state === 2 ? 'var(--wow-gold)' : 'var(--wow-muted)';
+                          return html`<span style="font-family:var(--wow-mono);font-size:10px;color:${color};border:1px solid ${color};border-radius:3px;padding:2px 6px;" title="${label}">${t.name || ('Tab ' + t.tabTreeID)}</span>`;
+                        })}
+                      </div>
+                    </div>`)}
+                </div>`}
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+                <div style="font-family:var(--wow-display);font-size:13px;font-weight:600;flex:1;min-width:120px;">${expandedProf} <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);font-weight:400;">${totalKnown} recipes</span></div>
+                <input
+                  type="text"
+                  placeholder="Search recipes..."
+                  value=${profRecipeSearch}
+                  onInput=${e => setProfRecipeSearch(e.target.value)}
+                  onClick=${e => e.stopPropagation()}
+                  style="background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;padding:4px 8px;font-size:11px;color:var(--wow-text);flex:1;max-width:160px;min-width:80px;font-family:var(--wow-mono);"
+                />
+                <button onClick=${e => { e.stopPropagation(); setExpandedProf(null); }} style="background:none;border:none;color:var(--wow-muted);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>
+              </div>
+              ${filteredRecipes.length === 0
+                ? html`<div style="font-size:12px;color:var(--wow-muted);font-family:var(--wow-mono);">No recipes match.</div>`
+                : filteredRecipes.map(({ tierName, recipes }) => html`
+                  <div style="margin-bottom:10px;">
+                    <div style="font-size:10px;color:var(--wow-muted);letter-spacing:1px;font-family:var(--wow-mono);margin-bottom:6px;text-transform:uppercase;">${tierName}</div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                      ${recipes.map(r => {
+                        const det = recipeDetails[r.id];
+                        const isRecipeExpanded = expandedRecipe === r.id;
+                        const reagents = det?.reagents || [];
+                        // Owned count comes from the addon's own bag+bank scan
+                        // (addonChar.bags/bank), not bnet - materials aren't
+                        // gear, there's no Web API for "what's in my bags".
+                        const ownedById = new Map();
+                        for (const it of [...(addonChar?.bags || []), ...(addonChar?.bank || [])]) {
+                          if (it?.id != null) ownedById.set(it.id, (ownedById.get(it.id) || 0) + (it.count || 0));
+                        }
+                        return html`
+                        <div style="background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;">
+                          <div style="display:flex;align-items:center;gap:6px;padding:4px 6px;cursor:${reagents.length ? 'pointer' : 'default'};"
+                               onClick=${e => { e.stopPropagation(); if (reagents.length) setExpandedRecipe(isRecipeExpanded ? null : r.id); }}>
+                            ${det?.iconUrl
+                              ? html`<img src=${det.iconUrl} style="width:18px;height:18px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
+                              : html`<div style="width:18px;height:18px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
+                            ${det?.outputItemID
+                              ? html`<a href="https://www.wowhead.com/item=${det.outputItemID}" target="_blank" rel="noopener" class="recipe-link"
+                                       style="font-size:11px;font-family:var(--wow-mono);color:var(--wow-text);text-decoration:none;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                                       onMouseover=${e => e.target.style.color='var(--wow-gold)'}
+                                       onMouseout=${e => e.target.style.color='var(--wow-text)'}
+                                       onClick=${e => e.stopPropagation()}>
+                                      ${r.name}
+                                    </a>`
+                              : html`<span class="recipe-link" style="font-size:11px;font-family:var(--wow-mono);color:var(--wow-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</span>`}
+                            ${det?.productQuality != null && html`<span title="Recipe-reported crafting quality" style="font-size:9px;font-family:var(--wow-mono);color:var(--wow-gold);border:1px solid var(--wow-gold);border-radius:2px;padding:0 3px;flex-shrink:0;">Q${det.productQuality}</span>`}
+                            ${reagents.length > 0 && html`<span style="font-size:10px;color:var(--wow-muted);">${isRecipeExpanded ? '▲' : '▼'}</span>`}
+                          </div>
+                          ${isRecipeExpanded && reagents.length > 0 && html`
+                            <div style="padding:6px 8px 8px 8px;border-top:1px solid var(--wow-border2);display:flex;flex-direction:column;gap:4px;">
+                              ${reagents.map(rg => {
+                                // A slot can offer several interchangeable item
+                                // choices (e.g. quality tiers of the same
+                                // material) - any one satisfying the quantity
+                                // is enough, so show whichever choice the
+                                // player is best-stocked on, defaulting to the
+                                // first (Blizzard's own default pick) if none
+                                // are owned at all.
+                                const choices = rg.choices || [];
+                                let best = choices[0];
+                                let bestOwned = best ? (ownedById.get(best.itemID) || 0) : 0;
+                                for (const ch of choices) {
+                                  const o = ownedById.get(ch.itemID) || 0;
+                                  if (o > bestOwned) { best = ch; bestOwned = o; }
+                                }
+                                if (!best) return '';
+                                const have = bestOwned >= rg.quantity;
+                                const altCount = choices.length - 1;
+                                return html`
+                                  <div style="display:flex;align-items:center;gap:6px;font-family:var(--wow-mono);font-size:11px;">
+                                    ${best.iconUrl
+                                      ? html`<img src=${best.iconUrl} style="width:16px;height:16px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
+                                      : html`<div style="width:16px;height:16px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
+                                    <a href="https://www.wowhead.com/item=${best.itemID}" target="_blank" rel="noopener" class="recipe-link"
+                                       style="color:${have ? 'var(--wow-text)' : 'var(--wow-muted)'};text-decoration:none;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                                       onClick=${e => e.stopPropagation()}>${best.name || ('Item #' + best.itemID)}</a>
+                                    ${altCount > 0 && html`<span title="${altCount} other quality tier${altCount === 1 ? '' : 's'} also accepted" style="font-size:9px;color:var(--wow-muted);flex-shrink:0;">+${altCount}</span>`}
+                                    <span style="color:${have ? 'var(--wow-green)' : 'var(--wow-red)'};font-weight:600;flex-shrink:0;">${bestOwned} / ${rg.quantity}</span>
+                                  </div>`;
+                              })}
+                            </div>`}
+                        </div>`;
+                      })}
+                    </div>
+                  </div>`)}
+            </div>
+          ` : ''}`;
+      }
+      return html`<div class="empty" style="padding:10px;">No professions learned.</div>`;
+    }
+    return html`<div class="empty" style="padding:16px;">Profession data unavailable.</div>`;
+  };
+
+  return html`
+    <${WowCharIdent} character=${character} />
+    <div class="layout-full">
+      <div class="wow-card">
+        <div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Professions</div></div>
+        <div class="card-body">${renderProfessions()}</div>
+      </div>
+    </div>
+  `;
+}
+
+function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collectionsRef, decorCatalogRef, petCatalogRef, mountSpellIdsRef, dataTick, addon }) {
+  const [colView, setColView] = useState(null); // 'mounts' | 'pets' | null
+  const [colSearch, setColSearch] = useState('');
+  const [colCompareIdx, setColCompareIdx] = useState(-1);
+  const [loadingCol, setLoadingCol] = useState(false);
+  const [colError, setColError] = useState(false);
+  const [decorFilter, setDecorFilter] = useState('all'); // category name or 'all'
+  const [decorSearch, setDecorSearch] = useState('');
+  const [decorShowMissing, setDecorShowMissing] = useState(false);
+  const [, forceDecorTick] = useState(0); // re-render once the lazy catalogue fetch below lands
+  const [, forcePetTick] = useState(0); // re-render once the lazy pet catalogue fetch lands
+  const [, forceMountTick] = useState(0); // re-render once the lazy mount spell-id fetch lands
+
+  const character = characters[activeChar];
+  if (!character) return null;
+
   const cacheKey = `${character.region}-${character.realm}-${character.name}`;
   const c = charCacheRef.current[cacheKey] || {};
   const bnet = c._bnet || {};
@@ -1219,11 +1456,6 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
     .find(ac => `${ac.name}-${ac.realm}`.toLowerCase() === `${character.name}-${character.realm}`.toLowerCase())
     || null;
   const addonHousing = addonChar?.housing || null;
-  // Same reasoning as housing above: Knowledge points and spec-tab state
-  // live only in the addon feed (Blizzard's public Profile API has no
-  // Knowledge/spec-tree field at all), keyed by the real per-tier skillLine
-  // id, not the parent profession id bnet.professions uses.
-  const addonProfSpecs = addonChar?.professionSpecs || [];
 
   const lvl = bnet?.profile?.level || c.level || 90;
   const maxLvl = 90;
@@ -1494,188 +1726,6 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
         </div>
       </div>
       ${recentAchvHtml}`;
-  };
-
-  const renderProfessions = () => {
-    if (bnet && bnet.professions) {
-      const primaries = bnet.professions.primaries || [];
-      const secondaries = bnet.professions.secondaries || [];
-      const allProfs = [...primaries, ...secondaries];
-
-      if (allProfs.length > 0) {
-        const iconMap = {
-          'Mining': '⛏️', 'Blacksmithing': '⚒️', 'Herbalism': '🌿', 'Alchemy': '🧪',
-          'Skinning': '🔪', 'Leatherworking': '🧵', 'Tailoring': '🪡', 'Engineering': '⚙️',
-          'Enchanting': '✨', 'Jewelcrafting': '💎', 'Inscription': '📜', 'Cooking': '🍲',
-          'Fishing': '🎣', 'Archaeology': '🏺'
-        };
-
-        const expandedProfData = expandedProf ? allProfs.find(p => p.profession?.name === expandedProf) : null;
-        const filteredRecipes = (() => {
-          if (!expandedProfData) return [];
-          const q = profRecipeSearch.trim().toLowerCase();
-          return (expandedProfData.tiers || []).map(t => ({
-            tierName: t.tier?.name || '',
-            recipes: (t.known_recipes || []).filter(r => !q || r.name.toLowerCase().includes(q))
-          })).filter(t => t.recipes.length > 0);
-        })();
-        const totalKnown = expandedProfData ? (expandedProfData.tiers || []).reduce((n, t) => n + (t.known_recipes?.length || 0), 0) : 0;
-        const expandedProfClean = expandedProf ? expandedProf.replace(/^(Khaz Algar |Dragon Isles |Shadowlands |Kul Tiran |Zandalari )/i, '') : '';
-        const expandedSpecs = expandedProf ? addonProfSpecs.filter(s => s.name && s.name.includes(expandedProfClean)) : [];
-
-        return html`
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 160px), 1fr));gap:10px;">
-            ${allProfs.map(p => {
-              const profName = p.profession?.name || 'Unknown';
-              let tier = p.tiers?.[0] || {};
-              p.tiers?.forEach(t => { if ((t.skill_points||0) > (tier.skill_points||0)) tier = t; });
-
-              const skill = tier.skill_points || 0;
-              const maxSkill = tier.max_skill_points || 100;
-              const profPct = maxSkill > 0 ? Math.min(100, Math.round((skill/maxSkill)*100)) : 0;
-              const recipeCount = (p.tiers || []).reduce((n, t) => n + (t.known_recipes?.length || 0), 0);
-              const isExpanded = expandedProf === profName;
-
-              let icon = '🛠️';
-              for (let key in iconMap) if (profName.includes(key)) icon = iconMap[key];
-              const cleanName = profName.replace(/^(Khaz Algar |Dragon Isles |Shadowlands |Kul Tiran |Zandalari )/i, '');
-
-              // addonProfSpecs entries are named per-tier ("Midnight Mining",
-              // "Khaz Algar Mining"...), not the base profession name bnet
-              // uses - match on substring, then sum unspent Knowledge across
-              // every tier this profession has, since a player can carry
-              // unspent points in more than one tier's tree at once (e.g.
-              // fully spent this tier, 7 sitting idle in the previous one).
-              const specEntries = addonProfSpecs.filter(s => s.name && s.name.includes(cleanName));
-              const knowledgeUnspent = specEntries.reduce((n, s) => n + (s.knowledgeAvailable || 0), 0);
-
-              return html`
-                <div style="background:var(--wow-surface2);border:1px solid ${isExpanded ? 'var(--wow-gold)' : 'var(--wow-border)'};border-radius:4px;padding:10px;cursor:${recipeCount > 0 ? 'pointer' : 'default'};"
-                     onClick=${() => recipeCount > 0 && (isExpanded ? setExpandedProf(null) : (setExpandedProf(profName), setProfRecipeSearch('')))}>
-                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                    <div style="width:24px;height:24px;background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;">${icon}</div>
-                    <div style="font-family:var(--wow-display);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;" title="${profName}">${cleanName}</div>
-                    ${knowledgeUnspent > 0 ? html`<span title="${knowledgeUnspent} unspent Knowledge point${knowledgeUnspent===1?'':'s'}" style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-bg);background:var(--wow-gold);border-radius:3px;padding:1px 5px;font-weight:700;">📖 ${knowledgeUnspent}</span>` : ''}
-                    ${recipeCount > 0 ? html`<span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${recipeCount}</span>` : ''}
-                  </div>
-                  <div style="display:flex;align-items:center;justify-content:space-between;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);margin-bottom:4px;">
-                    <span>Skill</span><span style="color:${profPct===100?'var(--wow-green)':'var(--wow-gold)'};">${skill} / ${maxSkill}</span>
-                  </div>
-                  <div style="height:6px;background:var(--wow-bg);border-radius:3px;overflow:hidden;"><div style="height:100%;background:${profPct===100?'var(--wow-green)':'var(--wow-gold)'};width:${profPct}%;"></div></div>
-                </div>`;
-            })}
-          </div>
-          ${expandedProfData ? html`
-            <div style="margin-top:12px;background:var(--wow-surface2);border:1px solid var(--wow-gold);border-radius:4px;padding:12px;">
-              ${expandedSpecs.length > 0 && html`
-                <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--wow-border2);">
-                  ${expandedSpecs.map(s => html`
-                    <div style="margin-bottom:8px;">
-                      <div style="display:flex;align-items:center;justify-content:space-between;font-family:var(--wow-mono);font-size:11px;margin-bottom:4px;">
-                        <span style="color:var(--wow-text);">${s.name}</span>
-                        <span style="color:${s.knowledgeAvailable > 0 ? 'var(--wow-gold)' : 'var(--wow-muted)'};">📖 ${s.knowledgeAvailable || 0} unspent</span>
-                      </div>
-                      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                        ${(s.tabs || []).map(t => {
-                          // ProfessionsSpecTabState: 0 Locked, 1 Unlocked, 2 Unlockable
-                          const label = t.state === 1 ? 'Unlocked' : t.state === 2 ? 'Unlockable' : 'Locked';
-                          const color = t.state === 1 ? 'var(--wow-green)' : t.state === 2 ? 'var(--wow-gold)' : 'var(--wow-muted)';
-                          return html`<span style="font-family:var(--wow-mono);font-size:10px;color:${color};border:1px solid ${color};border-radius:3px;padding:2px 6px;" title="${label}">${t.name || ('Tab ' + t.tabTreeID)}</span>`;
-                        })}
-                      </div>
-                    </div>`)}
-                </div>`}
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
-                <div style="font-family:var(--wow-display);font-size:13px;font-weight:600;flex:1;min-width:120px;">${expandedProf} <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);font-weight:400;">${totalKnown} recipes</span></div>
-                <input
-                  type="text"
-                  placeholder="Search recipes..."
-                  value=${profRecipeSearch}
-                  onInput=${e => setProfRecipeSearch(e.target.value)}
-                  onClick=${e => e.stopPropagation()}
-                  style="background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;padding:4px 8px;font-size:11px;color:var(--wow-text);flex:1;max-width:160px;min-width:80px;font-family:var(--wow-mono);"
-                />
-                <button onClick=${e => { e.stopPropagation(); setExpandedProf(null); }} style="background:none;border:none;color:var(--wow-muted);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>
-              </div>
-              ${filteredRecipes.length === 0
-                ? html`<div style="font-size:12px;color:var(--wow-muted);font-family:var(--wow-mono);">No recipes match.</div>`
-                : filteredRecipes.map(({ tierName, recipes }) => html`
-                  <div style="margin-bottom:10px;">
-                    <div style="font-size:10px;color:var(--wow-muted);letter-spacing:1px;font-family:var(--wow-mono);margin-bottom:6px;text-transform:uppercase;">${tierName}</div>
-                    <div style="display:flex;flex-direction:column;gap:4px;">
-                      ${recipes.map(r => {
-                        const det = recipeDetails[r.id];
-                        const isRecipeExpanded = expandedRecipe === r.id;
-                        const reagents = det?.reagents || [];
-                        // Owned count comes from the addon's own bag+bank scan
-                        // (addonChar.bags/bank), not bnet - materials aren't
-                        // gear, there's no Web API for "what's in my bags".
-                        const ownedById = new Map();
-                        for (const it of [...(addonChar?.bags || []), ...(addonChar?.bank || [])]) {
-                          if (it?.id != null) ownedById.set(it.id, (ownedById.get(it.id) || 0) + (it.count || 0));
-                        }
-                        return html`
-                        <div style="background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;">
-                          <div style="display:flex;align-items:center;gap:6px;padding:4px 6px;cursor:${reagents.length ? 'pointer' : 'default'};"
-                               onClick=${e => { e.stopPropagation(); if (reagents.length) setExpandedRecipe(isRecipeExpanded ? null : r.id); }}>
-                            ${det?.iconUrl
-                              ? html`<img src=${det.iconUrl} style="width:18px;height:18px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
-                              : html`<div style="width:18px;height:18px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
-                            ${det?.outputItemID
-                              ? html`<a href="https://www.wowhead.com/item=${det.outputItemID}" target="_blank" rel="noopener" class="recipe-link"
-                                       style="font-size:11px;font-family:var(--wow-mono);color:var(--wow-text);text-decoration:none;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                                       onMouseover=${e => e.target.style.color='var(--wow-gold)'}
-                                       onMouseout=${e => e.target.style.color='var(--wow-text)'}
-                                       onClick=${e => e.stopPropagation()}>
-                                      ${r.name}
-                                    </a>`
-                              : html`<span class="recipe-link" style="font-size:11px;font-family:var(--wow-mono);color:var(--wow-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</span>`}
-                            ${det?.productQuality != null && html`<span title="Recipe-reported crafting quality" style="font-size:9px;font-family:var(--wow-mono);color:var(--wow-gold);border:1px solid var(--wow-gold);border-radius:2px;padding:0 3px;flex-shrink:0;">Q${det.productQuality}</span>`}
-                            ${reagents.length > 0 && html`<span style="font-size:10px;color:var(--wow-muted);">${isRecipeExpanded ? '▲' : '▼'}</span>`}
-                          </div>
-                          ${isRecipeExpanded && reagents.length > 0 && html`
-                            <div style="padding:6px 8px 8px 8px;border-top:1px solid var(--wow-border2);display:flex;flex-direction:column;gap:4px;">
-                              ${reagents.map(rg => {
-                                // A slot can offer several interchangeable item
-                                // choices (e.g. quality tiers of the same
-                                // material) - any one satisfying the quantity
-                                // is enough, so show whichever choice the
-                                // player is best-stocked on, defaulting to the
-                                // first (Blizzard's own default pick) if none
-                                // are owned at all.
-                                const choices = rg.choices || [];
-                                let best = choices[0];
-                                let bestOwned = best ? (ownedById.get(best.itemID) || 0) : 0;
-                                for (const ch of choices) {
-                                  const o = ownedById.get(ch.itemID) || 0;
-                                  if (o > bestOwned) { best = ch; bestOwned = o; }
-                                }
-                                if (!best) return '';
-                                const have = bestOwned >= rg.quantity;
-                                const altCount = choices.length - 1;
-                                return html`
-                                  <div style="display:flex;align-items:center;gap:6px;font-family:var(--wow-mono);font-size:11px;">
-                                    ${best.iconUrl
-                                      ? html`<img src=${best.iconUrl} style="width:16px;height:16px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
-                                      : html`<div style="width:16px;height:16px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
-                                    <a href="https://www.wowhead.com/item=${best.itemID}" target="_blank" rel="noopener" class="recipe-link"
-                                       style="color:${have ? 'var(--wow-text)' : 'var(--wow-muted)'};text-decoration:none;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                                       onClick=${e => e.stopPropagation()}>${best.name || ('Item #' + best.itemID)}</a>
-                                    ${altCount > 0 && html`<span title="${altCount} other quality tier${altCount === 1 ? '' : 's'} also accepted" style="font-size:9px;color:var(--wow-muted);flex-shrink:0;">+${altCount}</span>`}
-                                    <span style="color:${have ? 'var(--wow-green)' : 'var(--wow-red)'};font-weight:600;flex-shrink:0;">${bestOwned} / ${rg.quantity}</span>
-                                  </div>`;
-                              })}
-                            </div>`}
-                        </div>`;
-                      })}
-                    </div>
-                  </div>`)}
-            </div>
-          ` : ''}`;
-      }
-      return html`<div class="empty" style="padding:10px;">No professions learned.</div>`;
-    } 
-    return html`<div class="empty" style="padding:16px;">Profession data unavailable.</div>`;
   };
 
   // Player Estate. Two independent sources, either of which can be absent:
@@ -1966,8 +2016,40 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
           </div>`;
       }
       return html`<div class="empty">No Khaz Algar renown data found yet.</div>`;
-    } 
+    }
     return html`<div class="empty">Reputation data unavailable.</div>`;
+  };
+
+  const renderReputations = () => {
+    if (!(bnet && bnet.reputations)) return html`<div class="empty">Reputation data unavailable.</div>`;
+    const reps = bnet.reputations.reputations || [];
+    const twwNames = ['Council of Dornogal', 'The Assembly of the Deeps', 'Hallowfall Arathi', 'The Severed Threads'];
+    // Renown factions have their own card above (tiered standing, no plain
+    // "Friendly/Honored/.../Exalted" bar) - everything else lands here.
+    const plain = reps
+      .filter(r => r.faction?.name && !twwNames.includes(r.faction.name) && r.standing?.max)
+      .sort((a, b) => (b.standing?.value || 0) / (b.standing?.max || 1) - (a.standing?.value || 0) / (a.standing?.max || 1));
+    if (plain.length === 0) return html`<div class="empty">No reputation data found yet.</div>`;
+    return html`
+      <div style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;">
+        ${plain.map(r => {
+          const name = r.faction.name;
+          const standingName = r.standing?.name || '';
+          const val = r.standing?.value || 0;
+          const max = r.standing?.max || 1;
+          const repPct = Math.min(100, Math.round((val / max) * 100));
+          return html`
+          <div style="background:var(--wow-surface2);border:1px solid var(--wow-border);border-radius:4px;padding:6px 10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <span style="font-family:var(--wow-display);font-size:12px;font-weight:600;">${name}</span>
+              <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${standingName}</span>
+            </div>
+            <div style="height:4px;background:var(--wow-bg);border-radius:2px;overflow:hidden;">
+              <div style="height:100%;background:var(--wow-accent);width:${repPct}%"></div>
+            </div>
+          </div>`;
+        })}
+      </div>`;
   };
 
   const renderSpec = () => {
@@ -2042,11 +2124,6 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
         </div>
 
         <div class="wow-card">
-          <div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Professions</div></div>
-          <div class="card-body">${renderProfessions()}</div>
-        </div>
-
-        <div class="wow-card">
           <div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Player Estate</div></div>
           <div class="card-body">${renderHousing()}</div>
         </div>
@@ -2061,6 +2138,11 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
         <div class="wow-card">
           <div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Khaz Algar Renown</div></div>
           <div class="card-body">${renderRenown()}</div>
+        </div>
+
+        <div class="wow-card">
+          <div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Reputations</div></div>
+          <div class="card-body">${renderReputations()}</div>
         </div>
 
         <div class="wow-card">
@@ -2999,8 +3081,9 @@ function WowCharDetail({ character, rio, onBack, onOpen }) {
       <div class="ov-links">
         <div class="ov-link pve" onClick=${() => onOpen('pve')}><b>⚔</b> PVE<i>gear, raids, M+</i></div>
         <div class="ov-link pvp" onClick=${() => onOpen('pvp')}><b>🏆</b> PVP<i>rating, conquest</i></div>
-        <div class="ov-link world" onClick=${() => onOpen('world')}><b>🌍</b> World<i>renown, collections</i></div>
-        <div class="ov-link keys" onClick=${() => onOpen('keys')}><b>🗝</b> Keys<i>vault, lockouts</i></div>
+        <div class="ov-link world" onClick=${() => onOpen('world')}><b>🌍</b> Collections<i>mounts, pets, decor</i></div>
+        <div class="ov-link professions" onClick=${() => onOpen('professions')}><b>🛠</b> Professions<i>recipes, materials</i></div>
+        <div class="ov-link keys" onClick=${() => onOpen('keys')}><b>🗝</b> Progress<i>vault, keystones, lockouts</i></div>
       </div>` : ''}
 
     ${(c.professions || []).length > 0 && html`
@@ -3390,6 +3473,11 @@ function WowKeys({ addon, addonErr, onReload }) {
     .filter(v => v.slots.length && v.slots.some(x => x.progress > 0))
     .sort((a, b) => b.ready - a.ready);
   const totalReady = vaults.reduce((n, v) => n + v.ready, 0);
+  // Vault type 3 = Mythic+; each timed dungeon this week banks one vault
+  // slot of progress, so the M+ activity's `progress` field IS the weekly
+  // key count - no separate capture needed.
+  const weeklyKeysFor = (c) => Math.max(0, ...(c.vault || []).filter(v => v.type === 3).map(v => v.progress || 0), 0);
+  const totalWeeklyKeys = chars.reduce((n, c) => n + weeklyKeysFor(c), 0);
 
   const who = c => html`
     <span class="k-who">
@@ -3403,6 +3491,8 @@ function WowKeys({ addon, addonErr, onReload }) {
     <div class="keys">
       <div class="keys-bar">
         <span class="keys-stat"><b>${withKeys.length}</b> key${withKeys.length === 1 ? '' : 's'}</span>
+        <span class="keys-sep">·</span>
+        <span class="keys-stat"><b>${totalWeeklyKeys}</b> key${totalWeeklyKeys === 1 ? '' : 's'} run this week</span>
         <span class="keys-sep">·</span>
         <span class="keys-stat"><b>${totalReady}</b> vault slot${totalReady === 1 ? '' : 's'} ready</span>
         <span class="keys-sep">·</span>
@@ -3433,6 +3523,7 @@ function WowKeys({ addon, addonErr, onReload }) {
                 <div class="k-vault" style="--cc:${classColor(c.class)};">
                   <div class="k-vault-head">
                     ${who(c)}
+                    ${weeklyKeysFor(c) > 0 ? html`<span class="k-weekly-keys">${weeklyKeysFor(c)} key${weeklyKeysFor(c) === 1 ? '' : 's'} this week</span>` : ''}
                     <span class="k-ready ${ready ? 'on' : ''}">${ready}/${slots.length}</span>
                   </div>
                   <div class="k-slots">
@@ -3794,7 +3885,7 @@ function WowPrivacy({ privacy, onChange }) {
 }
 
 function WowCharBar({ characters, activeChar, subTab, onSelect, charCacheRef, dataTick }) {
-  if (!['world', 'pve', 'pvp'].includes(subTab)) return null;
+  if (!['world', 'professions', 'pve', 'pvp'].includes(subTab)) return null;
 
   const mains = characters.map((c, i) => ({ ...c, globalIdx: i })).filter(c => c.is_main);
   const alts = characters.map((c, i) => ({ ...c, globalIdx: i })).filter(c => !c.is_main);
@@ -4028,11 +4119,12 @@ export function WowTab({ me }) {
   const tabs = [
     { id: 'hub',      icon: '🏠', label: 'Hub' },
     { id: 'overview', icon: '🌐', label: 'Overview' },
-    { id: 'world',    icon: '🌍', label: 'World' },
+    { id: 'world',    icon: '🌍', label: 'Collections' },
+    { id: 'professions', icon: '🛠️', label: 'Professions' },
     { id: 'pve',      icon: '⚔️', label: 'PVE' },
     { id: 'pvp',      icon: '🏆', label: 'PVP' },
     { id: 'group',    icon: '💰', label: 'Group' },
-    { id: 'keys',     icon: '🗝️', label: 'Keys' },
+    { id: 'keys',     icon: '🗝️', label: 'Progress' },
     { id: 'pulls',    icon: '⚔️', label: 'Pulls' },
     { id: 'account',  icon: '👤', label: 'My Account' },
     // Tabs the host adds - desktop appends Addon here; mobile adds none.
@@ -4107,6 +4199,7 @@ export function WowTab({ me }) {
         ${subTab === 'hub'     && html`<${WowHub} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} charCacheRef=${charCacheRef} onOpen=${(tab) => setSubTab(tab)} />`}
         ${subTab === 'overview' && html`<${WowOverview} characters=${characters} charCacheRef=${charCacheRef} affixCacheRef=${affixCacheRef} onSelectChar=${setActiveChar} onSubTab=${setSubTab} dataTick=${dataTick} addon=${addon} />`}
         ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} decorCatalogRef=${decorCatalogRef} petCatalogRef=${petCatalogRef} mountSpellIdsRef=${mountSpellIdsRef} dataTick=${dataTick} addon=${addon} />`}
+        ${subTab === 'professions' && html`<${WowProfessions} characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} dataTick=${dataTick} addon=${addon} />`}
         ${subTab === 'pve'      && html`<${WowPVE}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'pvp'      && html`<${WowPVP}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'group'   && html`<${WowGroup} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} />`}
