@@ -1171,12 +1171,40 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
   const [colError, setColError] = useState(false);
   const [expandedProf, setExpandedProf] = useState(null); // profession name string
   const [profRecipeSearch, setProfRecipeSearch] = useState('');
+  const [recipeDetails, setRecipeDetails] = useState({}); // recipeID -> {iconUrl, productQuality, reagents}
+  const [expandedRecipe, setExpandedRecipe] = useState(null); // recipeID or null
   const [decorFilter, setDecorFilter] = useState('all'); // category name or 'all'
   const [decorSearch, setDecorSearch] = useState('');
   const [decorShowMissing, setDecorShowMissing] = useState(false);
   const [, forceDecorTick] = useState(0); // re-render once the lazy catalogue fetch below lands
   const [, forcePetTick] = useState(0); // re-render once the lazy pet catalogue fetch lands
   const [, forceMountTick] = useState(0); // re-render once the lazy mount spell-id fetch lands
+
+  // Fetches icon/reagents/quality for whichever profession is expanded, from
+  // the shared wow_recipe_details/wow_recipe_icons cache (see server.js) -
+  // not scoped to the search filter, since search is a client-side filter
+  // over the same known-recipe set and re-fetching per keystroke would be
+  // wasteful. Reads charCacheRef directly rather than the `c`/`bnet` derived
+  // below because those come after this component's one early return
+  // (no active character), and hooks can't sit after a conditional return.
+  useEffect(() => {
+    if (!expandedProf) return;
+    const ch = characters[activeChar];
+    if (!ch) return;
+    const cacheKey = `${ch.region}-${ch.realm}-${ch.name}`;
+    const bnetProfs = charCacheRef.current[cacheKey]?._bnet?.professions;
+    const allProfs = [...(bnetProfs?.primaries || []), ...(bnetProfs?.secondaries || [])];
+    const profData = allProfs.find(p => p.profession?.name === expandedProf);
+    const ids = (profData?.tiers || []).flatMap(t => (t.known_recipes || []).map(r => r.id))
+      .filter(id => Number.isInteger(id) && !(id in recipeDetails));
+    if (!ids.length) return;
+    req('/api/wow/recipes/details', { method: 'POST', body: JSON.stringify({ recipeIds: ids }) })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.recipes) setRecipeDetails(prev => ({ ...prev, ...data.recipes }));
+      })
+      .catch(() => {});
+  }, [expandedProf, activeChar]);
 
   const character = characters[activeChar];
   if (!character) return null;
@@ -1574,15 +1602,54 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
                 : filteredRecipes.map(({ tierName, recipes }) => html`
                   <div style="margin-bottom:10px;">
                     <div style="font-size:10px;color:var(--wow-muted);letter-spacing:1px;font-family:var(--wow-mono);margin-bottom:6px;text-transform:uppercase;">${tierName}</div>
-                    <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                      ${recipes.map(r => html`
-                        <a href="https://www.wowhead.com/spell=${r.id}" target="_blank" rel="noopener" class="recipe-link"
-                           style="font-size:11px;font-family:var(--wow-mono);color:var(--wow-text);background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;padding:2px 6px;text-decoration:none;white-space:nowrap;"
-                           onMouseover=${e => e.target.style.borderColor='var(--wow-gold)'}
-                           onMouseout=${e => e.target.style.borderColor='var(--wow-border2)'}
-                           onClick=${e => e.stopPropagation()}>
-                          ${r.name}
-                        </a>`)}
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                      ${recipes.map(r => {
+                        const det = recipeDetails[r.id];
+                        const isRecipeExpanded = expandedRecipe === r.id;
+                        const reagents = det?.reagents || [];
+                        // Owned count comes from the addon's own bag+bank scan
+                        // (addonChar.bags/bank), not bnet - materials aren't
+                        // gear, there's no Web API for "what's in my bags".
+                        const ownedById = new Map();
+                        for (const it of [...(addonChar?.bags || []), ...(addonChar?.bank || [])]) {
+                          if (it?.id != null) ownedById.set(it.id, (ownedById.get(it.id) || 0) + (it.count || 0));
+                        }
+                        return html`
+                        <div style="background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;">
+                          <div style="display:flex;align-items:center;gap:6px;padding:4px 6px;cursor:${reagents.length ? 'pointer' : 'default'};"
+                               onClick=${e => { e.stopPropagation(); if (reagents.length) setExpandedRecipe(isRecipeExpanded ? null : r.id); }}>
+                            ${det?.iconUrl
+                              ? html`<img src=${det.iconUrl} style="width:18px;height:18px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
+                              : html`<div style="width:18px;height:18px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
+                            <a href="https://www.wowhead.com/spell=${r.id}" target="_blank" rel="noopener" class="recipe-link"
+                               style="font-size:11px;font-family:var(--wow-mono);color:var(--wow-text);text-decoration:none;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                               onMouseover=${e => e.target.style.color='var(--wow-gold)'}
+                               onMouseout=${e => e.target.style.color='var(--wow-text)'}
+                               onClick=${e => e.stopPropagation()}>
+                              ${r.name}
+                            </a>
+                            ${det?.productQuality != null && html`<span title="Recipe-reported crafting quality" style="font-size:9px;font-family:var(--wow-mono);color:var(--wow-gold);border:1px solid var(--wow-gold);border-radius:2px;padding:0 3px;flex-shrink:0;">Q${det.productQuality}</span>`}
+                            ${reagents.length > 0 && html`<span style="font-size:10px;color:var(--wow-muted);">${isRecipeExpanded ? '▲' : '▼'}</span>`}
+                          </div>
+                          ${isRecipeExpanded && reagents.length > 0 && html`
+                            <div style="padding:6px 8px 8px 8px;border-top:1px solid var(--wow-border2);display:flex;flex-direction:column;gap:4px;">
+                              ${reagents.map(rg => {
+                                const owned = ownedById.get(rg.itemID) || 0;
+                                const have = owned >= rg.quantity;
+                                return html`
+                                  <div style="display:flex;align-items:center;gap:6px;font-family:var(--wow-mono);font-size:11px;">
+                                    ${rg.iconUrl
+                                      ? html`<img src=${rg.iconUrl} style="width:16px;height:16px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
+                                      : html`<div style="width:16px;height:16px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
+                                    <a href="https://www.wowhead.com/item=${rg.itemID}" target="_blank" rel="noopener" class="recipe-link"
+                                       style="color:${have ? 'var(--wow-text)' : 'var(--wow-muted)'};text-decoration:none;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                                       onClick=${e => e.stopPropagation()}>${rg.name || ('Item #' + rg.itemID)}</a>
+                                    <span style="color:${have ? 'var(--wow-green)' : 'var(--wow-red)'};font-weight:600;flex-shrink:0;">${owned} / ${rg.quantity}</span>
+                                  </div>`;
+                              })}
+                            </div>`}
+                        </div>`;
+                      })}
                     </div>
                   </div>`)}
             </div>
