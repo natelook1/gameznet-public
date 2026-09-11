@@ -1636,17 +1636,33 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
                           ${isRecipeExpanded && reagents.length > 0 && html`
                             <div style="padding:6px 8px 8px 8px;border-top:1px solid var(--wow-border2);display:flex;flex-direction:column;gap:4px;">
                               ${reagents.map(rg => {
-                                const owned = ownedById.get(rg.itemID) || 0;
-                                const have = owned >= rg.quantity;
+                                // A slot can offer several interchangeable item
+                                // choices (e.g. quality tiers of the same
+                                // material) - any one satisfying the quantity
+                                // is enough, so show whichever choice the
+                                // player is best-stocked on, defaulting to the
+                                // first (Blizzard's own default pick) if none
+                                // are owned at all.
+                                const choices = rg.choices || [];
+                                let best = choices[0];
+                                let bestOwned = best ? (ownedById.get(best.itemID) || 0) : 0;
+                                for (const ch of choices) {
+                                  const o = ownedById.get(ch.itemID) || 0;
+                                  if (o > bestOwned) { best = ch; bestOwned = o; }
+                                }
+                                if (!best) return '';
+                                const have = bestOwned >= rg.quantity;
+                                const altCount = choices.length - 1;
                                 return html`
                                   <div style="display:flex;align-items:center;gap:6px;font-family:var(--wow-mono);font-size:11px;">
-                                    ${rg.iconUrl
-                                      ? html`<img src=${rg.iconUrl} style="width:16px;height:16px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
+                                    ${best.iconUrl
+                                      ? html`<img src=${best.iconUrl} style="width:16px;height:16px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
                                       : html`<div style="width:16px;height:16px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
-                                    <a href="https://www.wowhead.com/item=${rg.itemID}" target="_blank" rel="noopener" class="recipe-link"
+                                    <a href="https://www.wowhead.com/item=${best.itemID}" target="_blank" rel="noopener" class="recipe-link"
                                        style="color:${have ? 'var(--wow-text)' : 'var(--wow-muted)'};text-decoration:none;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                                       onClick=${e => e.stopPropagation()}>${rg.name || ('Item #' + rg.itemID)}</a>
-                                    <span style="color:${have ? 'var(--wow-green)' : 'var(--wow-red)'};font-weight:600;flex-shrink:0;">${owned} / ${rg.quantity}</span>
+                                       onClick=${e => e.stopPropagation()}>${best.name || ('Item #' + best.itemID)}</a>
+                                    ${altCount > 0 && html`<span title="${altCount} other quality tier${altCount === 1 ? '' : 's'} also accepted" style="font-size:9px;color:var(--wow-muted);flex-shrink:0;">+${altCount}</span>`}
+                                    <span style="color:${have ? 'var(--wow-green)' : 'var(--wow-red)'};font-weight:600;flex-shrink:0;">${bestOwned} / ${rg.quantity}</span>
                                   </div>`;
                               })}
                             </div>`}
