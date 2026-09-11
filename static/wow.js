@@ -1726,9 +1726,9 @@ function WowAH({ tokenPrice, tokenTrend }) {
             </div>
 
             <div>
-              <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);margin-bottom:6px;" title="Crafted item's AH price minus reagent costs, cheapest quality tier per slot. Only shown for recipes this server has captured details for via the addon.">CRAFTING PROFIT (COMMODITY CRAFTS)</div>
+              <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);margin-bottom:6px;" title="Crafted item's AH price minus reagent costs, cheapest quality tier per slot. Only shown for recipes this server has captured details for via the addon. Gear crafts show the realm the price came from, since gear prices aren't region-wide like commodities.">CRAFTING PROFIT</div>
               ${crafts === null ? html`<div style="color:var(--wow-muted);font-size:12px;">Loading...</div>` : ''}
-              ${crafts && crafts.length === 0 ? html`<div class="empty" style="padding:10px;">No craftable-commodity data yet.</div>` : ''}
+              ${crafts && crafts.length === 0 ? html`<div class="empty" style="padding:10px;">No craftable-item price data yet.</div>` : ''}
               <div style="display:flex;flex-direction:column;gap:4px;">
                 ${(crafts || []).slice(0, 10).map(c => {
                   const profitGold = Math.floor(c.profit / 10000);
@@ -1740,6 +1740,9 @@ function WowAH({ tokenPrice, tokenTrend }) {
                         ? html`<img src=${c.iconUrl} style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
                         : html`<div style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
                       <span style="flex:1;font-family:var(--wow-mono);font-size:12px;color:var(--wow-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.outputName || ('Item #' + c.outputItemId)}</span>
+                      ${c.kind === 'gear'
+                        ? html`<span style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);border:1px solid var(--wow-border2);border-radius:3px;padding:1px 4px;flex-shrink:0;text-transform:capitalize;" title="Gear prices are per-realm, not region-wide — this is the cheapest price found across this project's tracked realms.">${c.realmSlug ? c.realmSlug.replace(/-/g, ' ') : 'gear'}</span>`
+                        : ''}
                       <span style="font-family:var(--wow-mono);font-size:11px;color:${profitable ? 'var(--wow-green)' : 'var(--wow-red)'};flex-shrink:0;">${profitable ? '+' : ''}${goldStr(profitGold)} g</span>
                     </div>`;
                 })}
