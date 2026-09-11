@@ -7491,7 +7491,7 @@
     // Addon management is desktop-only (app.py writes into the local WoW
     // folder), so it is declared as an extra nav tab rather than living in
     // the shared component. Restores the 10th tab the old UI had.
-    extraTabs: [{ id: 'addon', icon: '🧮', label: 'Addon' }],
+    extraTabs: [{ id: 'addon', icon: '🧮', label: 'Addon', short: 'Addon' }],
     onHostTab: () => window.wowRenderHostPanel && window.wowRenderHostPanel(),
     // This is a classic script, so the bare `state` identifier does resolve
     // here (unlike wowRemount's module block) - but window.state was still

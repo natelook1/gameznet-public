@@ -350,13 +350,19 @@ function injectWowAssets() {
       font-size: 13px;
     }
     /* Every tab must stay visible and clickable - never silently pushed off
-       the right edge (confirmed live 2026-09-11: an 12th tab pushed the
+       the right edge (confirmed live 2026-09-11: a 12th tab pushed the
        host-appended Addon tab past the viewport with no visible scroll
-       affordance, on a plain overflow-x:auto strip). Desktop-width tabs
-       shrink to fit (padding, then the text label via ellipsis) rather than
-       scrolling; below ~600px even icon-only tabs can't all fit at a usable
-       tap size, so THAT'S the point scrolling takes over - see the
-       max-width:600px block below, not the default here. */
+       affordance, on a plain overflow-x:auto strip). Three hard tiers by
+       viewport width, each showing exactly one of tab-label/tab-label-short/
+       icon-only - NOT flex-shrink + text-overflow:ellipsis, which was tried
+       first and landed every tab in an unreadable 3-letter zone
+       ("OVERVI...", "GRO...") at nearly every width in between the full and
+       icon-only tiers (confirmed live via screenshot). tab-label-short is a
+       hand-picked abbreviation per tab (see the `short` field on `tabs`
+       below), not a CSS truncation, so it reads correctly at every width
+       that tier applies to. Below ~600px even icon-only tabs can't all fit
+       at a usable tap size, so that's the point horizontal scroll takes
+       over instead of shrinking further. */
     .wow-wrap .wow-nav-tabs {
       background: var(--wow-surface);
       border-bottom: 1px solid var(--wow-border);
@@ -389,17 +395,25 @@ function injectWowAssets() {
       min-width: 0;
       overflow: hidden;
     }
-    .wow-wrap .wow-nav-tab .tab-label { overflow: hidden; text-overflow: ellipsis; }
-    /* Icon-only floor: once labels would be squeezed unreadable, drop them
-       entirely rather than let ellipsis shrink them to 1-2 letters. The tab
-       itself keeps a native title tooltip for discoverability. */
-    @media (max-width: 900px) and (min-width: 601px) {
-      .wow-wrap .wow-nav-tab .tab-label { display: none; }
+    /* Tier 1 (default, wide): full label. */
+    .wow-wrap .wow-nav-tab .tab-label-short { display: none; }
+    /* Tier 2 (mid width): swap to the fixed short abbreviation - no
+       ellipsis, no free shrinking. */
+    @media (max-width: 1150px) and (min-width: 821px) {
       .wow-wrap .wow-nav-tab { padding: 12px 10px; }
+      .wow-wrap .wow-nav-tab .tab-label { display: none; }
+      .wow-wrap .wow-nav-tab .tab-label-short { display: inline; }
     }
-    /* Below this, even 12 icon-only tabs at a usable tap size don't fit a
-       phone-width screen - fall back to the horizontal-scroll strip instead
-       of squeezing icons past a tappable size. */
+    /* Tier 3 (narrow desktop): icon only. Native title tooltip (set on the
+       tab itself) keeps it discoverable. */
+    @media (max-width: 820px) and (min-width: 601px) {
+      .wow-wrap .wow-nav-tab { padding: 12px 10px; }
+      .wow-wrap .wow-nav-tab .tab-label,
+      .wow-wrap .wow-nav-tab .tab-label-short { display: none; }
+    }
+    /* Tier 4 (mobile): even icon-only can't fit 12 tabs at a tappable size -
+       fall back to the horizontal-scroll strip instead of shrinking icons
+       past a usable tap target. */
     @media (max-width: 600px) {
       .wow-wrap .wow-nav-tabs {
         overflow-x: auto;
@@ -410,7 +424,8 @@ function injectWowAssets() {
       .wow-wrap .wow-nav-tab {
         flex: 0 0 auto;
       }
-      .wow-wrap .wow-nav-tab .tab-label { display: none; }
+      .wow-wrap .wow-nav-tab .tab-label,
+      .wow-wrap .wow-nav-tab .tab-label-short { display: none; }
     }
     .wow-wrap .wow-nav-tab:hover { color: var(--wow-dim); }
     .wow-wrap .wow-nav-tab.active { color: var(--wow-text); border-bottom-color: var(--wow-accent); }
@@ -4416,18 +4431,26 @@ export function WowTab({ me }) {
     return () => clearInterval(iv);
   }, []);
 
+  // `short` is a real fixed abbreviation for the mid-width tier, not a
+  // CSS ellipsis truncation - equal-width flex-shrink + text-overflow:
+  // ellipsis was tried first and landed every tab in an unreadable 3-letter
+  // zone ("OVERVI...", "GRO...") at nearly every width in between the
+  // full-label and icon-only breakpoints, confirmed live 2026-09-11 via
+  // screenshot. A hand-picked short label reads correctly at every width
+  // that tier applies to, instead of depending on where the ellipsis
+  // happens to land.
   const tabs = [
-    { id: 'hub',      icon: '🏠', label: 'Hub' },
-    { id: 'overview', icon: '🌐', label: 'Overview' },
-    { id: 'world',    icon: '🌍', label: 'Collections' },
-    { id: 'professions', icon: '🛠️', label: 'Professions' },
-    { id: 'ah',       icon: '📈', label: 'Auction House' },
-    { id: 'pve',      icon: '⚔️', label: 'PVE' },
-    { id: 'pvp',      icon: '🏆', label: 'PVP' },
-    { id: 'group',    icon: '👥', label: 'Group' },
-    { id: 'keys',     icon: '🗝️', label: 'Progress' },
-    { id: 'pulls',    icon: '⚔️', label: 'Pulls' },
-    { id: 'account',  icon: '👤', label: 'My Account' },
+    { id: 'hub',      icon: '🏠', label: 'Hub',            short: 'Hub' },
+    { id: 'overview', icon: '🌐', label: 'Overview',       short: 'Overview' },
+    { id: 'world',    icon: '🌍', label: 'Collections',    short: 'Collect.' },
+    { id: 'professions', icon: '🛠️', label: 'Professions', short: 'Prof' },
+    { id: 'ah',       icon: '📈', label: 'Auction House',  short: 'AH' },
+    { id: 'pve',      icon: '⚔️', label: 'PVE',            short: 'PVE' },
+    { id: 'pvp',      icon: '🏆', label: 'PVP',            short: 'PVP' },
+    { id: 'group',    icon: '👥', label: 'Group',          short: 'Group' },
+    { id: 'keys',     icon: '🗝️', label: 'Progress',       short: 'Prog.' },
+    { id: 'pulls',    icon: '⚔️', label: 'Pulls',          short: 'Pulls' },
+    { id: 'account',  icon: '👤', label: 'My Account',     short: 'Account' },
     // Tabs the host adds - desktop appends Addon here; mobile adds none.
     ...(HOST.extraTabs || []),
   ];
@@ -4489,7 +4512,7 @@ export function WowTab({ me }) {
             setSubTab(t.id);
             if (t.id === 'overview') setActiveChar(-1);
           }}>
-            <span class="tab-icon">${t.icon}</span><span class="tab-label"> ${t.label}</span>
+            <span class="tab-icon">${t.icon}</span><span class="tab-label"> ${t.label}</span><span class="tab-label-short"> ${t.short || t.label}</span>
           </div>
         `)}
       </div>
