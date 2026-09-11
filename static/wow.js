@@ -358,7 +358,7 @@ function injectWowAssets() {
        first and landed every tab in an unreadable 3-letter zone
        ("OVERVI...", "GRO...") at nearly every width in between the full and
        icon-only tiers (confirmed live via screenshot). tab-label-short is a
-       hand-picked abbreviation per tab (see the `short` field on `tabs`
+       hand-picked abbreviation per tab (see the 'short' field on 'tabs'
        below), not a CSS truncation, so it reads correctly at every width
        that tier applies to. Below ~600px even icon-only tabs can't all fit
        at a usable tap size, so that's the point horizontal scroll takes
