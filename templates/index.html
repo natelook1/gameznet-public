@@ -7512,8 +7512,12 @@
 
   // The component owns the DOM inside #wow-mount, so the desktop-only buttons
   // cannot be written into its header markup. Relocate them into the slot it
-  // renders (#wow-host-controls) after each render instead - that keeps them in
-  // the header's flex flow rather than floating over the token price.
+  // renders (#wow-host-controls, in the topbar's sticky header) after each
+  // render instead. Was originally inside the scrollable tab row itself, but
+  // that pushed the buttons out of reach once a 9th tab (Professions) made
+  // the row wider than the viewport (2026-09-11) - the topbar header is
+  // sticky and never scrolls, so it can't have this problem again regardless
+  // of how many tabs get added later.
   function placeHostControls() {
     const chrome = document.getElementById('wow-desktop-chrome');
     const slot   = document.getElementById('wow-host-controls');

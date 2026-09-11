@@ -487,7 +487,7 @@ function injectWowAssets() {
     .wow-wrap .wow-token-icon { width: 13px; height: 13px; opacity: 0.9; }
     .wow-wrap .wow-token-label { font-family: var(--wow-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--wow-muted); }
     .wow-wrap .wow-token-price { font-family: var(--wow-mono); font-size: 11px; font-weight: 600; color: var(--wow-gold); }
-    .wow-wrap .wow-nav-tabs #wow-host-controls { margin-left: auto; display: flex; align-items: center; gap: 8px; padding-right: 6px; }
+    .wow-wrap .wow-topbar #wow-host-controls { display: flex; align-items: center; gap: 8px; }
     .wow-wrap .level-hero { background: var(--wow-surface2); border: 1px solid var(--wow-border2); border-radius: var(--wow-radius); padding: 20px; display: flex; align-items: center; gap: 20px; }
     .wow-wrap .level-big { font-family: var(--wow-mono); font-size: 64px; font-weight: 700; color: var(--wow-green); line-height: 1; text-shadow: 0 0 30px rgba(34,197,94,0.3); flex-shrink: 0; }
     .wow-wrap .level-info { flex: 1; }
@@ -4167,6 +4167,7 @@ export function WowTab({ me }) {
             </svg>
             <span>${characters.length} character${characters.length === 1 ? '' : 's'}</span>
           </div>
+          <div id="wow-host-controls"></div>
         </div>
       </div>
       <div class="reset-banner">
@@ -4190,9 +4191,6 @@ export function WowTab({ me }) {
             <span class="tab-icon">${t.icon}</span> ${t.label}
           </div>
         `)}
-        <!-- Host-supplied controls (desktop fullscreen) sit at the end of the
-             tab row. Empty on mobile, where it collapses to nothing. -->
-        <div id="wow-host-controls"></div>
       </div>
       <${WowCharBar} characters=${characters} activeChar=${activeChar} subTab=${subTab} onSelect=${(idx) => { setActiveChar(idx); if (idx === -1) setSubTab('overview'); else if (subTab === 'overview') setSubTab('world'); }} charCacheRef=${charCacheRef} dataTick=${dataTick} />
       ${loading ? html`<div style="padding: 20px; color: var(--wow-muted);">Loading roster...</div>` : html`
