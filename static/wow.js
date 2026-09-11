@@ -1177,9 +1177,15 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
 
   // The addon roster is keyed "Name-Realm" and is the only source for an owned
   // house (no Web API exposes one), so pair it with the Blizzard cache here.
-  const addonHousing = (addon?.characters || [])
+  const addonChar = (addon?.characters || [])
     .find(ac => `${ac.name}-${ac.realm}`.toLowerCase() === `${character.name}-${character.realm}`.toLowerCase())
-    ?.housing || null;
+    || null;
+  const addonHousing = addonChar?.housing || null;
+  // Same reasoning as housing above: Knowledge points and spec-tab state
+  // live only in the addon feed (Blizzard's public Profile API has no
+  // Knowledge/spec-tree field at all), keyed by the real per-tier skillLine
+  // id, not the parent profession id bnet.professions uses.
+  const addonProfSpecs = addonChar?.professionSpecs || [];
 
   const lvl = bnet?.profile?.level || c.level || 90;
   const maxLvl = 90;
@@ -1476,6 +1482,8 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
           })).filter(t => t.recipes.length > 0);
         })();
         const totalKnown = expandedProfData ? (expandedProfData.tiers || []).reduce((n, t) => n + (t.known_recipes?.length || 0), 0) : 0;
+        const expandedProfClean = expandedProf ? expandedProf.replace(/^(Khaz Algar |Dragon Isles |Shadowlands |Kul Tiran |Zandalari )/i, '') : '';
+        const expandedSpecs = expandedProf ? addonProfSpecs.filter(s => s.name && s.name.includes(expandedProfClean)) : [];
 
         return html`
           <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 160px), 1fr));gap:10px;">
@@ -1494,12 +1502,22 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
               for (let key in iconMap) if (profName.includes(key)) icon = iconMap[key];
               const cleanName = profName.replace(/^(Khaz Algar |Dragon Isles |Shadowlands |Kul Tiran |Zandalari )/i, '');
 
+              // addonProfSpecs entries are named per-tier ("Midnight Mining",
+              // "Khaz Algar Mining"...), not the base profession name bnet
+              // uses - match on substring, then sum unspent Knowledge across
+              // every tier this profession has, since a player can carry
+              // unspent points in more than one tier's tree at once (e.g.
+              // fully spent this tier, 7 sitting idle in the previous one).
+              const specEntries = addonProfSpecs.filter(s => s.name && s.name.includes(cleanName));
+              const knowledgeUnspent = specEntries.reduce((n, s) => n + (s.knowledgeAvailable || 0), 0);
+
               return html`
                 <div style="background:var(--wow-surface2);border:1px solid ${isExpanded ? 'var(--wow-gold)' : 'var(--wow-border)'};border-radius:4px;padding:10px;cursor:${recipeCount > 0 ? 'pointer' : 'default'};"
                      onClick=${() => recipeCount > 0 && (isExpanded ? setExpandedProf(null) : (setExpandedProf(profName), setProfRecipeSearch('')))}>
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                     <div style="width:24px;height:24px;background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;">${icon}</div>
                     <div style="font-family:var(--wow-display);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;" title="${profName}">${cleanName}</div>
+                    ${knowledgeUnspent > 0 ? html`<span title="${knowledgeUnspent} unspent Knowledge point${knowledgeUnspent===1?'':'s'}" style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-bg);background:var(--wow-gold);border-radius:3px;padding:1px 5px;font-weight:700;">📖 ${knowledgeUnspent}</span>` : ''}
                     ${recipeCount > 0 ? html`<span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${recipeCount}</span>` : ''}
                   </div>
                   <div style="display:flex;align-items:center;justify-content:space-between;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);margin-bottom:4px;">
@@ -1511,6 +1529,24 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
           </div>
           ${expandedProfData ? html`
             <div style="margin-top:12px;background:var(--wow-surface2);border:1px solid var(--wow-gold);border-radius:4px;padding:12px;">
+              ${expandedSpecs.length > 0 && html`
+                <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--wow-border2);">
+                  ${expandedSpecs.map(s => html`
+                    <div style="margin-bottom:8px;">
+                      <div style="display:flex;align-items:center;justify-content:space-between;font-family:var(--wow-mono);font-size:11px;margin-bottom:4px;">
+                        <span style="color:var(--wow-text);">${s.name}</span>
+                        <span style="color:${s.knowledgeAvailable > 0 ? 'var(--wow-gold)' : 'var(--wow-muted)'};">📖 ${s.knowledgeAvailable || 0} unspent</span>
+                      </div>
+                      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        ${(s.tabs || []).map(t => {
+                          // ProfessionsSpecTabState: 0 Locked, 1 Unlocked, 2 Unlockable
+                          const label = t.state === 1 ? 'Unlocked' : t.state === 2 ? 'Unlockable' : 'Locked';
+                          const color = t.state === 1 ? 'var(--wow-green)' : t.state === 2 ? 'var(--wow-gold)' : 'var(--wow-muted)';
+                          return html`<span style="font-family:var(--wow-mono);font-size:10px;color:${color};border:1px solid ${color};border-radius:3px;padding:2px 6px;" title="${label}">${t.name || ('Tab ' + t.tabTreeID)}</span>`;
+                        })}
+                      </div>
+                    </div>`)}
+                </div>`}
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
                 <div style="font-family:var(--wow-display);font-size:13px;font-weight:600;flex:1;min-width:120px;">${expandedProf} <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);font-weight:400;">${totalKnown} recipes</span></div>
                 <input
