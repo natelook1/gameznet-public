@@ -545,13 +545,12 @@ function injectWowAssets() {
     .wow-wrap .doll-item ins, .wow-wrap .doll-item del,
     .wow-wrap .doll-item [class^="icon"], .wow-wrap .doll-item [class*=" icon"] { display: none !important; }
     .wow-wrap .doll-item { text-indent: 0 !important; padding-left: 0 !important; background-image: none !important; }
-    /* Same power.js landmine hits the profession recipe chips: it renamed
-       ${r.name} to a shortened Wowhead display name AND injected an icon
-       into a tight inline-flex row with no room for either, producing an
-       unreadable overlap of icon+old-name+new-name. Recipe names are exact
+    /* Same power.js landmine hits the profession recipe chips: it injects
+       an icon into a tight inline-flex row with no room for it, producing
+       an unreadable overlap of icon and recipe name. Recipe names are exact
        already (they came straight from the Blizzard API), so there is
-       nothing power.js's rename adds - suppress both the icon and the
-       rename here rather than fighting for layout space with them. */
+       nothing power.js's icon adds here - suppress it rather than fight it
+       for layout space, same fix as .doll-item above. */
     .wow-wrap .recipe-link .icon-added,
     .wow-wrap .recipe-link ins, .wow-wrap .recipe-link del,
     .wow-wrap .recipe-link [class^="icon"], .wow-wrap .recipe-link [class*=" icon"] { display: none !important; }
