@@ -209,6 +209,28 @@ function classIcon(cls) {
   return k ? `https://wow.zamimg.com/images/wow/icons/medium/classicon_${k}.jpg` : null;
 }
 
+// specId -> class name, confirmed live 2026-09-11 against warcraft.wiki.gg
+// (Havoc 577 cross-checked against a real captured combatant's Spec ID in
+// this session). Combat log COMBATANT_INFO only reports specId, never a
+// class string, so this is the only way to get a class color/icon for the
+// Pulls meter rows - initial/starter spec ids (145x-1480) are omitted since
+// a raiding combatant is never on one.
+const SPEC_TO_CLASS = {
+  250: 'Death Knight', 251: 'Death Knight', 252: 'Death Knight',
+  577: 'Demon Hunter', 581: 'Demon Hunter',
+  102: 'Druid', 103: 'Druid', 104: 'Druid', 105: 'Druid',
+  1467: 'Evoker', 1468: 'Evoker', 1473: 'Evoker',
+  253: 'Hunter', 254: 'Hunter', 255: 'Hunter',
+  62: 'Mage', 63: 'Mage', 64: 'Mage',
+  268: 'Monk', 269: 'Monk', 270: 'Monk',
+  65: 'Paladin', 66: 'Paladin', 70: 'Paladin',
+  256: 'Priest', 257: 'Priest', 258: 'Priest',
+  259: 'Rogue', 260: 'Rogue', 261: 'Rogue',
+  262: 'Shaman', 263: 'Shaman', 264: 'Shaman',
+  265: 'Warlock', 266: 'Warlock', 267: 'Warlock',
+  71: 'Warrior', 72: 'Warrior', 73: 'Warrior',
+};
+
 function classColor(cls) {
   if (!cls) return 'var(--wow-gold)';
   return CLASS_COLOR[String(cls).toUpperCase().replace(/[^A-Z]/g, '')] || 'var(--wow-gold)';
@@ -2861,23 +2883,23 @@ const VAULT_TYPE = { 1: 'Raid', 3: 'Mythic+', 5: 'PvP', 6: 'World' };
 // report (dungeons, raids, delves, follower content) - unmapped ids fall
 // back to the bare number rather than guessing at a label.
 const WOW_DIFFICULTY = {
-  1:  { name: 'Normal',    color: 'var(--wow-muted)' },
-  2:  { name: 'Heroic',    color: 'var(--wow-accent)' },
-  8:  { name: 'Mythic Keystone', color: 'var(--wow-gold)' },
-  23: { name: 'Mythic',    color: 'var(--wow-red)' },
-  24: { name: 'Timewalking', color: 'var(--wow-accent)' },
-  205: { name: 'Follower Dungeon', color: 'var(--wow-muted)' },
-  14: { name: 'Normal Raid',  color: 'var(--wow-muted)' },
-  15: { name: 'Heroic Raid',  color: 'var(--wow-accent)' },
-  16: { name: 'Mythic Raid',  color: 'var(--wow-red)' },
-  17: { name: 'Looking For Raid', color: 'var(--wow-muted)' },
-  33: { name: 'Timewalking Raid', color: 'var(--wow-accent)' },
-  220: { name: 'Story Raid',  color: 'var(--wow-muted)' },
-  38: { name: 'Normal Delve', color: 'var(--wow-green)' },
-  39: { name: 'Heroic Delve', color: 'var(--wow-accent)' },
-  40: { name: 'Mythic Delve', color: 'var(--wow-red)' },
-  208: { name: 'Delve',    color: 'var(--wow-green)' },
-  172: { name: 'World Boss', color: 'var(--wow-gold)' },
+  1:  { name: 'Normal',    color: 'var(--wow-muted)', icon: '⚔️' },
+  2:  { name: 'Heroic',    color: 'var(--wow-accent)', icon: '⚔️' },
+  8:  { name: 'Mythic Keystone', color: 'var(--wow-gold)', icon: '🗝️' },
+  23: { name: 'Mythic',    color: 'var(--wow-red)', icon: '⚔️' },
+  24: { name: 'Timewalking', color: 'var(--wow-accent)', icon: '⚔️' },
+  205: { name: 'Follower Dungeon', color: 'var(--wow-muted)', icon: '⚔️' },
+  14: { name: 'Normal Raid',  color: 'var(--wow-muted)', icon: '🏰' },
+  15: { name: 'Heroic Raid',  color: 'var(--wow-accent)', icon: '🏰' },
+  16: { name: 'Mythic Raid',  color: 'var(--wow-red)', icon: '🏰' },
+  17: { name: 'Looking For Raid', color: 'var(--wow-muted)', icon: '🏰' },
+  33: { name: 'Timewalking Raid', color: 'var(--wow-accent)', icon: '🏰' },
+  220: { name: 'Story Raid',  color: 'var(--wow-muted)', icon: '🏰' },
+  38: { name: 'Normal Delve', color: 'var(--wow-green)', icon: '🕳️' },
+  39: { name: 'Heroic Delve', color: 'var(--wow-accent)', icon: '🕳️' },
+  40: { name: 'Mythic Delve', color: 'var(--wow-red)', icon: '🕳️' },
+  208: { name: 'Delve',    color: 'var(--wow-green)', icon: '🕳️' },
+  172: { name: 'World Boss', color: 'var(--wow-gold)', icon: '👑' },
 };
 
 // ── Hub: your own characters at a glance (second-screen view) ────────────────
@@ -3612,17 +3634,33 @@ function wowPullFmtDuration(ms) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function WowPullMeterRow({ row, maxTotal, color }) {
+// combatant is optional - non-player sources (totems, pets, boss adds hitting
+// the raid) have no COMBATANT_INFO entry and no specId, so they fall back to
+// the plain per-meter color (red/green/gold) the same as before this class-
+// color pass. Name overlaid directly on the bar (WarcraftLogs-style) rather
+// than in a separate fixed-width column, since a 90px name column either
+// truncated real names or wasted space on short ones.
+function WowPullMeterRow({ row, maxTotal, color, combatant }) {
   const pct = maxTotal > 0 ? Math.max(4, Math.round((row.total / maxTotal) * 100)) : 0;
+  const cls = combatant ? SPEC_TO_CLASS[combatant.specId] : null;
+  const barColor = cls ? classColor(cls) : color;
   return html`
-    <div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
-      <div style="width:90px;flex-shrink:0;font-family:var(--wow-display);font-size:11px;color:var(--wow-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${row.name || row.guid}">${row.name || row.guid}</div>
-      <div style="flex:1;height:12px;background:var(--wow-surface2);border-radius:3px;overflow:hidden;">
-        <div style="height:100%;width:${pct}%;background:${color};"></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
+      <div style="flex:1;position:relative;height:18px;background:var(--wow-surface2);border-radius:3px;overflow:hidden;">
+        <div style="position:absolute;inset:0;width:${pct}%;background:${barColor};opacity:0.85;"></div>
+        <div style="position:relative;height:100%;display:flex;align-items:center;padding:0 8px;font-family:var(--wow-display);font-size:11px;color:var(--wow-text);text-shadow:0 1px 2px rgba(0,0,0,0.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${row.name || row.guid}">${row.name || row.guid}</div>
       </div>
       <div style="width:60px;flex-shrink:0;text-align:right;font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">${wowPullFmtNum(row.total)} <span style="opacity:0.7;">(${wowPullFmtNum(row.perSecond)}/s)</span></div>
     </div>`;
 }
+
+// Same enchantable-slot set as ENCHANTABLE_SLOTS (DollSlot, near the top of
+// this file) but in wow_combatlog.py's own naming convention ("Finger1", no
+// underscore - see _GEAR_SLOTS there), which is a different string format
+// from the Blizzard Profile API's slot.type ("FINGER_1") this loadout has
+// nothing to do with. Kept as a separate set rather than reusing
+// ENCHANTABLE_SLOTS to avoid a silent mismatch if either format changes.
+const PULL_ENCHANTABLE_SLOTS = new Set(['Head', 'Shoulder', 'Chest', 'Finger1', 'Finger2', 'Feet', 'MainHand', 'OffHand']);
 
 function WowPullLoadout({ combatant }) {
   if (!combatant) return html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No loadout captured for this player.</div>`;
@@ -3637,7 +3675,7 @@ function WowPullLoadout({ combatant }) {
           <a href="https://www.wowhead.com/item=${g.itemId}" target="_blank" rel="noopener" data-wowhead="item=${g.itemId}${g.gems && g.gems.length ? '&gems=' + g.gems.join(':') : ''}${g.enchants && g.enchants.length ? '&ench=' + g.enchants[0] : ''}"
              style="flex:1;min-width:0;font-family:var(--wow-mono);font-size:10px;color:var(--wow-text);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">item ${g.itemId}</a>
           <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-accent);">${g.ilvl ?? '—'}</div>
-          ${(!g.enchants || g.enchants.length === 0) && html`<span title="No enchant" style="color:var(--wow-red);font-size:11px;">⚠</span>`}
+          ${PULL_ENCHANTABLE_SLOTS.has(g.slot) && (!g.enchants || g.enchants.length === 0) && html`<span title="No enchant" style="color:var(--wow-red);font-size:11px;">⚠</span>`}
         </div>
       `)}
       ${(combatant.gear || []).length === 0 && html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No gear captured.</div>`}
@@ -3672,8 +3710,12 @@ function WowPullCard({ pull, expanded, onToggle }) {
     <div class="wow-card" style="margin:0 12px 10px;padding:0;overflow:hidden;">
       <div style="cursor:pointer;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;" onClick=${onToggle}>
         <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-          ${pull.iconUrl ? html`<img src=${pull.iconUrl} alt="" style="width:32px;height:32px;border-radius:4px;object-fit:cover;flex-shrink:0;border:1px solid var(--wow-border2);"
-               onError=${e => { e.target.style.display = 'none'; }} />` : ''}
+          ${!isWorld && html`
+            ${pull.iconUrl
+              ? html`<img src=${pull.iconUrl} alt="" style="width:32px;height:32px;border-radius:4px;object-fit:cover;flex-shrink:0;border:1px solid var(--wow-border2);"
+                     onError=${e => { e.target.style.display = 'none'; }} />`
+              : html`<div style="width:32px;height:32px;border-radius:4px;flex-shrink:0;border:1px solid var(--wow-border2);background:var(--wow-surface2);display:flex;align-items:center;justify-content:center;font-size:15px;" title="No portrait available yet for this content">${difficultyInfo?.icon || '⚔️'}</div>`}
+          `}
           <div style="min-width:0;">
             <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pull.name || 'Unknown Encounter'}</div>
             <div style="font-family:var(--wow-mono);font-size:10px;color:${subtitleColor};">${subtitle}</div>
@@ -3689,17 +3731,17 @@ function WowPullCard({ pull, expanded, onToggle }) {
         <div style="padding:0 12px 12px;border-top:1px solid var(--wow-border2);">
           <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;margin:10px 0 6px;">DAMAGE DONE</div>
           ${pull.damage.length > 0
-            ? pull.damage.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxDamage} color="var(--wow-red)" />`)
+            ? pull.damage.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxDamage} color="var(--wow-red)" combatant=${combatantsByGuid[r.guid]} />`)
             : html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No data.</div>`}
 
           <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;margin:14px 0 6px;">HEALING DONE</div>
           ${pull.healing.length > 0
-            ? pull.healing.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxHealing} color="var(--wow-green)" />`)
+            ? pull.healing.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxHealing} color="var(--wow-green)" combatant=${combatantsByGuid[r.guid]} />`)
             : html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No data.</div>`}
 
           ${(pull.incoming || []).length > 0 && html`
             <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;margin:14px 0 6px;">DAMAGE TAKEN — FROM ENEMIES</div>
-            ${pull.incoming.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxIncoming} color="var(--wow-gold)" />`)}`}
+            ${pull.incoming.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxIncoming} color="var(--wow-gold)" combatant=${combatantsByGuid[r.guid]} />`)}`}
 
           <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;margin:14px 0 6px;">DEATHS</div>
           ${(pull.deaths || []).length === 0
