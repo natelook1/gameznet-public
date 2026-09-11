@@ -349,6 +349,14 @@ function injectWowAssets() {
       min-height:       100%;
       font-size: 13px;
     }
+    /* Every tab must stay visible and clickable - never silently pushed off
+       the right edge (confirmed live 2026-09-11: an 12th tab pushed the
+       host-appended Addon tab past the viewport with no visible scroll
+       affordance, on a plain overflow-x:auto strip). Desktop-width tabs
+       shrink to fit (padding, then the text label via ellipsis) rather than
+       scrolling; below ~600px even icon-only tabs can't all fit at a usable
+       tap size, so THAT'S the point scrolling takes over - see the
+       max-width:600px block below, not the default here. */
     .wow-wrap .wow-nav-tabs {
       background: var(--wow-surface);
       border-bottom: 1px solid var(--wow-border);
@@ -359,11 +367,7 @@ function injectWowAssets() {
       top: 82px;
       z-index: 185;
       min-height: 40px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
     }
-    .wow-wrap .wow-nav-tabs::-webkit-scrollbar { display: none; }
     .wow-wrap .wow-nav-tab {
       font-family: var(--wow-display);
       font-size: 13px;
@@ -377,10 +381,36 @@ function injectWowAssets() {
       transition: all 0.15s;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 7px;
       user-select: none;
       white-space: nowrap;
-      flex-shrink: 0;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .wow-wrap .wow-nav-tab .tab-label { overflow: hidden; text-overflow: ellipsis; }
+    /* Icon-only floor: once labels would be squeezed unreadable, drop them
+       entirely rather than let ellipsis shrink them to 1-2 letters. The tab
+       itself keeps a native title tooltip for discoverability. */
+    @media (max-width: 900px) and (min-width: 601px) {
+      .wow-wrap .wow-nav-tab .tab-label { display: none; }
+      .wow-wrap .wow-nav-tab { padding: 12px 10px; }
+    }
+    /* Below this, even 12 icon-only tabs at a usable tap size don't fit a
+       phone-width screen - fall back to the horizontal-scroll strip instead
+       of squeezing icons past a tappable size. */
+    @media (max-width: 600px) {
+      .wow-wrap .wow-nav-tabs {
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .wow-wrap .wow-nav-tabs::-webkit-scrollbar { display: none; }
+      .wow-wrap .wow-nav-tab {
+        flex: 0 0 auto;
+      }
+      .wow-wrap .wow-nav-tab .tab-label { display: none; }
     }
     .wow-wrap .wow-nav-tab:hover { color: var(--wow-dim); }
     .wow-wrap .wow-nav-tab.active { color: var(--wow-text); border-bottom-color: var(--wow-accent); }
@@ -4455,11 +4485,11 @@ export function WowTab({ me }) {
       </div>
       <div class="wow-nav-tabs">
         ${tabs.map(t => html`
-          <div class="wow-nav-tab ${subTab === t.id ? `active tab-${t.id}`:''}" onClick=${() => {
+          <div class="wow-nav-tab ${subTab === t.id ? `active tab-${t.id}`:''}" title="${t.label}" onClick=${() => {
             setSubTab(t.id);
             if (t.id === 'overview') setActiveChar(-1);
           }}>
-            <span class="tab-icon">${t.icon}</span> ${t.label}
+            <span class="tab-icon">${t.icon}</span><span class="tab-label"> ${t.label}</span>
           </div>
         `)}
       </div>
