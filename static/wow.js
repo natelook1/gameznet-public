@@ -1759,6 +1759,9 @@ function WowAH({ tokenPrice, tokenTrend }) {
             ${browseCategory == null ? html`
               ${categories === null ? html`<div style="color:var(--wow-muted);font-size:12px;">Loading categories...</div>` : ''}
               ${categories && categories.length === 0 ? html`<div class="empty" style="padding:10px;">Category data still building — check back in a day.</div>` : ''}
+              ${categories && categories.length > 0 ? html`
+                <div style="font-size:11px;color:var(--wow-muted);margin-bottom:8px;font-style:italic;">Covers craftable materials, consumables, gems and similar tradeable goods — equippable gear (weapons, most armor) isn't tracked here yet.</div>
+              ` : ''}
               <div style="display:flex;flex-direction:column;gap:10px;">
                 ${(categories || []).map(c => html`
                   <div>
