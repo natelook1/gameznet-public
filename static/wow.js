@@ -3692,13 +3692,15 @@ function WowPullLoadout({ combatant }) {
 // the raid gets its own row) and a full loadout per raider - collapsing
 // those by default is what keeps a "Crown of the Cosmos"-sized pull from
 // turning into a scroll marathon the moment you open it.
-function WowPullSection({ title, count, defaultOpen, children }) {
+function WowPullSection({ title, icon, color, count, defaultOpen, children }) {
   const [open, setOpen] = useState(defaultOpen);
+  const c = color || 'var(--wow-muted)';
   return html`
     <div style="margin:14px 0 0;">
       <div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onClick=${() => setOpen(!open)}>
-        <span style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">${open ? '▾' : '▸'}</span>
-        <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;">${title}${count != null ? ` (${count})` : ''}</span>
+        <span style="font-family:var(--wow-mono);font-size:9px;color:${c};">${open ? '▾' : '▸'}</span>
+        ${icon ? html`<span style="font-size:11px;">${icon}</span>` : ''}
+        <span style="font-family:var(--wow-mono);font-size:10px;color:${c};letter-spacing:1px;">${title}${count != null ? ` (${count})` : ''}</span>
       </div>
       ${open && html`<div style="margin-top:6px;">${children}</div>`}
     </div>`;
@@ -3751,24 +3753,24 @@ function WowPullCard({ pull, expanded, onToggle }) {
       </div>
       ${expanded && html`
         <div style="padding:0 12px 12px;border-top:1px solid var(--wow-border2);">
-          <${WowPullSection} title="DAMAGE DONE" count=${pull.damage.length} defaultOpen=${true}>
+          <${WowPullSection} title="DAMAGE DONE" icon="⚔️" color="var(--wow-red)" count=${pull.damage.length} defaultOpen=${true}>
             ${pull.damage.length > 0
               ? pull.damage.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxDamage} color="var(--wow-red)" combatant=${combatantsByGuid[r.guid]} />`)
               : html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No data.</div>`}
           <//>
 
-          <${WowPullSection} title="HEALING DONE" count=${pull.healing.length} defaultOpen=${true}>
+          <${WowPullSection} title="HEALING DONE" icon="✚" color="var(--wow-green)" count=${pull.healing.length} defaultOpen=${true}>
             ${pull.healing.length > 0
               ? pull.healing.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxHealing} color="var(--wow-green)" combatant=${combatantsByGuid[r.guid]} />`)
               : html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No data.</div>`}
           <//>
 
           ${(pull.incoming || []).length > 0 && html`
-            <${WowPullSection} title="DAMAGE TAKEN — FROM ENEMIES" count=${pull.incoming.length} defaultOpen=${false}>
+            <${WowPullSection} title="DAMAGE TAKEN — FROM ENEMIES" icon="🛡️" color="var(--wow-gold)" count=${pull.incoming.length} defaultOpen=${false}>
               ${pull.incoming.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxIncoming} color="var(--wow-gold)" combatant=${combatantsByGuid[r.guid]} />`)}
             <//>`}
 
-          <${WowPullSection} title="DEATHS" count=${(pull.deaths || []).length} defaultOpen=${false}>
+          <${WowPullSection} title="DEATHS" icon="💀" color=${(pull.deaths || []).length > 0 ? 'var(--wow-red)' : 'var(--wow-muted)'} count=${(pull.deaths || []).length} defaultOpen=${false}>
             ${(pull.deaths || []).length === 0
               ? html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No deaths.</div>`
               : pull.deaths.map(d => html`
@@ -3781,7 +3783,7 @@ function WowPullCard({ pull, expanded, onToggle }) {
               `)}
           <//>
 
-          <${WowPullSection} title="PARTY LOADOUT" count=${loadoutRows.length} defaultOpen=${false}>
+          <${WowPullSection} title="PARTY LOADOUT" icon="🎽" color="var(--wow-accent)" count=${loadoutRows.length} defaultOpen=${false}>
             ${loadoutRows.length > 0
               ? loadoutRows.map(row => html`
                 <div style="margin-bottom:12px;">
