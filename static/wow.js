@@ -1621,13 +1621,15 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
                             ${det?.iconUrl
                               ? html`<img src=${det.iconUrl} style="width:18px;height:18px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
                               : html`<div style="width:18px;height:18px;border-radius:2px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
-                            <a href="https://www.wowhead.com/spell=${r.id}" target="_blank" rel="noopener" class="recipe-link"
-                               style="font-size:11px;font-family:var(--wow-mono);color:var(--wow-text);text-decoration:none;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                               onMouseover=${e => e.target.style.color='var(--wow-gold)'}
-                               onMouseout=${e => e.target.style.color='var(--wow-text)'}
-                               onClick=${e => e.stopPropagation()}>
-                              ${r.name}
-                            </a>
+                            ${det?.outputItemID
+                              ? html`<a href="https://www.wowhead.com/item=${det.outputItemID}" target="_blank" rel="noopener" class="recipe-link"
+                                       style="font-size:11px;font-family:var(--wow-mono);color:var(--wow-text);text-decoration:none;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                                       onMouseover=${e => e.target.style.color='var(--wow-gold)'}
+                                       onMouseout=${e => e.target.style.color='var(--wow-text)'}
+                                       onClick=${e => e.stopPropagation()}>
+                                      ${r.name}
+                                    </a>`
+                              : html`<span class="recipe-link" style="font-size:11px;font-family:var(--wow-mono);color:var(--wow-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</span>`}
                             ${det?.productQuality != null && html`<span title="Recipe-reported crafting quality" style="font-size:9px;font-family:var(--wow-mono);color:var(--wow-gold);border:1px solid var(--wow-gold);border-radius:2px;padding:0 3px;flex-shrink:0;">Q${det.productQuality}</span>`}
                             ${reagents.length > 0 && html`<span style="font-size:10px;color:var(--wow-muted);">${isRecipeExpanded ? '▲' : '▼'}</span>`}
                           </div>
