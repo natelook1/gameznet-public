@@ -3642,7 +3642,12 @@ function wowPullFmtDuration(ms) {
 // truncated real names or wasted space on short ones.
 function WowPullMeterRow({ row, maxTotal, color, combatant }) {
   const pct = maxTotal > 0 ? Math.max(4, Math.round((row.total / maxTotal) * 100)) : 0;
-  const cls = combatant ? SPEC_TO_CLASS[combatant.specId] : null;
+  // row.class comes from the server joining the roster by name (works for
+  // every registered character in every pull, captured or not); specId only
+  // exists when COMBATANT_INFO fired for this specific pull, which combat
+  // log capture only ever does for instanced content on the reporting
+  // player's own client.
+  const cls = row.class || (combatant ? SPEC_TO_CLASS[combatant.specId] : null);
   const barColor = cls ? classColor(cls) : color;
   return html`
     <div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
@@ -3679,6 +3684,23 @@ function WowPullLoadout({ combatant }) {
         </div>
       `)}
       ${(combatant.gear || []).length === 0 && html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No gear captured.</div>`}
+    </div>`;
+}
+
+// A collapsible section header + body, used inside an already-expanded pull
+// card. Big raid pulls can carry 30+ damage-taken rows (every add hitting
+// the raid gets its own row) and a full loadout per raider - collapsing
+// those by default is what keeps a "Crown of the Cosmos"-sized pull from
+// turning into a scroll marathon the moment you open it.
+function WowPullSection({ title, count, defaultOpen, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return html`
+    <div style="margin:14px 0 0;">
+      <div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onClick=${() => setOpen(!open)}>
+        <span style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">${open ? '▾' : '▸'}</span>
+        <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;">${title}${count != null ? ` (${count})` : ''}</span>
+      </div>
+      ${open && html`<div style="margin-top:6px;">${children}</div>`}
     </div>`;
 }
 
@@ -3729,41 +3751,46 @@ function WowPullCard({ pull, expanded, onToggle }) {
       </div>
       ${expanded && html`
         <div style="padding:0 12px 12px;border-top:1px solid var(--wow-border2);">
-          <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;margin:10px 0 6px;">DAMAGE DONE</div>
-          ${pull.damage.length > 0
-            ? pull.damage.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxDamage} color="var(--wow-red)" combatant=${combatantsByGuid[r.guid]} />`)
-            : html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No data.</div>`}
+          <${WowPullSection} title="DAMAGE DONE" count=${pull.damage.length} defaultOpen=${true}>
+            ${pull.damage.length > 0
+              ? pull.damage.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxDamage} color="var(--wow-red)" combatant=${combatantsByGuid[r.guid]} />`)
+              : html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No data.</div>`}
+          <//>
 
-          <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;margin:14px 0 6px;">HEALING DONE</div>
-          ${pull.healing.length > 0
-            ? pull.healing.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxHealing} color="var(--wow-green)" combatant=${combatantsByGuid[r.guid]} />`)
-            : html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No data.</div>`}
+          <${WowPullSection} title="HEALING DONE" count=${pull.healing.length} defaultOpen=${true}>
+            ${pull.healing.length > 0
+              ? pull.healing.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxHealing} color="var(--wow-green)" combatant=${combatantsByGuid[r.guid]} />`)
+              : html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No data.</div>`}
+          <//>
 
           ${(pull.incoming || []).length > 0 && html`
-            <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;margin:14px 0 6px;">DAMAGE TAKEN — FROM ENEMIES</div>
-            ${pull.incoming.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxIncoming} color="var(--wow-gold)" combatant=${combatantsByGuid[r.guid]} />`)}`}
+            <${WowPullSection} title="DAMAGE TAKEN — FROM ENEMIES" count=${pull.incoming.length} defaultOpen=${false}>
+              ${pull.incoming.map(r => html`<${WowPullMeterRow} row=${r} maxTotal=${maxIncoming} color="var(--wow-gold)" combatant=${combatantsByGuid[r.guid]} />`)}
+            <//>`}
 
-          <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;margin:14px 0 6px;">DEATHS</div>
-          ${(pull.deaths || []).length === 0
-            ? html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No deaths.</div>`
-            : pull.deaths.map(d => html`
-              <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--wow-border2);">
-                <span style="font-family:var(--wow-display);font-size:12px;color:var(--wow-text);width:90px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.name}</span>
-                <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">
-                  ${d.killingBlow ? html`killed by <span style="color:var(--wow-red);">${d.killingBlow.spell}</span> (${d.killingBlow.source})` : 'cause unknown'}
-                </span>
-              </div>
-            `)}
+          <${WowPullSection} title="DEATHS" count=${(pull.deaths || []).length} defaultOpen=${false}>
+            ${(pull.deaths || []).length === 0
+              ? html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No deaths.</div>`
+              : pull.deaths.map(d => html`
+                <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--wow-border2);">
+                  <span style="font-family:var(--wow-display);font-size:12px;color:var(--wow-text);width:90px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.name}</span>
+                  <span style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">
+                    ${d.killingBlow ? html`killed by <span style="color:var(--wow-red);">${d.killingBlow.spell}</span> (${d.killingBlow.source})` : 'cause unknown'}
+                  </span>
+                </div>
+              `)}
+          <//>
 
-          <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);letter-spacing:1px;margin:14px 0 6px;">PARTY LOADOUT</div>
-          ${loadoutRows.length > 0
-            ? loadoutRows.map(row => html`
-              <div style="margin-bottom:12px;">
-                <div style="font-family:var(--wow-display);font-size:12px;color:var(--wow-gold);margin-bottom:4px;">${row.name || row.guid}</div>
-                <${WowPullLoadout} combatant=${combatantsByGuid[row.guid]} />
-              </div>
-            `)
-            : html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No loadout data captured for this pull.</div>`}
+          <${WowPullSection} title="PARTY LOADOUT" count=${loadoutRows.length} defaultOpen=${false}>
+            ${loadoutRows.length > 0
+              ? loadoutRows.map(row => html`
+                <div style="margin-bottom:12px;">
+                  <div style="font-family:var(--wow-display);font-size:12px;color:var(--wow-gold);margin-bottom:4px;">${row.name || row.guid}</div>
+                  <${WowPullLoadout} combatant=${combatantsByGuid[row.guid]} />
+                </div>
+              `)
+              : html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">No loadout data captured for this pull.</div>`}
+          <//>
 
           <div style="margin-top:10px;font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);">Reported by ${(pull.reportedBy || []).join(', ')}</div>
         </div>
