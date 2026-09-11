@@ -545,6 +545,17 @@ function injectWowAssets() {
     .wow-wrap .doll-item ins, .wow-wrap .doll-item del,
     .wow-wrap .doll-item [class^="icon"], .wow-wrap .doll-item [class*=" icon"] { display: none !important; }
     .wow-wrap .doll-item { text-indent: 0 !important; padding-left: 0 !important; background-image: none !important; }
+    /* Same power.js landmine hits the profession recipe chips: it renamed
+       ${r.name} to a shortened Wowhead display name AND injected an icon
+       into a tight inline-flex row with no room for either, producing an
+       unreadable overlap of icon+old-name+new-name. Recipe names are exact
+       already (they came straight from the Blizzard API), so there is
+       nothing power.js's rename adds - suppress both the icon and the
+       rename here rather than fighting for layout space with them. */
+    .wow-wrap .recipe-link .icon-added,
+    .wow-wrap .recipe-link ins, .wow-wrap .recipe-link del,
+    .wow-wrap .recipe-link [class^="icon"], .wow-wrap .recipe-link [class*=" icon"] { display: none !important; }
+    .wow-wrap .recipe-link { text-indent: 0 !important; padding-left: 2px !important; background-image: none !important; }
     .wow-wrap .doll-nums { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; margin-left: auto; }
     .wow-wrap .doll-ilvl { font-family: var(--wow-mono); font-size: 12px; font-weight: 700; color: var(--wow-text); min-width: 26px; text-align: right; }
     .wow-wrap .doll-dur { font-size: 11px; font-style: normal; width: 12px; text-align: center; flex-shrink: 0; cursor: help; line-height: 1; }
@@ -1566,7 +1577,7 @@ function WowWorld({ characters, activeChar, charCacheRef, bnetTokenRef, collecti
                     <div style="font-size:10px;color:var(--wow-muted);letter-spacing:1px;font-family:var(--wow-mono);margin-bottom:6px;text-transform:uppercase;">${tierName}</div>
                     <div style="display:flex;flex-wrap:wrap;gap:4px;">
                       ${recipes.map(r => html`
-                        <a href="https://www.wowhead.com/spell=${r.id}" target="_blank" rel="noopener"
+                        <a href="https://www.wowhead.com/spell=${r.id}" target="_blank" rel="noopener" class="recipe-link"
                            style="font-size:11px;font-family:var(--wow-mono);color:var(--wow-text);background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;padding:2px 6px;text-decoration:none;white-space:nowrap;"
                            onMouseover=${e => e.target.style.borderColor='var(--wow-gold)'}
                            onMouseout=${e => e.target.style.borderColor='var(--wow-border2)'}
