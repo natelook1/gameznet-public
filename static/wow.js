@@ -1416,6 +1416,17 @@ function WowProfessions({ characters, activeChar, charCacheRef, dataTick, addon 
                                 if (!best) return '';
                                 const have = bestOwned >= rg.quantity;
                                 const altCount = choices.length - 1;
+                                // unitPrice is raw copper (Blizzard convention, same /10000
+                                // as the token price chip) and null for non-commodity
+                                // reagents (soulbound/unique materials are never AH-tradeable).
+                                // history is 30 days of daily min prices, oldest first - a
+                                // 7-day-ago comparison is a light-touch "trending up/down"
+                                // signal, not a real chart.
+                                const priceGold = best.unitPrice != null ? Math.floor(best.unitPrice / 10000) : null;
+                                const hist = best.history || [];
+                                const weekAgo = hist.length >= 8 ? hist[hist.length - 8] : hist[0];
+                                const trend = (priceGold != null && weekAgo && best.unitPrice !== weekAgo.minPrice)
+                                  ? (best.unitPrice > weekAgo.minPrice ? 'up' : 'down') : null;
                                 return html`
                                   <div style="display:flex;align-items:center;gap:6px;font-family:var(--wow-mono);font-size:11px;">
                                     ${best.iconUrl
@@ -1424,6 +1435,11 @@ function WowProfessions({ characters, activeChar, charCacheRef, dataTick, addon 
                                     <a href="https://www.wowhead.com/item=${best.itemID}" target="_blank" rel="noopener" class="recipe-link"
                                        style="color:${have ? 'var(--wow-text)' : 'var(--wow-muted)'};text-decoration:none;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
                                        onClick=${e => e.stopPropagation()}>${best.name || ('Item #' + best.itemID)}</a>
+                                    ${priceGold != null && html`
+                                      <span title="Lowest current AH price${trend ? (trend === 'up' ? ' — up from a week ago' : ' — down from a week ago') : ''}"
+                                            style="font-size:9px;color:var(--wow-gold);flex-shrink:0;white-space:nowrap;">
+                                        ${goldStr(priceGold)}g${trend === 'up' ? html`<span style="color:var(--wow-red);"> ▲</span>` : trend === 'down' ? html`<span style="color:var(--wow-green);"> ▼</span>` : ''}
+                                      </span>`}
                                     ${altCount > 0 && html`<span title="${altCount} other quality tier${altCount === 1 ? '' : 's'} also accepted" style="font-size:9px;color:var(--wow-muted);flex-shrink:0;">+${altCount}</span>`}
                                     <span style="color:${have ? 'var(--wow-green)' : 'var(--wow-red)'};font-weight:600;flex-shrink:0;">${bestOwned} / ${rg.quantity}</span>
                                   </div>`;
@@ -4041,6 +4057,7 @@ export function WowTab({ me }) {
   const [dataTick, setDataTick] = useState(0); // Forces re-render when background data loads
   const [resetStr, setResetStr] = useState('—');
   const [tokenPrice, setTokenPrice] = useState('Fetching...');
+  const [tokenTrend, setTokenTrend] = useState(null); // 'up' | 'down' | null
   const [addon, setAddon] = useState(null);
   const [addonErr, setAddonErr] = useState(null);
   const [privacy, setPrivacy] = useState(null);
@@ -4157,7 +4174,14 @@ export function WowTab({ me }) {
             bnetToken = (await tokenRes.json()).access_token;
             bnetTokenRef.current = bnetToken;
             req(`/api/wow/token-price?access_token=${bnetToken}`).then(r => r.ok && r.json()).then(d => {
-              if (d?.price) setTokenPrice(`${Math.floor(d.price / 10000).toLocaleString()}g`);
+              if (d?.price) {
+                setTokenPrice(`${Math.floor(d.price / 10000).toLocaleString()}g`);
+                // history is 30 days of daily min prices, oldest first -
+                // same light-touch "trending" signal as the reagent prices.
+                const hist = d.history || [];
+                const weekAgo = hist.length >= 8 ? hist[hist.length - 8] : hist[0];
+                if (weekAgo && d.price !== weekAgo.price) setTokenTrend(d.price > weekAgo.price ? 'up' : 'down');
+              }
             });
           }
         } catch(e) {}
@@ -4280,10 +4304,10 @@ export function WowTab({ me }) {
         <div class="reset-divider">|</div>
         <div class="reset-label">tue 15:00 utc · na</div>
         <div class="reset-divider">|</div>
-        <div class="wow-token-chip" title="WoW Token — current buy price on the US region auction house. Updates roughly every 20 minutes.">
+        <div class="wow-token-chip" title="WoW Token — current buy price on the US region auction house. ${tokenTrend ? (tokenTrend === 'up' ? 'Up' : 'Down') + ' from a week ago. ' : ''}Updates roughly every 20 minutes.">
           <img src="${ASSETS}/wow-token.svg" class="wow-token-icon" alt="" onerror=${e => { e.target.style.display = 'none'; }} />
           <span class="wow-token-label">token</span>
-          <span class="wow-token-price">${tokenPrice}</span>
+          <span class="wow-token-price">${tokenPrice}${tokenTrend === 'up' ? html`<span style="color:var(--wow-red);"> ▲</span>` : tokenTrend === 'down' ? html`<span style="color:var(--wow-green);"> ▼</span>` : ''}</span>
         </div>
       </div>
       <div class="wow-nav-tabs">
