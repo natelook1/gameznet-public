@@ -3642,9 +3642,13 @@ function WowPullCard({ pull, expanded, onToggle }) {
   return html`
     <div class="wow-card" style="margin:0 12px 10px;padding:0;overflow:hidden;">
       <div style="cursor:pointer;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;" onClick=${onToggle}>
-        <div style="min-width:0;">
-          <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pull.name || 'Unknown Encounter'}</div>
-          <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${subtitle}</div>
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+          ${pull.iconUrl ? html`<img src=${pull.iconUrl} alt="" style="width:32px;height:32px;border-radius:4px;object-fit:cover;flex-shrink:0;border:1px solid var(--wow-border2);"
+               onError=${e => { e.target.style.display = 'none'; }} />` : ''}
+          <div style="min-width:0;">
+            <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pull.name || 'Unknown Encounter'}</div>
+            <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${subtitle}</div>
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
           <span style="font-family:var(--wow-display);font-size:11px;color:${statusColor};">${statusLabel}</span>
