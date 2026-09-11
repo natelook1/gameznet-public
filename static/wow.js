@@ -1550,13 +1550,21 @@ function WowAHSparkline({ history }) {
 // a small SQL LIKE query per keystroke is far cheaper). Debounced since
 // this hits the server per query, unlike every other search box in this
 // file (all client-side filters over already-loaded data).
-function WowAH() {
+function WowAH({ tokenPrice, tokenTrend }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState(null); // itemId or null
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [movers, setMovers] = useState(null); // null = not loaded yet
+  const [crafts, setCrafts] = useState(null);
+  // Recently viewed - deliberately component state, not localStorage: this
+  // is a lightweight "don't lose your place" convenience for the current
+  // session, not something that needs to survive a reload or sync across
+  // devices (nothing else in this file uses localStorage for feature data,
+  // only auth tokens - see authPair()).
+  const [recentlyViewed, setRecentlyViewed] = useState([]); // [{itemId, name, iconUrl, unitPrice}]
   const debounceRef = useRef(null);
 
   useEffect(() => {
@@ -1574,13 +1582,33 @@ function WowAH() {
     return () => clearTimeout(debounceRef.current);
   }, [query]);
 
-  const openItem = (itemId) => {
+  // Landing content - fetched once on mount, not gated behind a search.
+  // Both endpoints already apply WOW_JUNK_PRICE_CEILING server-side (see
+  // server.js) to exclude troll-priced listings (confirmed live 2026-09-11:
+  // players list items near the game's actual price cap to hide them from
+  // AH browse, which without this filter turned a classic Thorium Shield
+  // Spike into an apparent 50,000g item and inflated "profit" numbers into
+  // the millions).
+  useEffect(() => {
+    req('/api/wow/ah/movers').then(r => r.ok ? r.json() : null).then(d => setMovers(d?.movers || [])).catch(() => setMovers([]));
+    req('/api/wow/ah/crafts').then(r => r.ok ? r.json() : null).then(d => setCrafts(d?.crafts || [])).catch(() => setCrafts([]));
+  }, []);
+
+  const openItem = (itemId, hint) => {
     setSelected(itemId);
     setDetail(null);
     setDetailLoading(true);
     req(`/api/wow/ah/item/${itemId}`)
       .then(r => r.ok ? r.json() : null)
-      .then(setDetail)
+      .then(data => {
+        setDetail(data);
+        if (data) {
+          setRecentlyViewed(prev => [
+            { itemId, name: data.name || hint?.name, iconUrl: data.iconUrl || hint?.iconUrl, unitPrice: data.unitPrice },
+            ...prev.filter(r => r.itemId !== itemId),
+          ].slice(0, 8));
+        }
+      })
       .catch(() => setDetail(null))
       .finally(() => setDetailLoading(false));
   };
@@ -1595,32 +1623,98 @@ function WowAH() {
     return unitPrice > weekAgo.minPrice ? 'up' : 'down';
   };
 
+  const showLanding = selected == null && query.trim().length < 2;
+  const itemRow = (r, onClick) => {
+    const priceGold = r.unitPrice != null ? Math.floor(r.unitPrice / 10000) : null;
+    return html`
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;cursor:pointer;"
+           onClick=${onClick}>
+        ${r.iconUrl
+          ? html`<img src=${r.iconUrl} style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
+          : html`<div style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
+        <span style="flex:1;font-family:var(--wow-mono);font-size:12px;color:var(--wow-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name || ('Item #' + r.itemId)}</span>
+        <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);flex-shrink:0;">${priceGold != null ? goldStr(priceGold) + 'g' : '—'}</span>
+      </div>`;
+  };
+
   return html`
     <div class="layout-full">
       <div class="wow-card">
         <div class="card-header"><div class="card-title"><div class="dot dot-green"></div> Auction House</div></div>
         <div class="card-body">
-          <input type="text" placeholder="Search any item..." class="admin-input" style="width:100%;max-width:400px;margin-bottom:10px;"
-                 value=${query} onInput=${e => setQuery(e.target.value)} />
-
-          ${selected == null ? html`
-            ${searching ? html`<div style="color:var(--wow-muted);font-size:12px;">Searching...</div>` : ''}
-            ${!searching && query.trim().length >= 2 && results.length === 0 ? html`<div class="empty" style="padding:10px;">No commodities matched.</div>` : ''}
-            <div style="display:flex;flex-direction:column;gap:4px;">
-              ${results.map(r => {
-                const priceGold = r.unitPrice != null ? Math.floor(r.unitPrice / 10000) : null;
-                return html`
-                  <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;cursor:pointer;"
-                       onClick=${() => openItem(r.itemId)}>
-                    ${r.iconUrl
-                      ? html`<img src=${r.iconUrl} style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
-                      : html`<div style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
-                    <span style="flex:1;font-family:var(--wow-mono);font-size:12px;color:var(--wow-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</span>
-                    <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);flex-shrink:0;">${priceGold != null ? goldStr(priceGold) + 'g' : '—'}</span>
-                  </div>`;
-              })}
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+            <input type="text" placeholder="Search any item..." class="admin-input" style="flex:1;max-width:400px;"
+                   value=${query} onInput=${e => { setQuery(e.target.value); setSelected(null); }} />
+            <div class="wow-token-chip" title="WoW Token — current buy price on the US region auction house.">
+              <img src="${ASSETS}/wow-token.svg" class="wow-token-icon" alt="" onerror=${e => { e.target.style.display = 'none'; }} />
+              <span class="wow-token-label">token</span>
+              <span class="wow-token-price">${tokenPrice}${tokenTrend === 'up' ? html`<span style="color:var(--wow-red);"> ▲</span>` : tokenTrend === 'down' ? html`<span style="color:var(--wow-green);"> ▼</span>` : ''}</span>
             </div>
-          ` : html`
+          </div>
+
+          ${showLanding ? html`
+            ${recentlyViewed.length > 0 ? html`
+              <div style="margin-bottom:14px;">
+                <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);margin-bottom:6px;">RECENTLY VIEWED</div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  ${recentlyViewed.map(r => itemRow(r, () => openItem(r.itemId, r)))}
+                </div>
+              </div>` : ''}
+
+            <div style="margin-bottom:14px;">
+              <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);margin-bottom:6px;">BIGGEST MOVERS</div>
+              ${movers === null ? html`<div style="color:var(--wow-muted);font-size:12px;">Loading...</div>` : ''}
+              ${movers && movers.length === 0 ? html`<div class="empty" style="padding:10px;">Still building price history — check back in a few days.</div>` : ''}
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                ${(movers || []).map(m => {
+                  const priceGold = m.currentPrice != null ? Math.floor(m.currentPrice / 10000) : null;
+                  const pct = Math.round(m.pctChange * 100);
+                  const up = m.pctChange > 0;
+                  return html`
+                    <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;cursor:pointer;"
+                         onClick=${() => openItem(m.itemId, m)}>
+                      ${m.iconUrl
+                        ? html`<img src=${m.iconUrl} style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
+                        : html`<div style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
+                      <span style="flex:1;font-family:var(--wow-mono);font-size:12px;color:var(--wow-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name || ('Item #' + m.itemId)}</span>
+                      <span style="font-family:var(--wow-mono);font-size:11px;color:${up ? 'var(--wow-red)' : 'var(--wow-green)'};flex-shrink:0;">${up ? '▲' : '▼'} ${Math.abs(pct)}%</span>
+                      <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);flex-shrink:0;width:60px;text-align:right;">${priceGold != null ? goldStr(priceGold) + 'g' : '—'}</span>
+                    </div>`;
+                })}
+              </div>
+            </div>
+
+            <div>
+              <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);margin-bottom:6px;" title="Crafted item's AH price minus reagent costs, cheapest quality tier per slot. Only shown for recipes this server has captured details for via the addon.">CRAFTING PROFIT (COMMODITY CRAFTS)</div>
+              ${crafts === null ? html`<div style="color:var(--wow-muted);font-size:12px;">Loading...</div>` : ''}
+              ${crafts && crafts.length === 0 ? html`<div class="empty" style="padding:10px;">No craftable-commodity data yet.</div>` : ''}
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                ${(crafts || []).slice(0, 10).map(c => {
+                  const profitGold = Math.floor(c.profit / 10000);
+                  const profitable = c.profit > 0;
+                  return html`
+                    <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;cursor:pointer;"
+                         onClick=${() => openItem(c.outputItemId, { name: c.outputName, iconUrl: c.iconUrl })}>
+                      ${c.iconUrl
+                        ? html`<img src=${c.iconUrl} style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
+                        : html`<div style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
+                      <span style="flex:1;font-family:var(--wow-mono);font-size:12px;color:var(--wow-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.outputName || ('Item #' + c.outputItemId)}</span>
+                      <span style="font-family:var(--wow-mono);font-size:11px;color:${profitable ? 'var(--wow-green)' : 'var(--wow-red)'};flex-shrink:0;">${profitable ? '+' : ''}${goldStr(profitGold)}g</span>
+                    </div>`;
+                })}
+              </div>
+            </div>
+          ` : ''}
+
+          ${selected == null && query.trim().length >= 2 ? html`
+            ${searching ? html`<div style="color:var(--wow-muted);font-size:12px;">Searching...</div>` : ''}
+            ${!searching && results.length === 0 ? html`<div class="empty" style="padding:10px;">No commodities matched.</div>` : ''}
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              ${results.map(r => itemRow(r, () => openItem(r.itemId, r)))}
+            </div>
+          ` : ''}
+
+          ${selected != null ? html`
             <div style="cursor:pointer;color:var(--wow-muted);font-family:var(--wow-mono);font-size:11px;margin-bottom:10px;" onClick=${() => setSelected(null)}>&larr; back to search</div>
             ${detailLoading ? html`<div style="color:var(--wow-muted);font-size:12px;">Loading...</div>` : ''}
             ${!detailLoading && !detail ? html`<div class="empty" style="padding:10px;">Item not found.</div>` : ''}
@@ -1648,7 +1742,7 @@ function WowAH() {
                   <${WowAHSparkline} history=${detail.history} />
                 </div>`;
             })() : ''}
-          `}
+          ` : ''}
         </div>
       </div>
     </div>
@@ -4522,7 +4616,7 @@ export function WowTab({ me }) {
         ${subTab === 'overview' && html`<${WowOverview} characters=${characters} charCacheRef=${charCacheRef} affixCacheRef=${affixCacheRef} onSelectChar=${setActiveChar} onSubTab=${setSubTab} dataTick=${dataTick} addon=${addon} />`}
         ${subTab === 'world'    && html`<${WowWorld}    characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} bnetTokenRef=${bnetTokenRef} collectionsRef=${collectionsRef} decorCatalogRef=${decorCatalogRef} petCatalogRef=${petCatalogRef} mountSpellIdsRef=${mountSpellIdsRef} dataTick=${dataTick} addon=${addon} />`}
         ${subTab === 'professions' && html`<${WowProfessions} characters=${characters} activeChar=${activeChar} charCacheRef=${charCacheRef} dataTick=${dataTick} addon=${addon} />`}
-        ${subTab === 'ah'          && html`<${WowAH} />`}
+        ${subTab === 'ah'          && html`<${WowAH} tokenPrice=${tokenPrice} tokenTrend=${tokenTrend} />`}
         ${subTab === 'pve'      && html`<${WowPVE}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'pvp'      && html`<${WowPVP}      character=${characters[activeChar]} charCacheRef=${charCacheRef} dataTick=${dataTick} />`}
         ${subTab === 'group'   && html`<${WowGroup} addon=${addon} addonErr=${addonErr} onReload=${loadAddon} />`}
