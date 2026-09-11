@@ -2855,6 +2855,31 @@ function agoStr(epoch) {
 // Vault slot types, per C_WeeklyRewards. 1 = raid, 3 = M+, 6 = world/delves.
 const VAULT_TYPE = { 1: 'Raid', 3: 'Mythic+', 5: 'PvP', 6: 'World' };
 
+// Blizzard's DifficultyID enum - confirmed live 2026-09-11 against
+// warcraft.wiki.gg (current as of Patch 12.0.1), not the docs-thin WoW API
+// itself. Only the ids this addon's combat log capture can realistically
+// report (dungeons, raids, delves, follower content) - unmapped ids fall
+// back to the bare number rather than guessing at a label.
+const WOW_DIFFICULTY = {
+  1:  { name: 'Normal',    color: 'var(--wow-muted)' },
+  2:  { name: 'Heroic',    color: 'var(--wow-accent)' },
+  8:  { name: 'Mythic Keystone', color: 'var(--wow-gold)' },
+  23: { name: 'Mythic',    color: 'var(--wow-red)' },
+  24: { name: 'Timewalking', color: 'var(--wow-accent)' },
+  205: { name: 'Follower Dungeon', color: 'var(--wow-muted)' },
+  14: { name: 'Normal Raid',  color: 'var(--wow-muted)' },
+  15: { name: 'Heroic Raid',  color: 'var(--wow-accent)' },
+  16: { name: 'Mythic Raid',  color: 'var(--wow-red)' },
+  17: { name: 'Looking For Raid', color: 'var(--wow-muted)' },
+  33: { name: 'Timewalking Raid', color: 'var(--wow-accent)' },
+  220: { name: 'Story Raid',  color: 'var(--wow-muted)' },
+  38: { name: 'Normal Delve', color: 'var(--wow-green)' },
+  39: { name: 'Heroic Delve', color: 'var(--wow-accent)' },
+  40: { name: 'Mythic Delve', color: 'var(--wow-red)' },
+  208: { name: 'Delve',    color: 'var(--wow-green)' },
+  172: { name: 'World Boss', color: 'var(--wow-gold)' },
+};
+
 // ── Hub: your own characters at a glance (second-screen view) ────────────────
 
 function durColor(pct) {
@@ -3629,8 +3654,12 @@ function WowPullCard({ pull, expanded, onToggle }) {
     : pull.success === true ? 'var(--wow-green)' : pull.success === false ? 'var(--wow-red)' : 'var(--wow-muted)';
   const statusLabel = isWorld ? (totalDamage >= 1000 ? `${Math.round(totalDamage / 1000)}k dmg` : `${totalDamage} dmg`)
     : pull.success === true ? 'Kill' : pull.success === false ? 'Wipe' : '—';
+  const difficultyInfo = pull.difficulty != null ? WOW_DIFFICULTY[pull.difficulty] : null;
   const subtitle = isWorld ? ''
-    : pull.keystoneLevel ? `+${pull.keystoneLevel} Keystone` : (pull.difficulty != null ? `Difficulty ${pull.difficulty}` : '');
+    : pull.keystoneLevel ? `+${pull.keystoneLevel} Keystone`
+    : difficultyInfo ? difficultyInfo.name
+    : (pull.difficulty != null ? `Difficulty ${pull.difficulty}` : '');
+  const subtitleColor = difficultyInfo?.color || 'var(--wow-muted)';
   const maxDamage = Math.max(1, ...pull.damage.map(d => d.total));
   const maxHealing = Math.max(1, ...pull.healing.map(d => d.total));
   const maxIncoming = Math.max(1, ...(pull.incoming || []).map(d => d.total));
@@ -3647,7 +3676,7 @@ function WowPullCard({ pull, expanded, onToggle }) {
                onError=${e => { e.target.style.display = 'none'; }} />` : ''}
           <div style="min-width:0;">
             <div style="font-family:var(--wow-display);font-size:13px;color:var(--wow-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pull.name || 'Unknown Encounter'}</div>
-            <div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${subtitle}</div>
+            <div style="font-family:var(--wow-mono);font-size:10px;color:${subtitleColor};">${subtitle}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
