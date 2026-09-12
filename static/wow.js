@@ -1844,12 +1844,18 @@ function WowAH({ tokenPrice, tokenTrend }) {
                 // its natural default (name/quality ascending = A-Z/worst-
                 // first, price/level/ilvl ascending = cheapest/lowest-first
                 // - matches in-game AH's first-click convention).
-                const sortHeader = (label, key, width, align) => {
+                // widthStyle lets the Name column share the exact same
+                // `flex:1;min-width:0` box-sizing as its data row (a plain
+                // fixed width there mismatched the data span's flex-based
+                // width, shifting every column after it left of where the
+                // data actually sits - confirmed live via a real screenshot
+                // showing headers bunched left of their columns).
+                const sortHeader = (label, key, widthStyle, align) => {
                   const active = browseSort === key || browseSort === key + '-desc';
                   const isDesc = browseSort === key + '-desc';
                   const nextSort = active ? (isDesc ? key : key + '-desc') : key;
                   return html`
-                    <div style="width:${width};flex-shrink:0;text-align:${align || 'left'};cursor:pointer;user-select:none;color:${active ? 'var(--wow-text)' : 'var(--wow-muted)'};"
+                    <div style="${widthStyle};text-align:${align || 'left'};cursor:pointer;user-select:none;color:${active ? 'var(--wow-text)' : 'var(--wow-muted)'};"
                          onClick=${() => openCategory(browseCategory.category, browseCategory.subcategory, 0, browseSlot, nextSort)}>
                       ${label}${active ? (isDesc ? ' ▼' : ' ▲') : ''}
                     </div>`;
@@ -1857,11 +1863,11 @@ function WowAH({ tokenPrice, tokenTrend }) {
                 return html`
                   <div style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);border-bottom:1px solid var(--wow-border2);margin-bottom:2px;">
                     <div style="width:24px;flex-shrink:0;"></div>
-                    ${sortHeader('Name', 'name', 'auto', 'left')}
-                    ${isGear ? sortHeader('Rl', 'level', '50px', 'right') : ''}
-                    ${isGear ? sortHeader('Ilvl', 'ilvl', '50px', 'right') : ''}
-                    ${isGear ? sortHeader('Quality', 'quality', '70px', 'right') : ''}
-                    ${sortHeader('Price', 'price', '90px', 'right')}
+                    ${sortHeader('Name', 'name', 'flex:1;min-width:0', 'left')}
+                    ${isGear ? sortHeader('Rl', 'level', 'width:50px;flex-shrink:0', 'right') : ''}
+                    ${isGear ? sortHeader('Ilvl', 'ilvl', 'width:50px;flex-shrink:0', 'right') : ''}
+                    ${isGear ? sortHeader('Quality', 'quality', 'width:70px;flex-shrink:0', 'right') : ''}
+                    ${sortHeader('Price', 'price', 'width:90px;flex-shrink:0', 'right')}
                   </div>
                   <div style="display:flex;flex-direction:column;gap:2px;">
                     ${browseItems.map(r => {
