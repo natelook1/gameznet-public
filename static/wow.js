@@ -1818,25 +1818,7 @@ function WowAH({ tokenPrice, tokenTrend }) {
               </div>
             ` : html`
               <div style="cursor:pointer;color:var(--wow-muted);font-family:var(--wow-mono);font-size:11px;margin-bottom:10px;" onClick=${() => { setBrowseCategory(null); setBrowseItems(null); setBrowseSlot(null); setBrowseSlots(null); }}>← all categories</div>
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
-                <div style="font-family:var(--wow-display);font-weight:600;">${browseCategory.category}${browseCategory.subcategory ? ' / ' + browseCategory.subcategory : ''}${browseSlot ? ' / ' + browseSlot : ''}</div>
-                <select
-                  style="background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;color:var(--wow-text);font-family:var(--wow-mono);font-size:10px;padding:3px 4px;"
-                  onChange=${(e) => openCategory(browseCategory.category, browseCategory.subcategory, 0, browseSlot, e.target.value)}>
-                  <option value="name" selected=${browseSort === 'name'}>Name A-Z</option>
-                  <option value="name-desc" selected=${browseSort === 'name-desc'}>Name Z-A</option>
-                  <option value="price" selected=${browseSort === 'price'}>Price: low-high</option>
-                  <option value="price-desc" selected=${browseSort === 'price-desc'}>Price: high-low</option>
-                  ${browseSlots !== null ? html`
-                    <option value="level" selected=${browseSort === 'level'}>Required level: low-high</option>
-                    <option value="level-desc" selected=${browseSort === 'level-desc'}>Required level: high-low</option>
-                    <option value="ilvl-desc" selected=${browseSort === 'ilvl-desc'}>Base item level: high-low</option>
-                    <option value="ilvl" selected=${browseSort === 'ilvl'}>Base item level: low-high</option>
-                    <option value="quality-desc" selected=${browseSort === 'quality-desc'}>Quality: high-low</option>
-                    <option value="quality" selected=${browseSort === 'quality'}>Quality: low-high</option>
-                  ` : ''}
-                </select>
-              </div>
+              <div style="font-family:var(--wow-display);font-weight:600;margin-bottom:8px;">${browseCategory.category}${browseCategory.subcategory ? ' / ' + browseCategory.subcategory : ''}${browseSlot ? ' / ' + browseSlot : ''}</div>
               ${browseSlots && browseSlots.length > 0 ? html`
                 <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
                   <div style="padding:3px 8px;border:1px solid ${!browseSlot ? 'var(--wow-gold)' : 'var(--wow-border2)'};border-radius:3px;cursor:pointer;font-family:var(--wow-mono);font-size:10px;background:${!browseSlot ? 'var(--wow-surface2)' : 'var(--wow-bg)'};color:${!browseSlot ? 'var(--wow-text)' : 'var(--wow-muted)'};"
@@ -1849,9 +1831,57 @@ function WowAH({ tokenPrice, tokenTrend }) {
               ` : ''}
               ${browseLoading ? html`<div style="color:var(--wow-muted);font-size:12px;">Loading...</div>` : ''}
               ${!browseLoading && browseItems && browseItems.length === 0 ? html`<div class="empty" style="padding:10px;">No items found.</div>` : ''}
-              <div style="display:flex;flex-direction:column;gap:4px;">
-                ${(browseItems || []).map(r => itemRow(r, () => openItem(r.itemId, r)))}
-              </div>
+              ${!browseLoading && browseItems && browseItems.length > 0 ? (() => {
+                // Real column-table with click-to-sort headers, matching
+                // in-game AH's table UI (2026-09-11 explicit ask: "columns
+                // shouldn't bleed their placement... easier to have the sort
+                // toggle by pushing each column header like wow does") -
+                // Browse-only, search/recently-viewed keep the simpler
+                // itemRow card style since they don't support sorting.
+                const isGear = browseSlots !== null;
+                // Clicking the header for the currently-active sort column
+                // flips direction; clicking a different column starts it at
+                // its natural default (name/quality ascending = A-Z/worst-
+                // first, price/level/ilvl ascending = cheapest/lowest-first
+                // - matches in-game AH's first-click convention).
+                const sortHeader = (label, key, width, align) => {
+                  const active = browseSort === key || browseSort === key + '-desc';
+                  const isDesc = browseSort === key + '-desc';
+                  const nextSort = active ? (isDesc ? key : key + '-desc') : key;
+                  return html`
+                    <div style="width:${width};flex-shrink:0;text-align:${align || 'left'};cursor:pointer;user-select:none;color:${active ? 'var(--wow-text)' : 'var(--wow-muted)'};"
+                         onClick=${() => openCategory(browseCategory.category, browseCategory.subcategory, 0, browseSlot, nextSort)}>
+                      ${label}${active ? (isDesc ? ' ▼' : ' ▲') : ''}
+                    </div>`;
+                };
+                return html`
+                  <div style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);border-bottom:1px solid var(--wow-border2);margin-bottom:2px;">
+                    <div style="width:24px;flex-shrink:0;"></div>
+                    ${sortHeader('Name', 'name', 'auto', 'left')}
+                    ${isGear ? sortHeader('Rl', 'level', '50px', 'right') : ''}
+                    ${isGear ? sortHeader('Ilvl', 'ilvl', '50px', 'right') : ''}
+                    ${isGear ? sortHeader('Quality', 'quality', '70px', 'right') : ''}
+                    ${sortHeader('Price', 'price', '90px', 'right')}
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:2px;">
+                    ${browseItems.map(r => {
+                      const priceGold = r.unitPrice != null ? Math.floor(r.unitPrice / 10000) : null;
+                      const nameColor = r.quality ? (WOW_QUALITY_COLOR[r.quality] || 'var(--wow-text)') : 'var(--wow-text)';
+                      return html`
+                        <div style="display:flex;align-items:center;gap:8px;padding:4px 8px;background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;cursor:pointer;"
+                             onClick=${() => openItem(r.itemId, r)}>
+                          ${r.iconUrl
+                            ? html`<img src=${r.iconUrl} style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
+                            : html`<div style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
+                          <span style="flex:1;min-width:0;font-family:var(--wow-mono);font-size:12px;color:${nameColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name || ('Item #' + r.itemId)}</span>
+                          ${isGear ? html`<span style="width:50px;flex-shrink:0;text-align:right;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">${r.requiredLevel ?? '—'}</span>` : ''}
+                          ${isGear ? html`<span style="width:50px;flex-shrink:0;text-align:right;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);" title="Base item level - not the exact level of any specific listing, see item detail.">${r.baseItemLevel ?? '—'}</span>` : ''}
+                          ${isGear ? html`<span style="width:70px;flex-shrink:0;text-align:right;font-family:var(--wow-mono);font-size:10px;color:${nameColor};text-transform:capitalize;">${r.quality ? r.quality.toLowerCase() : '—'}</span>` : ''}
+                          <span style="width:90px;flex-shrink:0;text-align:right;font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);">${priceGold != null ? goldStr(priceGold) + ' g' : '—'}</span>
+                        </div>`;
+                    })}
+                  </div>`;
+              })() : ''}
               ${browseTotal > 50 ? html`
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">
                   <span onClick=${() => browseOffset > 0 && openCategory(browseCategory.category, browseCategory.subcategory, Math.max(0, browseOffset - 50), browseSlot)}
