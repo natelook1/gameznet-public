@@ -24,6 +24,12 @@ const CLASS_COLOR = {
   WARRIOR:     '#C69B6D',
 };
 
+// WoW's real quality colors - was previously only defined inline inside the
+// gear paper-doll component; hoisted to module scope 2026-09-11 for the AH
+// tab's gear rows/detail view to share the same values rather than
+// duplicating the literal a second time.
+const WOW_QUALITY_COLOR = { POOR: '#9d9d9d', COMMON: '#ffffff', UNCOMMON: '#1eff00', RARE: '#0070dd', EPIC: '#a335ee', LEGENDARY: '#ff8000', ARTIFACT: '#e6cc80', HEIRLOOM: '#00ccff' };
+
 // Zamimg class icons. All 13 classes follow classicon_<class> exactly - verified
 // against the CDN - so this derives the name instead of hand-mapping it, and a
 // new class would work without a code change.
@@ -1578,6 +1584,10 @@ function WowAH({ tokenPrice, tokenTrend }) {
   // any, is selected - see the server-side comment on why).
   const [browseSlot, setBrowseSlot] = useState(null);
   const [browseSlots, setBrowseSlots] = useState(null);
+  // Sort (2026-09-11, explicit ask: "can't sort Cloth Chest by price up or
+  // down", then required_level/quality/base ilvl once those existed too) -
+  // matches /api/wow/ah/browse's `sort` param values exactly.
+  const [browseSort, setBrowseSort] = useState('name');
   // Recently viewed - deliberately component state, not localStorage: this
   // is a lightweight "don't lose your place" convenience for the current
   // session, not something that needs to survive a reload or sync across
@@ -1626,13 +1636,19 @@ function WowAH({ tokenPrice, tokenTrend }) {
   // browseSlot from closure - switching category/subcategory should always
   // reset the slot filter (a "Head" filter picked under Cloth doesn't carry
   // over to Plate), only re-selecting within the SAME subcategory keeps it.
-  const openCategory = (category, subcategory, offset, slot) => {
+  // sort: unlike slot, deliberately NOT reset on a category/subcategory
+  // switch (defaults to the current browseSort via closure when omitted) -
+  // a player who picked "sort by price" almost certainly wants that to
+  // stick while browsing around, the opposite of slot's reasoning.
+  const openCategory = (category, subcategory, offset, slot, sort) => {
+    const effectiveSort = sort !== undefined ? sort : browseSort;
     setBrowseCategory({ category, subcategory: subcategory || null });
     setBrowseOffset(offset || 0);
     setBrowseSlot(slot || null);
+    setBrowseSort(effectiveSort);
     setBrowseLoading(true);
     setBrowseItems(null);
-    const params = new URLSearchParams({ category, offset: String(offset || 0) });
+    const params = new URLSearchParams({ category, offset: String(offset || 0), sort: effectiveSort });
     if (subcategory) params.set('subcategory', subcategory);
     if (slot) params.set('slot', slot);
     req(`/api/wow/ah/browse?${params}`)
@@ -1674,13 +1690,18 @@ function WowAH({ tokenPrice, tokenTrend }) {
   const showLanding = mode === 'search' && selected == null && query.trim().length < 2;
   const itemRow = (r, onClick) => {
     const priceGold = r.unitPrice != null ? Math.floor(r.unitPrice / 10000) : null;
+    // Quality-colored name + a "Rl 45" chip, matching in-game AH rows -
+    // gear-only (requiredLevel/quality are undefined for a commodity row,
+    // see /api/wow/ah/browse's comment on why that's undefined not null).
+    const nameColor = r.quality ? (WOW_QUALITY_COLOR[r.quality] || 'var(--wow-text)') : 'var(--wow-text)';
     return html`
       <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;cursor:pointer;"
            onClick=${onClick}>
         ${r.iconUrl
           ? html`<img src=${r.iconUrl} style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
           : html`<div style="width:24px;height:24px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
-        <span style="flex:1;font-family:var(--wow-mono);font-size:12px;color:var(--wow-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name || ('Item #' + r.itemId)}</span>
+        <span style="flex:1;font-family:var(--wow-mono);font-size:12px;color:${nameColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name || ('Item #' + r.itemId)}</span>
+        ${r.requiredLevel != null ? html`<span style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);border:1px solid var(--wow-border2);border-radius:3px;padding:1px 4px;flex-shrink:0;">Rl ${r.requiredLevel}</span>` : ''}
         <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);flex-shrink:0;">${priceGold != null ? goldStr(priceGold) + ' g' : '—'}</span>
       </div>`;
   };
@@ -1797,7 +1818,25 @@ function WowAH({ tokenPrice, tokenTrend }) {
               </div>
             ` : html`
               <div style="cursor:pointer;color:var(--wow-muted);font-family:var(--wow-mono);font-size:11px;margin-bottom:10px;" onClick=${() => { setBrowseCategory(null); setBrowseItems(null); setBrowseSlot(null); setBrowseSlots(null); }}>← all categories</div>
-              <div style="font-family:var(--wow-display);font-weight:600;margin-bottom:8px;">${browseCategory.category}${browseCategory.subcategory ? ' / ' + browseCategory.subcategory : ''}${browseSlot ? ' / ' + browseSlot : ''}</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+                <div style="font-family:var(--wow-display);font-weight:600;">${browseCategory.category}${browseCategory.subcategory ? ' / ' + browseCategory.subcategory : ''}${browseSlot ? ' / ' + browseSlot : ''}</div>
+                <select
+                  style="background:var(--wow-bg);border:1px solid var(--wow-border2);border-radius:3px;color:var(--wow-text);font-family:var(--wow-mono);font-size:10px;padding:3px 4px;"
+                  onChange=${(e) => openCategory(browseCategory.category, browseCategory.subcategory, 0, browseSlot, e.target.value)}>
+                  <option value="name" selected=${browseSort === 'name'}>Name A-Z</option>
+                  <option value="name-desc" selected=${browseSort === 'name-desc'}>Name Z-A</option>
+                  <option value="price" selected=${browseSort === 'price'}>Price: low-high</option>
+                  <option value="price-desc" selected=${browseSort === 'price-desc'}>Price: high-low</option>
+                  ${browseSlots !== null ? html`
+                    <option value="level" selected=${browseSort === 'level'}>Required level: low-high</option>
+                    <option value="level-desc" selected=${browseSort === 'level-desc'}>Required level: high-low</option>
+                    <option value="ilvl-desc" selected=${browseSort === 'ilvl-desc'}>Base item level: high-low</option>
+                    <option value="ilvl" selected=${browseSort === 'ilvl'}>Base item level: low-high</option>
+                    <option value="quality-desc" selected=${browseSort === 'quality-desc'}>Quality: high-low</option>
+                    <option value="quality" selected=${browseSort === 'quality'}>Quality: low-high</option>
+                  ` : ''}
+                </select>
+              </div>
               ${browseSlots && browseSlots.length > 0 ? html`
                 <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
                   <div style="padding:3px 8px;border:1px solid ${!browseSlot ? 'var(--wow-gold)' : 'var(--wow-border2)'};border-radius:3px;cursor:pointer;font-family:var(--wow-mono);font-size:10px;background:${!browseSlot ? 'var(--wow-surface2)' : 'var(--wow-bg)'};color:${!browseSlot ? 'var(--wow-text)' : 'var(--wow-muted)'};"
@@ -1840,8 +1879,12 @@ function WowAH({ tokenPrice, tokenTrend }) {
                     : html`<div style="width:40px;height:40px;border-radius:4px;border:1px solid var(--wow-border2);"></div>`}
                   <div style="flex:1;">
                     <a href="https://www.wowhead.com/item=${detail.itemId}" target="_blank" rel="noopener" class="recipe-link"
-                       style="font-family:var(--wow-display);font-size:15px;color:var(--wow-text);text-decoration:none;">${detail.name || ('Item #' + detail.itemId)}</a>
-                    ${isGear ? html`<div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${detail.category}${detail.subcategory ? ' · ' + detail.subcategory : ''}</div>` : ''}
+                       style="font-family:var(--wow-display);font-size:15px;color:${isGear && detail.quality ? (WOW_QUALITY_COLOR[detail.quality] || 'var(--wow-text)') : 'var(--wow-text)'};text-decoration:none;">${detail.name || ('Item #' + detail.itemId)}</a>
+                    ${isGear ? html`<div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">
+                      ${detail.category}${detail.subcategory ? ' · ' + detail.subcategory : ''}
+                      ${detail.requiredLevel != null ? ' · Requires level ' + detail.requiredLevel : ''}
+                      ${detail.baseItemLevel != null ? html` · <span title="This item's base item level before any specific listing's sockets/upgrades - a listing below could be higher or lower, since that's exactly the per-listing variation this page can't resolve (see the note above the variant list).">Base ilvl ${detail.baseItemLevel}</span>` : ''}
+                    </div>` : ''}
                   </div>
                   <div style="text-align:right;">
                     <div style="font-family:var(--wow-mono);font-size:16px;color:var(--wow-gold);">
@@ -2693,7 +2736,7 @@ function WowPVE({ character, charCacheRef, dataTick }) {
     const slotOrder = ['HEAD','NECK','SHOULDER','BACK','CHEST','WRIST','HANDS','WAIST','LEGS','FEET','FINGER_1','FINGER_2','TRINKET_1','TRINKET_2','MAIN_HAND','OFF_HAND'];
     const slotIcons = { HEAD:'🪖', NECK:'📿', SHOULDER:'🛡️', BACK:'🧣', CHEST:'👕', WRIST:'⌚', HANDS:'🧤', WAIST:'🪢', LEGS:'👖', FEET:'👢', FINGER_1:'💍', FINGER_2:'💍', TRINKET_1:'🔮', TRINKET_2:'🔮', MAIN_HAND:'⚔️', OFF_HAND:'🗡️' };
     const slotNames = { HEAD:'Head', NECK:'Neck', SHOULDER:'Shoulders', BACK:'Cloak', CHEST:'Chest', WRIST:'Bracers', HANDS:'Gloves', WAIST:'Belt', LEGS:'Legs', FEET:'Boots', FINGER_1:'Ring 1', FINGER_2:'Ring 2', TRINKET_1:'Trinket 1', TRINKET_2:'Trinket 2', MAIN_HAND:'Weapon', OFF_HAND:'Off Hand' };
-    const qualityColor = { POOR: '#9d9d9d', COMMON: '#ffffff', UNCOMMON: '#1eff00', RARE: '#0070dd', EPIC: '#a335ee', LEGENDARY: '#ff8000', ARTIFACT: '#e6cc80' };
+    const qualityColor = WOW_QUALITY_COLOR;
     const slotMap = {};
     bnet.equipment.equipped_items.forEach(item => { if (item.slot?.type) slotMap[item.slot.type] = item; });
 
