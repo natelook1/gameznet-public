@@ -30,6 +30,43 @@ const CLASS_COLOR = {
 // duplicating the literal a second time.
 const WOW_QUALITY_COLOR = { POOR: '#9d9d9d', COMMON: '#ffffff', UNCOMMON: '#1eff00', RARE: '#0070dd', EPIC: '#a335ee', LEGENDARY: '#ff8000', ARTIFACT: '#e6cc80', HEIRLOOM: '#00ccff' };
 
+// AH Browse category icons (2026-09-11 explicit ask, then "can we not use
+// wow icons" -> real Blizzard art, not emoji). No generic "category icon"
+// endpoint exists in Blizzard's API (checked live/researched - the actual
+// in-game AH buttons use Blizzard's internal client texture atlas, which
+// isn't exposed through the public Game Data API), so this uses the real
+// icon of one well-known, permanent representative item per category
+// instead - same pattern the in-game AH's own category buttons follow
+// conceptually, just sourced via the public /data/wow/media/item/{id}
+// endpoint already used everywhere else in this file. Every id below was
+// verified live 2026-09-11 to actually belong to the category it
+// represents (Blizzard's own item_class.name matched exactly, not
+// assumed) - covers every category confirmed live in this server's real
+// category list, scoped to top-level only per explicit direction (no
+// subcategory icons for now - Cloth/Leather/Axe/Sword/etc still show plain
+// text). Icon URLs are Blizzard's permanent render CDN - same "resolve
+// once, cache forever" reasoning wow_item_icons/wow_recipe_icons already
+// document elsewhere, hardcoded here since there are only 16 of them and
+// an item's icon never changes.
+const WOW_AH_CATEGORY_ICON = {
+  Armor: 'https://render.worldofwarcraft.com/us/icons/56/135009.jpg', // Recruit's Shirt
+  Weapon: 'https://render.worldofwarcraft.com/us/icons/56/135274.jpg', // Worn Shortsword
+  'Battle Pets': 'https://render.worldofwarcraft.com/us/icons/56/132599.jpg', // Pet Cage
+  Consumable: 'https://render.worldofwarcraft.com/us/icons/56/134829.jpg', // Minor Healing Potion
+  Container: 'https://render.worldofwarcraft.com/us/icons/56/133634.jpg', // Small Brown Pouch
+  Gem: 'https://render.worldofwarcraft.com/us/icons/56/132886.jpg', // Void Sphere
+  Glyph: 'https://render.worldofwarcraft.com/us/icons/56/254301.jpg', // Glyph of the Luminous Charger
+  Housing: 'https://render.worldofwarcraft.com/us/icons/56/7422327.jpg', // Shadowforge Sconce
+  'Item Enhancement': 'https://render.worldofwarcraft.com/us/icons/56/133611.jpg', // Light Armor Kit
+  Key: 'https://render.worldofwarcraft.com/us/icons/56/134889.jpg', // Ethereum Prison Key
+  Miscellaneous: 'https://render.worldofwarcraft.com/us/icons/56/134414.jpg', // Hearthstone
+  Profession: 'https://render.worldofwarcraft.com/us/icons/56/4374706.jpg', // Draconium Blacksmith's Toolbox
+  Quest: 'https://render.worldofwarcraft.com/us/icons/56/134332.jpg', // Green Hills of Stranglethorn - Page 1
+  Reagent: 'https://render.worldofwarcraft.com/us/icons/56/132841.jpg', // Weak Anima Mote
+  Recipe: 'https://render.worldofwarcraft.com/us/icons/56/133739.jpg', // Book of Glyph Mastery
+  Tradeskill: 'https://render.worldofwarcraft.com/us/icons/56/134341.jpg', // Goretusk Liver
+};
+
 // Zamimg class icons. All 13 classes follow classicon_<class> exactly - verified
 // against the CDN - so this derives the name instead of hand-mapping it, and a
 // new class would work without a code change.
@@ -1570,7 +1607,7 @@ function WowAH({ tokenPrice, tokenTrend }) {
   // rather than merged into search since browsing has its own navigation
   // stack (category -> subcategory -> item list -> item detail) that
   // doesn't map onto a single query string.
-  const [mode, setMode] = useState('search'); // 'search' | 'browse'
+  const [mode, setMode] = useState('browse'); // 'search' | 'browse' - browse is the default landing view (2026-09-11 explicit ask)
   const [categories, setCategories] = useState(null); // null = not loaded yet
   const [browseCategory, setBrowseCategory] = useState(null); // {category, subcategory|null} or null
   const [browseItems, setBrowseItems] = useState(null);
@@ -1584,10 +1621,18 @@ function WowAH({ tokenPrice, tokenTrend }) {
   // any, is selected - see the server-side comment on why).
   const [browseSlot, setBrowseSlot] = useState(null);
   const [browseSlots, setBrowseSlots] = useState(null);
-  // Sort (2026-09-11, explicit ask: "can't sort Cloth Chest by price up or
-  // down", then required_level/quality/base ilvl once those existed too) -
-  // matches /api/wow/ah/browse's `sort` param values exactly.
-  const [browseSort, setBrowseSort] = useState('name');
+  // Sort STACK (2026-09-11: "can't sort Cloth Chest by price up or down",
+  // then required_level/quality/base ilvl, then realm, then "stack the
+  // order... persistent filtering, so when you apply the new sort it
+  // doesn't change the order EXCEPT for those [ties]"). An array of
+  // /api/wow/ah/browse `sort` keys, primary first - each column click
+  // APPENDS a new key (or toggles that key's direction in place if it's
+  // already in the stack, confirmed as the wanted behavior over "move
+  // clicked column to front") rather than replacing the whole sort, so
+  // clicking Price after Realm gives "grouped by realm, price breaks ties
+  // within each realm" instead of discarding the realm grouping. Serialized
+  // to the API as a comma-joined string (server.js splits on comma).
+  const [browseSort, setBrowseSort] = useState(['name']);
   // Recently viewed - deliberately component state, not localStorage: this
   // is a lightweight "don't lose your place" convenience for the current
   // session, not something that needs to survive a reload or sync across
@@ -1623,9 +1668,10 @@ function WowAH({ tokenPrice, tokenTrend }) {
     req('/api/wow/ah/crafts').then(r => r.ok ? r.json() : null).then(d => setCrafts(d?.crafts || [])).catch(() => setCrafts([]));
   }, []);
 
-  // Category list fetched once on first switch to Browse mode, not on
-  // mount - most sessions probably never open Browse, so this avoids an
-  // extra request most page loads don't need.
+  // Category list fetched once when Browse mode is first active - now the
+  // default landing view (2026-09-11), so this effectively fires on mount
+  // for most sessions rather than only after switching tabs, which is the
+  // whole point of making Browse the default.
   useEffect(() => {
     if (mode === 'browse' && categories === null) {
       req('/api/wow/ah/categories').then(r => r.ok ? r.json() : null).then(d => setCategories(d?.categories || [])).catch(() => setCategories([]));
@@ -1639,7 +1685,9 @@ function WowAH({ tokenPrice, tokenTrend }) {
   // sort: unlike slot, deliberately NOT reset on a category/subcategory
   // switch (defaults to the current browseSort via closure when omitted) -
   // a player who picked "sort by price" almost certainly wants that to
-  // stick while browsing around, the opposite of slot's reasoning.
+  // stick while browsing around, the opposite of slot's reasoning. `sort`
+  // is a sort-key ARRAY (the stack) when passed, matching browseSort's own
+  // shape.
   const openCategory = (category, subcategory, offset, slot, sort) => {
     const effectiveSort = sort !== undefined ? sort : browseSort;
     setBrowseCategory({ category, subcategory: subcategory || null });
@@ -1648,7 +1696,7 @@ function WowAH({ tokenPrice, tokenTrend }) {
     setBrowseSort(effectiveSort);
     setBrowseLoading(true);
     setBrowseItems(null);
-    const params = new URLSearchParams({ category, offset: String(offset || 0), sort: effectiveSort });
+    const params = new URLSearchParams({ category, offset: String(offset || 0), sort: effectiveSort.join(',') });
     if (subcategory) params.set('subcategory', subcategory);
     if (slot) params.set('slot', slot);
     req(`/api/wow/ah/browse?${params}`)
@@ -1804,6 +1852,9 @@ function WowAH({ tokenPrice, tokenTrend }) {
                   <div>
                     <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;cursor:pointer;font-family:var(--wow-display);font-weight:600;"
                          onClick=${() => openCategory(c.category)}>
+                      ${WOW_AH_CATEGORY_ICON[c.category]
+                        ? html`<img src=${WOW_AH_CATEGORY_ICON[c.category]} style="width:20px;height:20px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;" />`
+                        : html`<div style="width:20px;height:20px;border-radius:3px;border:1px solid var(--wow-border2);flex-shrink:0;"></div>`}
                       <span style="flex:1;">${c.category}</span>
                       <span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">${c.count}</span>
                     </div>
@@ -1818,7 +1869,10 @@ function WowAH({ tokenPrice, tokenTrend }) {
               </div>
             ` : html`
               <div style="cursor:pointer;color:var(--wow-muted);font-family:var(--wow-mono);font-size:11px;margin-bottom:10px;" onClick=${() => { setBrowseCategory(null); setBrowseItems(null); setBrowseSlot(null); setBrowseSlots(null); }}>← all categories</div>
-              <div style="font-family:var(--wow-display);font-weight:600;margin-bottom:8px;">${browseCategory.category}${browseCategory.subcategory ? ' / ' + browseCategory.subcategory : ''}${browseSlot ? ' / ' + browseSlot : ''}</div>
+              <div style="display:flex;align-items:center;gap:6px;font-family:var(--wow-display);font-weight:600;margin-bottom:8px;">
+                ${WOW_AH_CATEGORY_ICON[browseCategory.category] ? html`<img src=${WOW_AH_CATEGORY_ICON[browseCategory.category]} style="width:18px;height:18px;border-radius:3px;border:1px solid var(--wow-border2);" />` : ''}
+                <span>${browseCategory.category}${browseCategory.subcategory ? ' / ' + browseCategory.subcategory : ''}${browseSlot ? ' / ' + browseSlot : ''}</span>
+              </div>
               ${browseSlots && browseSlots.length > 0 ? html`
                 <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
                   <div style="padding:3px 8px;border:1px solid ${!browseSlot ? 'var(--wow-gold)' : 'var(--wow-border2)'};border-radius:3px;cursor:pointer;font-family:var(--wow-mono);font-size:10px;background:${!browseSlot ? 'var(--wow-surface2)' : 'var(--wow-bg)'};color:${!browseSlot ? 'var(--wow-text)' : 'var(--wow-muted)'};"
@@ -1839,25 +1893,46 @@ function WowAH({ tokenPrice, tokenTrend }) {
                 // Browse-only, search/recently-viewed keep the simpler
                 // itemRow card style since they don't support sorting.
                 const isGear = browseSlots !== null;
-                // Clicking the header for the currently-active sort column
-                // flips direction; clicking a different column starts it at
-                // its natural default (name/quality ascending = A-Z/worst-
-                // first, price/level/ilvl ascending = cheapest/lowest-first
-                // - matches in-game AH's first-click convention).
+                // Clicking a header APPENDS that column to the sort stack
+                // (2026-09-11: "stack the order... persistent filtering, so
+                // when you apply the new sort it doesn't change the order
+                // EXCEPT for those [ties]") - the existing stack order is
+                // preserved, only the clicked column's position/direction
+                // changes. Clicking a column already in the stack toggles
+                // its direction IN PLACE (confirmed wanted over "move to
+                // front"); clicking a new column adds it to the END (lowest
+                // priority, breaks ties within everything already active) -
+                // matches how most real spreadsheet/table multi-sort UIs
+                // work. A column not currently in the stack starts ascending
+                // (name/quality ascending = A-Z/worst-first, price/level/
+                // ilvl/realm ascending = cheapest/lowest-first/first
+                // realm-by-id - matches in-game AH's first-click
+                // convention).
+                //
                 // widthStyle lets the Name column share the exact same
                 // `flex:1;min-width:0` box-sizing as its data row (a plain
                 // fixed width there mismatched the data span's flex-based
                 // width, shifting every column after it left of where the
                 // data actually sits - confirmed live via a real screenshot
                 // showing headers bunched left of their columns).
+                const baseKey = (k) => k.replace(/-desc$/, '');
                 const sortHeader = (label, key, widthStyle, align) => {
-                  const active = browseSort === key || browseSort === key + '-desc';
-                  const isDesc = browseSort === key + '-desc';
-                  const nextSort = active ? (isDesc ? key : key + '-desc') : key;
+                  const idx = browseSort.findIndex(k => baseKey(k) === key);
+                  const active = idx !== -1;
+                  const isDesc = active && browseSort[idx] === key + '-desc';
+                  const nextStack = active
+                    ? browseSort.map((k, i) => i === idx ? (isDesc ? key : key + '-desc') : k)
+                    : [...browseSort, key];
+                  // Priority number shown when 2+ columns are stacked, so
+                  // it's clear which one is being used as a tiebreaker for
+                  // which - a single active sort shows no number (matches
+                  // the simpler single-sort look from before stacking existed).
+                  const priorityLabel = active && browseSort.length > 1 ? html`<sup style="font-size:8px;">${idx + 1}</sup>` : '';
                   return html`
                     <div style="${widthStyle};text-align:${align || 'left'};cursor:pointer;user-select:none;color:${active ? 'var(--wow-text)' : 'var(--wow-muted)'};"
-                         onClick=${() => openCategory(browseCategory.category, browseCategory.subcategory, 0, browseSlot, nextSort)}>
-                      ${label}${active ? (isDesc ? ' ▼' : ' ▲') : ''}
+                         onClick=${() => openCategory(browseCategory.category, browseCategory.subcategory, 0, browseSlot, nextStack)}
+                         title="Click to add this column to the sort order (or flip its direction if it's already active). ${browseSort.length > 1 ? 'Clear sort to start over.' : ''}">
+                      ${label}${priorityLabel}${active ? (isDesc ? ' ▼' : ' ▲') : ''}
                     </div>`;
                 };
                 return html`
@@ -1867,7 +1942,9 @@ function WowAH({ tokenPrice, tokenTrend }) {
                     ${isGear ? sortHeader('Rl', 'level', 'width:50px;flex-shrink:0', 'right') : ''}
                     ${isGear ? sortHeader('Ilvl', 'ilvl', 'width:50px;flex-shrink:0', 'right') : ''}
                     ${isGear ? sortHeader('Quality', 'quality', 'width:70px;flex-shrink:0', 'right') : ''}
+                    ${isGear ? sortHeader('Realm', 'realm', 'width:100px;flex-shrink:0', 'right') : ''}
                     ${sortHeader('Price', 'price', 'width:90px;flex-shrink:0', 'right')}
+                    ${browseSort.length > 1 ? html`<div style="width:20px;flex-shrink:0;text-align:right;cursor:pointer;color:var(--wow-muted);" title="Clear sort" onClick=${() => openCategory(browseCategory.category, browseCategory.subcategory, 0, browseSlot, ['name'])}>✕</div>` : ''}
                   </div>
                   <div style="display:flex;flex-direction:column;gap:2px;">
                     ${browseItems.map(r => {
@@ -1883,7 +1960,9 @@ function WowAH({ tokenPrice, tokenTrend }) {
                           ${isGear ? html`<span style="width:50px;flex-shrink:0;text-align:right;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">${r.requiredLevel ?? '—'}</span>` : ''}
                           ${isGear ? html`<span style="width:50px;flex-shrink:0;text-align:right;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);" title="Base item level - not the exact level of any specific listing, see item detail.">${r.baseItemLevel ?? '—'}</span>` : ''}
                           ${isGear ? html`<span style="width:70px;flex-shrink:0;text-align:right;font-family:var(--wow-mono);font-size:10px;color:${nameColor};text-transform:capitalize;">${r.quality ? r.quality.toLowerCase() : '—'}</span>` : ''}
+                          ${isGear ? html`<span style="width:100px;flex-shrink:0;text-align:right;font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);text-transform:capitalize;">${r.realmSlug ? r.realmSlug.replace(/-/g, ' ') : '—'}</span>` : ''}
                           <span style="width:90px;flex-shrink:0;text-align:right;font-family:var(--wow-mono);font-size:11px;color:var(--wow-gold);">${priceGold != null ? goldStr(priceGold) + ' g' : '—'}</span>
+                          ${browseSort.length > 1 ? html`<div style="width:20px;flex-shrink:0;"></div>` : ''}
                         </div>`;
                     })}
                   </div>`;
