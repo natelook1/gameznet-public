@@ -295,18 +295,20 @@ function bagColor(freePct) {
 }
 
 // Absolute public origin, for things that cannot be relative: OAuth popups and
-// EventSource. Desktop's API base is relative, so fall back to a real backend
-// URL - NOT gameznet.looknet.ca, which is its own CNAME straight to the CF
-// Pages site (confirmed live 2026-09-12: an exported DNS zone shows
-// `gameznet.looknet.ca CNAME gameznet-pages.pages.dev`, overriding the
-// `*.looknet.ca` wildcard that otherwise reaches the tunnel). API's default
-// of that same hostname still works for plain requests because cf-pages/
-// _worker.js proxies /api/* itself, but the worker has no route for
-// /auth/battlenet - anyone hitting that from the web/mobile build (no
-// HOST.publicOrigin override) landed on the Pages site's homepage instead of
-// ever reaching Blizzard's OAuth flow. api-gamez.looknet.ca is the real
-// backend hostname (see infra-quickref.md), reachable with no proxy needed.
-const PUBLIC_ORIGIN = HOST.publicOrigin || 'https://api-gamez.looknet.ca';
+// EventSource. Desktop's API base is relative, so fall back to the public URL.
+//
+// MUST stay gameznet.looknet.ca, not api-gamez.looknet.ca, even though
+// gameznet.looknet.ca is a CF Pages custom domain that would otherwise serve
+// the landing page for /auth/battlenet (confirmed live 2026-09-12) - the
+// Battle.net OAuth app's registered redirect URI is
+// https://gameznet.looknet.ca/auth/battlenet/callback. Sending the OAuth
+// flow through api-gamez.looknet.ca instead would build a different
+// redirect_uri and Blizzard would reject it outright (redirect_uri_mismatch)
+// rather than silently failing. The actual fix for the landing-page problem
+// is cf-pages/_worker.js proxying /auth/* the same way it already proxies
+// /api/* - both requests still present as gameznet.looknet.ca to
+// server.js/Blizzard, just no longer served by Pages' static assets.
+const PUBLIC_ORIGIN = HOST.publicOrigin || (API || 'https://gameznet.looknet.ca');
 
 // Static assets live at the root on CF Pages but under /static on desktop.
 const ASSETS = HOST.assetBase != null ? HOST.assetBase : '';
