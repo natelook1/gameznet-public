@@ -1,6 +1,17 @@
 # Changelog
 
-## v1.12.28 — 2026-09-13
+## v1.13.1 — 2026-09-13
+
+### Changed
+- **Cloth and Cooking split out of Farming into their own tabs**, and
+  Farming gained Mining/Herbalism/Elemental/Skinning sub-filter chips.
+  Farming was getting crowded lumping every world-farmed material
+  together; Cooking already has a full profession UI of its own and Cloth
+  drops heavily off humanoid trash independent of any gathering loop, so
+  both earn a direct tab. No addon change needed — this only reorganizes
+  how already-captured categories are grouped and filtered client-side.
+
+## v1.13.0 — 2026-09-13
 
 ### Fixed
 - **Current-expansion motes and a large share of this expansion's raw

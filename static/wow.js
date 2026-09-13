@@ -3629,27 +3629,32 @@ function qColor(q) {
 // returns bags/bank/reagentBank/accountBank only when `mine` (or the bags tier
 // is public), so there is nothing to hide here.
 // category is Blizzard's real item classification (classID/subclassID via
-// Capture.lua's ItemCategoryInfo, schema 13+) - "Mining"/"Herbalism"/
-// "Elemental"/"Skinning"/"Cloth"/"Cooking" for materials farmed out in the
-// world (mob drops and gathering nodes alike - community farming guides,
-// e.g. wow-professions.com, treat these as one undifferentiated "farming"
-// bucket), "Trade" for other Tradeskill-class items (Enchanting/
-// Jewelcrafting/Inscription/Reagents - one step into a crafting pipeline,
-// not raw world drops), "Quest"/"Food"/"Reagent" for classID 12/0(sub5)/15,
-// "Junk" for Misc/subclass 0 - a lot of current-expansion mob-farming drops
-// (pelts, fluids, "particle" items - confirmed live 2026-09-13) carry no
-// Tradeskill classID at all, so this is a real Blizzard-side category, not
-// a catch-all. Explicitly NOT folded into Farming - Blizzard itself makes
-// no such distinction (there is no "farmed junk" vs "any other junk" flag),
-// so guessing would be inventing a taxonomy Blizzard doesn't have. Grouped
-// into named buckets here rather than shown as Blizzard's raw category list
-// since that's the split the player actually wants to browse by; anything
-// with no category, or a category not listed below, falls into Inventory.
-const WOW_FARMING_CATEGORIES = ['Mining', 'Herbalism', 'Elemental', 'Skinning', 'Cloth', 'Cooking'];
-const WOW_NAMED_CATEGORIES = [...WOW_FARMING_CATEGORIES, 'Trade', 'Quest', 'Food', 'Reagent', 'Junk'];
+// Capture.lua's ItemCategoryInfo, schema 14+) - "Mining"/"Herbalism"/
+// "Elemental"/"Skinning" for node/mob-farmed raw materials with no
+// standalone crafting profession of their own (Farming's remaining scope
+// after Cooking and Cloth were split into their own tabs - Cooking has a
+// full profession UI of its own and Cloth drops heavily off humanoid trash
+// independent of any gathering loop, both common enough to want a direct
+// tab rather than being buried inside a broader Farming bucket), "Cloth"
+// and "Cooking" as their own top-level tabs, "Trade" for other Tradeskill-
+// class items (Enchanting/Jewelcrafting/Inscription/Reagents - one step
+// into a crafting pipeline, not raw world drops), "Quest"/"Food"/"Reagent"
+// for classID 12/0(sub5)/15, "Junk" for Misc/subclass 0 - a lot of
+// current-expansion mob-farming drops (pelts, fluids, "particle" items -
+// confirmed live 2026-09-13) carry no Tradeskill classID at all, so this
+// is a real Blizzard-side category, not a catch-all; explicitly NOT folded
+// into Farming since Blizzard itself makes no "farmed junk" vs "any other
+// junk" distinction. Grouped into named buckets here rather than shown as
+// Blizzard's raw category list since that's the split the player actually
+// wants to browse by; anything with no category, or a category not listed
+// below, falls into Inventory.
+const WOW_FARMING_CATEGORIES = ['Mining', 'Herbalism', 'Elemental', 'Skinning'];
+const WOW_NAMED_CATEGORIES = [...WOW_FARMING_CATEGORIES, 'Cloth', 'Cooking', 'Trade', 'Quest', 'Food', 'Reagent', 'Junk'];
 const WOW_ITEM_GROUPS = [
   { id: 'all',        label: 'All',         match: () => true },
   { id: 'farming',    label: 'Farming',     match: it => WOW_FARMING_CATEGORIES.includes(it.category) },
+  { id: 'cloth',      label: 'Cloth',       match: it => it.category === 'Cloth' },
+  { id: 'cooking',    label: 'Cooking',     match: it => it.category === 'Cooking' },
   { id: 'trade',      label: 'Trade',       match: it => it.category === 'Trade' },
   { id: 'quest',      label: 'Quest',       match: it => it.category === 'Quest' },
   { id: 'consumable', label: 'Consumables', match: it => it.category === 'Food' },
@@ -3657,10 +3662,24 @@ const WOW_ITEM_GROUPS = [
   { id: 'junk',       label: 'Junk',        match: it => it.category === 'Junk' },
   { id: 'inventory',  label: 'Inventory',   match: it => !WOW_NAMED_CATEGORIES.includes(it.category) },
 ];
+// Sub-filters, keyed by parent WOW_ITEM_GROUPS id - shown as a second chip
+// row only while that parent group is selected. Each sub-filter narrows
+// within the parent's own match, so counts stay consistent with the parent
+// tab's total (an "All" sub-filter with count === the parent's own count).
+const WOW_SUBGROUPS = {
+  farming: [
+    { id: 'all',       label: 'All',       match: () => true },
+    { id: 'mining',    label: 'Mining',    match: it => it.category === 'Mining' },
+    { id: 'herbalism', label: 'Herbalism', match: it => it.category === 'Herbalism' },
+    { id: 'elemental', label: 'Elemental', match: it => it.category === 'Elemental' },
+    { id: 'skinning',  label: 'Skinning',  match: it => it.category === 'Skinning' },
+  ],
+};
 
 function WowInventory({ character, onClose }) {
   const [src, setSrc] = useState('bags');
   const [group, setGroup] = useState('all');
+  const [subgroup, setSubgroup] = useState('all');
   const [search, setSearch] = useState('');
 
   const c = character;
@@ -3673,9 +3692,12 @@ function WowInventory({ character, onClose }) {
 
   const active = SOURCES.find(s => s.id === src) || SOURCES[0];
   const activeGroup = WOW_ITEM_GROUPS.find(g => g.id === group) || WOW_ITEM_GROUPS[0];
+  const subgroups = WOW_SUBGROUPS[group] || null;
+  const activeSubgroup = subgroups ? (subgroups.find(sg => sg.id === subgroup) || subgroups[0]) : null;
   const q = search.trim().toLowerCase();
   const items = (active.items || [])
     .filter(activeGroup.match)
+    .filter(it => !activeSubgroup || activeSubgroup.match(it))
     .filter(it => !q || (it.name || '').toLowerCase().includes(q))
     .sort((a, b) => (b.quality ?? 0) - (a.quality ?? 0) || (a.name || '').localeCompare(b.name || ''));
 
@@ -3690,7 +3712,7 @@ function WowInventory({ character, onClose }) {
 
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">
         ${SOURCES.map(s => html`
-          <div onClick=${() => { setSrc(s.id); setGroup('all'); }}
+          <div onClick=${() => { setSrc(s.id); setGroup('all'); setSubgroup('all'); }}
                style="font-family:var(--wow-mono);font-size:10px;padding:4px 9px;border-radius:3px;cursor:pointer;
                       background:${src === s.id ? 'var(--wow-gold-dim)' : 'var(--wow-surface2)'};
                       color:${src === s.id ? 'var(--wow-gold)' : 'var(--wow-muted)'};">
@@ -3705,7 +3727,7 @@ function WowInventory({ character, onClose }) {
         ${WOW_ITEM_GROUPS.map(g => {
           const count = (active.items || []).filter(g.match).length;
           return html`
-            <div onClick=${() => setGroup(g.id)}
+            <div onClick=${() => { setGroup(g.id); setSubgroup('all'); }}
                  style="font-family:var(--wow-mono);font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;
                         border:1px solid ${group === g.id ? 'var(--wow-gold)' : 'var(--wow-border2)'};
                         color:${group === g.id ? 'var(--wow-gold)' : 'var(--wow-muted)'};">
@@ -3715,6 +3737,22 @@ function WowInventory({ character, onClose }) {
         })}
       </div>
 
+      ${subgroups && html`
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;padding-left:10px;">
+          ${subgroups.map(sg => {
+            const count = (active.items || []).filter(activeGroup.match).filter(sg.match).length;
+            return html`
+              <div onClick=${() => setSubgroup(sg.id)}
+                   style="font-family:var(--wow-mono);font-size:9px;padding:2px 7px;border-radius:3px;cursor:pointer;
+                          border:1px solid ${subgroup === sg.id ? 'var(--wow-accent)' : 'var(--wow-border2)'};
+                          color:${subgroup === sg.id ? 'var(--wow-accent)' : 'var(--wow-muted)'};">
+                ${sg.label} <span style="opacity:0.6;">${count}</span>
+              </div>
+            `;
+          })}
+        </div>
+      `}
+
       <input type="text" value=${search} placeholder="Filter items…"
              onInput=${e => setSearch(e.target.value)}
              style="width:100%;box-sizing:border-box;background:var(--wow-bg);border:1px solid var(--wow-border2);
@@ -3723,6 +3761,7 @@ function WowInventory({ character, onClose }) {
       ${items.length === 0
         ? html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);padding:8px 0;">
             ${q ? 'Nothing matches that filter.'
+              : (activeSubgroup && activeSubgroup.id !== 'all') ? `No ${activeSubgroup.label.toLowerCase()} items here.`
               : group !== 'all' ? `No ${activeGroup.label.toLowerCase()} items here.`
               : `${active.label} is empty.`}
           </div>`
