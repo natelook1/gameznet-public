@@ -3451,6 +3451,20 @@ function goldStr(g) {
   return String(g);
 }
 
+// Per-item bank/bag value display wants gold/silver/copper precision (many
+// stacks are worth well under 1g), unlike goldStr's k/M rounding which is
+// built for AH listing-price contexts. marketPrice/copper is per unit; the
+// caller multiplies by count for a stack total before formatting.
+function copperStr(copper) {
+  if (copper == null) return null;
+  const g = Math.floor(copper / 10000);
+  const s = Math.floor((copper % 10000) / 100);
+  const c = copper % 100;
+  if (g > 0) return `${g}g ${s}s`;
+  if (s > 0) return `${s}s ${c}c`;
+  return `${c}c`;
+}
+
 function playedStr(sec) {
   if (!sec) return '—';
   const d = Math.floor(sec / 86400);
@@ -3634,7 +3648,9 @@ function WowInventory({ character, onClose }) {
               : `${active.label} is empty.`}
           </div>`
         : html`<div style="max-height:340px;overflow-y:auto;">
-            ${items.map(it => html`
+            ${items.map(it => {
+              const stackValue = it.marketPrice != null ? it.marketPrice * (it.count || 1) : null;
+              return html`
               <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--wow-border2);">
                 ${it.icon ? html`<img src="https://wow.zamimg.com/images/wow/icons/small/${it.icon}.jpg"
                      onError=${e => { e.target.style.visibility = 'hidden'; }}
@@ -3646,14 +3662,22 @@ function WowInventory({ character, onClose }) {
                           color:${qColor(it.quality)};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                   ${it.name || ('item ' + it.id)}
                 </a>
+                ${stackValue != null ? html`<span title=${it.priceSource === 'ah' ? 'Auction House price' : 'Vendor sell price'}
+                     style="font-family:var(--wow-mono);font-size:10px;color:${it.priceSource === 'ah' ? 'var(--wow-gold)' : 'var(--wow-muted)'};white-space:nowrap;">
+                  ${copperStr(stackValue)}${it.priceSource === 'vendor' ? ' (vendor)' : ''}
+                </span>` : ''}
                 ${it.count > 1 ? html`<span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">×${it.count}</span>` : ''}
               </div>
-            `)}
+            `;})}
           </div>`}
 
       <div style="font-family:var(--wow-mono);font-size:9px;color:var(--wow-muted);margin-top:8px;">
         ${items.length} of ${(active.items || []).length} stack${(active.items || []).length === 1 ? '' : 's'}
         ${active.id === 'bags' && c.bagFree != null ? ` · ${c.bagFree} free slot${c.bagFree === 1 ? '' : 's'}` : ''}
+        ${(() => {
+          const total = items.reduce((sum, it) => sum + (it.marketPrice != null ? it.marketPrice * (it.count || 1) : 0), 0);
+          return total > 0 ? html` · <span style="color:var(--wow-gold);">${copperStr(total)} total</span>` : '';
+        })()}
       </div>
     </div>
   `;
