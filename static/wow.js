@@ -3629,23 +3629,33 @@ function qColor(q) {
 // returns bags/bank/reagentBank/accountBank only when `mine` (or the bags tier
 // is public), so there is nothing to hide here.
 // category is Blizzard's real item classification (classID/subclassID via
-// Capture.lua's ItemCategoryInfo, schema 12+) - "Mining"/"Herbalism"/
+// Capture.lua's ItemCategoryInfo, schema 13+) - "Mining"/"Herbalism"/
 // "Elemental"/"Skinning"/"Cloth"/"Cooking" for materials farmed out in the
 // world (mob drops and gathering nodes alike - community farming guides,
 // e.g. wow-professions.com, treat these as one undifferentiated "farming"
 // bucket), "Trade" for other Tradeskill-class items (Enchanting/
 // Jewelcrafting/Inscription/Reagents - one step into a crafting pipeline,
-// not raw world drops), "Quest"/"Food"/"Reagent" captured but not yet
-// broken into their own tabs, undefined for everything else (equipment,
-// etc). Grouped into buckets here rather than shown as Blizzard's raw
-// category list since that's the split the player actually wants to browse
-// by; ungrouped categories just fall into Inventory until a tab exists.
+// not raw world drops), "Quest"/"Food"/"Reagent" for classID 12/0(sub5)/15,
+// "Junk" for Misc/subclass 0 - a lot of current-expansion mob-farming drops
+// (pelts, fluids, "particle" items - confirmed live 2026-09-13) carry no
+// Tradeskill classID at all, so this is a real Blizzard-side category, not
+// a catch-all. Explicitly NOT folded into Farming - Blizzard itself makes
+// no such distinction (there is no "farmed junk" vs "any other junk" flag),
+// so guessing would be inventing a taxonomy Blizzard doesn't have. Grouped
+// into named buckets here rather than shown as Blizzard's raw category list
+// since that's the split the player actually wants to browse by; anything
+// with no category, or a category not listed below, falls into Inventory.
 const WOW_FARMING_CATEGORIES = ['Mining', 'Herbalism', 'Elemental', 'Skinning', 'Cloth', 'Cooking'];
+const WOW_NAMED_CATEGORIES = [...WOW_FARMING_CATEGORIES, 'Trade', 'Quest', 'Food', 'Reagent', 'Junk'];
 const WOW_ITEM_GROUPS = [
-  { id: 'all',       label: 'All',       match: () => true },
-  { id: 'farming',   label: 'Farming',   match: it => WOW_FARMING_CATEGORIES.includes(it.category) },
-  { id: 'trade',     label: 'Trade',     match: it => it.category === 'Trade' },
-  { id: 'inventory', label: 'Inventory', match: it => !it.category || (!WOW_FARMING_CATEGORIES.includes(it.category) && it.category !== 'Trade') },
+  { id: 'all',        label: 'All',         match: () => true },
+  { id: 'farming',    label: 'Farming',     match: it => WOW_FARMING_CATEGORIES.includes(it.category) },
+  { id: 'trade',      label: 'Trade',       match: it => it.category === 'Trade' },
+  { id: 'quest',      label: 'Quest',       match: it => it.category === 'Quest' },
+  { id: 'consumable', label: 'Consumables', match: it => it.category === 'Food' },
+  { id: 'reagent',    label: 'Reagent',     match: it => it.category === 'Reagent' },
+  { id: 'junk',       label: 'Junk',        match: it => it.category === 'Junk' },
+  { id: 'inventory',  label: 'Inventory',   match: it => !WOW_NAMED_CATEGORIES.includes(it.category) },
 ];
 
 function WowInventory({ character, onClose }) {

@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.12.27 — 2026-09-13
+
+### Added
+- **Inventory now has real Quest / Consumables / Reagent / Junk tabs**,
+  not just Farming/Trade/Inventory. Quest items, food & drink, spell
+  reagents, and the previous release's Farming fix all had their
+  categories captured but no tab to browse them — they were landing back
+  in the generic Inventory bucket. Also fixes a gap the Farming rework
+  missed: a lot of current-expansion mob-farming drops (pelts, fluids,
+  "particle"-type items — confirmed live against Exceptional Pelt,
+  Fluorescent Fluid, Woolly Mountain Pelt) carry no Tradeskill classID at
+  all and were falling through uncategorized. These now land in their own
+  **Junk** tab rather than being folded into Farming — Blizzard itself
+  doesn't distinguish "farmed junk" from any other junk, so a separate tab
+  is the honest categorization rather than a guess.
+  **Addon schema 12 → 13** — `/reload` each character once to pick up the
+  new categories on their existing captures (a reload only re-scans the
+  character currently logged in, not the whole roster).
+
 ## v1.12.26 — 2026-09-13
 
 ### Added
