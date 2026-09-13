@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.12.28 — 2026-09-13
+
+### Fixed
+- **Current-expansion motes and a large share of this expansion's raw
+  farming materials were still landing in Trade, not Farming.** Confirmed
+  live (`/run C_Item.GetItemInfo`) that Mote of Wild Magic/Light/Pure Void/
+  Primal Energy, plus Rousing/Awakened elemental materials, Korthite/
+  Taladite Crystal and others, all return Tradeskill subclass 11 ("Other")
+  rather than 10 ("Elemental") — despite Wowhead's item-type label calling
+  them "Elemental Trade Goods" the same as older motes (Mote of Harmony,
+  genuinely subclass 10). Subclass 11 now also maps to Elemental. Verified
+  end-to-end: a real character's Trade count dropped from 123 items to 16
+  (all genuine crafting reagents) once fully re-scanned.
+  **Addon schema 13 → 14** — a full bank/reagent-bank/warband re-scan
+  requires actually opening the bank once (a plain `/reload` only
+  re-scans bags; bank/warband contents are preserved as-is whenever the
+  bank frame isn't open, by design, so they won't pick up new
+  categorization until the bank is visited again).
+
 ## v1.12.27 — 2026-09-13
 
 ### Added
