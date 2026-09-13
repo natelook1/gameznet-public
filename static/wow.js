@@ -3662,11 +3662,14 @@ function WowInventory({ character, onClose }) {
                           color:${qColor(it.quality)};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                   ${it.name || ('item ' + it.id)}
                 </a>
-                ${stackValue != null ? html`<span title=${it.priceSource === 'ah' ? 'Auction House price' : 'Vendor sell price'}
-                     style="font-family:var(--wow-mono);font-size:10px;color:${it.priceSource === 'ah' ? 'var(--wow-gold)' : 'var(--wow-muted)'};white-space:nowrap;">
-                  ${copperStr(stackValue)}${it.priceSource === 'vendor' ? ' (vendor)' : ''}
-                </span>` : ''}
-                ${it.count > 1 ? html`<span style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">×${it.count}</span>` : ''}
+                <span title=${stackValue != null ? (it.priceSource === 'ah' ? 'Auction House price' : 'Vendor sell price') : ''}
+                     style="flex-shrink:0;width:110px;text-align:right;font-family:var(--wow-mono);font-size:10px;
+                            color:${stackValue == null ? 'transparent' : (it.priceSource === 'ah' ? 'var(--wow-gold)' : 'var(--wow-muted)')};white-space:nowrap;">
+                  ${stackValue != null ? `${copperStr(stackValue)}${it.priceSource === 'vendor' ? ' (vendor)' : ''}` : '—'}
+                </span>
+                <span style="flex-shrink:0;width:36px;text-align:right;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">
+                  ${it.count > 1 ? `×${it.count}` : ''}
+                </span>
               </div>
             `;})}
           </div>`}
