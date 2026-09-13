@@ -3454,15 +3454,20 @@ function goldStr(g) {
 // Per-item bank/bag value display wants gold/silver/copper precision (many
 // stacks are worth well under 1g), unlike goldStr's k/M rounding which is
 // built for AH listing-price contexts. marketPrice/copper is per unit; the
-// caller multiplies by count for a stack total before formatting.
-function copperStr(copper) {
-  if (copper == null) return null;
+// caller multiplies by count for a stack total before formatting. Returns
+// markup (gold/silver/copper each colored like Blizzard's own tooltip coin
+// display).
+const WOW_COIN_COLOR = { g: 'var(--wow-gold)', s: '#c8c8d0', c: '#c87e4e' };
+function copperHtml(copper) {
+  if (copper == null) return '';
   const g = Math.floor(copper / 10000);
   const s = Math.floor((copper % 10000) / 100);
   const c = copper % 100;
-  if (g > 0) return `${g}g ${s}s`;
-  if (s > 0) return `${s}s ${c}c`;
-  return `${c}c`;
+  const parts = [];
+  if (g > 0) parts.push(html`<span style="color:${WOW_COIN_COLOR.g};">${g}g</span>`);
+  if (g > 0 || s > 0) parts.push(html`<span style="color:${WOW_COIN_COLOR.s};">${s}s</span>`);
+  parts.push(html`<span style="color:${WOW_COIN_COLOR.c};">${c}c</span>`);
+  return parts;
 }
 
 function playedStr(sec) {
@@ -3663,12 +3668,13 @@ function WowInventory({ character, onClose }) {
                   ${it.name || ('item ' + it.id)}
                 </a>
                 <span title=${stackValue != null ? (it.priceSource === 'ah' ? 'Auction House price' : 'Vendor sell price') : ''}
-                     style="flex-shrink:0;width:110px;text-align:right;font-family:var(--wow-mono);font-size:10px;
-                            color:${stackValue == null ? 'transparent' : (it.priceSource === 'ah' ? 'var(--wow-gold)' : 'var(--wow-muted)')};white-space:nowrap;">
-                  ${stackValue != null ? `${copperStr(stackValue)}${it.priceSource === 'vendor' ? ' (vendor)' : ''}` : '—'}
+                     style="flex-shrink:0;width:110px;text-align:right;font-family:var(--wow-mono);font-size:10px;white-space:nowrap;">
+                  ${stackValue != null
+                    ? html`${copperHtml(stackValue)}${it.priceSource === 'vendor' ? html` <span style="color:var(--wow-muted);">(vendor)</span>` : ''}`
+                    : html`<span style="color:var(--wow-muted);">—</span>`}
                 </span>
                 <span style="flex-shrink:0;width:36px;text-align:right;font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);">
-                  ${it.count > 1 ? `×${it.count}` : ''}
+                  ×${it.count || 1}
                 </span>
               </div>
             `;})}
@@ -3679,7 +3685,7 @@ function WowInventory({ character, onClose }) {
         ${active.id === 'bags' && c.bagFree != null ? ` · ${c.bagFree} free slot${c.bagFree === 1 ? '' : 's'}` : ''}
         ${(() => {
           const total = items.reduce((sum, it) => sum + (it.marketPrice != null ? it.marketPrice * (it.count || 1) : 0), 0);
-          return total > 0 ? html` · <span style="color:var(--wow-gold);">${copperStr(total)} total</span>` : '';
+          return total > 0 ? html` · ${copperHtml(total)} total` : '';
         })()}
       </div>
     </div>
