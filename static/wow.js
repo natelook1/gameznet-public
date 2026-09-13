@@ -1064,6 +1064,22 @@ function lastSeenStr(cacheEntry) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+// Per-browser "have I looked at this" watermark for Recent Activity - not
+// shared/synced state, just enough to stop re-highlighting the same items
+// every time the card re-renders. Kept outside the component so remounting
+// WowOverview (e.g. switching away and back to Overview) does not reset it
+// mid-session; only a real page load re-reads it from localStorage.
+let wowActivitySeenAt = null;
+function loadWowActivitySeenAt() {
+  if (wowActivitySeenAt != null) return wowActivitySeenAt;
+  try {
+    wowActivitySeenAt = Number(localStorage.getItem('gzn_wow_activity_seen_at')) || 0;
+  } catch (e) {
+    wowActivitySeenAt = 0;
+  }
+  return wowActivitySeenAt;
+}
+
 // ── Sub-components ───────────────────────────────────────────────────────────
 function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, onSubTab, dataTick, addon }) {
   // Addon rows are keyed "Name-Realm"; roster rows carry name + realm separately.
@@ -1190,6 +1206,23 @@ function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, on
   });
   activities.sort((a, b) => b.ts - a.ts);
   const recentActivities = activities.slice(0, 15);
+  // Compare against the watermark from BEFORE this render marks it seen below -
+  // otherwise the very item that just arrived would never get to flash as new.
+  const seenAt = loadWowActivitySeenAt();
+
+  // Mark everything currently showing as seen once it's actually been
+  // rendered (not on every re-render from an unrelated dataTick bump) - a
+  // ref that only fires the localStorage write when the newest timestamp
+  // actually advances.
+  const newestTs = recentActivities[0]?.ts || 0;
+  const lastMarkedRef = useRef(0);
+  useEffect(() => {
+    if (newestTs > lastMarkedRef.current) {
+      lastMarkedRef.current = newestTs;
+      wowActivitySeenAt = newestTs;
+      try { localStorage.setItem('gzn_wow_activity_seen_at', String(newestTs)); } catch (e) {}
+    }
+  }, [newestTs]);
 
   const renderActivity = (act) => {
     const diffMs = Date.now() - act.ts;
@@ -1201,11 +1234,15 @@ function WowOverview({ characters, charCacheRef, affixCacheRef, onSelectChar, on
     else if (diffHours > 0) timeStr = `${diffHours}h ago`;
     else if (diffMins > 0) timeStr = `${diffMins}m ago`;
 
+    const isNew = act.ts > seenAt;
+    const rowStyle = `display:flex;align-items:center;gap:10px;padding:8px 10px;background:${isNew ? 'var(--wow-accent-dim)' : 'var(--wow-surface2)'};border:1px solid ${isNew ? 'var(--wow-accent)' : 'var(--wow-border2)'};border-radius:4px;margin-bottom:6px;`;
+    const newPill = isNew ? html`<div style="font-family:var(--wow-mono);font-size:9px;font-weight:700;letter-spacing:1px;color:var(--wow-bg);background:var(--wow-accent);border-radius:3px;padding:2px 5px;">NEW</div>` : '';
+
     if (act.type === 'mplus') {
       const timed = act.run.num_keystone_upgrades > 0;
-      return html`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;margin-bottom:6px;"><div style="width:24px;height:24px;border-radius:3px;background:var(--wow-bg);display:flex;align-items:center;justify-content:center;font-size:12px;">🗝️</div><div style="flex:1;min-width:0;"><div style="font-family:var(--wow-display);font-size:12px;font-weight:600;"><span style="color:var(--wow-accent);cursor:pointer;" onClick=${() => { onSelectChar(characters.indexOf(act.char)); onSubTab('pve'); }}>${act.char.display_name}</span> completed +${act.run.mythic_level} ${act.run.dungeon}</div><div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${timeStr}</div></div><div style="font-size:12px;color:${timed ? 'var(--wow-green)' : 'var(--wow-red)'};">${timed ? '✓' : '✗'}</div></div>`;
+      return html`<div style="${rowStyle}"><div style="width:24px;height:24px;border-radius:3px;background:var(--wow-bg);display:flex;align-items:center;justify-content:center;font-size:12px;">🗝️</div><div style="flex:1;min-width:0;"><div style="font-family:var(--wow-display);font-size:12px;font-weight:600;"><span style="color:var(--wow-accent);cursor:pointer;" onClick=${() => { onSelectChar(characters.indexOf(act.char)); onSubTab('pve'); }}>${act.char.display_name}</span> completed +${act.run.mythic_level} ${act.run.dungeon}</div><div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${timeStr}</div></div>${newPill}<div style="font-size:12px;color:${timed ? 'var(--wow-green)' : 'var(--wow-red)'};">${timed ? '✓' : '✗'}</div></div>`;
     } else if (act.type === 'achievement') {
-      return html`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--wow-surface2);border:1px solid var(--wow-border2);border-radius:4px;margin-bottom:6px;"><div style="width:24px;height:24px;border-radius:3px;background:var(--wow-bg);display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 0 6px rgba(240,180,41,0.2);">🏆</div><div style="flex:1;min-width:0;"><div style="font-family:var(--wow-display);font-size:12px;font-weight:600;"><span style="color:var(--wow-accent);cursor:pointer;" onClick=${() => { onSelectChar(characters.indexOf(act.char)); onSubTab('world'); }}>${act.char.display_name}</span> earned <a href="https://www.wowhead.com/achievement=${act.achievement.id}" target="_blank" style="color:var(--wow-gold);text-decoration:none;" data-wowhead="achievement=${act.achievement.id}">${act.achievement.name}</a></div><div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${timeStr}</div></div></div>`;
+      return html`<div style="${rowStyle}"><div style="width:24px;height:24px;border-radius:3px;background:var(--wow-bg);display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 0 6px rgba(240,180,41,0.2);">🏆</div><div style="flex:1;min-width:0;"><div style="font-family:var(--wow-display);font-size:12px;font-weight:600;"><span style="color:var(--wow-accent);cursor:pointer;" onClick=${() => { onSelectChar(characters.indexOf(act.char)); onSubTab('world'); }}>${act.char.display_name}</span> earned <a href="https://www.wowhead.com/achievement=${act.achievement.id}" target="_blank" style="color:var(--wow-gold);text-decoration:none;" data-wowhead="achievement=${act.achievement.id}">${act.achievement.name}</a></div><div style="font-family:var(--wow-mono);font-size:10px;color:var(--wow-muted);">${timeStr}</div></div>${newPill}</div>`;
     }
   };
 
@@ -3592,16 +3629,23 @@ function qColor(q) {
 // returns bags/bank/reagentBank/accountBank only when `mine` (or the bags tier
 // is public), so there is nothing to hide here.
 // category is Blizzard's real item classification (classID/subclassID via
-// Capture.lua's ItemCategoryInfo, schema 10+) - "Mining"/"Herbalism" for
-// gathered materials, "Trade" for other Tradeskill-class items, undefined
-// for everything else (equipment, consumables, quest items, etc). Grouped
-// into three buckets here rather than shown as Blizzard's raw category list
-// since that's the split the player actually wants to browse by.
+// Capture.lua's ItemCategoryInfo, schema 12+) - "Mining"/"Herbalism"/
+// "Elemental"/"Skinning"/"Cloth"/"Cooking" for materials farmed out in the
+// world (mob drops and gathering nodes alike - community farming guides,
+// e.g. wow-professions.com, treat these as one undifferentiated "farming"
+// bucket), "Trade" for other Tradeskill-class items (Enchanting/
+// Jewelcrafting/Inscription/Reagents - one step into a crafting pipeline,
+// not raw world drops), "Quest"/"Food"/"Reagent" captured but not yet
+// broken into their own tabs, undefined for everything else (equipment,
+// etc). Grouped into buckets here rather than shown as Blizzard's raw
+// category list since that's the split the player actually wants to browse
+// by; ungrouped categories just fall into Inventory until a tab exists.
+const WOW_FARMING_CATEGORIES = ['Mining', 'Herbalism', 'Elemental', 'Skinning', 'Cloth', 'Cooking'];
 const WOW_ITEM_GROUPS = [
   { id: 'all',       label: 'All',       match: () => true },
-  { id: 'farming',   label: 'Farming',   match: it => it.category === 'Mining' || it.category === 'Herbalism' },
+  { id: 'farming',   label: 'Farming',   match: it => WOW_FARMING_CATEGORIES.includes(it.category) },
   { id: 'trade',     label: 'Trade',     match: it => it.category === 'Trade' },
-  { id: 'inventory', label: 'Inventory', match: it => !it.category },
+  { id: 'inventory', label: 'Inventory', match: it => !it.category || (!WOW_FARMING_CATEGORIES.includes(it.category) && it.category !== 'Trade') },
 ];
 
 function WowInventory({ character, onClose }) {
@@ -4863,12 +4907,22 @@ export function WowTab({ me }) {
         } catch(e) {}
       }
 
+      // Re-fetch gate: always fetch a character with no usable cache yet, and
+      // otherwise re-fetch once the cached copy is older than the backend's
+      // own WOW_CACHE_TTL (5 min) - polling faster than that just re-reads the
+      // same server-side cache, so this interval is picked to line up with it
+      // rather than hammer the API for no fresher data. This is what makes
+      // "Recent Activity" (mplus runs / achievements) show up without a full
+      // page reload - previously this effect only ever ran once per
+      // characters-list change, so a page left open never saw new activity.
+      const REFRESH_MS = 120000;
       await Promise.all(characters.map(async (c) => {
         const cacheKey = `${c.region}-${c.realm}-${c.name}`;
         try {
           const have = charCacheRef.current[cacheKey]?._bnet;
           const usable = have && (have.equipment?.equipped_items?.length || have._noGear);
-          if (!usable) {
+          const fresh = usable && (Date.now() - (charCacheRef.current[cacheKey]._fetchedAt || 0)) < REFRESH_MS;
+          if (!fresh) {
             const res = await req(`/api/wow/profile?region=${c.region||'us'}&realm=${c.realm}&name=${c.name}`);
             if (res.ok) {
               const data = await res.json();
@@ -4877,7 +4931,8 @@ export function WowTab({ me }) {
               if (!data.equipment?.equipped_items?.length && data.profile) data._noGear = true;
               charCacheRef.current[cacheKey] = data.raiderIo || {};
               charCacheRef.current[cacheKey]._bnet = data;
-              
+              charCacheRef.current[cacheKey]._fetchedAt = Date.now();
+
               if (data.media?.assets) {
                 const avatar = data.media.assets.find(a => a.key === 'avatar');
                 if (avatar?.value) c.thumbnail = avatar.value;
@@ -4892,7 +4947,8 @@ export function WowTab({ me }) {
       if (mounted && didUpdate) setDataTick(t => t + 1);
     };
     loadData();
-    return () => mounted = false;
+    const iv = setInterval(loadData, 120000);
+    return () => { mounted = false; clearInterval(iv); };
   }, [characters]);
 
   useEffect(() => {

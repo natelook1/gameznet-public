@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.12.26 — 2026-09-13
+
+### Added
+- **Inventory Farming filter now covers motes, leather, cloth, and cooking
+  mats.** Previously only ore (Mining) and herbs (Herbalism) counted as
+  "Farming" — Blizzard's Elemental, Leather, Cloth, and Cooking subclasses
+  all fell into the generic "Trade" bucket, hiding them from the Farming
+  tab even though the community treats all of these as farmed-from-the-
+  world materials the same way. Enchanting/Jewelcrafting/Inscription/
+  Reagents remain under "Trade" (crafted-pipeline reagents, not raw drops).
+  Also captures (but does not yet surface a tab for) Quest items and
+  Consumable/Food & Drink and Reagent items, for a future browse view.
+  **Addon schema 11 → 12** — re-open the addon or `/reload` to pick up the
+  new categories on existing captures.
+- **Recent Activity now updates without a page reload.** The character
+  profile cache used to only refresh when the character list itself
+  changed, so M+ runs and achievements completed after opening the WoW tab
+  never appeared until a hard refresh. Now re-polls every 2 minutes (lined
+  up with the backend's own 5-minute profile cache, so this doesn't add
+  meaningfully more load). New activity items are highlighted (accent
+  border + "NEW" pill) until viewed, tracked per-browser via localStorage.
+
 ## v1.11.40 — 2026-09-10
 
 ### Added
