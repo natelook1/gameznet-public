@@ -3552,8 +3552,22 @@ function qColor(q) {
 // Inventory browser for one character. Owner-only by construction: the backend
 // returns bags/bank/reagentBank/accountBank only when `mine` (or the bags tier
 // is public), so there is nothing to hide here.
+// category is Blizzard's real item classification (classID/subclassID via
+// Capture.lua's ItemCategoryInfo, schema 10+) - "Mining"/"Herbalism" for
+// gathered materials, "Trade" for other Tradeskill-class items, undefined
+// for everything else (equipment, consumables, quest items, etc). Grouped
+// into three buckets here rather than shown as Blizzard's raw category list
+// since that's the split the player actually wants to browse by.
+const WOW_ITEM_GROUPS = [
+  { id: 'all',       label: 'All',       match: () => true },
+  { id: 'farming',   label: 'Farming',   match: it => it.category === 'Mining' || it.category === 'Herbalism' },
+  { id: 'trade',     label: 'Trade',     match: it => it.category === 'Trade' },
+  { id: 'inventory', label: 'Inventory', match: it => !it.category },
+];
+
 function WowInventory({ character, onClose }) {
   const [src, setSrc] = useState('bags');
+  const [group, setGroup] = useState('all');
   const [search, setSearch] = useState('');
 
   const c = character;
@@ -3565,8 +3579,10 @@ function WowInventory({ character, onClose }) {
   ];
 
   const active = SOURCES.find(s => s.id === src) || SOURCES[0];
+  const activeGroup = WOW_ITEM_GROUPS.find(g => g.id === group) || WOW_ITEM_GROUPS[0];
   const q = search.trim().toLowerCase();
   const items = (active.items || [])
+    .filter(activeGroup.match)
     .filter(it => !q || (it.name || '').toLowerCase().includes(q))
     .sort((a, b) => (b.quality ?? 0) - (a.quality ?? 0) || (a.name || '').localeCompare(b.name || ''));
 
@@ -3581,7 +3597,7 @@ function WowInventory({ character, onClose }) {
 
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">
         ${SOURCES.map(s => html`
-          <div onClick=${() => setSrc(s.id)}
+          <div onClick=${() => { setSrc(s.id); setGroup('all'); }}
                style="font-family:var(--wow-mono);font-size:10px;padding:4px 9px;border-radius:3px;cursor:pointer;
                       background:${src === s.id ? 'var(--wow-gold-dim)' : 'var(--wow-surface2)'};
                       color:${src === s.id ? 'var(--wow-gold)' : 'var(--wow-muted)'};">
@@ -3592,6 +3608,20 @@ function WowInventory({ character, onClose }) {
         `)}
       </div>
 
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">
+        ${WOW_ITEM_GROUPS.map(g => {
+          const count = (active.items || []).filter(g.match).length;
+          return html`
+            <div onClick=${() => setGroup(g.id)}
+                 style="font-family:var(--wow-mono);font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;
+                        border:1px solid ${group === g.id ? 'var(--wow-gold)' : 'var(--wow-border2)'};
+                        color:${group === g.id ? 'var(--wow-gold)' : 'var(--wow-muted)'};">
+              ${g.label} <span style="opacity:0.6;">${count}</span>
+            </div>
+          `;
+        })}
+      </div>
+
       <input type="text" value=${search} placeholder="Filter items…"
              onInput=${e => setSearch(e.target.value)}
              style="width:100%;box-sizing:border-box;background:var(--wow-bg);border:1px solid var(--wow-border2);
@@ -3599,7 +3629,9 @@ function WowInventory({ character, onClose }) {
 
       ${items.length === 0
         ? html`<div style="font-family:var(--wow-mono);font-size:11px;color:var(--wow-muted);padding:8px 0;">
-            ${q ? 'Nothing matches that filter.' : `${active.label} is empty.`}
+            ${q ? 'Nothing matches that filter.'
+              : group !== 'all' ? `No ${activeGroup.label.toLowerCase()} items here.`
+              : `${active.label} is empty.`}
           </div>`
         : html`<div style="max-height:340px;overflow-y:auto;">
             ${items.map(it => html`
