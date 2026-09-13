@@ -295,8 +295,18 @@ function bagColor(freePct) {
 }
 
 // Absolute public origin, for things that cannot be relative: OAuth popups and
-// EventSource. Desktop's API base is relative, so fall back to the public URL.
-const PUBLIC_ORIGIN = HOST.publicOrigin || (API || 'https://gameznet.looknet.ca');
+// EventSource. Desktop's API base is relative, so fall back to a real backend
+// URL - NOT gameznet.looknet.ca, which is its own CNAME straight to the CF
+// Pages site (confirmed live 2026-09-12: an exported DNS zone shows
+// `gameznet.looknet.ca CNAME gameznet-pages.pages.dev`, overriding the
+// `*.looknet.ca` wildcard that otherwise reaches the tunnel). API's default
+// of that same hostname still works for plain requests because cf-pages/
+// _worker.js proxies /api/* itself, but the worker has no route for
+// /auth/battlenet - anyone hitting that from the web/mobile build (no
+// HOST.publicOrigin override) landed on the Pages site's homepage instead of
+// ever reaching Blizzard's OAuth flow. api-gamez.looknet.ca is the real
+// backend hostname (see infra-quickref.md), reachable with no proxy needed.
+const PUBLIC_ORIGIN = HOST.publicOrigin || 'https://api-gamez.looknet.ca';
 
 // Static assets live at the root on CF Pages but under /static on desktop.
 const ASSETS = HOST.assetBase != null ? HOST.assetBase : '';
@@ -3245,7 +3255,15 @@ function WowAccount({ me, characters, onRefresh, privacy, onPrivacyChange }) {
       body: JSON.stringify({ name: me.name, vpn_ip: '0.0.0.0', version: '1.0.0' })
     }).catch(()=>{});
 
-    const popupUrl = `${PUBLIC_ORIGIN}/auth/battlenet?name=${encodeURIComponent(me.name)}`;
+    // /auth/battlenet resolves identity from a real player token server-side
+    // (never from a client-supplied name, by design - see its own comment in
+    // server.js), so this must send `token`, not `name`. Sending `name` here
+    // was a straight parameter mismatch: the server's `if (!authToken)` guard
+    // rejects the request outright, which is what an outside-the-house tester
+    // saw as being dumped back on the plain gameznet.looknet.ca homepage
+    // instead of ever reaching Blizzard's login page.
+    const { token } = authPair();
+    const popupUrl = `${PUBLIC_ORIGIN}/auth/battlenet?token=${encodeURIComponent(token || '')}`;
     const popup = window.open(popupUrl, 'bnetauth', 'width=600,height=700');
     const handler = (e) => {
       if (e.data === 'bnet_auth_success') {
