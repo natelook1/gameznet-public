@@ -457,6 +457,13 @@
   <script>
     const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
       ? 'https://gameznet.looknet.ca' : '';
+
+    // Map tiles for whichever PZ world is live (B41 Ziggy or B42 gameznet), from /api/pz/map.
+    // Falls back to B41 if the backend can't be reached. The CF Pages copy has no same-origin
+    // API, so it asks gameznet.looknet.ca directly (CORS allows it).
+    let PZ_TILES = 'https://gzstatic.looknet.ca/map-tiles/b41';
+    const pzMapReady = fetch(`${API_BASE || (location.hostname.endsWith('looknet.ca') ? '' : 'https://gameznet.looknet.ca')}/api/pz/map`)
+      .then(r => r.ok ? r.json() : null).then(d => { if (d && d.tiles_base) PZ_TILES = d.tiles_base; }).catch(() => {});
     const SSE_BASE = 'https://api-gamez.looknet.ca';
 
     let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {}, storage: {}, rare: { spawns: [] } };
@@ -1012,21 +1019,24 @@
     let CELL_MIN_X = 0, CELL_MAX_X = 66, CELL_MIN_Y = 0, CELL_MAX_Y = 53;
     let TILE_ZOOM_MAX = 4;
     let TILE_SIZE = 512;
+    // Game squares per map cell: 300 in B41, 256 in B42. From info.json cell_size.
+    let PZ_CELL = 300;
     // PZ game coords → Leaflet world units: world = pz / PZ_SCALE.
-    // At zoom TILE_ZOOM_MAX, tile tx covers pz [tx*300, (tx+1)*300] and world [tx*tileSize/2^zmax, …].
-    // So PZ_SCALE = 300*2^zmax / tileSize = 300/32 = 9.375 for zmax=4, tileSize=512.
-    let PZ_SCALE = 300 / (TILE_SIZE / Math.pow(2, TILE_ZOOM_MAX));
+    // At zoom TILE_ZOOM_MAX, tile tx covers pz [tx*PZ_CELL, (tx+1)*PZ_CELL] and world [tx*tileSize/2^zmax, …].
+    // So PZ_SCALE = PZ_CELL*2^zmax / tileSize (B41: 300/32 = 9.375 for zmax=4, tileSize=512).
+    let PZ_SCALE = PZ_CELL / (TILE_SIZE / Math.pow(2, TILE_ZOOM_MAX));
     let MAP_MIN_X, MAP_MAX_X, MAP_MIN_Y, MAP_MAX_Y;
     function recalcMapBounds() {
-      PZ_SCALE = 300 / (TILE_SIZE / Math.pow(2, TILE_ZOOM_MAX));
-      MAP_MIN_X = CELL_MIN_X * 300; MAP_MAX_X = CELL_MAX_X * 300;
-      MAP_MIN_Y = CELL_MIN_Y * 300; MAP_MAX_Y = CELL_MAX_Y * 300;
+      PZ_SCALE = PZ_CELL / (TILE_SIZE / Math.pow(2, TILE_ZOOM_MAX));
+      MAP_MIN_X = CELL_MIN_X * PZ_CELL; MAP_MAX_X = CELL_MAX_X * PZ_CELL;
+      MAP_MIN_Y = CELL_MIN_Y * PZ_CELL; MAP_MAX_Y = CELL_MAX_Y * PZ_CELL;
     }
     recalcMapBounds();
 
     async function loadTileInfo() {
       try {
-        const r = await fetch(`https://gzstatic.looknet.ca/map-tiles/Zomboid/info.json`, { cache: 'no-store' });
+        await pzMapReady;
+        const r = await fetch(`${PZ_TILES}/Zomboid/info.json`, { cache: 'no-store' });
         if (!r.ok) return;
         const d = await r.json();
         if (d.cell_x_min != null) CELL_MIN_X = d.cell_x_min;
@@ -1035,6 +1045,7 @@
         if (d.cell_y_max != null) CELL_MAX_Y = d.cell_y_max;
         if (d.zoom_max  != null) TILE_ZOOM_MAX = d.zoom_max;
         if (d.tile_size != null) TILE_SIZE = d.tile_size;
+        if (d.cell_size != null) PZ_CELL = d.cell_size;
         recalcMapBounds();
       } catch (_) {}
     }
@@ -1070,7 +1081,7 @@
             done(null, img); return img;
           }
 
-          const url = `https://gzstatic.looknet.ca/map-tiles/Zomboid/${coords.z}/${coords.x}/${coords.y}.png`;
+          const url = `${PZ_TILES}/Zomboid/${coords.z}/${coords.x}/${coords.y}.png`;
           img.src = url;
           img.onload = () => done(null, img);
           img.onerror = () => { console.warn(`[PZ] tile 404: ${url}`); done(null, img); };
@@ -1282,8 +1293,8 @@
         ovl.density.forEach(d => {
           const cx = d.cx, cy = d.cy;
           if (cx < CELL_MIN_X || cx >= CELL_MAX_X || cy < CELL_MIN_Y || cy >= CELL_MAX_Y) return;
-          const x0 = cx * 300, y0 = cy * 300;
-          const x1 = x0 + 300, y1 = y0 + 300;
+          const x0 = cx * PZ_CELL, y0 = cy * PZ_CELL;
+          const x1 = x0 + PZ_CELL, y1 = y0 + PZ_CELL;
           const level = densityLevels.find(l => d.score >= l.min);
           if (!level) return;
           const rect = L.rectangle(
@@ -1350,7 +1361,10 @@
       });
     }
 
-    // Town zones derived from spawnpoints.lua cell bounding boxes
+    // Town zones derived from spawnpoints.lua cell bounding boxes. The cx/cy values are on
+    // the B41 300-square grid; TOWN_GRID turns them into world squares, which don't depend on
+    // the map's cell size, so the boxes stay put on a B42 (256) map. Re-check against B42.
+    const TOWN_GRID = 300;
     const TOWN_ZONES = [
       { name: 'Muldraugh',  cx0: 34, cy0: 30, cx1: 37, cy1: 36 },
       { name: 'Riverside',  cx0: 16, cy0: 17, cx1: 23, cy1: 22 },
@@ -1368,8 +1382,8 @@
       if (!document.getElementById('map-show-towns')?.checked) return;
       TOWN_ZONES.forEach((town, i) => {
         const color = TOWN_COLORS[i % TOWN_COLORS.length];
-        const x0 = town.cx0 * 300, y0 = town.cy0 * 300;
-        const x1 = (town.cx1 + 1) * 300, y1 = (town.cy1 + 1) * 300;
+        const x0 = town.cx0 * TOWN_GRID, y0 = town.cy0 * TOWN_GRID;
+        const x1 = (town.cx1 + 1) * TOWN_GRID, y1 = (town.cy1 + 1) * TOWN_GRID;
         const rect = L.rectangle(
           [pzToLatLng(x0, y1), pzToLatLng(x1, y0)],
           { color, weight: 2, fill: true, fillColor: color, fillOpacity: 0.07, dashArray: '6 4' }
@@ -1436,9 +1450,10 @@
 
     async function loadIsoInfo() {
       try {
+        await pzMapReady;
         const [dziRes, infoRes] = await Promise.all([
-          fetch('https://gzstatic.looknet.ca/map-tiles/iso/base/layer0.dzi'),
-          fetch('https://gzstatic.looknet.ca/map-tiles/iso/base/map_info.json'),
+          fetch(`${PZ_TILES}/iso/base/layer0.dzi`),
+          fetch(`${PZ_TILES}/iso/base/map_info.json`),
         ]);
         const xml = new DOMParser().parseFromString(await dziRes.text(), 'text/xml');
         const img  = xml.querySelector('Image');
@@ -1457,9 +1472,13 @@
         isoMapConf.GW = ISO_BASE_GEOM.GW / f;
         isoMapConf.GH = ISO_BASE_GEOM.GH / f;
         isoMapConf.LH = ISO_BASE_GEOM.LH / f;
-        if (info.cell_rects?.[0]) {
-          const [cx, cy, cw, ch] = info.cell_rects[0];
-          isoMapConf.bounds = { xMin: cx*300, yMin: cy*300, xMax: (cx+cw)*300, yMax: (cy+ch)*300 };
+        if (info.cell_rects?.length) {
+          // B42 has several rects (3 vs B41's 1); bounds are their union.
+          const rs = info.cell_rects, cs = info.cell_size || 300;
+          const xMin = Math.min(...rs.map(r => r[0])), yMin = Math.min(...rs.map(r => r[1]));
+          const xMax = Math.max(...rs.map(r => r[0] + r[2])), yMax = Math.max(...rs.map(r => r[1] + r[3]));
+          isoMapConf.bounds = { xMin: xMin*cs, yMin: yMin*cs, xMax: xMax*cs, yMax: yMax*cs };
+          isoMapConf.cellSize = cs;
         }
       } catch(e) { console.warn('ISO DZI load failed', e); }
     }
@@ -1666,7 +1685,7 @@
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (!show) return;
-      const SQ = 300;
+      const SQ = TOWN_GRID;
       TOWN_ZONES.forEach((town, i) => {
         const color = TOWN_COLORS[i % TOWN_COLORS.length];
         const corners = [[town.cx0*SQ,town.cy0*SQ],[town.cx1*SQ,town.cy0*SQ],[town.cx1*SQ,town.cy1*SQ],[town.cx0*SQ,town.cy1*SQ]];
@@ -1694,11 +1713,12 @@
       const zpopCells = (density || []).filter(d => !liveMap[`${d.cx},${d.cy}`]);
       const maxZpop = zpopCells.length ? Math.max(...zpopCells.map(d => d.score)) : 1;
       // Pre-compute the four corner offsets of a zpop cell in screen pixels.
-      // Each zpop cell covers 300×300 world squares — map its 4 corners to screen
+      // Each zpop cell covers one map cell (300 squares in B41, 256 in B42) — map its 4 corners to screen
       // coords relative to the cell centre so we can draw a proper iso diamond.
       const vpCtr = isoSquareToViewport(0, 0, 0);
-      const vpE   = isoSquareToViewport(300, 0, 0);   // east  (+x)
-      const vpS   = isoSquareToViewport(0, 300, 0);   // south (+y)
+      const ISO_CELL = isoMapConf.cellSize || 300;
+      const vpE   = isoSquareToViewport(ISO_CELL, 0, 0);   // east  (+x)
+      const vpS   = isoSquareToViewport(0, ISO_CELL, 0);   // south (+y)
       let dxE = 0, dyE = 0, dxS = 0, dyS = 0;
       if (vpCtr && vpE && vpS) {
         const pc = isoViewer.viewport.pixelFromPoint(vpCtr);
@@ -1708,7 +1728,7 @@
         dxS = ps.x - pc.x; dyS = ps.y - pc.y;
       }
       const drawCell = (cx, cy, t, isLive) => {
-        const vp = isoSquareToViewport((cx+0.5)*300, (cy+0.5)*300, 0);
+        const vp = isoSquareToViewport((cx+0.5)*ISO_CELL, (cy+0.5)*ISO_CELL, 0);
         if (!vp) return;
         const pt = isoViewer.viewport.viewportToViewerElementCoordinates(vp);
         // Diamond corners: top=(pt-S), right=(pt+E), bottom=(pt+S), left=(pt-E)
@@ -1748,7 +1768,7 @@
       loadIsoInfo().then(() => {
         isoViewer = OpenSeadragon({
           element: document.getElementById('iso-osd'),
-          tileSources: 'https://gzstatic.looknet.ca/map-tiles/iso/base/layer2.dzi',
+          tileSources: `${PZ_TILES}/iso/base/layer2.dzi`,
           sequenceMode: false,
           homeFillsViewer: false,
           showZoomControl: false, showHomeControl: false, showFullPageControl: false, showRotationControl: false,

@@ -107,6 +107,13 @@
     const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
       ? 'https://gameznet.looknet.ca' : '';
 
+    // Map tiles for whichever PZ world is live (B41 Ziggy or B42 gameznet), from /api/pz/map.
+    // Falls back to B41 if the backend can't be reached. The CF Pages copy has no same-origin
+    // API, so it asks gameznet.looknet.ca directly (CORS allows it).
+    let PZ_TILES = 'https://gzstatic.looknet.ca/map-tiles/b41';
+    const pzMapReady = fetch(`${API_BASE || (location.hostname.endsWith('looknet.ca') ? '' : 'https://gameznet.looknet.ca')}/api/pz/map`)
+      .then(r => r.ok ? r.json() : null).then(d => { if (d && d.tiles_base) PZ_TILES = d.tiles_base; }).catch(() => {});
+
     // ── Map config ────────────────────────────────────────────────────────────
     // Cell range rendered: cx=19-23, cy=17-22 (4x5)
     // Coordinate constants from map_info.json (authoritative, written by pzmap2dzi):
@@ -132,9 +139,10 @@
 
     async function loadDziInfo() {
       try {
+        await pzMapReady;
         const [dziRes, infoRes] = await Promise.all([
-          fetch('https://gzstatic.looknet.ca/map-tiles/iso/base/layer0.dzi'),
-          fetch('https://gzstatic.looknet.ca/map-tiles/iso/base/map_info.json'),
+          fetch(`${PZ_TILES}/iso/base/layer0.dzi`),
+          fetch(`${PZ_TILES}/iso/base/map_info.json`),
         ]);
         const txt = await dziRes.text();
         const parser = new DOMParser();
@@ -159,10 +167,15 @@
         MAP_CONF.GW = BASE_GEOM.GW / f;
         MAP_CONF.GH = BASE_GEOM.GH / f;
         MAP_CONF.LH = BASE_GEOM.LH / f;
-        // cell_rects: [[x, y, width, height]] in cell coords (pzmap2dzi format; 1 cell = 300 squares)
-        if (info.cell_rects && info.cell_rects[0]) {
-          const [cx, cy, cw, ch] = info.cell_rects[0];
-          MAP_CONF.bounds = { xMin: cx * 300, yMin: cy * 300, xMax: (cx + cw) * 300, yMax: (cy + ch) * 300 };
+        // cell_rects: [[x, y, width, height]] in cell coords (pzmap2dzi format; 1 cell =
+        // info.cell_size squares: 300 in B41, 256 in B42)
+        if (info.cell_rects && info.cell_rects.length) {
+          // B42 has several rects (3 vs B41's 1); bounds are their union.
+          const rs = info.cell_rects, cs = info.cell_size || 300;
+          const xMin = Math.min(...rs.map(r => r[0])), yMin = Math.min(...rs.map(r => r[1]));
+          const xMax = Math.max(...rs.map(r => r[0] + r[2])), yMax = Math.max(...rs.map(r => r[1] + r[3]));
+          MAP_CONF.bounds = { xMin: xMin*cs, yMin: yMin*cs, xMax: xMax*cs, yMax: yMax*cs };
+          MAP_CONF.cellSize = cs;
         }
       } catch(e) {
         console.warn('DZI load failed', e);
@@ -185,6 +198,9 @@
       return vp;
     }
 
+// cx/cy on the B41 300-square grid; TOWN_GRID turns them into world squares, which don't
+// depend on the map's cell size (256 in B42). Re-check the boxes against the B42 render.
+const TOWN_GRID = 300;
 const TOWN_ZONES = [
       { name: 'Muldraugh',  cx0: 34, cy0: 30, cx1: 37, cy1: 36 },
       { name: 'Riverside',  cx0: 16, cy0: 17, cx1: 23, cy1: 22 },
@@ -359,7 +375,7 @@ const TOWN_ZONES = [
       if (showTowns) {
         TOWN_ZONES.forEach((town, i) => {
           const color = TOWN_COLORS[i % TOWN_COLORS.length];
-          const SQ = 300;
+          const SQ = TOWN_GRID;
           const cx = ((town.cx0 + town.cx1) / 2) * SQ;
           const cy = town.cy0 * SQ;
           const el = addOverlay(cx, cy, 0, '', 'town-label');
@@ -388,7 +404,7 @@ const TOWN_ZONES = [
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const SQ = 300;
+      const SQ = MAP_CONF.cellSize || 300;  // one heatmap cell = one map cell
 
       // Build live cell lookup: "cx,cy" -> normalized 0-1
       const liveMap = {};
@@ -448,7 +464,7 @@ const TOWN_ZONES = [
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (!show) return;
-      const SQ = 300;
+      const SQ = TOWN_GRID;
       TOWN_ZONES.forEach((town, i) => {
         const color = TOWN_COLORS[i % TOWN_COLORS.length];
         // 4 corners of the cell bounding box in iso space
@@ -494,7 +510,7 @@ const TOWN_ZONES = [
     window.setLayer = function(layer) {
       if (!viewer || layer === currentLayer) return;
       currentLayer = layer;
-      const src = `https://gzstatic.looknet.ca/map-tiles/iso/base/layer${layer}.dzi`;
+      const src = `${PZ_TILES}/iso/base/layer${layer}.dzi`;
       viewer.world.removeAll();
       viewer.addTiledImage({ tileSource: src, x: 0, y: 0, width: 1 });
     };
@@ -517,7 +533,7 @@ const TOWN_ZONES = [
 
       viewer = OpenSeadragon({
         element: document.getElementById('osd'),
-        tileSources: `https://gzstatic.looknet.ca/map-tiles/iso/base/layer${LOCKED_LAYER}.dzi`,
+        tileSources: `${PZ_TILES}/iso/base/layer${LOCKED_LAYER}.dzi`,
         sequenceMode: false,
         homeFillsViewer: false,
         showZoomControl: false,
