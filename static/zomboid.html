@@ -420,6 +420,8 @@
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"> Farming</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"> Traps</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-dead" checked onchange="mapRedrawAll()"> Dead</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-animals" checked onchange="mapRedrawAll()"> Animals</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-safehouses" checked onchange="mapRedrawAll()"> Safehouses</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-heatmap" onchange="mapRedrawAll()"> Heatmap</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"> Towns</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-rare" checked onchange="toggleRareFilters();mapRedrawAll()"> Rare</label>
@@ -428,7 +430,7 @@
                 <button id="map-fullscreen-btn" onclick="toggleMapFullscreen()">⛶</button>
                 <button id="map-mode-btn" onclick="toggleMapMode()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:12px;">Iso View</button>
               </div>
-              <div id="map-legend" style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap &nbsp;💎 rare &nbsp;📦 crate</div>
+              <div id="map-legend" style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap &nbsp;💎 rare &nbsp;📦 crate &nbsp;🐄 animal &nbsp;🏠 safehouse</div>
               <div id="map-rare-filters" style="display:none;margin-top:4px;padding:4px 6px;background:rgba(253,224,71,0.08);border:1px solid rgba(253,224,71,0.25);border-radius:5px;font-size:11px;gap:8px;flex-wrap:wrap;align-items:center;">
                 <span style="opacity:0.6;white-space:nowrap;">Rare filters:</span>
                 <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-firearms" checked onchange="mapRedrawAll()"> 🔫 Firearms</label>
@@ -466,7 +468,11 @@
       .then(r => r.ok ? r.json() : null).then(d => { if (d && d.tiles_base) PZ_TILES = d.tiles_base; }).catch(() => {});
     const SSE_BASE = 'https://api-gamez.looknet.ca';
 
-    let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {}, storage: {}, rare: { spawns: [] } };
+    let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {}, storage: {}, rare: { spawns: [] },
+                   animals: [], world: {}, profiles: {} };  // v2 mod feeds (B42)
+
+    // Game-sourced strings (animal names, safehouse titles, item names) go into innerHTML.
+    const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     let leafletMap = null;
     let playerMarkers = [];
 
@@ -562,7 +568,9 @@
         document.getElementById('stat-gametime').textContent = gt.time_str;
         const periodIcons = { Dawn: '🌅', Morning: '☀️', Afternoon: '🌤', Dusk: '🌆', Night: '🌙' };
         const icon = periodIcons[gt.period] || '';
-        document.getElementById('stat-gameday').textContent = `${icon} ${gt.period} · Day ${gt.day} (${gt.start_month} ${gt.start_day})`;
+        // B42 mod clock carries a real date + weather; B41 erosion parse has start month/day
+        const when = gt.date_str ? worldSummary(gt) : `${gt.start_month} ${gt.start_day}`;
+        document.getElementById('stat-gameday').textContent = `${icon} ${gt.period} · Day ${gt.day} (${when})`;
       }
       document.getElementById('sidebar-players').textContent = onlineCount + ' / ' + players.length;
       document.getElementById('sidebar-updated').textContent = new Date().toLocaleTimeString();
@@ -600,6 +608,39 @@
       document.getElementById('overview-players').innerHTML = rows;
     }
 
+    // Live character sheet block from the v2 mod: profession, health, hands, load, needs.
+    // Needs are 0-1 where higher is worse, except endurance (higher is better).
+    const NEED_ROWS = [
+      ['hunger', 'Hunger'], ['thirst', 'Thirst'], ['fatigue', 'Tired'], ['endurance', 'Endurance', true],
+      ['stress', 'Stress'], ['panic', 'Panic'], ['boredom', 'Boredom'], ['unhappiness', 'Unhappy'], ['pain', 'Pain'],
+    ];
+    function playerProfileHtml(prof) {
+      const st = prof.stats || {};
+      const needBars = NEED_ROWS.filter(([k]) => st[k] != null).map(([k, label, good]) => {
+        // Panic, boredom, unhappiness and pain are 0-100 in B42; the rest 0-1.
+        const raw = st[k] > 1 ? st[k] / 100 : st[k];
+        const pct = Math.round(Math.max(0, Math.min(1, raw)) * 100);
+        const bad = good ? 100 - pct : pct;
+        const color = bad > 66 ? 'var(--red)' : bad > 33 ? '#f59e0b' : 'var(--green)';
+        return `<div class="skill-row">
+          <span class="skill-name">${label}</span>
+          <div class="skill-bar-wrap"><div class="skill-bar" style="width:${pct}%;background:${color}"></div></div>
+          <span class="skill-level">${pct}</span></div>`;
+      }).join('');
+      const hp = prof.health != null ? Math.round(prof.health) : null;
+      const hands = [prof.primary, prof.secondary].filter(Boolean).map(escHtml).join(' + ');
+      const load = prof.weight != null && prof.max_weight ? `${prof.weight.toFixed(1)} / ${prof.max_weight}` : null;
+      return `<div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);">
+          ${prof.character ? `<span>👤 ${escHtml(prof.character)}</span>` : ''}
+          ${prof.profession ? `<span>💼 ${escHtml(prof.profession)}</span>` : ''}
+          ${hp != null ? `<span style="color:${hp < 40 ? 'var(--red)' : hp < 75 ? '#f59e0b' : 'var(--green)'}">❤ ${hp}%</span>` : ''}
+          ${hands ? `<span>✋ ${hands}</span>` : ''}
+          ${load ? `<span>🎒 ${load}</span>` : ''}
+        </div>
+        ${needBars ? `<div><div class="section-title" style="margin-bottom:5px;">Condition</div>
+          <div class="skills-section">${needBars}</div></div>` : ''}`;
+    }
+
     function renderPlayers() {
       const players = pzData.players || [];
       const stats = pzData.stats || {};
@@ -613,11 +654,16 @@
       const cards = players.map(p => {
         const hours = stats.hours?.[p.username] ?? 0;
         const deaths = stats.deaths?.[p.username] ?? 0;
-        const skills = stats.current_skills?.[p.username] ?? p.skills ?? {};
+        // v2 mod live character sheet (B42) wins over log/blob-derived data
+        const prof = pzData.profiles?.[p.username] || null;
+        const skills = (prof && Object.keys(prof.skills || {}).length ? prof.skills : null)
+          ?? stats.current_skills?.[p.username] ?? p.skills ?? {};
         const liveWounds = p.live_wounds || null;
         const bites = p.bite_wounds || [];
         const wounds = (p.wounds || []).filter(w => !w.includes('Bite'));
-        const traits = p.traits || [];
+        const traits = (prof?.traits?.length ? prof.traits : null) ?? p.traits ?? [];
+        const profKills = prof?.zombie_kills ?? p.zombie_kills;
+        const profileHtml = prof ? playerProfileHtml(prof) : '';
         const clothing = p.clothing || [];
 
         const skillRows = Object.entries(skills)
@@ -670,9 +716,10 @@
           <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);">
             <span>⏱ ${formatHours(hours)} survived</span>
             <span>💀 ${deaths} death${deaths !== 1 ? 's' : ''}</span>
-            ${killTotal > 0 ? `<span>🔪 ${killTotal} kills</span>` : ''}
+            ${killTotal > 0 ? `<span>🔪 ${killTotal} kills</span>` : profKills > 0 ? `<span>🔪 ${profKills} kills</span>` : ''}
             ${p.lastConnection ? `<span>🕐 ${formatLastConn(p.lastConnection)}</span>` : ''}
           </div>
+          ${profileHtml}
 
           ${hasWoundData ? `
           <div>
@@ -1101,6 +1148,7 @@
       redrawPlayers();
       redrawVehicles();
       redrawOverlays();
+      redrawModLayers();
       updateMapGameTime();
     }
 
@@ -1227,7 +1275,8 @@
       if (!el || !gt.time_str) return;
       const periodIcons = { Dawn: '🌅', Morning: '☀️', Afternoon: '🌤', Dusk: '🌆', Night: '🌙' };
       const icon = periodIcons[gt.period] || '';
-      el.textContent = `${icon} ${gt.time_str} · ${gt.period} · Day ${gt.day}`;
+      const extra = worldSummary(gt);
+      el.textContent = `${icon} ${gt.time_str} · ${gt.period} · Day ${gt.day}` + (extra ? ` · ${extra}` : '');
       el.style.display = 'block';
     }
 
@@ -1436,7 +1485,68 @@
     // Single redraw dispatcher — called by shared checkboxes.
     function mapRedrawAll() {
       if (_mapMode === 'iso') { isoRedrawMarkers(); }
-      else { redrawPlayers(); redrawVehicles(); redrawOverlays(); redrawTowns(); }
+      else { redrawPlayers(); redrawVehicles(); redrawOverlays(); redrawTowns(); redrawModLayers(); }
+    }
+
+    // ── v2 mod layers (B42): animals + safehouses ───────────────────────────
+    const ANIMAL_EMOJI = { cow: '🐄', bull: '🐂', calf: '🐄', pig: '🐖', sow: '🐖', boar: '🐗', piglet: '🐖',
+      sheep: '🐑', ewe: '🐑', ram: '🐏', lamb: '🐑', chicken: '🐔', hen: '🐔', cockerel: '🐓', chick: '🐤',
+      turkey: '🦃', rabbit: '🐇', rabbuck: '🐇', rabdoe: '🐇', deer: '🦌', doe: '🦌', buck: '🦌', fawn: '🦌',
+      rat: '🐀', mouse: '🐁', raccoon: '🦝' };
+    const animalEmoji = t => ANIMAL_EMOJI[String(t || '').toLowerCase()] || '🐾';
+    function animalLabel(a) {
+      const kind = String(a.type || 'animal');
+      const bits = [a.name && a.name !== kind ? a.name : null, a.breed ? `${a.breed} ${kind}` : kind];
+      if (a.health != null) bits.push(`${Math.round(a.health * 100)}% health`);
+      return bits.filter(Boolean).join(' · ');
+    }
+    function safehouseLabel(s) {
+      const members = (s.members || []).length ? ` (+${s.members.join(', ')})` : '';
+      return `🏠 ${s.title || 'Safehouse'} · ${s.owner || '?'}${members}`;
+    }
+
+    let modLayerMarkers = [];
+    function redrawModLayers() {
+      if (!leafletMap) return;
+      modLayerMarkers.forEach(m => m.remove());
+      modLayerMarkers = [];
+      if (document.getElementById('map-show-safehouses')?.checked) {
+        (pzData.world?.safehouses || []).forEach(s => {
+          if (s.x == null || s.w == null) return;
+          const r = L.rectangle([pzToLatLng(s.x, s.y), pzToLatLng(s.x + s.w, s.y + s.h)],
+            { color: '#38bdf8', weight: 2, fillOpacity: 0.12, dashArray: '4 3' }).addTo(leafletMap);
+          r.bindTooltip(escHtml(safehouseLabel(s)), { className: 'player-label' });
+          modLayerMarkers.push(r);
+        });
+      }
+      if (document.getElementById('map-show-animals')?.checked) {
+        (pzData.animals || []).forEach(a => {
+          if (a.x == null || a.y == null || a.dead) return;
+          if (a.x < MAP_MIN_X || a.x > MAP_MAX_X || a.y < MAP_MIN_Y || a.y > MAP_MAX_Y) return;
+          const m = L.marker(pzToLatLng(a.x, a.y), {
+            icon: L.divIcon({ className: '',
+              html: `<div style="font-size:13px;line-height:1;text-shadow:0 0 3px #000,0 0 3px #000;">${animalEmoji(a.type)}</div>`,
+              iconSize: [14, 14], iconAnchor: [7, 7] }),
+            zIndexOffset: -60,
+          }).addTo(leafletMap);
+          m.bindTooltip(escHtml(animalLabel(a)), { direction: 'top', offset: [0, -6], className: 'player-label' });
+          modLayerMarkers.push(m);
+        });
+      }
+    }
+
+    // "Early Summer · 24°C · rain · ⚡ on · 💧 off" from world.json
+    function worldSummary(gt) {
+      const w = gt?.weather || {}, u = gt?.utilities || {};
+      const bits = [];
+      if (gt?.date_str) bits.push(gt.date_str);
+      if (w.season) bits.push(w.season);
+      if (w.temperature != null) bits.push(`${Math.round(w.temperature)}°C`);
+      if (w.precipitation > 0.1) bits.push(w.snowing ? '❄ snow' : '🌧 rain');
+      else if (w.fog > 0.3) bits.push('🌫 fog');
+      if (u.power_on != null) bits.push(`⚡ ${u.power_on ? 'on' : 'off'}`);
+      if (u.water_on != null) bits.push(`💧 ${u.water_on ? 'on' : 'off'}`);
+      return bits.join(' · ');
     }
 
     // ── Isometric viewer ─────────────────────────────────────────────────────
@@ -1626,6 +1736,17 @@
           drawLabel(s.x, s.y, s.z || 0, lbl.substring(0, 18), '#fde047');
         });
       }
+
+      // Safehouses + animals (v2 mod, B42)
+      if (chk('map-show-safehouses'))
+        (pzData.world?.safehouses || []).forEach(s => {
+          if (s.x == null || s.w == null) return;
+          drawEmoji(s.x + s.w / 2, s.y + s.h / 2, 0, '🏠', 11, safehouseLabel(s));
+          drawLabel(s.x + s.w / 2, s.y + s.h / 2, 0, (s.title || 'Safehouse').substring(0, 18), '#7dd3fc');
+        });
+      if (chk('map-show-animals'))
+        (pzData.animals || []).filter(a => !a.dead && inBounds(a.x, a.y))
+          .forEach(a => drawEmoji(a.x, a.y, a.z || 0, animalEmoji(a.type), 9, animalLabel(a)));
 
       // Crates
       if (chk('map-show-crates')) {
@@ -1818,7 +1939,7 @@
                 document.getElementById('map-inner').appendChild(d);
                 return d;
               })();
-              tip.innerHTML = h.label.replace(/\n/g, '<br>');
+              tip.innerHTML = escHtml(h.label).replace(/\n/g, '<br>');
               tip.style.display = 'block';
               let tx = e.clientX - rect.left + 12, ty = e.clientY - rect.top - 10;
               if (tx + 230 > rect.width) tx = e.clientX - rect.left - 230;
@@ -1885,6 +2006,12 @@
         .then(r => r.json())
         .then(d => { if (!d.error) { pzData.rare = d; if (leafletMap) redrawOverlays(); } })
         .catch(() => {});
+
+      // v2 mod feeds (B42)
+      fetch(`${API_BASE}/api/pz/animals`).then(r => r.json())
+        .then(d => { pzData.animals = d.animals || []; redrawModLayers(); }).catch(() => {});
+      fetch(`${API_BASE}/api/pz/world`).then(r => r.json())
+        .then(d => { if (d.updated) { pzData.world = d; redrawModLayers(); } }).catch(() => {});
     }
 
     function startSSE() {
@@ -1968,6 +2095,30 @@
           if (d.error) return;
           pzData.rare = d;
           if (_mapMode === 'iso') isoRedrawMarkers(); else if (leafletMap) redrawOverlays();
+        } catch {}
+      });
+
+      // v2 mod feeds (B42)
+      sseSource.addEventListener('animals', e => {
+        try {
+          const d = JSON.parse(e.data);
+          pzData.animals = d.animals || [];
+          if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers();
+        } catch {}
+      });
+      sseSource.addEventListener('world', e => {
+        try {
+          const d = JSON.parse(e.data);
+          if (!d.updated) return;
+          pzData.world = d;
+          if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers();
+        } catch {}
+      });
+      sseSource.addEventListener('profiles', e => {
+        try {
+          const d = JSON.parse(e.data);
+          pzData.profiles = d.profiles || {};
+          renderPlayers();
         } catch {}
       });
 
