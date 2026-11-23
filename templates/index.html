@@ -141,6 +141,8 @@
     .auto-update-toggle:hover { color: var(--text); }
     .auto-update-toggle.on { color: var(--accent, #22c55e); border-color: currentColor; }
     .version-badge {
+      /* Fixed width so swapping to "CHECK FOR UPDATES" on hover doesn't shift the auto-update pill. */
+      min-width: 17ch; text-align: center; box-sizing: content-box;
       font-family: 'Share Tech Mono', monospace;
       font-size: 10px;
       color: var(--text-dim);
