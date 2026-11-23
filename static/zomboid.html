@@ -916,7 +916,7 @@
       const deathRows = [...allUsernames]
         .sort((a, b) => (deaths[b] || 0) - (deaths[a] || 0))
         .map(u => `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr;">
-          <div>${nameMap[u] || u}</div>
+          <div>${escHtml(u)}${nameMap[u] && nameMap[u] !== u ? ` <span style="color:var(--muted);font-size:12px;">${escHtml(nameMap[u])}</span>` : ''}</div>
           <div>${deaths[u] || 0}</div>
           <div>${formatHours(hours[u])}</div>
         </div>`).join('') || '<div class="table-row" style="grid-column:1/-1;text-align:center;color:var(--muted);">No data yet</div>';
