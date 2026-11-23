@@ -276,7 +276,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.13.3"
+VERSION = "1.13.4"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -755,8 +755,30 @@ def api_status():
         "version": VERSION,
         "full_route": _full_route,
         "player_status": _player_status,
-        "offer_autostart": offer_autostart
+        "offer_autostart": offer_autostart,
+        "auto_update": _auto_update_enabled(),
     })
+
+def _auto_update_enabled():
+    try:
+        with open(CONFIG_FILE) as f:
+            return bool(json.load(f).get("auto_update"))
+    except Exception:
+        return False
+
+@app.route("/api/auto-update", methods=["POST"])
+def api_auto_update():
+    """Opt in/out of installing new releases as soon as they're detected."""
+    enabled = bool((request.json or {}).get("enabled"))
+    try:
+        with open(CONFIG_FILE) as f:
+            cfg = json.load(f)
+    except Exception:
+        cfg = {}
+    cfg["auto_update"] = enabled
+    _write_config(cfg)
+    log.info("Auto-update %s", "enabled" if enabled else "disabled")
+    return jsonify({"auto_update": enabled})
 
 @app.route("/api/quit", methods=["GET"])
 def api_quit():

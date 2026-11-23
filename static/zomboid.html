@@ -175,7 +175,7 @@
     #iso-heatmap-canvas, #iso-towns-canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
     #map-controls { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 1000; background: rgba(15,15,19,0.85); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--text); backdrop-filter: blur(4px); }
     #map-controls label { color: var(--text); }
-    #map-fullscreen-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 3px 8px; border-radius: 5px; cursor: pointer; font-size: 14px; line-height: 1; }
+    #map-fullscreen-btn, #map-home-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 3px 8px; border-radius: 5px; cursor: pointer; font-size: 14px; line-height: 1; }
     .player-label { background: transparent; border: none; box-shadow: none; color: #22c55e; font-size: 11px; font-weight: 700; text-shadow: 0 0 3px #000, 0 0 3px #000; white-space: nowrap; }
     /* Iso marker styles */
     .iso-marker { position: absolute; pointer-events: none; transform: translate(-50%,-50%); z-index: 20; }
@@ -454,6 +454,7 @@
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-rare" checked onchange="toggleRareFilters();mapRedrawAll()"> Rare</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-crates" onchange="mapRedrawAll()"> Crates</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;" title="Warning: may show 300+ markers and lag the map"><input type="checkbox" id="map-show-empty-crates" onchange="mapRedrawAll()"> <span style="color:#f59e0b;">Empty crates ⚠</span></label>
+                <button id="map-home-btn" onclick="mapHome()" title="Home: back to the players">🏠</button>
                 <button id="map-fullscreen-btn" onclick="toggleMapFullscreen()">⛶</button>
                 <button id="map-mode-btn" onclick="toggleMapMode()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:12px;">Iso View</button>
               </div>
@@ -461,10 +462,13 @@
               <div id="map-rare-filters" style="display:none;margin-top:4px;padding:4px 6px;background:rgba(253,224,71,0.08);border:1px solid rgba(253,224,71,0.25);border-radius:5px;font-size:11px;gap:8px;flex-wrap:wrap;align-items:center;">
                 <span style="opacity:0.6;white-space:nowrap;">Rare filters:</span>
                 <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-firearms" checked onchange="mapRedrawAll()"> 🔫 Firearms</label>
+                <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-melee" checked onchange="mapRedrawAll()"> 🗡 Melee</label>
                 <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-ammo" checked onchange="mapRedrawAll()"> 🔴 Ammo</label>
                 <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-military" checked onchange="mapRedrawAll()"> 🪖 Military</label>
                 <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-tools" checked onchange="mapRedrawAll()"> 🔧 Tools</label>
                 <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-zombies" checked onchange="mapRedrawAll()"> 🧟 Zombies</label>
+                <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-literature" checked onchange="mapRedrawAll()"> 📚 Literature</label>
+                <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-other" checked onchange="mapRedrawAll()"> 📜 Other</label>
               </div>
             </div>
           </div>
@@ -985,9 +989,33 @@
       const m = Math.max(0, Math.round((Date.now() / 1000 - ts) / 60));
       return m < 2 ? 'just now' : m < 120 ? `${m}m ago` : m < 2880 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`;
     }
+    // Map links land zoomed out enough to see the surroundings, in whichever mode is active.
+    const JUMP_ZOOM = () => Math.max(1, TILE_ZOOM_MAX - 1);
+    function isoPanTo(x, y) {
+      const item0 = isoViewer?.world?.getItemAt(0);
+      if (!item0 || !isoMapConf) return false;
+      const { GW, GH, x0, y0 } = isoMapConf;
+      isoViewer.viewport.panTo(item0.imageToViewportCoordinates(x0 + (x - y) * GW, y0 + (x + y) * GH));
+      return true;
+    }
     window.jumpToSpot = function(x, y) {
       setView('map');
-      setTimeout(() => { if (leafletMap) leafletMap.setView(pzToLatLng(x, y), TILE_ZOOM_MAX + 1); }, 100);
+      setTimeout(() => {
+        if (_mapMode === 'iso' && isoPanTo(x, y)) return;
+        if (leafletMap) leafletMap.setView(pzToLatLng(x, y), JUMP_ZOOM());
+      }, 100);
+    };
+    // Home: frame the online players (else the whole map in iso / the default view top-down).
+    window.mapHome = function() {
+      if (_mapMode === 'iso') {
+        const ps = (pzData.livePlayers || []).filter(p => p.x != null);
+        if (ps.length && isoPanTo(ps[0].x, ps[0].y)) return;
+        if (isoHomeRect) isoViewer.viewport.fitBounds(isoHomeRect);
+        return;
+      }
+      if (!leafletMap) return;
+      if (playerMarkers.length) leafletMap.fitBounds(L.featureGroup(playerMarkers).getBounds().pad(0.5), { maxZoom: 3 });
+      else leafletMap.setView(pzToLatLng(6300, 5400), TILE_ZOOM_MAX - 1);
     };
 
     function renderVehicles() {
@@ -1114,7 +1142,7 @@
 
     window.jumpToCrate = function(x, y) {
       setView('map');
-      setTimeout(() => { if (leafletMap) { leafletMap.setView(pzToLatLng(x, y), TILE_ZOOM_MAX + 1);
+      setTimeout(() => { if (leafletMap) { leafletMap.setView(pzToLatLng(x, y), JUMP_ZOOM());
         document.getElementById('map-show-crates').checked = true;
         document.getElementById('map-show-empty-crates').checked = true;
         redrawOverlays(); } }, 100);
@@ -1704,13 +1732,17 @@
     // Returns one of: 'firearms'|'ammo'|'military'|'tools'|'zombies'|null
     // null means the spawn passes no category (should not happen, but treated as always visible)
     function rareItemCategory(spawn) {
+      if (spawn.cat) return spawn.cat;
       if (spawn.kind === 'zombie') return 'zombies';
       const t = (spawn.item || '').toLowerCase();
-      if (/pistol|revolver|rifle|shotgun|katana|machete|varmint|assault|hunting/.test(t)) return 'firearms';
+      if (/magazine|book|map/.test(t)) return 'literature';
+      if (/capgun|toy|flier/.test(t)) return 'other';
+      if (/katana|machete/.test(t)) return 'melee';
+      if (/pistol|revolver|rifle|shotgun|varmint|assault|hunting/.test(t)) return 'firearms';
       if (/bullet|shell|ammo|223|308|45box|9mm|556|762/.test(t)) return 'ammo';
       if (/hat_army|vest_bullet|vest_police|alicepack|gasmask|nightvision|jacket_army|trousers_army/.test(t)) return 'military';
       if (/generator|blowtorch|propane|weldingmask|sledgehammer|chainsaw|antibiotic/.test(t)) return 'tools';
-      return null;
+      return 'other';
     }
 
     function rareFilterEnabled(category) {
@@ -1812,6 +1844,7 @@
     let isoMapConf = { GW: 64, GH: 32, LH: 192, x0: 618496, y0: -229408 };
     let isoDziInfo = null;
     let isoViewer  = null;
+    let isoHomeRect = null;
     let isoReady   = false;
     let isoMarkerEls = [];
 
@@ -2170,7 +2203,8 @@
               const corners = [[b.xMin,b.yMin],[b.xMax,b.yMin],[b.xMin,b.yMax],[b.xMax,b.yMax]];
               const vps = corners.map(([sx,sy]) => item0.imageToViewportCoordinates(x0+(sx-sy)*GW, y0+(sx+sy)*GH));
               const vpXs = vps.map(p=>p.x), vpYs = vps.map(p=>p.y);
-              isoViewer.viewport.fitBounds(new OpenSeadragon.Rect(Math.min(...vpXs), Math.min(...vpYs), Math.max(...vpXs)-Math.min(...vpXs), Math.max(...vpYs)-Math.min(...vpYs)), true);
+              isoHomeRect = new OpenSeadragon.Rect(Math.min(...vpXs), Math.min(...vpYs), Math.max(...vpXs)-Math.min(...vpXs), Math.max(...vpYs)-Math.min(...vpYs));
+              isoViewer.viewport.fitBounds(isoHomeRect, true);
             }
           }
           isoRedrawMarkers();
