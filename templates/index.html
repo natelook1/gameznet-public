@@ -3295,7 +3295,7 @@
         state.connected = s.connected;
         state.updateRequired = s.update_required;
         state.offerAutostart = s.offer_autostart;
-        if (s.version) setVersionBadge(s.version, s.update_required);
+        if (s.version) setVersionBadge(s.version, s.update_required || s.update_available);
         syncAutoUpdate(s);
         setStatus(s.connected ? 'connected' : 'disconnected');
         if (s.connected) startSessionTimer();
@@ -3488,6 +3488,14 @@
   // ── Auto-update ────────────────────────────────────────────────────────────
   // When enabled, a newly detected release installs itself after a short, cancellable notice.
   let _autoUpdateTimer = null;
+  let _autoUpdatePending = false;
+  // One automatic attempt per installed->target version. If the installer doesn't move us
+  // (download failed, or MIN/LATEST points past the published release) we stop instead of
+  // reinstalling on every poll and every relaunch; the badge still allows a manual retry.
+  const AU_KEY = 'gameznet.autoUpdateAttempt';
+  const auAttemptKey = () => `${state.currentVersion}->${state.latestVersion || '?'}`;
+  function auAlreadyTried() { try { return localStorage.getItem(AU_KEY) === auAttemptKey(); } catch (_) { return false; } }
+  function auMarkTried() { try { localStorage.setItem(AU_KEY, auAttemptKey()); } catch (_) {} }
   function paintAutoUpdate() {
     const lbl = document.querySelector('.auto-update-toggle');
     if (!lbl) return;
@@ -3495,18 +3503,32 @@
     lbl.querySelector('.au-text').textContent = state.autoUpdate ? 'AUTO-UPDATE ✓' : 'AUTO-UPDATE';
   }
   async function setAutoUpdate(enabled) {
+    const prev = state.autoUpdate;
     state.autoUpdate = enabled;
     paintAutoUpdate();
+    _autoUpdatePending = true;
     try {
-      await fetch('/api/auto-update', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const res = await fetch('/api/auto-update', { method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Local-Secret': state.localSecret },
         body: JSON.stringify({ enabled }) });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       toast(enabled ? 'Auto-update on' : 'Auto-update off');
-    } catch (_) {}
+    } catch (_) {
+      state.autoUpdate = prev;
+      const chk = document.getElementById('auto-update-chk');
+      if (chk) chk.checked = prev;
+      paintAutoUpdate();
+      toast('Could not change auto-update', 'error');
+    } finally { _autoUpdatePending = false; }
     if (!enabled && _autoUpdateTimer) { clearTimeout(_autoUpdateTimer); _autoUpdateTimer = null; }
     else if (enabled) maybeAutoUpdate();
   }
   function syncAutoUpdate(s) {
-    if (typeof s.auto_update !== 'boolean') return;
+    state.updateAvailable = !!(s.update_available || s.update_required);
+    state.latestVersion = s.latest_version || '';
+    state.currentVersion = s.version || '';
+    // A toggle POST is in flight: don't let an older poll response flip it back.
+    if (typeof s.auto_update !== 'boolean' || _autoUpdatePending) return;
     state.autoUpdate = s.auto_update;
     const chk = document.getElementById('auto-update-chk');
     if (chk) chk.checked = s.auto_update;
@@ -3514,11 +3536,11 @@
     maybeAutoUpdate();
   }
   function maybeAutoUpdate() {
-    if (!state.autoUpdate || !state.updateRequired || state.busy || _autoUpdateTimer) return;
+    if (!state.autoUpdate || !state.updateAvailable || state.busy || _autoUpdateTimer || auAlreadyTried()) return;
     toast('New version found, updating in 10 seconds (turn off Auto-update to cancel)');
     _autoUpdateTimer = setTimeout(() => {
       _autoUpdateTimer = null;
-      if (state.autoUpdate && state.updateRequired && !state.busy) triggerUpdate({ auto: true });
+      if (state.autoUpdate && state.updateAvailable && !state.busy && !auAlreadyTried()) { auMarkTried(); triggerUpdate({ auto: true }); }
     }, 10000);
   }
 
@@ -3753,7 +3775,7 @@
       const res = await fetch('/api/status');
       const s   = await res.json();
       if (s.telemetry) updateTelemetryUI(s.telemetry);
-      if (s.version) setVersionBadge(s.version, s.update_required);
+      if (s.version) setVersionBadge(s.version, s.update_required || s.update_available);
       if (s.update_required !== state.updateRequired) {
         state.updateRequired = s.update_required;
         if (!state.busy) setStatus(state.connected ? 'connected' : 'disconnected');

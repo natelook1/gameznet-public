@@ -276,7 +276,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.13.7"
+VERSION = "1.13.8"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -662,6 +662,8 @@ icon_holder = {"icon": None}
 _player_status = ""
 _full_route = False
 _update_required = False
+_update_available = False
+_latest_version = ""
 _updating = False  # Set during update to suppress heartbeat auto-disconnect
 _heartbeat_fail_count = 0
 _connecting = False  # True while api_connect is in progress — blocks auto-disconnect
@@ -721,14 +723,17 @@ def _version_tuple(v):
         return (0,)
 
 def check_version():
-    global _update_required
+    global _update_required, _update_available, _latest_version
     import urllib.request
     try:
         req = urllib.request.Request(f"{_backend_url()}/api/version", headers={'User-Agent': 'GamezNET'})
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode())
             min_ver = data.get("min_version", "1.0.0")
+            _latest_version = data.get("latest_version") or min_ver
             _update_required = _version_tuple(VERSION) < _version_tuple(min_ver)
+            # Optional update: a newer installer exists but isn't mandatory.
+            _update_available = _update_required or _version_tuple(VERSION) < _version_tuple(_latest_version)
             if _update_required:
                 log.warning("Update required: client=%s min=%s", VERSION, min_ver)
     except Exception as e:
@@ -757,6 +762,8 @@ def api_status():
         "player_status": _player_status,
         "offer_autostart": offer_autostart,
         "auto_update": _auto_update_enabled(),
+        "update_available": _update_available,
+        "latest_version": _latest_version,
     })
 
 def _auto_update_enabled():
@@ -769,6 +776,8 @@ def _auto_update_enabled():
 @app.route("/api/auto-update", methods=["POST"])
 def api_auto_update():
     """Opt in/out of installing new releases as soon as they're detected."""
+    if not _require_local_secret():
+        return jsonify({"error": "forbidden"}), 403
     enabled = bool((request.json or {}).get("enabled"))
     try:
         with open(CONFIG_FILE) as f:

@@ -127,7 +127,7 @@
     // Map tiles for whichever PZ world is live (B41 Ziggy or B42 gameznet), from /api/pz/map.
     // Falls back to B41 if the backend can't be reached. The CF Pages copy has no same-origin
     // API, so it asks gameznet.looknet.ca directly (CORS allows it).
-    let PZ_TILES = 'https://gzstatic.looknet.ca/map-tiles/b41';
+    let PZ_TILES = 'https://gzstatic.looknet.ca/map-tiles/b42';
     const pzMapReady = fetch(`${API_BASE || (location.hostname.endsWith('looknet.ca') ? '' : 'https://gameznet.looknet.ca')}/api/pz/map`)
       .then(r => r.ok ? r.json() : null).then(d => { if (d && d.tiles_base) PZ_TILES = d.tiles_base; }).catch(() => {});
 

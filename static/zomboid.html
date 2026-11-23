@@ -494,7 +494,7 @@
     // Map tiles for whichever PZ world is live (B41 Ziggy or B42 gameznet), from /api/pz/map.
     // Falls back to B41 if the backend can't be reached. The CF Pages copy has no same-origin
     // API, so it asks gameznet.looknet.ca directly (CORS allows it).
-    let PZ_TILES = 'https://gzstatic.looknet.ca/map-tiles/b41';
+    let PZ_TILES = 'https://gzstatic.looknet.ca/map-tiles/b42';
     const pzMapReady = fetch(`${API_BASE || (location.hostname.endsWith('looknet.ca') ? '' : 'https://gameznet.looknet.ca')}/api/pz/map`)
       .then(r => r.ok ? r.json() : null).then(d => { if (d && d.tiles_base) PZ_TILES = d.tiles_base; }).catch(() => {});
     const SSE_BASE = 'https://api-gamez.looknet.ca';
@@ -770,7 +770,7 @@
       }
       const isDeadP = p => {
         const l = lastLife[p.username];
-        return l ? (!l.alive && (!l.character || l.character === p.name)) : !!p.isDead;
+        return l ? (!l.alive && (!l.character || l.character === (p.character || p.name))) : !!p.isDead;
       };
       const rank = p => (liveNames.has(p.username) || liveNames.has(p.name) ? 0 : 1) + (isDeadP(p) ? 2 : 0);
       const sorted = [...players].sort((a, b) => rank(a) - rank(b));
@@ -1161,7 +1161,7 @@
       el.style.display = '';
       el.innerHTML = `<table class="lives-table">
         <thead><tr><th>Town</th>${cats.map(c => `<th>${STORAGE_CAT_META[c].icon} ${STORAGE_CAT_META[c].label}</th>`).join('')}<th>Total</th></tr></thead>
-        <tbody>${data.map(r => `<tr style="cursor:pointer;${r.t === active ? 'background:var(--surface2);' : ''}" onclick="pickStorageTown('${escHtml(r.t).replace(/'/g, '')}')">
+        <tbody>${data.map(r => `<tr style="cursor:pointer;${r.t === active ? 'background:var(--surface2);' : ''}" data-town="${escHtml(r.t)}" onclick="pickStorageTown(this.dataset.town)">
           <td><b>${escHtml(r.t)}</b></td>
           ${r.c.map((n, i) => `<td style="color:${n ? 'var(--text)' : 'var(--muted)'};font-weight:${n === max[i] && n ? 700 : 400}">${n ? n.toLocaleString() : '–'}</td>`).join('')}
           <td>${r.total.toLocaleString()}</td></tr>`).join('')}</tbody></table>`;
@@ -1373,13 +1373,13 @@
           }
 
           const url = `${PZ_TILES}/Zomboid/${coords.z}/${coords.x}/${coords.y}.png`;
-          // One retry on error (mobile drops requests mid-pinch); report the error to
-          // Leaflet after that so the tile isn't treated as loaded and is re-requested.
+          // Mobile drops requests mid-pinch: retry quickly, then once more after a pause.
+          // Leaflet never re-requests an errored tile itself, so this is the only retry.
           let tries = 0;
           img.decoding = 'async';
           img.onload = () => done(null, img);
           img.onerror = () => {
-            if (++tries <= 1) { setTimeout(() => { img.src = url + '?r=' + tries; }, 400); return; }
+            if (++tries <= 2) { setTimeout(() => { img.src = url + '?r=' + tries; }, tries === 1 ? 400 : 2500); return; }
             console.warn(`[PZ] tile failed: ${url}`);
             done(new Error('tile failed'), img);
           };
