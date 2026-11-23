@@ -125,8 +125,21 @@
       text-transform: uppercase;
     }
 
-    .auto-update-toggle { display: flex; align-items: center; gap: 4px; font-size: 10px; letter-spacing: 0.5px; color: var(--muted); cursor: pointer; user-select: none; margin-left: 6px; }
-    .auto-update-toggle input { margin: 0; cursor: pointer; }
+    /* Auto-update: hidden until the version badge is hovered, then slides out beside it. */
+    .version-wrap { display: flex; align-items: center; gap: 6px; }
+    .auto-update-toggle {
+      font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px;
+      color: var(--text-dim); border: 1px solid var(--border2); border-radius: 2px;
+      padding: 3px 7px; cursor: pointer; user-select: none; white-space: nowrap;
+      max-width: 0; padding-left: 0; padding-right: 0; border-width: 0; opacity: 0; overflow: hidden;
+      transition: max-width 0.25s, opacity 0.2s, padding 0.25s;
+    }
+    .auto-update-toggle input { display: none; }
+    .version-wrap:hover .auto-update-toggle, .auto-update-toggle:focus-within {
+      max-width: 160px; opacity: 1; padding-left: 7px; padding-right: 7px; border-width: 1px;
+    }
+    .auto-update-toggle:hover { color: var(--text); }
+    .auto-update-toggle.on { color: var(--accent, #22c55e); border-color: currentColor; }
     .version-badge {
       font-family: 'Share Tech Mono', monospace;
       font-size: 10px;
@@ -2180,8 +2193,10 @@
       <h1>GamezNET</h1>
       <p>Private Game Server Network</p>
     </div>
-    <div class="version-badge" id="version-badge" onclick="triggerUpdate()"><span class="v-text">v...</span><span class="v-hover">CHECK FOR UPDATES</span></div>
-    <label class="auto-update-toggle" title="Install new versions automatically as soon as they're released"><input type="checkbox" id="auto-update-chk" onchange="setAutoUpdate(this.checked)"> Auto-update</label>
+    <div class="version-wrap">
+      <label class="auto-update-toggle" title="Install new versions automatically as soon as they're released"><input type="checkbox" id="auto-update-chk" onchange="setAutoUpdate(this.checked)"><span class="au-text">AUTO-UPDATE</span></label>
+      <div class="version-badge" id="version-badge" onclick="triggerUpdate()"><span class="v-text">v...</span><span class="v-hover">CHECK FOR UPDATES</span></div>
+    </div>
     <div class="clock" id="clock"></div>
   </header>
 
@@ -3471,8 +3486,15 @@
   // ── Auto-update ────────────────────────────────────────────────────────────
   // When enabled, a newly detected release installs itself after a short, cancellable notice.
   let _autoUpdateTimer = null;
+  function paintAutoUpdate() {
+    const lbl = document.querySelector('.auto-update-toggle');
+    if (!lbl) return;
+    lbl.classList.toggle('on', !!state.autoUpdate);
+    lbl.querySelector('.au-text').textContent = state.autoUpdate ? 'AUTO-UPDATE ✓' : 'AUTO-UPDATE';
+  }
   async function setAutoUpdate(enabled) {
     state.autoUpdate = enabled;
+    paintAutoUpdate();
     try {
       await fetch('/api/auto-update', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled }) });
@@ -3486,11 +3508,12 @@
     state.autoUpdate = s.auto_update;
     const chk = document.getElementById('auto-update-chk');
     if (chk) chk.checked = s.auto_update;
+    paintAutoUpdate();
     maybeAutoUpdate();
   }
   function maybeAutoUpdate() {
     if (!state.autoUpdate || !state.updateRequired || state.busy || _autoUpdateTimer) return;
-    toast('New version found, updating in 10 seconds (untick Auto-update to cancel)');
+    toast('New version found, updating in 10 seconds (turn off Auto-update to cancel)');
     _autoUpdateTimer = setTimeout(() => {
       _autoUpdateTimer = null;
       if (state.autoUpdate && state.updateRequired && !state.busy) triggerUpdate({ auto: true });
