@@ -758,8 +758,31 @@
         return;
       }
 
-      const cards = players.map(p => {
-        const hours = stats.hours?.[p.username] ?? 0;
+      // Latest life per username (survivor history): drives hours/kills and the dead state.
+      const lastLife = {};
+      for (const l of (pzData.lives?.lives || [])) {
+        const cur = lastLife[l.username];
+        if (!cur || l.id > cur.id) lastLife[l.username] = l;
+      }
+      const isDeadP = p => {
+        const l = lastLife[p.username];
+        return l ? (!l.alive && (!l.character || l.character === p.name)) : !!p.isDead;
+      };
+      const rank = p => (liveNames.has(p.username) || liveNames.has(p.name) ? 0 : 1) + (isDeadP(p) ? 2 : 0);
+      const sorted = [...players].sort((a, b) => rank(a) - rank(b));
+
+      const cards = sorted.map(p => {
+        const life = lastLife[p.username];
+        if (isDeadP(p)) {
+          // Run is over: one muted line, the detail lives in Survivor History.
+          const h = life ? life.hours : (stats.hours?.[p.username] ?? 0);
+          const k = life ? life.kills : 0;
+          return `<div class="player-card dead" style="padding:10px 14px;gap:4px;">
+            <div class="player-name" style="font-size:14px;">${escHtml(p.name)} † <span class="username">${escHtml(p.username)}</span></div>
+            <div style="font-size:12px;color:var(--muted);">Died${life?.town ? ` in ${escHtml(life.town)}` : ''} after ${formatHours(h)}, ${k} kill${k !== 1 ? 's' : ''}${life?.ended_at ? ` · ${formatLastConn(new Date(life.ended_at * 1000).toISOString())}` : ''}. Waiting for a new character.</div>
+          </div>`;
+        }
+        const hours = life?.alive ? life.hours : (stats.hours?.[p.username] ?? 0);
         const deaths = stats.deaths?.[p.username] ?? 0;
         // v2 mod live character sheet (B42) wins over log/blob-derived data
         const prof = pzData.profiles?.[p.username] || null;
@@ -2233,7 +2256,7 @@
 
       fetch(`${API_BASE}/api/pz/lives`)
         .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d && !d.error) { pzData.lives = d; renderLives(); if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers(); } })
+        .then(d => { if (d && !d.error) { pzData.lives = d; renderLives(); renderPlayers(); if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers(); } })
         .catch(() => {});
 
       fetch(`${API_BASE}/api/pz/stats`)
@@ -2370,7 +2393,7 @@
         try { addFeedEvents([JSON.parse(e.data)]); } catch {}
       });
       sseSource.addEventListener('lives', e => {
-        try { pzData.lives = JSON.parse(e.data); renderLives(); if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers(); } catch {}
+        try { pzData.lives = JSON.parse(e.data); renderLives(); renderPlayers(); if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers(); } catch {}
       });
       sseSource.addEventListener('profiles', e => {
         try {
