@@ -297,6 +297,10 @@
               </div>
             </div>
           </div>
+          <div style="margin-top:20px;">
+            <h3 style="margin-bottom: 14px; font-size: 15px; font-weight: 600;">Activity</h3>
+            <div class="lives-board" id="pz-feed"><div style="font-size:12px;color:var(--muted);">Nothing yet. Level-ups, kill milestones, bites, deaths, safehouses and joins show up here live.</div></div>
+          </div>
         </div>
 
         <!-- Players -->
@@ -662,6 +666,29 @@
         </div>
         ${needBars ? `<div><div class="section-title" style="margin-bottom:5px;">Condition</div>
           <div class="skills-section">${needBars}</div></div>` : ''}`;
+    }
+
+    // Live play feed (/api/pz/events + 'pzevent' SSE), newest first.
+    const PZ_FEED_ICON = { death: '🪦', bitten: '🩸', safehouse: '🏠', milestone: '🔪', levelup: '⬆️', join: '🟢', leave: '⚪' };
+    function feedAgo(ts) {
+      const m = Math.max(0, Math.round((Date.now() / 1000 - ts) / 60));
+      return m < 1 ? 'now' : m < 60 ? m + 'm' : m < 2880 ? Math.round(m / 60) + 'h' : Math.round(m / 1440) + 'd';
+    }
+    function renderFeed() {
+      const el = document.getElementById('pz-feed');
+      const evs = pzData.events || [];
+      if (!el || !evs.length) return;
+      el.innerHTML = evs.slice(0, 40).map(e => {
+        const loc = e.data && e.data.x != null ? ` <a href="#" style="color:var(--accent);" onclick="event.preventDefault();jumpToSpot(${Number(e.data.x)},${Number(e.data.y)})">map</a>` : '';
+        const tone = e.type === 'death' || e.type === 'bitten' ? 'color:var(--red);' : '';
+        return `<div class="kills-row"><span style="${tone}">${PZ_FEED_ICON[e.type] || '•'} ${escHtml(e.text)}${loc}</span><span style="color:var(--muted);">${feedAgo(e.ts)}</span></div>`;
+      }).join('');
+    }
+    function addFeedEvents(list, replace) {
+      const byId = new Map((replace ? [] : (pzData.events || [])).map(e => [e.id, e]));
+      for (const e of list || []) byId.set(e.id, e);
+      pzData.events = [...byId.values()].sort((a, b) => b.id - a.id).slice(0, 200);
+      renderFeed();
     }
 
     // Survivor history from /api/pz/lives: one row per character life (B42 mod profiles).
@@ -2159,6 +2186,11 @@
           if (leafletMap) redrawPlayers();
         }).catch(() => { document.getElementById('sidebar-status').textContent = 'Offline'; });
 
+      fetch(`${API_BASE}/api/pz/events?limit=50`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d && d.events) addFeedEvents(d.events, true); })
+        .catch(() => {});
+
       fetch(`${API_BASE}/api/pz/lives`)
         .then(r => r.ok ? r.json() : null)
         .then(d => { if (d && !d.error) { pzData.lives = d; renderLives(); if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers(); } })
@@ -2290,6 +2322,12 @@
           pzData.world = d;
           if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers();
         } catch {}
+      });
+      sseSource.addEventListener('pzevents', e => {
+        try { addFeedEvents(JSON.parse(e.data).events, true); } catch {}
+      });
+      sseSource.addEventListener('pzevent', e => {
+        try { addFeedEvents([JSON.parse(e.data)]); } catch {}
       });
       sseSource.addEventListener('lives', e => {
         try { pzData.lives = JSON.parse(e.data); renderLives(); if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers(); } catch {}
