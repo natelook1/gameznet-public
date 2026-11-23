@@ -198,16 +198,22 @@
       return vp;
     }
 
-// cx/cy on the B41 300-square grid; TOWN_GRID turns them into world squares, which don't
-// depend on the map's cell size (256 in B42). Re-check the boxes against the B42 render.
-const TOWN_GRID = 300;
+// Town zones in world squares, which hold on any cell size. The four original towns come from
+    // spawnpoints.lua extents; the seven B42 towns (one spawn each) are boxes around that spawn. 2026-11-22.
 const TOWN_ZONES = [
-      { name: 'Muldraugh',  cx0: 34, cy0: 30, cx1: 37, cy1: 36 },
-      { name: 'Riverside',  cx0: 16, cy0: 17, cx1: 23, cy1: 22 },
-      { name: 'Rosewood',   cx0: 25, cy0: 37, cx1: 29, cy1: 40 },
-      { name: 'West Point', cx0: 36, cy0: 21, cx1: 41, cy1: 24 },
+      { name: 'Muldraugh', x0: 10200, y0: 9000, x1: 11399, y1: 11099 },
+      { name: 'Riverside', x0: 4800, y0: 5100, x1: 7499, y1: 6899 },
+      { name: 'Rosewood', x0: 7500, y0: 11100, x1: 8999, y1: 12299 },
+      { name: 'West Point', x0: 10800, y0: 6300, x1: 12599, y1: 7499 },
+      { name: 'Brandenburg', x0: 1450, y0: 5390, x1: 2850, y1: 6790 },
+      { name: 'Echo Creek', x0: 3170, y0: 10500, x1: 3970, y1: 11300 },
+      { name: 'Ekron', x0: 10, y0: 9360, x1: 810, y1: 10160 },
+      { name: 'Fallas Lake', x0: 6910, y0: 7990, x1: 7510, y1: 8590 },
+      { name: 'Irvington', x0: 1410, y0: 13880, x1: 2410, y1: 14880 },
+      { name: 'March Ridge', x0: 9580, y0: 12510, x1: 10180, y1: 13110 },
+      { name: 'Valley Station', x0: 11995, y0: 4730, x1: 13195, y1: 5930 },
     ];
-    const TOWN_COLORS = ['#60a5fa','#34d399','#f472b6','#fbbf24'];
+    const TOWN_COLORS = ['#60a5fa','#34d399','#f472b6','#fbbf24','#a78bfa','#f87171','#2dd4bf','#fb923c','#c084fc','#4ade80','#facc15'];
 
     function clearMarkers() {
       markerEls.forEach(el => { try { viewer.removeOverlay(el); } catch(e) {} el.remove(); });
@@ -375,9 +381,8 @@ const TOWN_ZONES = [
       if (showTowns) {
         TOWN_ZONES.forEach((town, i) => {
           const color = TOWN_COLORS[i % TOWN_COLORS.length];
-          const SQ = TOWN_GRID;
-          const cx = ((town.cx0 + town.cx1) / 2) * SQ;
-          const cy = town.cy0 * SQ;
+                    const cx = (town.x0 + town.x1) / 2;
+          const cy = town.y0;
           const el = addOverlay(cx, cy, 0, '', 'town-label');
           if (el) {
             el.style.color = color;
@@ -464,15 +469,14 @@ const TOWN_ZONES = [
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (!show) return;
-      const SQ = TOWN_GRID;
-      TOWN_ZONES.forEach((town, i) => {
+            TOWN_ZONES.forEach((town, i) => {
         const color = TOWN_COLORS[i % TOWN_COLORS.length];
         // 4 corners of the cell bounding box in iso space
         const corners = [
-          [town.cx0 * SQ, town.cy0 * SQ],
-          [town.cx1 * SQ, town.cy0 * SQ],
-          [town.cx1 * SQ, town.cy1 * SQ],
-          [town.cx0 * SQ, town.cy1 * SQ],
+          [town.x0, town.y0],
+          [town.x1, town.y0],
+          [town.x1, town.y1],
+          [town.x0, town.y1],
         ];
         const pts = corners.map(([sx, sy]) => {
           const vp = squareToViewport(sx, sy, 0);

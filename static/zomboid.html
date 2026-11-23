@@ -85,6 +85,15 @@
     .tag.trait-pos { background: rgba(34,197,94,0.08); color: #86efac; border-color: rgba(34,197,94,0.2); }
 
     /* Kills table */
+    .lives-wrap { margin-top: 24px; display: flex; flex-direction: column; gap: 14px; }
+    .lives-boards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .lives-board, .lives-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+    .lives-table-wrap { overflow-x: auto; }
+    .lives-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .lives-table th { text-align: left; color: var(--muted); font-weight: 600; padding: 4px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .lives-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .lives-table tr.alive td:first-child { border-left: 2px solid var(--green); }
+    .lives-table tr.dead td:first-child { border-left: 2px solid var(--red); }
     .kills-row { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--border); }
     .kills-row:last-child { border-bottom: none; }
 
@@ -295,6 +304,7 @@
           <div class="player-grid" id="players-list">
             <div class="loading">Loading player data...</div>
           </div>
+          <div class="lives-wrap" id="lives-panel" style="display:none"></div>
         </div>
 
         <!-- Stats -->
@@ -641,6 +651,46 @@
           <div class="skills-section">${needBars}</div></div>` : ''}`;
     }
 
+    // Survivor history from /api/pz/lives: one row per character life (B42 mod profiles).
+    function fmtLifeTs(ts) {
+      if (!ts) return '';
+      return new Date(ts * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+    function renderLives() {
+      const el = document.getElementById('lives-panel');
+      const d = pzData.lives;
+      if (!el) return;
+      if (!d || !(d.lives || []).length) { el.style.display = 'none'; return; }
+      el.style.display = '';
+      const who = l => `${escHtml(l.character || l.username)}${l.character ? ` <span style="color:var(--muted)">${escHtml(l.username)}</span>` : ''}`;
+      const board = (title, rows, fmt) => `<div class="lives-board">
+          <div class="section-title">${title}</div>
+          ${rows.length ? rows.map((r, i) => `<div class="kills-row"><span>${i + 1}. ${who(r)}${r.alive ? '' : ' ✝'}</span><span>${fmt(r.value)}</span></div>`).join('')
+                        : '<div style="font-size:12px;color:var(--muted)">No data yet</div>'}
+        </div>`;
+      const lb = d.leaderboard || {};
+      const rows = d.lives.map(l => {
+        const skills = Object.entries(l.top_skills || {}).map(([k, v]) => `${escHtml(SKILL_DISPLAY[k] || k)} ${v}`).join(', ');
+        const fate = l.alive ? '<span style="color:var(--green)">Alive</span>'
+          : l.end_reason === 'died' ? `<span style="color:var(--red)">Died</span> in ${escHtml(l.town || '?')}`
+          : `<span style="color:var(--muted)">Gone</span> near ${escHtml(l.town || '?')}`;
+        return `<tr class="${l.alive ? 'alive' : 'dead'}">
+          <td>${who(l)}</td><td>${escHtml(l.profession || '')}</td>
+          <td>${formatHours(l.hours)}</td><td>${l.kills}</td><td>${skills}</td>
+          <td>${fate}</td><td>${fmtLifeTs(l.started_at)}${l.ended_at ? ' – ' + fmtLifeTs(l.ended_at) : ''}</td></tr>`;
+      }).join('');
+      el.innerHTML = `
+        <div class="section-title" style="font-size:13px;">Survivor history</div>
+        <div class="lives-boards">
+          ${board('Most kills (one life)', lb.kills || [], v => v)}
+          ${board('Longest survival', lb.hours || [], formatHours)}
+          ${board('Most skilled', lb.skill_total || [], v => `${v} levels`)}
+        </div>
+        <div class="lives-table-wrap"><table class="lives-table">
+          <thead><tr><th>Survivor</th><th>Profession</th><th>Survived</th><th>Kills</th><th>Top skills</th><th>Fate</th><th>Dates</th></tr></thead>
+          <tbody>${rows}</tbody></table></div>`;
+    }
+
     function renderPlayers() {
       const players = pzData.players || [];
       const stats = pzData.stats || {};
@@ -705,11 +755,14 @@
           .map(([cat, count]) => `<div class="kills-row"><span>${cat}</span><span>${count}</span></div>`).join('');
 
         const isOnline = liveNames.has(p.username) || liveNames.has(p.name);
-        return `<div class="player-card${p.infected_risk ? ' infected' : ''}${p.isDead ? ' dead' : ''}">
+        // B42: the mod's infection stat or a live bite wound marks a player as bitten.
+        const infected = !!(p.infected_risk || (prof?.stats?.zombie_infection > 0)
+          || (liveWounds || []).some(w => w.bitten));
+        return `<div class="player-card${infected ? ' infected' : ''}${p.isDead ? ' dead' : ''}">
           <div class="player-name">
             ${p.name}
             <span class="username">${p.username}</span>
-            ${p.infected_risk ? '<span class="infection-badge">BITTEN</span>' : ''}
+            ${infected ? '<span class="infection-badge">BITTEN</span>' : ''}
             ${p.isDead ? '<span class="dead-badge">DEAD</span>' : isOnline ? '<span class="online-badge">ONLINE</span>' : ''}
           </div>
 
@@ -1410,17 +1463,22 @@
       });
     }
 
-    // Town zones derived from spawnpoints.lua cell bounding boxes. The cx/cy values are on
-    // the B41 300-square grid; TOWN_GRID turns them into world squares, which don't depend on
-    // the map's cell size, so the boxes stay put on a B42 (256) map. Re-check against B42.
-    const TOWN_GRID = 300;
+    // Town zones in world squares, which hold on any cell size. The four original towns come from
+    // spawnpoints.lua extents; the seven B42 towns (one spawn each) are boxes around that spawn. 2026-11-22.
     const TOWN_ZONES = [
-      { name: 'Muldraugh',  cx0: 34, cy0: 30, cx1: 37, cy1: 36 },
-      { name: 'Riverside',  cx0: 16, cy0: 17, cx1: 23, cy1: 22 },
-      { name: 'Rosewood',   cx0: 25, cy0: 37, cx1: 29, cy1: 40 },
-      { name: 'West Point', cx0: 36, cy0: 21, cx1: 41, cy1: 24 },
+      { name: 'Muldraugh', x0: 10200, y0: 9000, x1: 11399, y1: 11099 },
+      { name: 'Riverside', x0: 4800, y0: 5100, x1: 7499, y1: 6899 },
+      { name: 'Rosewood', x0: 7500, y0: 11100, x1: 8999, y1: 12299 },
+      { name: 'West Point', x0: 10800, y0: 6300, x1: 12599, y1: 7499 },
+      { name: 'Brandenburg', x0: 1450, y0: 5390, x1: 2850, y1: 6790 },
+      { name: 'Echo Creek', x0: 3170, y0: 10500, x1: 3970, y1: 11300 },
+      { name: 'Ekron', x0: 10, y0: 9360, x1: 810, y1: 10160 },
+      { name: 'Fallas Lake', x0: 6910, y0: 7990, x1: 7510, y1: 8590 },
+      { name: 'Irvington', x0: 1410, y0: 13880, x1: 2410, y1: 14880 },
+      { name: 'March Ridge', x0: 9580, y0: 12510, x1: 10180, y1: 13110 },
+      { name: 'Valley Station', x0: 11995, y0: 4730, x1: 13195, y1: 5930 },
     ];
-    const TOWN_COLORS = ['#60a5fa', '#34d399', '#f472b6', '#fbbf24'];
+    const TOWN_COLORS = ['#60a5fa','#34d399','#f472b6','#fbbf24','#a78bfa','#f87171','#2dd4bf','#fb923c','#c084fc','#4ade80','#facc15'];
 
     let townMarkers = [];
 
@@ -1431,8 +1489,8 @@
       if (!document.getElementById('map-show-towns')?.checked) return;
       TOWN_ZONES.forEach((town, i) => {
         const color = TOWN_COLORS[i % TOWN_COLORS.length];
-        const x0 = town.cx0 * TOWN_GRID, y0 = town.cy0 * TOWN_GRID;
-        const x1 = (town.cx1 + 1) * TOWN_GRID, y1 = (town.cy1 + 1) * TOWN_GRID;
+        const x0 = town.x0, y0 = town.y0;
+        const x1 = town.x1, y1 = town.y1;
         const rect = L.rectangle(
           [pzToLatLng(x0, y1), pzToLatLng(x1, y0)],
           { color, weight: 2, fill: true, fillColor: color, fillOpacity: 0.07, dashArray: '6 4' }
@@ -1806,10 +1864,9 @@
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (!show) return;
-      const SQ = TOWN_GRID;
-      TOWN_ZONES.forEach((town, i) => {
+            TOWN_ZONES.forEach((town, i) => {
         const color = TOWN_COLORS[i % TOWN_COLORS.length];
-        const corners = [[town.cx0*SQ,town.cy0*SQ],[town.cx1*SQ,town.cy0*SQ],[town.cx1*SQ,town.cy1*SQ],[town.cx0*SQ,town.cy1*SQ]];
+        const corners = [[town.x0,town.y0],[town.x1,town.y0],[town.x1,town.y1],[town.x0,town.y1]];
         const pts = corners.map(([sx,sy]) => { const vp = isoSquareToViewport(sx,sy,0); return vp ? isoViewer.viewport.viewportToViewerElementCoordinates(vp) : null; });
         if (pts.some(p => !p)) return;
         ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
@@ -1987,6 +2044,11 @@
           if (leafletMap) redrawPlayers();
         }).catch(() => { document.getElementById('sidebar-status').textContent = 'Offline'; });
 
+      fetch(`${API_BASE}/api/pz/lives`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d && !d.error) { pzData.lives = d; renderLives(); } })
+        .catch(() => {});
+
       fetch(`${API_BASE}/api/pz/stats`)
         .then(r => r.json())
         .then(d => { if (!d.error) { pzData.stats = d; renderOverview(); renderPlayers(); renderStats(); } })
@@ -2113,6 +2175,9 @@
           pzData.world = d;
           if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers();
         } catch {}
+      });
+      sseSource.addEventListener('lives', e => {
+        try { pzData.lives = JSON.parse(e.data); renderLives(); } catch {}
       });
       sseSource.addEventListener('profiles', e => {
         try {
