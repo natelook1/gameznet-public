@@ -1282,6 +1282,10 @@
         // 512px tiles (Leaflet upscales but each tile holds 2x the rendered detail).
         maxZoom: TILE_ZOOM_MAX + 2,
         zoomSnap: 0.5,
+        // Phones: snap pinch zoom to whole levels, and stop one level past the native
+        // tiles. At +2 each 512 px tile is drawn 4x upscaled and mobile GPUs run out of
+        // layer memory and paint the map black while zoomed in.
+        ...(L.Browser.mobile ? { zoomSnap: 1, zoomDelta: 1, maxZoom: TILE_ZOOM_MAX + 1 } : {}),
         attributionControl: false,
       });
 
@@ -1301,13 +1305,28 @@
           }
 
           const url = `${PZ_TILES}/Zomboid/${coords.z}/${coords.x}/${coords.y}.png`;
-          img.src = url;
+          // One retry on error (mobile drops requests mid-pinch); report the error to
+          // Leaflet after that so the tile isn't treated as loaded and is re-requested.
+          let tries = 0;
+          img.decoding = 'async';
           img.onload = () => done(null, img);
-          img.onerror = () => { console.warn(`[PZ] tile 404: ${url}`); done(null, img); };
+          img.onerror = () => {
+            if (++tries <= 1) { setTimeout(() => { img.src = url + '?r=' + tries; }, 400); return; }
+            console.warn(`[PZ] tile failed: ${url}`);
+            done(new Error('tile failed'), img);
+          };
+          img.src = url;
           return img;
         }
       });
-      new PzTileLayer({ tileSize: TILE_SIZE, maxNativeZoom: TILE_ZOOM_MAX, opacity: 0.9 }).addTo(leafletMap);
+      // Tiles are 512 px PNGs (~400 KB). Loading them on every half-step of a pinch zoom
+      // made phones evict decoded images and paint black, so wait for the gesture to end
+      // and keep a smaller off-screen buffer on mobile.
+      new PzTileLayer({
+        tileSize: TILE_SIZE, maxNativeZoom: TILE_ZOOM_MAX, opacity: 0.9,
+        updateWhenZooming: false, updateWhenIdle: true,
+        keepBuffer: L.Browser.mobile ? 1 : 2,
+      }).addTo(leafletMap);
 
       const mapBounds = L.latLngBounds(
         pzToLatLng(MAP_MIN_X, MAP_MAX_Y),
