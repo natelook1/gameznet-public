@@ -362,14 +362,25 @@
               <div class="stat-value" id="veh-count">--</div>
             </div>
             <div class="stat-card">
+              <div class="stat-label">Drivable</div>
+              <div class="stat-value" id="veh-drivable-count" style="color: var(--green);">--</div>
+            </div>
+            <div class="stat-card">
               <div class="stat-label">Critical Condition</div>
               <div class="stat-value" id="veh-critical" style="color: var(--orange);">--</div>
             </div>
           </div>
-          <div style="margin-bottom:10px;">
-            <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;">
-              <input type="checkbox" id="veh-show-destroyed" onchange="renderVehicles()"> Show destroyed vehicles
-            </label>
+          <div class="storage-toolbar" style="margin-bottom:12px;">
+            <input type="text" id="veh-search" placeholder="Search model or driver..." oninput="renderVehicles()">
+            <select id="veh-town" onchange="renderVehicles()"><option value="">All towns</option></select>
+            <select id="veh-sort" onchange="renderVehicles()">
+              <option value="cond">Sort: Condition</option>
+              <option value="fuel">Sort: Fuel</option>
+              <option value="town">Sort: Town</option>
+              <option value="type">Sort: Model</option>
+            </select>
+            <label class="storage-min" style="cursor:pointer;"><input type="checkbox" id="veh-drivable" onchange="renderVehicles()"> Drivable only</label>
+            <label class="storage-min" style="cursor:pointer;"><input type="checkbox" id="veh-show-destroyed" onchange="renderVehicles()"> Show destroyed</label>
           </div>
           <div class="vehicle-grid" id="vehicles-list">
             <div class="loading">Loading vehicles...</div>
@@ -405,6 +416,7 @@
               <span id="storage-updated"></span>
             </div>
           </div>
+          <div class="lives-table-wrap" id="storage-towns" style="display:none;margin-bottom:14px;"></div>
           <div id="storage-list"><div class="loading">Loading storage...</div></div>
         </div>
 
@@ -431,6 +443,7 @@
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"> Traps</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-dead" checked onchange="mapRedrawAll()"> Dead</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-animals" checked onchange="mapRedrawAll()"> Animals</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-graves" checked onchange="mapRedrawAll()"> Graves</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-safehouses" checked onchange="mapRedrawAll()"> Safehouses</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-heatmap" onchange="mapRedrawAll()"> Heatmap</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"> Towns</label>
@@ -440,7 +453,7 @@
                 <button id="map-fullscreen-btn" onclick="toggleMapFullscreen()">⛶</button>
                 <button id="map-mode-btn" onclick="toggleMapMode()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:12px;">Iso View</button>
               </div>
-              <div id="map-legend" style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap &nbsp;💎 rare &nbsp;📦 crate &nbsp;🐄 animal &nbsp;🏠 safehouse</div>
+              <div id="map-legend" style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap &nbsp;💎 rare &nbsp;📦 crate &nbsp;🐄 animal &nbsp;🏠 safehouse &nbsp;🪦 grave</div>
               <div id="map-rare-filters" style="display:none;margin-top:4px;padding:4px 6px;background:rgba(253,224,71,0.08);border:1px solid rgba(253,224,71,0.25);border-radius:5px;font-size:11px;gap:8px;flex-wrap:wrap;align-items:center;">
                 <span style="opacity:0.6;white-space:nowrap;">Rare filters:</span>
                 <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-firearms" checked onchange="mapRedrawAll()"> 🔫 Firearms</label>
@@ -890,34 +903,82 @@
       document.getElementById('skill-leaders-grid').innerHTML = leaderCards || '<div style="color:var(--muted);font-size:13px;">No skill data yet</div>';
     }
 
+    // Key parts averaged into one condition score; a car is drivable with a live
+    // engine, a battery and four tyres (fuel shown separately, it can be siphoned in).
+    const VEH_KEY_PARTS = ['Engine', 'Battery', 'TireFrontLeft', 'TireFrontRight', 'TireRearLeft', 'TireRearRight'];
+    function vehCondition(v) {
+      const vals = VEH_KEY_PARTS.map(k => v.parts?.[k] ?? 0);
+      return vals.reduce((s, x) => s + x, 0) / vals.length;
+    }
+    function vehDrivable(v) {
+      return !isVehicleDestroyed(v) && VEH_KEY_PARTS.every(k => (v.parts?.[k] ?? 0) > 0);
+    }
+    function vehSeenAgo(ts) {
+      if (!ts) return '';
+      const m = Math.max(0, Math.round((Date.now() / 1000 - ts) / 60));
+      return m < 2 ? 'just now' : m < 120 ? `${m}m ago` : m < 2880 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`;
+    }
+    window.jumpToSpot = function(x, y) {
+      setView('map');
+      setTimeout(() => { if (leafletMap) leafletMap.setView(pzToLatLng(x, y), TILE_ZOOM_MAX + 1); }, 100);
+    };
+
     function renderVehicles() {
       const allVehicles = pzData.vehicles || [];
       const showDestroyed = document.getElementById('veh-show-destroyed')?.checked;
-      const vehicles = showDestroyed ? allVehicles : allVehicles.filter(v => !isVehicleDestroyed(v));
-      document.getElementById('veh-count').textContent = showDestroyed ? allVehicles.length : `${vehicles.length} / ${allVehicles.length}`;
+      const onlyDrivable = document.getElementById('veh-drivable')?.checked;
+      const q = (document.getElementById('veh-search')?.value || '').toLowerCase();
+      const townSel = document.getElementById('veh-town');
+      const town = townSel?.value || '';
+      const sort = document.getElementById('veh-sort')?.value || 'cond';
 
-      const PART_LABELS = { Engine:'Engine', Battery:'Battery', GasTank:'Fuel', TireFrontLeft:'FL Tire', TireFrontRight:'FR Tire', TireRearLeft:'RL Tire', TireRearRight:'RR Tire', Windshield:'Windshield', Muffler:'Muffler' };
+      if (townSel) {
+        const towns = [...new Set(allVehicles.map(v => v.town).filter(Boolean))].sort();
+        const want = ['<option value="">All towns</option>', ...towns.map(t => `<option value="${escHtml(t)}">${escHtml(t)}</option>`)].join('');
+        if (townSel.dataset.opts !== want) { townSel.innerHTML = want; townSel.value = towns.includes(town) ? town : ''; townSel.dataset.opts = want; }
+      }
+
+      let vehicles = allVehicles.filter(v => showDestroyed || !isVehicleDestroyed(v));
+      if (onlyDrivable) vehicles = vehicles.filter(vehDrivable);
+      if (town) vehicles = vehicles.filter(v => v.town === town);
+      if (q) vehicles = vehicles.filter(v => `${v.type} ${v.driver || ''}`.toLowerCase().includes(q));
+      const cmp = {
+        cond: (a, b) => vehCondition(b) - vehCondition(a),
+        fuel: (a, b) => (b.fuel ?? -1) - (a.fuel ?? -1),
+        town: (a, b) => (a.town || '').localeCompare(b.town || '') || vehCondition(b) - vehCondition(a),
+        type: (a, b) => (a.type || '').localeCompare(b.type || ''),
+      }[sort];
+      vehicles = [...vehicles].sort(cmp);
+
+      document.getElementById('veh-count').textContent = vehicles.length === allVehicles.length ? allVehicles.length : `${vehicles.length} / ${allVehicles.length}`;
+      document.getElementById('veh-drivable-count').textContent = allVehicles.filter(vehDrivable).length;
+
+      const PART_LABELS = { Engine:'Engine', Battery:'Battery', TireFrontLeft:'FL Tire', TireFrontRight:'FR Tire', TireRearLeft:'RL Tire', TireRearRight:'RR Tire', Windshield:'Windshield', Muffler:'Muffler', GasTank:'Tank' };
+      const bar = (label, val) => `<div class="part-row">
+          <span class="part-name">${label}</span>
+          <div class="part-bar-wrap"><div class="part-bar" style="width:${Math.round(val*100)}%;background:${partColor(val)}"></div></div>
+          <span style="font-size:10px;color:var(--muted);width:28px;text-align:right">${Math.round(val*100)}%</span>
+        </div>`;
 
       let critical = 0;
+      for (const v of allVehicles) if (!isVehicleDestroyed(v) && Object.values(v.parts || {}).some(x => x < 0.3)) critical++;
       const cards = vehicles.map(v => {
-        const keyParts = Object.entries(PART_LABELS)
-          .map(([key, label]) => {
-            const val = v.parts?.[key];
-            if (val != null && val < 0.3) critical++;
-            return val != null ? `<div class="part-row">
-              <span class="part-name">${label}</span>
-              <div class="part-bar-wrap"><div class="part-bar" style="width:${Math.round(val*100)}%;background:${partColor(val)}"></div></div>
-              <span style="font-size:10px;color:var(--muted);width:28px;text-align:right">${Math.round(val*100)}%</span>
-            </div>` : '';
-          }).join('');
-
+        const parts = Object.entries(PART_LABELS).filter(([k]) => v.parts?.[k] != null).map(([k, l]) => bar(l, v.parts[k])).join('');
+        const cond = Math.round(vehCondition(v) * 100);
+        const drivable = vehDrivable(v);
         return `<div class="vehicle-card">
-          <div class="vehicle-type">${v.type.replace(/_/g,' ')} <span style="font-size:11px;color:var(--muted);">#${v.id}</span></div>
-          <div style="font-size:11px;color:var(--muted);">📍 (${Math.round(v.x)}, ${Math.round(v.y)})</div>
-          ${v.radio ? `<div style="font-size:11px;color:var(--muted);">📻 ${v.radio}</div>` : ''}
-          <div class="parts-grid">${keyParts}</div>
+          <div class="vehicle-type">${escHtml((v.type || '').replace(/_/g,' '))} <span style="font-size:11px;color:var(--muted);">#${v.id}</span>
+            ${drivable ? '<span class="tag trait-pos" style="margin-left:6px;">drivable</span>' : ''}
+            ${v.driver ? `<span class="online-badge" style="margin-left:6px;">🚗 ${escHtml(v.driver)}</span>` : ''}</div>
+          <div style="font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;">
+            <span>📍 ${escHtml(v.town || '?')} <a href="#" onclick="event.preventDefault();jumpToSpot(${Number(v.x)},${Number(v.y)})" style="color:var(--accent);">map</a></span>
+            <span style="color:${partColor(cond / 100)}">⚙ ${cond}%</span>
+            ${v.seen ? `<span>👁 ${vehSeenAgo(v.seen)}</span>` : ''}
+          </div>
+          ${v.fuel != null ? bar('⛽ Fuel', v.fuel) : ''}
+          <div class="parts-grid">${parts}</div>
         </div>`;
-      }).join('') || '<div class="loading">No vehicle data</div>';
+      }).join('') || '<div class="loading">No vehicles match</div>';
 
       document.getElementById('veh-critical').textContent = critical;
       document.getElementById('vehicles-list').innerHTML = cards;
@@ -992,6 +1053,31 @@
         redrawOverlays(); } }, 100);
     };
 
+    // Town x category totals, so "where do we go for ammo" is one glance. Click a town to filter.
+    function renderStorageTowns(towns, townNames, active) {
+      const el = document.getElementById('storage-towns');
+      if (!el) return;
+      if (!townNames.length) { el.style.display = 'none'; return; }
+      const cats = Object.keys(STORAGE_CAT_META);
+      const sumCat = (t, c) => Object.values(towns[t]?.[c] || {}).reduce((a, n) => a + n, 0);
+      const data = townNames.map(t => ({ t, c: cats.map(c => sumCat(t, c)) }))
+        .map(r => ({ ...r, total: r.c.reduce((a, n) => a + n, 0) })).sort((a, b) => b.total - a.total);
+      const max = cats.map((_, i) => Math.max(1, ...data.map(r => r.c[i])));
+      el.style.display = '';
+      el.innerHTML = `<table class="lives-table">
+        <thead><tr><th>Town</th>${cats.map(c => `<th>${STORAGE_CAT_META[c].icon} ${STORAGE_CAT_META[c].label}</th>`).join('')}<th>Total</th></tr></thead>
+        <tbody>${data.map(r => `<tr style="cursor:pointer;${r.t === active ? 'background:var(--surface2);' : ''}" onclick="pickStorageTown('${escHtml(r.t).replace(/'/g, '')}')">
+          <td><b>${escHtml(r.t)}</b></td>
+          ${r.c.map((n, i) => `<td style="color:${n ? 'var(--text)' : 'var(--muted)'};font-weight:${n === max[i] && n ? 700 : 400}">${n ? n.toLocaleString() : '–'}</td>`).join('')}
+          <td>${r.total.toLocaleString()}</td></tr>`).join('')}</tbody></table>`;
+    }
+    window.pickStorageTown = function(t) {
+      const sel = document.getElementById('storage-town');
+      if (!sel) return;
+      sel.value = sel.value === t ? '' : t;
+      renderStorage();
+    };
+
     function renderStorage() {
       const storage = pzData.storage || {};
       const towns = storage.towns || {};
@@ -1008,9 +1094,15 @@
       // Populate the town dropdown once from the data
       const townSel = document.getElementById('storage-town');
       const townNames = Object.keys(towns).sort();
-      if (townSel && townSel.options.length <= 1 && townNames.length) {
-        townNames.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; townSel.appendChild(o); });
+      if (townSel) {
+        const want = townNames.join('|');
+        if (townSel.dataset.towns !== want) {
+          townSel.innerHTML = '<option value="">All towns</option>' + townNames.map(t => `<option value="${escHtml(t)}">${escHtml(t)}</option>`).join('');
+          townSel.value = townNames.includes(townFilter) ? townFilter : '';
+          townSel.dataset.towns = want;
+        }
       }
+      renderStorageTowns(towns, townNames, townFilter);
 
       // Flatten into rows: {town, cat, item, count}, applying all filters
       const rows = [];
@@ -1266,7 +1358,7 @@
     function _vehicleMarkerKey(v) {
       const destroyed = isVehicleDestroyed(v);
       const engine = v.parts?.Engine ?? 0;
-      return `${destroyed ? 1 : 0}:${Math.round(engine * 10)}:${v.x.toFixed(1)}:${v.y.toFixed(1)}`;
+      return `${destroyed ? 1 : 0}:${Math.round(engine * 10)}:${Math.round((v.fuel ?? -0.1) * 10)}:${v.x.toFixed(1)}:${v.y.toFixed(1)}`;
     }
 
     function redrawVehicles() {
@@ -1312,7 +1404,7 @@
           }),
           zIndexOffset: -100,
         }).addTo(leafletMap);
-        marker.bindTooltip(`${v.type} (${destroyed ? 'destroyed' : Math.round(engine * 100) + '% engine'})`, { direction: 'top', offset: [0, -4], className: 'player-label' });
+        marker.bindTooltip(escHtml(`${v.type} (${destroyed ? 'destroyed' : Math.round(vehCondition(v) * 100) + '% cond' + (v.fuel != null ? ', ' + Math.round(v.fuel * 100) + '% fuel' : '') + (vehDrivable(v) ? ', drivable' : '')})`), { direction: 'top', offset: [0, -4], className: 'player-label' });
         vehicleMarkerMap.set(id, { marker, key });
       });
 
@@ -1591,6 +1683,27 @@
           modLayerMarkers.push(m);
         });
       }
+      if (document.getElementById('map-show-graves')?.checked) {
+        graveLives().forEach(l => {
+          const m = L.marker(pzToLatLng(l.x, l.y), {
+            icon: L.divIcon({ className: '',
+              html: '<div style="font-size:14px;line-height:1;text-shadow:0 0 3px #000,0 0 3px #000;">🪦</div>',
+              iconSize: [14, 14], iconAnchor: [7, 7] }),
+            zIndexOffset: -40,
+          }).addTo(leafletMap);
+          m.bindTooltip(escHtml(graveLabel(l)).replace(/\n/g, '<br>'), { direction: 'top', offset: [0, -6], className: 'player-label' });
+          modLayerMarkers.push(m);
+        });
+      }
+    }
+
+    // Where past characters died (survivor history, /api/pz/lives).
+    function graveLives() {
+      return (pzData.lives?.lives || []).filter(l => !l.alive && l.end_reason === 'died' && l.x != null && l.y != null);
+    }
+    function graveLabel(l) {
+      return `🪦 ${l.character || l.username} (${l.username})${l.profession ? ', ' + l.profession : ''}\n`
+        + `Survived ${formatHours(l.hours)}, ${l.kills} kills${l.town ? ', died in ' + l.town : ''}`;
     }
 
     // "Early Summer · 24°C · rain · ⚡ on · 💧 off" from world.json
@@ -1805,6 +1918,8 @@
       if (chk('map-show-animals'))
         (pzData.animals || []).filter(a => !a.dead && inBounds(a.x, a.y))
           .forEach(a => drawEmoji(a.x, a.y, a.z || 0, animalEmoji(a.type), 9, animalLabel(a)));
+      if (chk('map-show-graves'))
+        graveLives().filter(l => inBounds(l.x, l.y)).forEach(l => drawEmoji(l.x, l.y, 0, '🪦', 10, graveLabel(l)));
 
       // Crates
       if (chk('map-show-crates')) {
@@ -2046,7 +2161,7 @@
 
       fetch(`${API_BASE}/api/pz/lives`)
         .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d && !d.error) { pzData.lives = d; renderLives(); } })
+        .then(d => { if (d && !d.error) { pzData.lives = d; renderLives(); if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers(); } })
         .catch(() => {});
 
       fetch(`${API_BASE}/api/pz/stats`)
@@ -2177,7 +2292,7 @@
         } catch {}
       });
       sseSource.addEventListener('lives', e => {
-        try { pzData.lives = JSON.parse(e.data); renderLives(); } catch {}
+        try { pzData.lives = JSON.parse(e.data); renderLives(); if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers(); } catch {}
       });
       sseSource.addEventListener('profiles', e => {
         try {
