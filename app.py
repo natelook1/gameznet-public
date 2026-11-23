@@ -276,7 +276,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.13.8"
+VERSION = "1.13.9"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -765,6 +765,15 @@ def api_status():
         "update_available": _update_available,
         "latest_version": _latest_version,
     })
+
+def _player_token():
+    """This install's player token, sent with backend calls so the server can identify
+    us without trusting names or VPN IPs from the request."""
+    try:
+        with open(CONFIG_FILE) as f:
+            return json.load(f).get("token", "") or ""
+    except Exception:
+        return ""
 
 def _auto_update_enabled():
     try:
@@ -1569,7 +1578,7 @@ def api_rename():
     vpn_ip   = config.get("vpn_ip", "")
     import urllib.request as _ur2
     body = json.dumps({"old_name": old_name, "new_name": new_name, "vpn_ip": vpn_ip}).encode()
-    req = _ur2.Request(f"{_backend_url()}/api/rename", data=body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET"})
+    req = _ur2.Request(f"{_backend_url()}/api/rename", data=body, headers={"Content-Type": "application/json", "User-Agent": "GamezNET", "X-Token": _player_token()})
     try:
         with _ur2.urlopen(req, timeout=5) as r:
             resp = json.loads(r.read().decode())
@@ -1705,7 +1714,7 @@ def api_online():
     """Proxy to Worker /api/online so the client UI can call it locally."""
     import urllib.request
     try:
-        req = urllib.request.Request(f"{_backend_url()}/api/online", headers={'User-Agent': 'GamezNET'})
+        req = urllib.request.Request(f"{_backend_url()}/api/online", headers={'User-Agent': 'GamezNET', 'X-Token': _player_token()})
         with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.read(), resp.status, {'Content-Type': 'application/json'}
     except Exception as e:
@@ -1729,7 +1738,8 @@ def api_chat():
     since = request.args.get("since", "")
     try:
         url = f"{_backend_url()}/api/chat?since={urllib.request.quote(since)}"
-        req = urllib.request.Request(url, headers={"User-Agent": "GamezNET"})
+        _chat_tok = _player_token()
+        req = urllib.request.Request(url, headers={"User-Agent": "GamezNET", "X-Token": _chat_tok})
         with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.read(), resp.status, {"Content-Type": "application/json"}
     except Exception as e:
@@ -2468,6 +2478,8 @@ def proxy_remote_api(endpoint):
     try:
         req = urllib.request.Request(url, method=request.method)
         req.add_header("User-Agent", "GamezNET-Proxy")
+        if _player_token():
+            req.add_header("X-Token", _player_token())
         
         if request.method == "POST":
             req.add_header("Content-Type", "application/json")
@@ -2825,6 +2837,8 @@ def api_proxy(subpath):
             val = request.headers.get(h) or request.headers.get(h.lower())
             if val:
                 fwd_headers[h] = val
+        if "X-Token" not in fwd_headers and _player_token():
+            fwd_headers["X-Token"] = _player_token()
 
         # Debug: log file upload headers
         if 'files/upload' in url:
@@ -3181,7 +3195,7 @@ def run_tray(flask_thread):
                 if my_name is None and os.path.exists(CONFIG_FILE):
                     with open(CONFIG_FILE) as f:
                         my_name = json.load(f).get("name", "")
-                req = _ur.Request(f"{_backend_url()}/api/online", headers={"User-Agent": "GamezNET"})
+                req = _ur.Request(f"{_backend_url()}/api/online", headers={"User-Agent": "GamezNET", "X-Token": _player_token()})
                 with _ur.urlopen(req, timeout=5) as resp:
                     online = {p["name"] for p in json.loads(resp.read()) if p.get("name") != my_name and not p.get("mobile")}
                 if known is None:
