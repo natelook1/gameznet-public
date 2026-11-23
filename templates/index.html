@@ -125,6 +125,8 @@
       text-transform: uppercase;
     }
 
+    .auto-update-toggle { display: flex; align-items: center; gap: 4px; font-size: 10px; letter-spacing: 0.5px; color: var(--muted); cursor: pointer; user-select: none; margin-left: 6px; }
+    .auto-update-toggle input { margin: 0; cursor: pointer; }
     .version-badge {
       font-family: 'Share Tech Mono', monospace;
       font-size: 10px;
@@ -2179,6 +2181,7 @@
       <p>Private Game Server Network</p>
     </div>
     <div class="version-badge" id="version-badge" onclick="triggerUpdate()"><span class="v-text">v...</span><span class="v-hover">CHECK FOR UPDATES</span></div>
+    <label class="auto-update-toggle" title="Install new versions automatically as soon as they're released"><input type="checkbox" id="auto-update-chk" onchange="setAutoUpdate(this.checked)"> Auto-update</label>
     <div class="clock" id="clock"></div>
   </header>
 
@@ -3276,6 +3279,7 @@
         state.updateRequired = s.update_required;
         state.offerAutostart = s.offer_autostart;
         if (s.version) setVersionBadge(s.version, s.update_required);
+        syncAutoUpdate(s);
         setStatus(s.connected ? 'connected' : 'disconnected');
         if (s.connected) startSessionTimer();
         if (s.telemetry) updateTelemetryUI(s.telemetry);
@@ -3464,11 +3468,40 @@
     el.onclick = () => triggerUpdate();
   }
 
+  // ── Auto-update ────────────────────────────────────────────────────────────
+  // When enabled, a newly detected release installs itself after a short, cancellable notice.
+  let _autoUpdateTimer = null;
+  async function setAutoUpdate(enabled) {
+    state.autoUpdate = enabled;
+    try {
+      await fetch('/api/auto-update', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }) });
+      toast(enabled ? 'Auto-update on' : 'Auto-update off');
+    } catch (_) {}
+    if (!enabled && _autoUpdateTimer) { clearTimeout(_autoUpdateTimer); _autoUpdateTimer = null; }
+    else if (enabled) maybeAutoUpdate();
+  }
+  function syncAutoUpdate(s) {
+    if (typeof s.auto_update !== 'boolean') return;
+    state.autoUpdate = s.auto_update;
+    const chk = document.getElementById('auto-update-chk');
+    if (chk) chk.checked = s.auto_update;
+    maybeAutoUpdate();
+  }
+  function maybeAutoUpdate() {
+    if (!state.autoUpdate || !state.updateRequired || state.busy || _autoUpdateTimer) return;
+    toast('New version found, updating in 10 seconds (untick Auto-update to cancel)');
+    _autoUpdateTimer = setTimeout(() => {
+      _autoUpdateTimer = null;
+      if (state.autoUpdate && state.updateRequired && !state.busy) triggerUpdate({ auto: true });
+    }, 10000);
+  }
+
   // ── Update Trigger ─────────────────────────────────────────────────────────
-  async function triggerUpdate() {
+  async function triggerUpdate(opts) {
     let enableAutostart = false;
     let promptShown = false;
-    if (state.offerAutostart) {
+    if (state.offerAutostart && !(opts && opts.auto)) {
       promptShown = true;
       enableAutostart = confirm(
         'Launch GamezNET automatically when Windows starts?\n\n' +
@@ -3700,6 +3733,7 @@
         state.updateRequired = s.update_required;
         if (!state.busy) setStatus(state.connected ? 'connected' : 'disconnected');
       }
+      syncAutoUpdate(s);
       if (s.connected !== state.connected && !state.busy) {
         state.connected = s.connected;
         setStatus(s.connected ? 'connected' : 'disconnected');
