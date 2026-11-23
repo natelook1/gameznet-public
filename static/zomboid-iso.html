@@ -104,6 +104,23 @@
   </div>
 
   <script type="module">
+    // Friendly names for vehicle script IDs (CarNormal -> Sedan, StepVan_MarineBites -> Step Van (Marine Bites)).
+    const VEH_NAMES = { CarNormal: 'Sedan', CarTaxi: 'Taxi', CarTaxi2: 'Taxi', ModernCar: 'Modern Sedan', ModernCar02: 'Modern Sedan',
+      SmallCar: 'Hatchback', SmallCar02: 'Compact Car', CarStationWagon: 'Station Wagon', CarStationWagon2: 'Station Wagon',
+      SportsCar: 'Sports Car', CarLuxury: 'Luxury Car', SUV: 'SUV', OffRoad: 'Off-Road', PickUpTruck: 'Pickup Truck',
+      PickUpVan: 'Pickup Van', PickUpTruckLights: 'Police Pickup', PickUpVanLights: 'Police Van', PickUpVanLightsFire: 'Fire Van',
+      CarLights: 'Sheriff Car', CarLightsPolice: 'Police Car', VanAmbulance: 'Ambulance', VanSeats: 'Passenger Van',
+      Van: 'Van', VanSpecial: 'Van', StepVan: 'Step Van', Trailer: 'Trailer', TrailerCover: 'Covered Trailer',
+      TrailerAdvert: 'Advert Trailer', TrailerHome: 'Camper Trailer' };
+    const vehName = t => {
+      t = String(t || '').replace(/^Base\./, '');
+      if (!t) return 'Vehicle';
+      const [b, ...rest] = t.split('_');
+      const split = s => s.replace(/([a-z])([A-Z0-9])/g, '$1 $2').replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
+      let n = VEH_NAMES[b] || split(b.replace(/\d+$/, '')).replace(/Pick Up/g, 'Pickup');
+      if (rest.length) n += ' (' + split(rest.join(' ')) + ')';
+      return n;
+    };
     const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
       ? 'https://gameznet.looknet.ca' : '';
 
@@ -300,7 +317,7 @@ const TOWN_ZONES = [
                 const lbl = document.createElement('div');
                 lbl.className = 'iso-label';
                 lbl.style.cssText = `color:#fff;background:rgba(0,0,0,0.65);padding:1px 4px;border-radius:3px;font-size:9px;`;
-                lbl.textContent = v.type;
+                lbl.textContent = vehName(v.type);
                 el.appendChild(lbl);
               }
             }

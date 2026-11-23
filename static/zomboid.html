@@ -500,6 +500,23 @@
 
     // Game-sourced strings (animal names, safehouse titles, item names) go into innerHTML.
     const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    // Friendly names for vehicle script IDs (CarNormal -> Sedan, StepVan_MarineBites -> Step Van (Marine Bites)).
+    const VEH_NAMES = { CarNormal: 'Sedan', CarTaxi: 'Taxi', CarTaxi2: 'Taxi', ModernCar: 'Modern Sedan', ModernCar02: 'Modern Sedan',
+      SmallCar: 'Hatchback', SmallCar02: 'Compact Car', CarStationWagon: 'Station Wagon', CarStationWagon2: 'Station Wagon',
+      SportsCar: 'Sports Car', CarLuxury: 'Luxury Car', SUV: 'SUV', OffRoad: 'Off-Road', PickUpTruck: 'Pickup Truck',
+      PickUpVan: 'Pickup Van', PickUpTruckLights: 'Police Pickup', PickUpVanLights: 'Police Van', PickUpVanLightsFire: 'Fire Van',
+      CarLights: 'Sheriff Car', CarLightsPolice: 'Police Car', VanAmbulance: 'Ambulance', VanSeats: 'Passenger Van',
+      Van: 'Van', VanSpecial: 'Van', StepVan: 'Step Van', Trailer: 'Trailer', TrailerCover: 'Covered Trailer',
+      TrailerAdvert: 'Advert Trailer', TrailerHome: 'Camper Trailer' };
+    const vehName = t => {
+      t = String(t || '').replace(/^Base\./, '');
+      if (!t) return 'Vehicle';
+      const [b, ...rest] = t.split('_');
+      const split = s => s.replace(/([a-z])([A-Z0-9])/g, '$1 $2').replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
+      let n = VEH_NAMES[b] || split(b.replace(/\d+$/, '')).replace(/Pick Up/g, 'Pickup');
+      if (rest.length) n += ' (' + split(rest.join(' ')) + ')';
+      return n;
+    };
     let leafletMap = null;
     let playerMarkers = [];
 
@@ -968,12 +985,12 @@
       let vehicles = allVehicles.filter(v => showDestroyed || !isVehicleDestroyed(v));
       if (onlyDrivable) vehicles = vehicles.filter(vehDrivable);
       if (town) vehicles = vehicles.filter(v => v.town === town);
-      if (q) vehicles = vehicles.filter(v => `${v.type} ${v.driver || ''}`.toLowerCase().includes(q));
+      if (q) vehicles = vehicles.filter(v => `${v.type} ${vehName(v.type)} ${v.driver || ''}`.toLowerCase().includes(q));
       const cmp = {
         cond: (a, b) => vehCondition(b) - vehCondition(a),
         fuel: (a, b) => (b.fuel ?? -1) - (a.fuel ?? -1),
         town: (a, b) => (a.town || '').localeCompare(b.town || '') || vehCondition(b) - vehCondition(a),
-        type: (a, b) => (a.type || '').localeCompare(b.type || ''),
+        type: (a, b) => vehName(a.type).localeCompare(vehName(b.type)),
       }[sort];
       vehicles = [...vehicles].sort(cmp);
 
@@ -994,7 +1011,7 @@
         const cond = Math.round(vehCondition(v) * 100);
         const drivable = vehDrivable(v);
         return `<div class="vehicle-card">
-          <div class="vehicle-type">${escHtml((v.type || '').replace(/_/g,' '))} <span style="font-size:11px;color:var(--muted);">#${v.id}</span>
+          <div class="vehicle-type">${escHtml(vehName(v.type))} <span style="font-size:11px;color:var(--muted);">#${v.id}</span>
             ${drivable ? '<span class="tag trait-pos" style="margin-left:6px;">drivable</span>' : ''}
             ${v.driver ? `<span class="online-badge" style="margin-left:6px;">🚗 ${escHtml(v.driver)}</span>` : ''}</div>
           <div style="font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;">
@@ -1450,7 +1467,7 @@
           }),
           zIndexOffset: -100,
         }).addTo(leafletMap);
-        marker.bindTooltip(escHtml(`${v.type} (${destroyed ? 'destroyed' : Math.round(vehCondition(v) * 100) + '% cond' + (v.fuel != null ? ', ' + Math.round(v.fuel * 100) + '% fuel' : '') + (vehDrivable(v) ? ', drivable' : '')})`), { direction: 'top', offset: [0, -4], className: 'player-label' });
+        marker.bindTooltip(escHtml(`${vehName(v.type)} (${destroyed ? 'destroyed' : Math.round(vehCondition(v) * 100) + '% cond' + (v.fuel != null ? ', ' + Math.round(v.fuel * 100) + '% fuel' : '') + (vehDrivable(v) ? ', drivable' : '')})`), { direction: 'top', offset: [0, -4], className: 'player-label' });
         vehicleMarkerMap.set(id, { marker, key });
       });
 
@@ -1898,12 +1915,16 @@
         if (label) _isoCanvasHits.push({ x: pt.x, y: pt.y, r: size * 2, label });
       }
 
+      const labelBoxes = [];
       function drawLabel(sx, sy, layer, text, color) {
         const pt = vpToPx(sx, sy, layer || 0);
         if (!pt) return;
         ctx.font = '9px monospace';
         ctx.textAlign = 'center';
         const tw = ctx.measureText(text).width + 6;
+        const box = { l: pt.x - tw / 2 - 2, r: pt.x + tw / 2 + 2, t: pt.y + 5, b: pt.y + 20 };
+        if (labelBoxes.some(o => box.l < o.r && box.r > o.l && box.t < o.b && box.b > o.t)) return;
+        labelBoxes.push(box);
         ctx.fillStyle = 'rgba(0,0,0,0.7)';
         ctx.fillRect(pt.x - tw / 2, pt.y + 6, tw, 13);
         ctx.fillStyle = color || '#e5e7eb';
@@ -1919,9 +1940,9 @@
           if (!destroyed && !chk('map-show-vehicles')) return;
           const engine = v.parts?.Engine ?? 0;
           const color  = destroyed ? '#6b7280' : engine > 0.6 ? '#60a5fa' : engine > 0.3 ? '#f59e0b' : '#ef4444';
-          const lbl = `${v.type || 'Vehicle'}\n${destroyed ? 'Destroyed' : Math.round(engine * 100) + '% engine'}`;
+          const lbl = `${vehName(v.type)}\n${destroyed ? 'Destroyed' : Math.round(engine * 100) + '% engine'}`;
           drawDot(v.x, v.y, color, 5, destroyed ? 0.5 : 0.85, lbl);
-          if (!destroyed) drawLabel(v.x, v.y, 0, v.type || '', '#93c5fd');
+          if (!destroyed) drawLabel(v.x, v.y, 0, vehName(v.type), '#93c5fd');
         });
       }
 
