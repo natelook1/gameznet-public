@@ -1905,7 +1905,24 @@
       const dir = hordeDrifting(h) ? `heading ${['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'][octant(Math.atan2(h.dy, h.dx))]}` : 'milling about';
       return `Horde of ${h.count} · ${dir}`;
     }
-    const hordesInView = () => (pzData.hordes || []).filter(h => h.x >= MAP_MIN_X && h.x <= MAP_MAX_X && h.y >= MAP_MIN_Y && h.y <= MAP_MAX_Y);
+    // The mod's grid clustering can split one large horde into neighbouring groups;
+    // merge groups whose centres are within HORDE_MERGE squares (count-weighted).
+    const HORDE_MERGE = 60;
+    function mergeHordes(list) {
+      const out = [];
+      [...list].sort((a, b) => b.count - a.count).forEach(h => {
+        const t = out.find(o => Math.hypot(o.x - h.x, o.y - h.y) <= HORDE_MERGE);
+        if (!t) { out.push({ ...h, _hx: h.dx * h.cohesion * h.count, _hy: h.dy * h.cohesion * h.count }); return; }
+        const n = t.count + h.count;
+        t.x = (t.x * t.count + h.x * h.count) / n; t.y = (t.y * t.count + h.y * h.count) / n;
+        t._hx += h.dx * h.cohesion * h.count; t._hy += h.dy * h.cohesion * h.count;
+        t.moving += h.moving; t.count = n;
+        const len = Math.hypot(t._hx, t._hy);
+        t.dx = len ? t._hx / len : 0; t.dy = len ? t._hy / len : 0; t.cohesion = len / n;
+      });
+      return out;
+    }
+    const hordesInView = () => mergeHordes((pzData.hordes || []).filter(h => h.x >= MAP_MIN_X && h.x <= MAP_MAX_X && h.y >= MAP_MIN_Y && h.y <= MAP_MAX_Y));
 
     // Drift: zpop density change per cell over the last 6h (/api/pz/density/drift).
     let _driftLoadedAt = 0;
