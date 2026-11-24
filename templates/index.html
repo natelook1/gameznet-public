@@ -4828,6 +4828,12 @@
           if (!c || !c.joined) return;   // not a member: ignore
           const t = chatTargetForChannel(msg.channel);
           appendDMMessages(t, [msg]);
+          if (msg.channel === 'zomboid') {
+            // like the in-game chat window: newest 50 lines only
+            const box = document.getElementById(`chat-box-${t}`);
+            const rows = box ? [...box.querySelectorAll('[data-msg-id]')] : [];
+            rows.slice(0, Math.max(0, rows.length - 50)).forEach(el => el.remove());
+          }
           if (chatActiveTarget === t) markChannelRead(t);
           else if (msg.from_name !== state.name) {
             chatUnread[t] = (chatUnread[t] || 0) + 1;
@@ -5072,7 +5078,7 @@
         ${iconEl}
         <div class="srv-chip-info">
           <div class="srv-chip-name">${s.name}</div>
-          <div class="srv-chip-status ${cls}">${s.state}</div>
+          <div class="srv-chip-status ${cls}">${s.state}${s.state === 'running' && s.players ? ` · 👥 ${s.players.online}${s.players.max ? '/' + s.players.max : ''}` : ''}</div>
         </div>
       </div>`;
     }).join('');

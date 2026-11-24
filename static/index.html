@@ -268,7 +268,7 @@
   import { h, render } from '/vendor/preact.mjs';
   import { useState, useEffect, useRef } from '/vendor/hooks.mjs';
   import htm from '/vendor/htm.mjs';
-  import { WowTab } from '/wow.js?v=1.13.24';
+  import { WowTab } from '/wow.js?v=1.13.25';
   const html = htm.bind(h);
 
   const API = 'https://gameznet.looknet.ca';
@@ -572,6 +572,7 @@
                       </div>
                       ${on ? html`
                         <div class="chip-stats">
+                          ${s.players && html`<div class="chip-stat"><span class="chip-stat-label">Players</span><span class="chip-stat-value">${s.players.online}${s.players.max ? `/${s.players.max}` : ''}</span></div>`}
                           <div class="chip-stat">
                             <span class="chip-stat-label">CPU</span>
                             <span class="chip-stat-value">${s.cpu}%</span>
@@ -740,7 +741,7 @@
           markRead(fresh, ch);
           setMessages(prev => {
             const ids = new Set(prev.map(m => m.id));
-            return [...prev, ...fresh.filter(m => !ids.has(m.id))].slice(-300);
+            return [...prev, ...fresh.filter(m => !ids.has(m.id))].slice(ch === 'zomboid' ? -50 : -300);
           });
         } catch {}
       }, 3000);
