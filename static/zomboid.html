@@ -1390,6 +1390,13 @@
         ...(L.Browser.mobile ? { zoomSnap: 1, zoomDelta: 1, maxZoom: TILE_ZOOM_MAX + 1 } : {}),
         attributionControl: false,
       });
+      // Left click zooms in, right click zooms out, both around the clicked point.
+      // Drags don't fire 'click', and marker clicks don't bubble to the map.
+      leafletMap.on('click', e => leafletMap.setZoomAround(e.latlng, leafletMap.getZoom() + 1));
+      leafletMap.on('contextmenu', e => {
+        e.originalEvent?.preventDefault();
+        leafletMap.setZoomAround(e.latlng, leafletMap.getZoom() - 1);
+      });
 
       const PzTileLayer = L.GridLayer.extend({
         createTile(coords, done) {
@@ -2505,6 +2512,13 @@
           isoRedrawMarkers();
         });
         isoViewer.addHandler('resize', isoRedrawMarkers);
+        // Left click zooms in (OSD default clickToZoom); right click zooms out at the cursor.
+        isoViewer.addHandler('canvas-nonprimary-press', e => {
+          if (e.button !== 2) return;
+          isoViewer.viewport.zoomBy(1 / 2, isoViewer.viewport.pointFromPixel(e.position));
+          isoViewer.viewport.applyConstraints();
+        });
+        document.getElementById('iso-osd').addEventListener('contextmenu', e => e.preventDefault());
         let _raf = null;
         isoViewer.addHandler('update-viewport', () => {
           if (_raf) return;
