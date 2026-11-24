@@ -257,6 +257,8 @@
   .chan-bridge { font-size: 9px; padding: 1px 5px; border: 1px solid currentColor; border-radius: 3px; opacity: .7; }
   .chan-pick-btn { font-size: 12px; padding: 3px 12px; border-radius: 6px; background: transparent;
     color: var(--accent, #22d3ee); border: 1px solid var(--accent, #22d3ee); }
+  .chan-pick-head { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; opacity: .7; padding-top: 2px; }
+  .chan-close { background: transparent; border: none; color: inherit; font-size: 14px; padding: 2px 6px; }
   .chan-pick-btn.joined { color: inherit; border-color: rgba(255,255,255,.2); opacity: .8; }
 </style>
 </head>
@@ -266,7 +268,7 @@
   import { h, render } from '/vendor/preact.mjs';
   import { useState, useEffect, useRef } from '/vendor/hooks.mjs';
   import htm from '/vendor/htm.mjs';
-  import { WowTab } from '/wow.js?v=1.13.21';
+  import { WowTab } from '/wow.js?v=1.13.22';
   const html = htm.bind(h);
 
   const API = 'https://gameznet.looknet.ca';
@@ -779,6 +781,7 @@
         </div>
         ${picker && html`
           <div class="chan-picker">
+            <div class="chan-pick-row chan-pick-head"><span>Channels</span><button class="chan-close" title="Close" onClick=${() => setPicker(false)}>✕</button></div>
             ${channels.filter(c => c.id !== 'general').map(c => html`
               <div class="chan-pick-row" key=${c.id}>
                 <span># ${c.name}${c.bridge ? html` <span class="chan-bridge">in-game</span>` : ''}</span>

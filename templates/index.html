@@ -757,6 +757,10 @@
     #ctx-menu { position:fixed; z-index:10000; background:var(--surface); border:1px solid var(--border); box-shadow:0 8px 16px rgba(0,0,0,0.8); border-radius:4px; padding:4px 0; min-width:140px; display:none; flex-direction:column; }
     .ctx-item { padding:8px 16px; font-size:12px; font-family:'Share Tech Mono',monospace; cursor:pointer; color:var(--text); transition:background 0.15s; }
     .ctx-item:hover { background:var(--accent); color:var(--bg); }
+    .gn-ctx { position:fixed; z-index:10001; background:var(--surface); border:1px solid var(--border); box-shadow:0 8px 16px rgba(0,0,0,0.8); border-radius:4px; padding:4px 0; min-width:160px; display:none; flex-direction:column; }
+    .gn-ctx .ctx-item.danger { color:var(--red, #ef4444); }
+    .gn-ctx .ctx-item.danger:hover { background:var(--red, #ef4444); color:var(--bg); }
+    .gn-ctx .ctx-sep { height:1px; background:var(--border); margin:4px 0; }
     .chat-tabs { display:flex; gap:4px; padding:6px 10px 4px; background:rgba(0,0,0,0.2); border-bottom:1px solid var(--border); overflow-x:auto; flex-shrink:0; }
     .chat-tabs::-webkit-scrollbar { height:0; }
     .chat-tab { font-size:10px; font-family:'Share Tech Mono',monospace; padding:3px 10px; border-radius:12px; background:var(--surface); border:1px solid var(--border2); color:var(--muted); cursor:pointer; white-space:nowrap; flex-shrink:0; position:relative; }
@@ -2188,7 +2192,10 @@
   .chat-tab-add:hover { opacity: 1; }
   #chat-channel-picker { position: absolute; z-index: 30; margin: 4px 10px; min-width: 240px; background: var(--panel, #10141c);
     border: 1px solid var(--border, #2a3344); border-radius: 6px; padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
-  .chat-channel-picker-title { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .6; margin: 0 2px 6px; }
+  .chat-channel-picker-title { display: flex; justify-content: space-between; align-items: center; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; margin: 0 2px 6px; }
+  .chat-channel-picker-title > span:first-child { opacity: .6; }
+  .chat-channel-close { cursor: pointer; font-size: 12px; opacity: .7; padding: 0 4px; letter-spacing: 0; }
+  .chat-channel-close:hover { opacity: 1; }
   .chat-channel-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 2px; font-size: 12px; }
   .chat-channel-bridge { font-size: 9px; padding: 1px 5px; border-radius: 3px; border: 1px solid currentColor; opacity: .7; margin-left: 4px; }
   .chat-channel-btn { font-size: 11px; padding: 2px 10px; border-radius: 4px; cursor: pointer; background: transparent;
@@ -2978,6 +2985,7 @@
   </div>
 </div>
 
+<div id="gn-ctx" class="gn-ctx"></div>
 <div id="ctx-menu">
   <div class="ctx-item" onclick="openDMFromCtx()">💬 Direct Message</div>
   <div class="ctx-item" id="ctx-remote-btn" onclick="openRemoteFromCtx()">🛟 Remote Help</div>
@@ -4083,12 +4091,25 @@
   function renderChannelPicker() {
     const el = document.getElementById('chat-channel-picker');
     if (!el) return;
-    el.innerHTML = '<div class="chat-channel-picker-title">Channels</div>' + chatChannels.filter(c => c.id !== 'general').map(c => `
+    el.innerHTML = '<div class="chat-channel-picker-title"><span>Channels</span><span class="chat-channel-close" title="Close" onclick="closeChannelPicker()">✕</span></div>' + chatChannels.filter(c => c.id !== 'general').map(c => `
       <div class="chat-channel-row">
         <span># ${chatEsc(c.name)}${c.bridge ? ' <span class="chat-channel-bridge" title="Mirrored into the game">in-game</span>' : ''}</span>
         <button class="chat-channel-btn ${c.joined ? 'joined' : ''}" onclick="toggleChatChannel('${c.id}', ${!c.joined})">${c.joined ? 'Leave' : 'Join'}</button>
       </div>`).join('');
   }
+
+  window.closeChannelPicker = function() {
+    const el = document.getElementById('chat-channel-picker');
+    if (el) el.style.display = 'none';
+  };
+  // Escape or a click anywhere outside the picker (and its ＋ tab) closes it.
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChannelPicker(); });
+  document.addEventListener('mousedown', e => {
+    const el = document.getElementById('chat-channel-picker');
+    if (!el || el.style.display === 'none') return;
+    if (el.contains(e.target) || e.target.closest('.chat-tab-add')) return;
+    closeChannelPicker();
+  });
 
   window.toggleChannelPicker = function() {
     const el = document.getElementById('chat-channel-picker');
@@ -4117,19 +4138,31 @@
     } catch {}
   }
 
+  // Shared with the right-click menu code, which may live in another scope.
+  window.gnChat = {
+    isChannelTarget, channelOfTarget, chatChannelName,
+    markChannelRead: t => markChannelRead(t),
+    setTarget: t => setChatTarget(t),
+    active: () => chatActiveTarget,
+    clearUnread: t => { chatUnread[t] = 0; renderChatTabs(); updateGlobalChatBadge(); },
+    leave: id => toggleChatChannel(id, false),
+    close: t => closeChatTab(t),
+    me: () => state.name,
+  };
+
   function renderChatTabs() {
     const container = document.getElementById('chat-tabs-container');
-    let html = `<div class="chat-tab ${chatActiveTarget === 'global' ? 'active' : ''} ${chatUnread['global'] ? 'unread' : ''}" onclick="setChatTarget('global')"># Global ${chatUnread['global'] ? `<span style="font-size:9px">(${chatUnread['global']})</span>` : ''}</div>`;
+    let html = `<div class="chat-tab ${chatActiveTarget === 'global' ? 'active' : ''} ${chatUnread['global'] ? 'unread' : ''}" data-target="global" onclick="setChatTarget('global')"># Global ${chatUnread['global'] ? `<span style="font-size:9px">(${chatUnread['global']})</span>` : ''}</div>`;
     chatChannels.filter(c => c.id !== 'general' && c.joined).forEach(c => {
       const t = chatTargetForChannel(c.id);
       const unread = chatUnread[t] || 0;
-      html += `<div class="chat-tab ${chatActiveTarget === t ? 'active' : ''} ${unread ? 'unread' : ''}" onclick="setChatTarget('${t}')"># ${chatEsc(c.name)} ${unread ? `<span style="font-size:9px">(${unread})</span>` : ''}</div>`;
+      html += `<div class="chat-tab ${chatActiveTarget === t ? 'active' : ''} ${unread ? 'unread' : ''}" data-target="${t}" onclick="setChatTarget('${t}')"># ${chatEsc(c.name)} ${unread ? `<span style="font-size:9px">(${unread})</span>` : ''}</div>`;
     });
     chatOpenedTabs.forEach(target => {
       if (target === 'global' || isChannelTarget(target)) return;
       const online = onlinePlayerNames.has(target);
       const unread = chatUnread[target] || 0;
-      html += `<div class="chat-tab ${chatActiveTarget === target ? 'active' : ''} ${unread ? 'unread' : ''}" onclick="setChatTarget('${target}')">${online ? '<span class="chat-tab-dot"></span>' : ''}@${target} ${unread ? `<span style="font-size:9px">(${unread})</span>` : ''} <span class="chat-tab-close" onclick="event.stopPropagation(); closeChatTab('${target}')">✕</span></div>`;
+      html += `<div class="chat-tab ${chatActiveTarget === target ? 'active' : ''} ${unread ? 'unread' : ''}" data-target="${target}" onclick="setChatTarget('${target}')">${online ? '<span class="chat-tab-dot"></span>' : ''}@${target} ${unread ? `<span style="font-size:9px">(${unread})</span>` : ''} <span class="chat-tab-close" onclick="event.stopPropagation(); closeChatTab('${target}')">✕</span></div>`;
     });
     html += `<div class="chat-tab chat-tab-add" title="Join or leave game channels" onclick="toggleChannelPicker()">＋</div>`;
     container.innerHTML = html;
@@ -7074,9 +7107,61 @@
     });
   })();
   
+  // ── Generic right-click menu ───────────────────────────────────────────────
+  // gnContextMenu(event, [{ label, onClick, danger }, '-' (separator), ...])
+  // Any surface can use it; it closes on click, Escape, scroll or resize.
+  window.gnContextMenu = function(e, items) {
+    e.preventDefault();
+    const menu = document.getElementById('gn-ctx');
+    const old = document.getElementById('ctx-menu');
+    if (old) old.style.display = 'none';
+    menu.innerHTML = '';
+    items.filter(Boolean).forEach(it => {
+      if (it === '-') { const d = document.createElement('div'); d.className = 'ctx-sep'; menu.appendChild(d); return; }
+      const d = document.createElement('div');
+      d.className = 'ctx-item' + (it.danger ? ' danger' : '');
+      d.textContent = it.label;
+      d.onclick = () => { closeGnContextMenu(); it.onClick(); };
+      menu.appendChild(d);
+    });
+    menu.style.display = 'flex';
+    const r = menu.getBoundingClientRect();
+    let x = e.clientX, y = e.clientY;
+    if (x + r.width > window.innerWidth) x = window.innerWidth - r.width - 4;
+    if (y + r.height > window.innerHeight) y = window.innerHeight - r.height - 4;
+    menu.style.left = x + 'px'; menu.style.top = y + 'px';
+  };
+  window.closeGnContextMenu = function() { const m = document.getElementById('gn-ctx'); if (m) m.style.display = 'none'; };
+  document.addEventListener('mousedown', e => { if (!e.target.closest('#gn-ctx')) closeGnContextMenu(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGnContextMenu(); });
+  window.addEventListener('blur', closeGnContextMenu);
+  window.addEventListener('resize', closeGnContextMenu);
+  document.addEventListener('scroll', closeGnContextMenu, true);
+
+  // Chat tabs: Global / game channel / DM
+  function chatTabMenu(e, target) {
+    const c = window.gnChat;
+    if (!c) return;
+    const items = [];
+    if (target !== c.active()) items.push({ label: 'Open', onClick: () => c.setTarget(target) });
+    items.push({ label: 'Mark as read', onClick: () => {
+      if (c.isChannelTarget(target)) c.markChannelRead(target);
+      else if (target !== 'global') fetch(`/api/chat/dm/read?user1=${encodeURIComponent(c.me())}&user2=${encodeURIComponent(target)}`, {method:'POST'}).catch(()=>{});
+      c.clearUnread(target);
+    } });
+    if (c.isChannelTarget(target)) {
+      items.push('-', { label: `Leave #${c.chatChannelName(c.channelOfTarget(target))}`, danger: true, onClick: () => c.leave(c.channelOfTarget(target)) });
+    } else if (target !== 'global') {
+      items.push('-', { label: 'Close conversation', onClick: () => c.close(target) });
+    }
+    gnContextMenu(e, items);
+  }
+
   // ── Context Menus (DMs) ────────────────────────────────────────────────────
   let _ctxUser = null;
   document.addEventListener('contextmenu', e => {
+    const tab = e.target.closest('.chat-tab[data-target]');
+    if (tab) { chatTabMenu(e, tab.dataset.target); return; }
     let target = e.target.closest('.online-player') || e.target.closest('.dc-mitem');
     let name = null;
     if (target) {
