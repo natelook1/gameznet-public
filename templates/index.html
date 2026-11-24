@@ -4131,7 +4131,7 @@
   async function loadChannelHistory(target) {
     const ch = channelOfTarget(target);
     try {
-      const res = await fetch(`/api/chat?channel=${encodeURIComponent(ch)}`);
+      const res = await fetch(`/api/chat?channel=${encodeURIComponent(ch)}`, { headers: { 'X-Token': state.token } });
       const msgs = await res.json();
       if (Array.isArray(msgs) && msgs.length) appendDMMessages(target, msgs);
       if (chatActiveTarget === target) markChannelRead(target);
@@ -4221,7 +4221,7 @@
 
   async function loadDMHistory(target) {
     try {
-      const res = await fetch(`/api/chat/dm/history?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(target)}`);
+      const res = await fetch(`/api/chat/dm/history?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(target)}`, { headers: { 'X-Token': state.token } });
       const msgs = await res.json();
       if (msgs.length) appendDMMessages(target, msgs);
     } catch {}
@@ -4504,7 +4504,7 @@
       try {
         const isGlobal = chatActiveTarget === 'global';
         const qs = isGlobal ? `q=${encodeURIComponent(q)}` : `q=${encodeURIComponent(q)}&user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(chatActiveTarget)}`;
-        const r = await fetch(`/api/chat/search?${qs}`);
+        const r = await fetch(`/api/chat/search?${qs}`, { headers: { 'X-Token': state.token } });
         const results = await r.json();
         const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
         document.getElementById('chat-search-results').innerHTML = results.length
@@ -4527,7 +4527,7 @@
   async function loadInbox() {
     if (!state.name) return;
     try {
-      const r = await fetch(`/api/chat/conversations?name=${encodeURIComponent(state.name)}`);
+      const r = await fetch(`/api/chat/conversations?name=${encodeURIComponent(state.name)}`, { headers: { 'X-Token': state.token } });
       const convos = await r.json();
       const list = document.getElementById('chat-inbox-list');
       if (!convos.length) { list.innerHTML = '<div style="padding:12px;font-size:11px;color:var(--muted)">No conversations yet</div>'; return; }
@@ -4573,7 +4573,7 @@
   async function pollChat() {
     if (!state.provisioned) return;
     try {
-      const res = await fetch(`/api/chat?since=${encodeURIComponent(chatSince)}`);
+      const res = await fetch(`/api/chat?since=${encodeURIComponent(chatSince)}`, { headers: { 'X-Token': state.token } });
       const msgs = await res.json();
       if (msgs.length) {
         appendMessages(msgs);
@@ -4761,7 +4761,7 @@
     await loadChatChannels();
     
     try {
-      const uRes = await fetch(`/api/chat/dm/unread?name=${encodeURIComponent(state.name)}`);
+      const uRes = await fetch(`/api/chat/dm/unread?name=${encodeURIComponent(state.name)}`, { headers: { 'X-Token': state.token } });
       if (uRes.ok) {
          const unreads = await uRes.json();
          unreads.forEach(u => {

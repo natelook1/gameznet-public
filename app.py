@@ -276,7 +276,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.13.22"
+VERSION = "1.13.23"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1744,12 +1744,14 @@ def api_chat():
     channel = request.args.get("channel", "general")
     try:
         url = f"{_backend_url()}/api/chat?since={urllib.request.quote(since)}&channel={urllib.request.quote(channel)}"
-        _chat_tok = _player_token()
+        # The page's own token first: _player_token() can be empty on installs where
+        # the token lives only in the page, and the backend 401s chat without one.
+        _chat_tok = request.headers.get("X-Token") or _player_token()
         req = urllib.request.Request(url, headers={"User-Agent": "GamezNET", "X-Token": _chat_tok})
         with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.read(), resp.status, {"Content-Type": "application/json"}
     except Exception as e:
-        log.debug("api_chat proxy failed: %s", e)
+        log.warning("api_chat proxy failed: %s", e)
         return jsonify([])
 
 @app.route("/api/chat/send", methods=["POST"])
@@ -1759,16 +1761,26 @@ def api_chat_send():
     try:
         data = request.get_json(silent=True) or {}
         payload = json.dumps(data).encode()
+        # Forward the player token (the backend 401s chat sends without one); the
+        # page's header first, the stored token as a fallback.
+        tok = request.headers.get("X-Token") or _player_token()
+        hdrs = {"Content-Type": "application/json", "User-Agent": "GamezNET"}
+        if tok:
+            hdrs["X-Token"] = tok
         req = urllib.request.Request(
             f"{_backend_url()}/api/chat/send",
             data=payload,
-            headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
+            headers=hdrs,
             method="POST"
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.read(), resp.status, {"Content-Type": "application/json"}
+    except urllib.error.HTTPError as e:
+        body = e.read()
+        log.warning("api_chat_send proxy HTTP %s: %s", e.code, body[:200])
+        return body, e.code, {"Content-Type": "application/json"}
     except Exception as e:
-        log.debug("api_chat_send proxy failed: %s", e)
+        log.warning("api_chat_send proxy failed: %s", e)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/invisible", methods=["GET", "POST"])
@@ -2756,7 +2768,7 @@ def api_remote_stream():
             try:
                 with _ur.urlopen(req, timeout=30) as resp:
                     while True:
-                        chunk = resp.read(1024)
+                        chunk = (getattr(resp, "read1", None) or resp.read)(1024)  # read1: return what has arrived; read(1024) held events until 1 KB
                         if not chunk:
                             break
                         buf += chunk
@@ -2800,7 +2812,7 @@ def api_chat_stream():
             try:
                 with _ur.urlopen(req, timeout=30) as resp:
                     while True:
-                        chunk = resp.read(1024)
+                        chunk = (getattr(resp, "read1", None) or resp.read)(1024)  # read1: return what has arrived; read(1024) held events until 1 KB
                         if not chunk:
                             break
                         buf += chunk
