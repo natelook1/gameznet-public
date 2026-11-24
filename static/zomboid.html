@@ -468,10 +468,10 @@
               </div>
               <div id="map-layers">
                   <div class="map-chip-group"><span class="map-chip-group-name">Survivors</span><label class="map-chip" title="Players (🟢 healthy, 🔴 infected)"><input type="checkbox" id="map-show-players" checked onchange="mapRedrawAll()"><span>🟢</span>Players</label><label class="map-chip" title="Dead"><input type="checkbox" id="map-show-dead" checked onchange="mapRedrawAll()"><span>💀</span>Dead</label><label class="map-chip" title="Graves"><input type="checkbox" id="map-show-graves" checked onchange="mapRedrawAll()"><span>🪦</span>Graves</label><label class="map-chip" title="Dead players' zombies, last seen spot"><input type="checkbox" id="map-show-reanimated" checked onchange="mapRedrawAll()"><span>🧟</span>Reanimated</label></div>
-                  <div class="map-chip-group"><span class="map-chip-group-name">Bases</span><label class="map-chip" title="Safehouses"><input type="checkbox" id="map-show-safehouses" checked onchange="mapRedrawAll()"><span>🏠</span>Safehouses</label><label class="map-chip" title="Campfires"><input type="checkbox" id="map-show-campfires" checked onchange="mapRedrawAll()"><span>🔥</span>Campfires</label><label class="map-chip" title="Farming"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"><span>🌿</span>Farming</label><label class="map-chip" title="Traps"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"><span>🕷</span>Traps</label><label class="map-chip" title="Animals"><input type="checkbox" id="map-show-animals" checked onchange="mapRedrawAll()"><span>🐄</span>Animals</label><label class="map-chip" title="Generators (last known; faded = not in the latest scan)"><input type="checkbox" id="map-show-generators" checked onchange="mapRedrawAll()"><span>⚡</span>Generators</label><label class="map-chip" title="Crop plots"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"><span>🌱</span>Farming</label></div>
+                  <div class="map-chip-group"><span class="map-chip-group-name">Bases</span><label class="map-chip" title="Safehouses"><input type="checkbox" id="map-show-safehouses" checked onchange="mapRedrawAll()"><span>🏠</span>Safehouses</label><label class="map-chip" title="Campfires"><input type="checkbox" id="map-show-campfires" checked onchange="mapRedrawAll()"><span>🔥</span>Campfires</label><label class="map-chip" title="Farming"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"><span>🌿</span>Farming</label><label class="map-chip" title="Traps"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"><span>🕷</span>Traps</label><label class="map-chip" title="Animals"><input type="checkbox" id="map-show-animals" checked onchange="mapRedrawAll()"><span>🐄</span>Animals</label><label class="map-chip" title="Generators (last known; faded = not in the latest scan)"><input type="checkbox" id="map-show-generators" checked onchange="mapRedrawAll()"><span>⚡</span>Generators</label></div>
                   <div class="map-chip-group"><span class="map-chip-group-name">Vehicles</span><label class="map-chip" title="Vehicles"><input type="checkbox" id="map-show-vehicles" checked onchange="mapRedrawAll()"><span>⬜</span>Vehicles</label><label class="map-chip" title="Wrecked"><input type="checkbox" id="map-show-destroyed" onchange="mapRedrawAll()"><span>💥</span>Wrecked</label></div>
                   <div class="map-chip-group"><span class="map-chip-group-name">Loot</span><label class="map-chip" title="Rare"><input type="checkbox" id="map-show-rare" checked onchange="toggleRareFilters();mapRedrawAll()"><span>💎</span>Rare</label><label class="map-chip" title="Crates"><input type="checkbox" id="map-show-crates" onchange="mapRedrawAll()"><span>📦</span>Crates</label><label class="map-chip" title="Warning: may show 300+ markers and lag the map"><input type="checkbox" id="map-show-empty-crates" onchange="mapRedrawAll()"><span>⚠</span>Empty crates</label><label class="map-chip" title="Containers the game spawned: treasure-map stashes, survivor stories, basements. Not base inventory."><input type="checkbox" id="map-show-caches" checked onchange="mapRedrawAll()"><span>🎁</span>Stashes</label></div>
-                  <div class="map-chip-group"><span class="map-chip-group-name">Overlays</span><label class="map-chip" title="Heatmap"><input type="checkbox" id="map-show-heatmap" onchange="mapRedrawAll()"><span>🌡</span>Heatmap</label><label class="map-chip" title="Towns"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"><span>🏘</span>Towns</label></div>
+                  <div class="map-chip-group"><span class="map-chip-group-name">Overlays</span><label class="map-chip" title="Heatmap"><input type="checkbox" id="map-show-heatmap" onchange="mapRedrawAll()"><span>🌡</span>Heatmap</label><label class="map-chip" title="Zombie hordes near players (8+), arrow = walking direction"><input type="checkbox" id="map-show-hordes" checked onchange="mapRedrawAll()"><span>🧟</span>Hordes</label><label class="map-chip" title="Zombie density change over the last 6 hours (red gained, blue lost)"><input type="checkbox" id="map-show-drift" onchange="pzLoadDrift(true); mapRedrawAll()"><span>↗</span>Drift 6h</label><label class="map-chip" title="Towns"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"><span>🏘</span>Towns</label></div>
               </div>
               <div id="map-rare-filters" style="display:none;margin-top:4px;padding:4px 6px;background:rgba(253,224,71,0.08);border:1px solid rgba(253,224,71,0.25);border-radius:5px;font-size:11px;gap:8px;flex-wrap:wrap;align-items:center;">
                 <span style="opacity:0.6;white-space:nowrap;">Rare filters:</span>
@@ -514,7 +514,7 @@
     const SSE_BASE = 'https://api-gamez.looknet.ca';
 
     let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {}, storage: {}, rare: { spawns: [] },
-                   animals: [], world: {}, profiles: {}, generators: [], farming: [] };  // v2 mod feeds (B42)
+                   animals: [], world: {}, profiles: {}, generators: [], farming: [], hordes: [], liveCells: [], drift: null };  // v2 mod feeds (B42)
 
     // Game-sourced strings (animal names, safehouse titles, item names) go into innerHTML.
     const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -1604,10 +1604,10 @@
       }
 
       addPointMarkers(ovl.campfires, '🔥', 'Campfire', showCampfires);
-      addPointMarkers(ovl.farming,   '🌿', 'Farm plot', showFarming);
       addPointMarkers(ovl.traps,     '🕷', 'Trap', showTraps);
       addPointMarkers(ovl.drums,     '🛢', 'Metal drum', showCampfires);
       addPointMarkers(ovl.barrels,   '💧', 'Rain barrel', showCampfires);
+      addPointMarkers(ovl.troughs,   '🌾', 'Feeding trough', showCampfires);
 
       if (showDead && ovl.dead) {
         ovl.dead.forEach(pt => {
@@ -1890,6 +1890,34 @@
     const plotsInView = () => (pzData.farming || []).filter(p => p.x != null && p.y != null
       && p.x >= MAP_MIN_X && p.x <= MAP_MAX_X && p.y >= MAP_MIN_Y && p.y <= MAP_MAX_Y);
 
+    // Hordes (mod 2.4.0+): clusters of 8+ zombies in loaded cells with mean heading.
+    const ARROWS = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
+    // Screen angle (clockwise from east) of a world direction. Top-down: y points down.
+    // Iso: screen = (x - y, (x + y) / 2).
+    function hordeAngle(h, iso) {
+      const sx = iso ? h.dx - h.dy : h.dx, sy = iso ? (h.dx + h.dy) / 2 : h.dy;
+      return Math.atan2(sy, sx);
+    }
+    const octant = a => ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
+    const hordeArrow = (h, iso) => ARROWS[octant(hordeAngle(h, iso))];
+    const hordeDrifting = h => h.cohesion >= 0.35 && h.moving >= h.count / 3;
+    function hordeLabel(h) {
+      const dir = hordeDrifting(h) ? `heading ${['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'][octant(Math.atan2(h.dy, h.dx))]}` : 'milling about';
+      return `Horde of ${h.count} · ${dir}`;
+    }
+    const hordesInView = () => (pzData.hordes || []).filter(h => h.x >= MAP_MIN_X && h.x <= MAP_MAX_X && h.y >= MAP_MIN_Y && h.y <= MAP_MAX_Y);
+
+    // Drift: zpop density change per cell over the last 6h (/api/pz/density/drift).
+    let _driftLoadedAt = 0;
+    function pzLoadDrift(force) {
+      if (!document.getElementById('map-show-drift')?.checked) return;
+      if (!force && Date.now() - _driftLoadedAt < 300000) return;
+      _driftLoadedAt = Date.now();
+      fetch(`${API_BASE}/api/pz/density/drift?hours=6`).then(r => r.json())
+        .then(d => { pzData.drift = d; mapDataRedraw(redrawModLayers); }).catch(() => {});
+    }
+    setInterval(() => pzLoadDrift(true), 300000);
+
     let modLayerMarkers = [];
     function redrawModLayers() {
       if (!leafletMap) return;
@@ -1916,6 +1944,35 @@
           }).addTo(leafletMap);
           m.bindTooltip(escHtml(animalLabel(a)), { direction: 'top', offset: [0, -6], className: 'player-label' });
           modLayerMarkers.push(m);
+        });
+      }
+      if (document.getElementById('map-show-hordes')?.checked) {
+        hordesInView().forEach(h => {
+          const size = Math.min(30, 12 + Math.sqrt(h.count) * 2);
+          const arrow = hordeDrifting(h)
+            ? `<div style="position:absolute;left:50%;top:50%;width:${size * 1.6}px;height:2px;background:#ef4444;transform-origin:0 50%;transform:rotate(${hordeAngle(h, false)}rad);"></div>`
+            : '';
+          const m = L.marker(pzToLatLng(h.x, h.y), {
+            icon: L.divIcon({ className: '',
+              html: `<div style="position:relative;width:${size}px;height:${size}px;">${arrow}<div style="position:absolute;inset:0;border-radius:50%;background:rgba(239,68,68,0.35);border:2px solid #ef4444;color:#fff;font:700 10px sans-serif;display:flex;align-items:center;justify-content:center;text-shadow:0 0 2px #000;">${h.count}</div></div>`,
+              iconSize: [size, size], iconAnchor: [size / 2, size / 2] }),
+            zIndexOffset: 50,
+          }).addTo(leafletMap);
+          m.bindTooltip(escHtml(hordeLabel(h)), { direction: 'top', offset: [0, -size / 2], className: 'player-label' });
+          modLayerMarkers.push(m);
+        });
+      }
+      if (document.getElementById('map-show-drift')?.checked && pzData.drift?.cells?.length) {
+        const maxD = Math.max(...pzData.drift.cells.map(c => Math.abs(c.delta)), 1);
+        pzData.drift.cells.forEach(c => {
+          const x0 = c.cx * PZ_CELL, y0 = c.cy * PZ_CELL;
+          const gain = c.delta > 0;
+          const r = L.rectangle([pzToLatLng(x0, y0 + PZ_CELL), pzToLatLng(x0 + PZ_CELL, y0)], {
+            color: gain ? '#ef4444' : '#3b82f6', weight: 1,
+            fillColor: gain ? '#ef4444' : '#3b82f6', fillOpacity: 0.12 + 0.5 * Math.abs(c.delta) / maxD,
+          }).addTo(leafletMap);
+          r.bindTooltip(`${gain ? 'More' : 'Fewer'} zombies than 6h ago (~${Math.round(Math.abs(c.delta) / 22)})`, { direction: 'center', className: 'player-label' });
+          modLayerMarkers.push(r);
         });
       }
       if (document.getElementById('map-show-farming')?.checked) {
@@ -2175,16 +2232,16 @@
 
       // Campfires / drums
       if (chk('map-show-campfires')) {
-        (ovl.campfires || []).forEach(pt => drawEmoji(pt.x, pt.y, 0, '🔥', 10, 'Campfire'));
-        (ovl.drums     || []).forEach(pt => drawEmoji(pt.x, pt.y, 0, '🛢', 10, 'Metal drum'));
-        (ovl.barrels   || []).forEach(pt => drawEmoji(pt.x, pt.y, 0, '💧', 10, 'Rain barrel'));
+        const lbl = (t, pt) => t + (pt.name ? ': ' + pt.name : '');
+        (ovl.campfires || []).forEach(pt => drawEmoji(pt.x, pt.y, pt.z || 0, '🔥', 10, lbl('Campfire', pt)));
+        (ovl.drums     || []).forEach(pt => drawEmoji(pt.x, pt.y, pt.z || 0, '🛢', 10, lbl('Metal drum', pt)));
+        (ovl.barrels   || []).forEach(pt => drawEmoji(pt.x, pt.y, pt.z || 0, '💧', 10, lbl('Rain barrel', pt)));
+        (ovl.troughs   || []).forEach(pt => drawEmoji(pt.x, pt.y, pt.z || 0, '🌾', 10, lbl('Feeding trough', pt)));
       }
 
       // Farming / traps
-      if (chk('map-show-farming'))
-        (ovl.farming || []).forEach(pt => drawEmoji(pt.x, pt.y, 0, '🌿', 9, 'Farm plot'));
       if (chk('map-show-traps'))
-        (ovl.traps || []).forEach(pt => drawEmoji(pt.x, pt.y, 0, '🕷', 9, 'Trap'));
+        (ovl.traps || []).forEach(pt => drawEmoji(pt.x, pt.y, pt.z || 0, '🕷', 9, 'Trap' + (pt.name ? ': ' + pt.name : '')));
 
       // Dead players
       if (chk('map-show-dead'))
@@ -2212,6 +2269,9 @@
       if (chk('map-show-animals'))
         (pzData.animals || []).filter(a => !a.dead && inBounds(a.x, a.y))
           .forEach(a => drawEmoji(a.x, a.y, a.z || 0, animalEmoji(a.type), 9, animalLabel(a)));
+      if (chk('map-show-hordes'))
+        hordesInView().filter(h => inBounds(h.x, h.y))
+          .forEach(h => drawEmoji(h.x, h.y, 0, hordeDrifting(h) ? hordeArrow(h, true) : '🧟', Math.min(22, 11 + Math.sqrt(h.count)), hordeLabel(h)));
       if (chk('map-show-farming'))
         plotsInView().filter(p => inBounds(p.x, p.y))
           .forEach(p => drawEmoji(p.x, p.y, p.z || 0, plotEmoji(p), 7, plotLabel(p)));
@@ -2536,6 +2596,9 @@
         .then(d => { pzData.animals = d.animals || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
       fetch(`${API_BASE}/api/pz/corpses`).then(r => r.json())
         .then(d => { pzData.corpses = d.corpses || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
+      fetch(`${API_BASE}/api/pz/zombies`).then(r => r.json())
+        .then(d => { pzData.liveCells = d.cells || []; pzData.hordes = d.hordes || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
+      pzLoadDrift(true);
       fetch(`${API_BASE}/api/pz/farming`).then(r => r.json())
         .then(d => { pzData.farming = d.plots || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
       fetch(`${API_BASE}/api/pz/generators`).then(r => r.json())
@@ -2633,6 +2696,14 @@
         try {
           const d = JSON.parse(e.data);
           pzData.animals = d.animals || [];
+          if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers();
+        } catch {}
+      });
+      sseSource.addEventListener('zombies', e => {
+        try {
+          const d = JSON.parse(e.data);
+          pzData.liveCells = d.cells || [];
+          pzData.hordes = d.hordes || [];
           if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers();
         } catch {}
       });
