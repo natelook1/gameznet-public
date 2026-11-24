@@ -859,6 +859,22 @@
         // B42: the mod's infection stat or a live bite wound marks a player as bitten.
         const infected = !!(p.infected_risk || (prof?.stats?.zombie_infection > 0)
           || (liveWounds || []).some(w => w.bitten));
+        // Mod 2.2.0+: real infection countdown (game hours to zombification).
+        const inf = !p.isDead && prof?.infection;
+        let infHtml = '';
+        if (inf?.infected) {
+          const left = inf.hours_left;
+          const pct = (left != null && inf.mortality_h > 0)
+            ? Math.min(100, Math.max(0, 100 - left / inf.mortality_h * 100)) : null;
+          const leftTxt = left == null ? 'time unknown'
+            : left >= 24 ? `~${(left / 24).toFixed(1)} days left` : `~${left.toFixed(1)}h left`;
+          infHtml = `<div class="infection-alert visible">🧟 Infected: ${leftTxt} (game time)
+            ${pct != null ? `<div style="height:4px;background:rgba(239,68,68,0.2);border-radius:2px;margin-top:6px">
+              <div style="height:100%;width:${pct.toFixed(0)}%;background:#ef4444;border-radius:2px"></div></div>` : ''}
+          </div>`;
+        } else if (inf?.fake) {
+          infHtml = `<div class="infection-alert visible" style="color:var(--muted)">😰 Hypochondria: fake symptoms, not infected</div>`;
+        }
         return `<div class="player-card${infected ? ' infected' : ''}${p.isDead ? ' dead' : ''}">
           <div class="player-name">
             ${p.name}
@@ -873,6 +889,7 @@
             ${killTotal > 0 ? `<span>🔪 ${killTotal} kills</span>` : profKills > 0 ? `<span>🔪 ${profKills} kills</span>` : ''}
             ${p.lastConnection ? `<span>🕐 ${formatLastConn(p.lastConnection)}</span>` : ''}
           </div>
+          ${infHtml}
           ${profileHtml}
 
           ${hasWoundData ? `
