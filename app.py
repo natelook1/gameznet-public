@@ -276,7 +276,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.13.16"
+VERSION = "1.13.17"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1046,7 +1046,12 @@ def api_launch_game():
     # Use steam:// URL via Windows shell — correctly signals the running Steam instance.
     # Conan Exiles Enhanced: launch clean with no args, Funcom launcher swallows them.
     try:
-        if str(appid) == "526870":  # Satisfactory uses +open
+        if str(appid) == "108600":
+            # Project Zomboid B42: +connect opens a login popup that can't read B42's saved
+            # per-server accounts, so it always comes up empty. Launch plain instead and
+            # let the player connect from Join > Favorites, where the account is saved.
+            os.startfile(f"steam://run/{appid}")
+        elif str(appid) == "526870":  # Satisfactory uses +open
             os.startfile(f"steam://run/{appid}//+open {ip}:{port}/")
         elif str(appid) == "440900":  # Conan Exiles Enhanced
             # FLS auth requires FuncomLauncher to be running. Strategy:
