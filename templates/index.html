@@ -2182,7 +2182,19 @@
         top: 2vh; left: 2vw; width: 96vw; height: 96vh;
       }
     }
-  </style>
+  
+  /* chat channels */
+  .chat-tab-add { opacity: .7; }
+  .chat-tab-add:hover { opacity: 1; }
+  #chat-channel-picker { position: absolute; z-index: 30; margin: 4px 10px; min-width: 240px; background: var(--panel, #10141c);
+    border: 1px solid var(--border, #2a3344); border-radius: 6px; padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+  .chat-channel-picker-title { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .6; margin: 0 2px 6px; }
+  .chat-channel-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 2px; font-size: 12px; }
+  .chat-channel-bridge { font-size: 9px; padding: 1px 5px; border-radius: 3px; border: 1px solid currentColor; opacity: .7; margin-left: 4px; }
+  .chat-channel-btn { font-size: 11px; padding: 2px 10px; border-radius: 4px; cursor: pointer; background: transparent;
+    color: var(--accent, #22d3ee); border: 1px solid var(--accent, #22d3ee); }
+  .chat-channel-btn.joined { color: inherit; border-color: var(--border, #2a3344); opacity: .8; }
+</style>
 </head>
 <body>
 
@@ -2303,6 +2315,7 @@
       <div class="chat-tabs" id="chat-tabs-container">
         <div class="chat-tab active" onclick="setChatTarget('global')"># Global</div>
       </div>
+      <div id="chat-channel-picker" style="display:none"></div>
       <div class="chat-toolbar">
         <button class="chat-toolbar-btn" id="chat-inbox-btn" onclick="toggleChatInbox()" title="Conversations">☰</button>
         <button class="chat-toolbar-btn" id="chat-search-btn" onclick="toggleChatSearch()" title="Search">🔍</button>
@@ -4025,15 +4038,100 @@
     return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
   }
 
+  // ── Chat channels: '#Global' is channel 'general'; game channels are opt-in and
+  // appear as tabs with target 'ch:<id>'. DMs keep the bare player name as target.
+  let chatChannels = [];   // [{id, name, game, bridge, joined, unread}]
+  const chatEsc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+  const isChannelTarget = t => typeof t === 'string' && t.startsWith('ch:');
+  const channelOfTarget = t => t === 'global' ? 'general' : (isChannelTarget(t) ? t.slice(3) : null);
+  const chatTargetForChannel = id => id === 'general' ? 'global' : `ch:${id}`;
+  const chatChannelName = id => (chatChannels.find(c => c.id === id) || {}).name || id;
+  const chatChannelLoaded = new Set();
+
+  async function loadChatChannels() {
+    try {
+      const r = await fetch('/api/chat/channels', { headers: { 'X-Token': state.token } });
+      if (!r.ok) return;
+      chatChannels = await r.json();
+      chatChannels.forEach(c => {
+        if (c.id !== 'general' && c.joined && c.unread) chatUnread[chatTargetForChannel(c.id)] = c.unread;
+      });
+      renderChatTabs();
+      updateGlobalChatBadge();
+    } catch {}
+  }
+
+  window.toggleChatChannel = async function(id, join) {
+    try {
+      const r = await fetch('/api/chat/channels/join', { method: 'POST', headers: {'Content-Type':'application/json', 'X-Token': state.token}, body: JSON.stringify({ channel: id, join }) });
+      if (!r.ok) throw new Error();
+      const c = chatChannels.find(x => x.id === id);
+      if (c) c.joined = join;
+      if (join) { renderChannelPicker(); setChatTarget(chatTargetForChannel(id)); }
+      else {
+        const t = chatTargetForChannel(id);
+        delete chatUnread[t];
+        chatChannelLoaded.delete(id);
+        const box = document.getElementById(`chat-box-${t}`);
+        if (box) box.remove();
+        if (chatActiveTarget === t) setChatTarget('global'); else renderChatTabs();
+        renderChannelPicker();
+      }
+    } catch { toast('Could not change channel', 'danger'); }
+  };
+
+  function renderChannelPicker() {
+    const el = document.getElementById('chat-channel-picker');
+    if (!el) return;
+    el.innerHTML = '<div class="chat-channel-picker-title">Channels</div>' + chatChannels.filter(c => c.id !== 'general').map(c => `
+      <div class="chat-channel-row">
+        <span># ${chatEsc(c.name)}${c.bridge ? ' <span class="chat-channel-bridge" title="Mirrored into the game">in-game</span>' : ''}</span>
+        <button class="chat-channel-btn ${c.joined ? 'joined' : ''}" onclick="toggleChatChannel('${c.id}', ${!c.joined})">${c.joined ? 'Leave' : 'Join'}</button>
+      </div>`).join('');
+  }
+
+  window.toggleChannelPicker = function() {
+    const el = document.getElementById('chat-channel-picker');
+    if (!el) return;
+    const show = el.style.display === 'none' || !el.style.display;
+    if (show) renderChannelPicker();
+    el.style.display = show ? 'block' : 'none';
+  };
+
+  function markChannelRead(target) {
+    const ch = channelOfTarget(target);
+    if (!ch || ch === 'general') return;
+    const box = document.getElementById(`chat-box-${target}`);
+    const ids = box ? [...box.querySelectorAll('[data-msg-id]')].map(e => parseInt(e.dataset.msgId, 10)).filter(Number.isFinite) : [];
+    const last = ids.length ? Math.max(...ids) : 0;
+    if (last) fetch('/api/chat/channels/read', { method: 'POST', headers: {'Content-Type':'application/json', 'X-Token': state.token}, body: JSON.stringify({ channel: ch, last_id: last }) }).catch(()=>{});
+  }
+
+  async function loadChannelHistory(target) {
+    const ch = channelOfTarget(target);
+    try {
+      const res = await fetch(`/api/chat?channel=${encodeURIComponent(ch)}`);
+      const msgs = await res.json();
+      if (Array.isArray(msgs) && msgs.length) appendDMMessages(target, msgs);
+      if (chatActiveTarget === target) markChannelRead(target);
+    } catch {}
+  }
+
   function renderChatTabs() {
     const container = document.getElementById('chat-tabs-container');
     let html = `<div class="chat-tab ${chatActiveTarget === 'global' ? 'active' : ''} ${chatUnread['global'] ? 'unread' : ''}" onclick="setChatTarget('global')"># Global ${chatUnread['global'] ? `<span style="font-size:9px">(${chatUnread['global']})</span>` : ''}</div>`;
+    chatChannels.filter(c => c.id !== 'general' && c.joined).forEach(c => {
+      const t = chatTargetForChannel(c.id);
+      const unread = chatUnread[t] || 0;
+      html += `<div class="chat-tab ${chatActiveTarget === t ? 'active' : ''} ${unread ? 'unread' : ''}" onclick="setChatTarget('${t}')"># ${chatEsc(c.name)} ${unread ? `<span style="font-size:9px">(${unread})</span>` : ''}</div>`;
+    });
     chatOpenedTabs.forEach(target => {
-      if (target === 'global') return;
+      if (target === 'global' || isChannelTarget(target)) return;
       const online = onlinePlayerNames.has(target);
       const unread = chatUnread[target] || 0;
       html += `<div class="chat-tab ${chatActiveTarget === target ? 'active' : ''} ${unread ? 'unread' : ''}" onclick="setChatTarget('${target}')">${online ? '<span class="chat-tab-dot"></span>' : ''}@${target} ${unread ? `<span style="font-size:9px">(${unread})</span>` : ''} <span class="chat-tab-close" onclick="event.stopPropagation(); closeChatTab('${target}')">✕</span></div>`;
     });
+    html += `<div class="chat-tab chat-tab-add" title="Join or leave game channels" onclick="toggleChannelPicker()">＋</div>`;
     container.innerHTML = html;
   }
 
@@ -4068,10 +4166,16 @@
     newBox.scrollTop = newBox.scrollHeight;
 
     const input = document.getElementById('chat-input');
-    input.placeholder = target === 'global' ? 'Type a message...' : `Message @${target}...`;
+    input.placeholder = target === 'global' ? 'Type a message...'
+      : isChannelTarget(target) ? `Message #${chatChannelName(channelOfTarget(target))}...` : `Message @${target}...`;
     input.focus();
+    const picker = document.getElementById('chat-channel-picker');
+    if (picker) picker.style.display = 'none';
 
-    if (target !== 'global') {
+    if (isChannelTarget(target)) {
+      if (!chatChannelLoaded.has(target)) { chatChannelLoaded.add(target); loadChannelHistory(target); }
+      else markChannelRead(target);
+    } else if (target !== 'global') {
       fetch(`/api/chat/dm/read?user1=${encodeURIComponent(state.name)}&user2=${encodeURIComponent(target)}`, {method:'POST'}).catch(()=>{});
       if (!chatHistoryLoaded.has(target)) {
         loadDMHistory(target);
@@ -4474,8 +4578,8 @@
     try {
       let res;
       const replyId = chatReplyTo?.id ? parseInt(chatReplyTo.id) : undefined;
-      if (target === 'global') {
-        res = await fetch('/api/chat/send', { method: 'POST', headers: {'Content-Type':'application/json', 'X-Token': state.token}, body: JSON.stringify({ body: sendBody, reply_to_id: replyId, attachment_id }) });
+      if (target === 'global' || isChannelTarget(target)) {
+        res = await fetch('/api/chat/send', { method: 'POST', headers: {'Content-Type':'application/json', 'X-Token': state.token}, body: JSON.stringify({ body: sendBody, reply_to_id: replyId, attachment_id, channel: channelOfTarget(target) }) });
       } else {
         res = await fetch('/api/chat/dm/send', { method: 'POST', headers: {'Content-Type':'application/json', 'X-Token': state.token}, body: JSON.stringify({ to_name: target, body: sendBody, reply_to_id: replyId, attachment_id }) });
       }
@@ -4621,6 +4725,7 @@
     if (_chatStream) return;
     
     await pollChat(); // Fetch any history missed while disconnected
+    await loadChatChannels();
     
     try {
       const uRes = await fetch(`/api/chat/dm/unread?name=${encodeURIComponent(state.name)}`);
@@ -4685,6 +4790,20 @@
           return;
         }
 
+        if (msg.channel && msg.channel !== 'general') {
+          const c = chatChannels.find(x => x.id === msg.channel);
+          if (!c || !c.joined) return;   // not a member: ignore
+          const t = chatTargetForChannel(msg.channel);
+          appendDMMessages(t, [msg]);
+          if (chatActiveTarget === t) markChannelRead(t);
+          else if (msg.from_name !== state.name) {
+            chatUnread[t] = (chatUnread[t] || 0) + 1;
+            chatBeep();
+            updateGlobalChatBadge();
+            renderChatTabs();
+          }
+          return;
+        }
         if (chatActiveTarget === 'global') {
           appendMessages([msg]);
         } else {

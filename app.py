@@ -276,7 +276,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.13.20"
+VERSION = "1.13.21"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1741,8 +1741,9 @@ def api_chat():
     """Proxy GET /api/chat?since= to backend."""
     import urllib.request
     since = request.args.get("since", "")
+    channel = request.args.get("channel", "general")
     try:
-        url = f"{_backend_url()}/api/chat?since={urllib.request.quote(since)}"
+        url = f"{_backend_url()}/api/chat?since={urllib.request.quote(since)}&channel={urllib.request.quote(channel)}"
         _chat_tok = _player_token()
         req = urllib.request.Request(url, headers={"User-Agent": "GamezNET", "X-Token": _chat_tok})
         with urllib.request.urlopen(req, timeout=5) as resp:
@@ -2787,7 +2788,8 @@ def api_chat_stream():
     import urllib.request as _ur
     from flask import Response, stream_with_context
     name = request.args.get("name", "")
-    url = f"{_backend_url()}/api/chat/stream?name={_ur.quote(name)}"
+    # channels=1: this client understands chat channels (older ones only get Global)
+    url = f"{_backend_url()}/api/chat/stream?name={_ur.quote(name)}&channels=1"
     def _generate():
         import socket as _socket
         buf = b""

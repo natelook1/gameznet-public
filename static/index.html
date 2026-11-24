@@ -246,7 +246,19 @@
 
     ::-webkit-scrollbar { width: 3px; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-  </style>
+  
+  .chan-row { display: flex; gap: 6px; padding: 8px 12px; overflow-x: auto; flex-shrink: 0; }
+  .chan-chip { flex-shrink: 0; font-size: 12px; padding: 4px 10px; border-radius: 999px; background: transparent;
+    color: inherit; border: 1px solid rgba(255,255,255,.15); opacity: .75; }
+  .chan-chip.active { opacity: 1; border-color: var(--accent, #22d3ee); color: var(--accent, #22d3ee); }
+  .chan-unread { font-size: 10px; background: var(--accent, #22d3ee); color: #000; border-radius: 999px; padding: 0 5px; margin-left: 3px; }
+  .chan-picker { margin: 0 12px 8px; padding: 6px 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; flex-shrink: 0; }
+  .chan-pick-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; }
+  .chan-bridge { font-size: 9px; padding: 1px 5px; border: 1px solid currentColor; border-radius: 3px; opacity: .7; }
+  .chan-pick-btn { font-size: 12px; padding: 3px 12px; border-radius: 6px; background: transparent;
+    color: var(--accent, #22d3ee); border: 1px solid var(--accent, #22d3ee); }
+  .chan-pick-btn.joined { color: inherit; border-color: rgba(255,255,255,.2); opacity: .8; }
+</style>
 </head>
 <body>
 <div id="root"></div>
@@ -254,7 +266,7 @@
   import { h, render } from '/vendor/preact.mjs';
   import { useState, useEffect, useRef } from '/vendor/hooks.mjs';
   import htm from '/vendor/htm.mjs';
-  import { WowTab } from '/wow.js?v=1.13.20';
+  import { WowTab } from '/wow.js?v=1.13.21';
   const html = htm.bind(h);
 
   const API = 'https://gameznet.looknet.ca';
@@ -671,7 +683,12 @@
   }
 
   // ── Chat Tab ────────────────────────────────────────────────────────────────
+  // Channels: "Global" is channel 'general'; game channels are opt-in (the chip
+  // row shows joined ones, ＋ opens join/leave). Polling, per active channel.
   function ChatTab({ me }) {
+    const [channels, setChannels] = useState([]);
+    const [channel, setChannel] = useState('general');
+    const [picker, setPicker] = useState(false);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [sending, setSending] = useState(false);
@@ -679,34 +696,54 @@
     const msgsRef = useRef(null);
     const lastSince = useRef(new Date(0).toISOString());
     const atBottom = useRef(true);
+    const chanRef = useRef('general');
+
+    async function loadChannels() {
+      try { const r = await req('/api/chat/channels'); if (r.ok) setChannels(await r.json()); } catch {}
+    }
+    function markRead(list, ch) {
+      if (ch === 'general' || !list.length) return;
+      const last = Math.max(...list.map(m => m.id || 0));
+      if (last) req('/api/chat/channels/read', { method: 'POST', body: JSON.stringify({ channel: ch, last_id: last }) }).catch(() => {});
+    }
+
+    useEffect(() => { loadChannels(); const iv = setInterval(loadChannels, 15000); return () => clearInterval(iv); }, []);
 
     useEffect(() => {
+      chanRef.current = channel;
+      setMessages([]);
+      lastSince.current = new Date(0).toISOString();
+      let alive = true;
       async function init() {
         try {
-          const res = await req('/api/chat');
-          if (!res.ok) return;
+          const res = await req(`/api/chat?channel=${encodeURIComponent(channel)}`);
+          if (!res.ok || !alive) return;
           const msgs = await res.json();
           setMessages(msgs);
           if (msgs.length) lastSince.current = msgs[msgs.length - 1].sent_at;
+          markRead(msgs, channel);
+          setChannels(cs => cs.map(c => c.id === channel ? { ...c, unread: 0 } : c));
           setTimeout(() => bottomRef.current?.scrollIntoView(), 80);
         } catch {}
       }
       init();
       const iv = setInterval(async () => {
         try {
-          const res = await req(`/api/chat?since=${encodeURIComponent(lastSince.current)}`);
-          if (!res.ok) return;
+          const ch = chanRef.current;
+          const res = await req(`/api/chat?channel=${encodeURIComponent(ch)}&since=${encodeURIComponent(lastSince.current)}`);
+          if (!res.ok || ch !== chanRef.current) return;
           const fresh = await res.json();
           if (!fresh.length) return;
           lastSince.current = fresh[fresh.length - 1].sent_at;
+          markRead(fresh, ch);
           setMessages(prev => {
             const ids = new Set(prev.map(m => m.id));
             return [...prev, ...fresh.filter(m => !ids.has(m.id))].slice(-300);
           });
         } catch {}
       }, 3000);
-      return () => clearInterval(iv);
-    }, []);
+      return () => { alive = false; clearInterval(iv); };
+    }, [channel]);
 
     useEffect(() => { if (atBottom.current) bottomRef.current?.scrollIntoView(); }, [messages]);
 
@@ -715,17 +752,44 @@
       const body = input.trim();
       if (!body || sending) return;
       setSending(true); setInput('');
-      try { await req('/api/chat/send', { method: 'POST', body: JSON.stringify({ name: me.name, body }) }); }
+      try { await req('/api/chat/send', { method: 'POST', body: JSON.stringify({ name: me.name, body, channel }) }); }
       catch {} finally { setSending(false); }
     }
 
+    async function setJoined(id, join) {
+      try {
+        const r = await req('/api/chat/channels/join', { method: 'POST', body: JSON.stringify({ channel: id, join }) });
+        if (!r.ok) return;
+        setChannels(cs => cs.map(c => c.id === id ? { ...c, joined: join, unread: 0 } : c));
+        if (join) { setChannel(id); setPicker(false); }
+        else if (channel === id) setChannel('general');
+      } catch {}
+    }
+
+    const joined = channels.filter(c => c.joined);
+    const current = channels.find(c => c.id === channel);
     return html`
       <div class="chat-wrap">
+        <div class="chan-row">
+          ${(joined.length ? joined : [{ id: 'general', name: 'Global' }]).map(c => html`
+            <button key=${c.id} class="chan-chip ${c.id === channel ? 'active' : ''}" onClick=${() => setChannel(c.id)}>
+              # ${c.name}${c.unread && c.id !== channel ? html` <span class="chan-unread">${c.unread}</span>` : ''}
+            </button>`)}
+          <button class="chan-chip chan-add" title="Join or leave game channels" onClick=${() => setPicker(p => !p)}>＋</button>
+        </div>
+        ${picker && html`
+          <div class="chan-picker">
+            ${channels.filter(c => c.id !== 'general').map(c => html`
+              <div class="chan-pick-row" key=${c.id}>
+                <span># ${c.name}${c.bridge ? html` <span class="chan-bridge">in-game</span>` : ''}</span>
+                <button class="chan-pick-btn ${c.joined ? 'joined' : ''}" onClick=${() => setJoined(c.id, !c.joined)}>${c.joined ? 'Leave' : 'Join'}</button>
+              </div>`)}
+          </div>`}
         <div class="messages" ref=${msgsRef} onScroll=${() => {
           const el = msgsRef.current;
           atBottom.current = el ? el.scrollHeight - el.scrollTop - el.clientHeight < 60 : true;
         }}>
-          ${messages.length === 0 && html`<div class="loading">Loading…</div>`}
+          ${messages.length === 0 && html`<div class="loading">${current && channel !== 'general' ? `No messages in #${current.name} yet` : 'Loading…'}</div>`}
           ${messages.map((m, i) => {
             const isMe = m.from_name === me.name;
             const showHead = i === 0 || messages[i - 1].from_name !== m.from_name;
@@ -744,7 +808,7 @@
           <div ref=${bottomRef} />
         </div>
         <form class="input-bar" onSubmit=${send}>
-          <input class="msg-input" placeholder="Message…" value=${input} onInput=${e => setInput(e.target.value)} />
+          <input class="msg-input" placeholder=${channel === 'general' ? 'Message…' : `Message #${current?.name || channel}…`} value=${input} onInput=${e => setInput(e.target.value)} />
           <button type="submit" class="send-btn" disabled=${!input.trim() || sending}>➤</button>
         </form>
       </div>
