@@ -175,6 +175,19 @@
     #iso-heatmap-canvas, #iso-towns-canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
     #map-controls { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 1000; background: rgba(15,15,19,0.85); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--text); backdrop-filter: blur(4px); }
     #map-controls label { color: var(--text); }
+    .map-toolbar { display:flex; gap:6px; align-items:center; }
+    #map-layers-btn { background:transparent; border:1px solid var(--border); color:var(--text); padding:3px 8px; border-radius:5px; cursor:pointer; font-size:12px; }
+    #map-layers { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:8px; }
+    #map-controls.collapsed #map-layers, #map-controls.collapsed #map-rare-filters { display:none !important; }
+    .map-chip-group { display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
+    .map-chip-group-name { font-size:10px; text-transform:uppercase; letter-spacing:.05em; opacity:.5; margin-right:2px; }
+    .map-chip { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; border:1px solid var(--border); cursor:pointer; font-size:11px; opacity:.45; user-select:none; transition:opacity .1s, background .1s; }
+    #map-rare-filters label { padding:1px 7px; border-radius:999px; border:1px solid rgba(253,224,71,0.2); opacity:.45; user-select:none; }
+    #map-rare-filters label:has(input:checked) { opacity:1; background:rgba(253,224,71,0.1); border-color:rgba(253,224,71,0.45); }
+    #map-rare-filters input { display:none; }
+    .map-chip input { display:none; }
+    .map-chip:has(input:checked) { opacity:1; background:rgba(255,255,255,0.07); border-color:rgba(255,255,255,0.25); }
+    .map-chip:hover { opacity:.85; }
     #map-fullscreen-btn, #map-home-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 3px 8px; border-radius: 5px; cursor: pointer; font-size: 14px; line-height: 1; }
     .player-label { background: transparent; border: none; box-shadow: none; color: #22c55e; font-size: 11px; font-weight: 700; text-shadow: 0 0 3px #000, 0 0 3px #000; white-space: nowrap; }
     /* Iso marker styles */
@@ -438,28 +451,20 @@
             </div>
             <div id="map-controls">
               <div id="map-gametime" style="font-size:12px;margin-bottom:8px;color:var(--text);opacity:0.9;display:none;"></div>
-              <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-players" checked onchange="mapRedrawAll()"> Players</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-vehicles" checked onchange="mapRedrawAll()"> Vehicles</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-destroyed" onchange="mapRedrawAll()"> Wrecked</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-campfires" checked onchange="mapRedrawAll()"> Campfires</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"> Farming</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"> Traps</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-dead" checked onchange="mapRedrawAll()"> Dead</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-animals" checked onchange="mapRedrawAll()"> Animals</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-graves" checked onchange="mapRedrawAll()"> Graves</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-reanimated" checked onchange="mapRedrawAll()"> Reanimated</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-safehouses" checked onchange="mapRedrawAll()"> Safehouses</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-heatmap" onchange="mapRedrawAll()"> Heatmap</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"> Towns</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-rare" checked onchange="toggleRareFilters();mapRedrawAll()"> Rare</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-crates" onchange="mapRedrawAll()"> Crates</label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;" title="Warning: may show 300+ markers and lag the map"><input type="checkbox" id="map-show-empty-crates" onchange="mapRedrawAll()"> <span style="color:#f59e0b;">Empty crates ⚠</span></label>
+              <div class="map-toolbar">
+                <button id="map-layers-btn" onclick="toggleMapLayers()" title="Show/hide layer filters">☰ Layers</button>
+                <span style="flex:1"></span>
                 <button id="map-home-btn" onclick="mapHome()" title="Home: back to the players">🏠</button>
                 <button id="map-fullscreen-btn" onclick="toggleMapFullscreen()">⛶</button>
                 <button id="map-mode-btn" onclick="toggleMapMode()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:12px;">Iso View</button>
               </div>
-              <div id="map-legend" style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap &nbsp;💎 rare &nbsp;📦 crate &nbsp;🐄 animal &nbsp;🏠 safehouse &nbsp;🪦 grave &nbsp;🧟 reanimated</div>
+              <div id="map-layers">
+                  <div class="map-chip-group"><span class="map-chip-group-name">Survivors</span><label class="map-chip" title="Players (🟢 healthy, 🔴 infected)"><input type="checkbox" id="map-show-players" checked onchange="mapRedrawAll()"><span>🟢</span>Players</label><label class="map-chip" title="Dead"><input type="checkbox" id="map-show-dead" checked onchange="mapRedrawAll()"><span>💀</span>Dead</label><label class="map-chip" title="Graves"><input type="checkbox" id="map-show-graves" checked onchange="mapRedrawAll()"><span>🪦</span>Graves</label><label class="map-chip" title="Dead players' zombies, last seen spot"><input type="checkbox" id="map-show-reanimated" checked onchange="mapRedrawAll()"><span>🧟</span>Reanimated</label></div>
+                  <div class="map-chip-group"><span class="map-chip-group-name">Bases</span><label class="map-chip" title="Safehouses"><input type="checkbox" id="map-show-safehouses" checked onchange="mapRedrawAll()"><span>🏠</span>Safehouses</label><label class="map-chip" title="Campfires"><input type="checkbox" id="map-show-campfires" checked onchange="mapRedrawAll()"><span>🔥</span>Campfires</label><label class="map-chip" title="Farming"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"><span>🌿</span>Farming</label><label class="map-chip" title="Traps"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"><span>🕷</span>Traps</label><label class="map-chip" title="Animals"><input type="checkbox" id="map-show-animals" checked onchange="mapRedrawAll()"><span>🐄</span>Animals</label></div>
+                  <div class="map-chip-group"><span class="map-chip-group-name">Vehicles</span><label class="map-chip" title="Vehicles"><input type="checkbox" id="map-show-vehicles" checked onchange="mapRedrawAll()"><span>⬜</span>Vehicles</label><label class="map-chip" title="Wrecked"><input type="checkbox" id="map-show-destroyed" onchange="mapRedrawAll()"><span>💥</span>Wrecked</label></div>
+                  <div class="map-chip-group"><span class="map-chip-group-name">Loot</span><label class="map-chip" title="Rare"><input type="checkbox" id="map-show-rare" checked onchange="toggleRareFilters();mapRedrawAll()"><span>💎</span>Rare</label><label class="map-chip" title="Crates"><input type="checkbox" id="map-show-crates" onchange="mapRedrawAll()"><span>📦</span>Crates</label><label class="map-chip" title="Warning: may show 300+ markers and lag the map"><input type="checkbox" id="map-show-empty-crates" onchange="mapRedrawAll()"><span>⚠</span>Empty crates</label></div>
+                  <div class="map-chip-group"><span class="map-chip-group-name">Overlays</span><label class="map-chip" title="Heatmap"><input type="checkbox" id="map-show-heatmap" onchange="mapRedrawAll()"><span>🌡</span>Heatmap</label><label class="map-chip" title="Towns"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"><span>🏘</span>Towns</label></div>
+              </div>
               <div id="map-rare-filters" style="display:none;margin-top:4px;padding:4px 6px;background:rgba(253,224,71,0.08);border:1px solid rgba(253,224,71,0.25);border-radius:5px;font-size:11px;gap:8px;flex-wrap:wrap;align-items:center;">
                 <span style="opacity:0.6;white-space:nowrap;">Rare filters:</span>
                 <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-firearms" checked onchange="mapRedrawAll()"> 🔫 Firearms</label>
@@ -1724,6 +1729,13 @@
         if (leafletMap) { leafletMap.invalidateSize(); redrawPlayers(); redrawVehicles(); redrawOverlays(); redrawTowns(); }
       }
     }
+
+    function toggleMapLayers() {
+      const c = document.getElementById('map-controls');
+      c.classList.toggle('collapsed');
+      try { localStorage.setItem('pzMapLayersCollapsed', c.classList.contains('collapsed') ? '1' : ''); } catch {}
+    }
+    try { if (localStorage.getItem('pzMapLayersCollapsed')) document.getElementById('map-controls')?.classList.add('collapsed'); } catch {}
 
     function toggleRareFilters() {
       const el = document.getElementById('map-rare-filters');
