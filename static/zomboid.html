@@ -468,7 +468,7 @@
               </div>
               <div id="map-layers">
                   <div class="map-chip-group"><span class="map-chip-group-name">Survivors</span><label class="map-chip" title="Players (🟢 healthy, 🔴 infected)"><input type="checkbox" id="map-show-players" checked onchange="mapRedrawAll()"><span>🟢</span>Players</label><label class="map-chip" title="Dead"><input type="checkbox" id="map-show-dead" checked onchange="mapRedrawAll()"><span>💀</span>Dead</label><label class="map-chip" title="Graves"><input type="checkbox" id="map-show-graves" checked onchange="mapRedrawAll()"><span>🪦</span>Graves</label><label class="map-chip" title="Dead players' zombies, last seen spot"><input type="checkbox" id="map-show-reanimated" checked onchange="mapRedrawAll()"><span>🧟</span>Reanimated</label></div>
-                  <div class="map-chip-group"><span class="map-chip-group-name">Bases</span><label class="map-chip" title="Safehouses"><input type="checkbox" id="map-show-safehouses" checked onchange="mapRedrawAll()"><span>🏠</span>Safehouses</label><label class="map-chip" title="Campfires"><input type="checkbox" id="map-show-campfires" checked onchange="mapRedrawAll()"><span>🔥</span>Campfires</label><label class="map-chip" title="Farming"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"><span>🌿</span>Farming</label><label class="map-chip" title="Traps"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"><span>🕷</span>Traps</label><label class="map-chip" title="Animals"><input type="checkbox" id="map-show-animals" checked onchange="mapRedrawAll()"><span>🐄</span>Animals</label><label class="map-chip" title="Generators (last known; faded = not in the latest scan)"><input type="checkbox" id="map-show-generators" checked onchange="mapRedrawAll()"><span>⚡</span>Generators</label></div>
+                  <div class="map-chip-group"><span class="map-chip-group-name">Bases</span><label class="map-chip" title="Safehouses"><input type="checkbox" id="map-show-safehouses" checked onchange="mapRedrawAll()"><span>🏠</span>Safehouses</label><label class="map-chip" title="Campfires"><input type="checkbox" id="map-show-campfires" checked onchange="mapRedrawAll()"><span>🔥</span>Campfires</label><label class="map-chip" title="Farming"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"><span>🌿</span>Farming</label><label class="map-chip" title="Traps"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"><span>🕷</span>Traps</label><label class="map-chip" title="Animals"><input type="checkbox" id="map-show-animals" checked onchange="mapRedrawAll()"><span>🐄</span>Animals</label><label class="map-chip" title="Generators (last known; faded = not in the latest scan)"><input type="checkbox" id="map-show-generators" checked onchange="mapRedrawAll()"><span>⚡</span>Generators</label><label class="map-chip" title="Crop plots"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"><span>🌱</span>Farming</label></div>
                   <div class="map-chip-group"><span class="map-chip-group-name">Vehicles</span><label class="map-chip" title="Vehicles"><input type="checkbox" id="map-show-vehicles" checked onchange="mapRedrawAll()"><span>⬜</span>Vehicles</label><label class="map-chip" title="Wrecked"><input type="checkbox" id="map-show-destroyed" onchange="mapRedrawAll()"><span>💥</span>Wrecked</label></div>
                   <div class="map-chip-group"><span class="map-chip-group-name">Loot</span><label class="map-chip" title="Rare"><input type="checkbox" id="map-show-rare" checked onchange="toggleRareFilters();mapRedrawAll()"><span>💎</span>Rare</label><label class="map-chip" title="Crates"><input type="checkbox" id="map-show-crates" onchange="mapRedrawAll()"><span>📦</span>Crates</label><label class="map-chip" title="Warning: may show 300+ markers and lag the map"><input type="checkbox" id="map-show-empty-crates" onchange="mapRedrawAll()"><span>⚠</span>Empty crates</label><label class="map-chip" title="Containers the game spawned: treasure-map stashes, survivor stories, basements. Not base inventory."><input type="checkbox" id="map-show-caches" checked onchange="mapRedrawAll()"><span>🎁</span>Stashes</label></div>
                   <div class="map-chip-group"><span class="map-chip-group-name">Overlays</span><label class="map-chip" title="Heatmap"><input type="checkbox" id="map-show-heatmap" onchange="mapRedrawAll()"><span>🌡</span>Heatmap</label><label class="map-chip" title="Towns"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"><span>🏘</span>Towns</label></div>
@@ -514,7 +514,7 @@
     const SSE_BASE = 'https://api-gamez.looknet.ca';
 
     let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {}, storage: {}, rare: { spawns: [] },
-                   animals: [], world: {}, profiles: {}, generators: [] };  // v2 mod feeds (B42)
+                   animals: [], world: {}, profiles: {}, generators: [], farming: [] };  // v2 mod feeds (B42)
 
     // Game-sourced strings (animal names, safehouse titles, item names) go into innerHTML.
     const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -1870,6 +1870,26 @@
     const generatorsInView = () => (pzData.generators || []).filter(g => g.x != null && g.y != null
       && g.x >= MAP_MIN_X && g.x <= MAP_MAX_X && g.y >= MAP_MIN_Y && g.y <= MAP_MAX_Y);
 
+    // Farming (mod 2.3.0+): every plot from the game's farming system.
+    const PLOT_DEAD = new Set(['dead', 'rotten', 'destroyed']);
+    const plotEmoji = p => PLOT_DEAD.has(p.state) ? '🥀' : p.ready ? '🧺' : p.crop ? '🌱' : '🟫';
+    function plotLabel(p) {
+      if (!p.crop) return 'Plowed land' + (p.owner ? ` · ${p.owner}` : '');
+      const bits = [p.crop.replace(/([a-z])([A-Z])/g, '$1 $2')];
+      if (PLOT_DEAD.has(p.state)) bits.push(p.state);
+      else if (p.ready) bits.push('ready to harvest');
+      else if (p.stage != null && p.harvest_at) bits.push(`stage ${Math.max(0, p.stage)}/${p.harvest_at}`);
+      if (p.water != null && !PLOT_DEAD.has(p.state)) bits.push(`water ${Math.round(p.water)}%` + (p.water_needed && p.water < p.water_needed * 0.5 ? ' (thirsty)' : ''));
+      if (p.health != null && !PLOT_DEAD.has(p.state)) bits.push(`health ${Math.round(p.health)}`);
+      const pests = [['mildew', p.mildew], ['aphids', p.aphids], ['flies', p.flies], ['slugs', p.slugs]].filter(([, v]) => v > 0).map(([k]) => k);
+      if (pests.length) bits.push('⚠ ' + pests.join(', '));
+      if (p.weeds) bits.push('weeds');
+      if (p.owner) bits.push(p.owner);
+      return bits.join(' · ');
+    }
+    const plotsInView = () => (pzData.farming || []).filter(p => p.x != null && p.y != null
+      && p.x >= MAP_MIN_X && p.x <= MAP_MAX_X && p.y >= MAP_MIN_Y && p.y <= MAP_MAX_Y);
+
     let modLayerMarkers = [];
     function redrawModLayers() {
       if (!leafletMap) return;
@@ -1895,6 +1915,18 @@
             zIndexOffset: -60,
           }).addTo(leafletMap);
           m.bindTooltip(escHtml(animalLabel(a)), { direction: 'top', offset: [0, -6], className: 'player-label' });
+          modLayerMarkers.push(m);
+        });
+      }
+      if (document.getElementById('map-show-farming')?.checked) {
+        plotsInView().forEach(p => {
+          const m = L.marker(pzToLatLng(p.x, p.y), {
+            icon: L.divIcon({ className: '',
+              html: `<div style="font-size:10px;line-height:1;text-shadow:0 0 2px #000,0 0 2px #000;">${plotEmoji(p)}</div>`,
+              iconSize: [10, 10], iconAnchor: [5, 5] }),
+            zIndexOffset: -70,
+          }).addTo(leafletMap);
+          m.bindTooltip(escHtml(plotLabel(p)), { direction: 'top', offset: [0, -5], className: 'player-label' });
           modLayerMarkers.push(m);
         });
       }
@@ -2180,6 +2212,9 @@
       if (chk('map-show-animals'))
         (pzData.animals || []).filter(a => !a.dead && inBounds(a.x, a.y))
           .forEach(a => drawEmoji(a.x, a.y, a.z || 0, animalEmoji(a.type), 9, animalLabel(a)));
+      if (chk('map-show-farming'))
+        plotsInView().filter(p => inBounds(p.x, p.y))
+          .forEach(p => drawEmoji(p.x, p.y, p.z || 0, plotEmoji(p), 7, plotLabel(p)));
       if (chk('map-show-generators'))
         generatorsInView().filter(g => inBounds(g.x, g.y))
           .forEach(g => drawEmoji(g.x, g.y, g.z || 0, genEmoji(g), 10, generatorLabel(g), g.live ? 1 : 0.55));
@@ -2501,6 +2536,8 @@
         .then(d => { pzData.animals = d.animals || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
       fetch(`${API_BASE}/api/pz/corpses`).then(r => r.json())
         .then(d => { pzData.corpses = d.corpses || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
+      fetch(`${API_BASE}/api/pz/farming`).then(r => r.json())
+        .then(d => { pzData.farming = d.plots || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
       fetch(`${API_BASE}/api/pz/generators`).then(r => r.json())
         .then(d => { pzData.generators = d.generators || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
       fetch(`${API_BASE}/api/pz/world`).then(r => r.json())
@@ -2596,6 +2633,13 @@
         try {
           const d = JSON.parse(e.data);
           pzData.animals = d.animals || [];
+          if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers();
+        } catch {}
+      });
+      sseSource.addEventListener('farming', e => {
+        try {
+          const d = JSON.parse(e.data);
+          pzData.farming = d.plots || [];
           if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers();
         } catch {}
       });
