@@ -541,7 +541,10 @@
       const titles = { overview:'Overview', players:'Players', stats:'Stats', vehicles:'Vehicles', storage:'Storage', map:'Map' };
       document.getElementById('page-title').textContent = titles[name] || name;
       document.querySelector('.content').classList.toggle('map-active', name === 'map');
-      if (name === 'map') setTimeout(() => { if (!leafletMap) initMap(); else { leafletMap.invalidateSize(); redrawPlayers(); } }, 50);
+      if (name === 'map') setTimeout(() => {
+        if (!leafletMap) { initMap(); if (preferredMapMode() === 'iso' && _mapMode !== 'iso') toggleMapMode(true); }
+        else if (_mapMode === 'topdown') { leafletMap.invalidateSize(); redrawPlayers(); }
+      }, 50);
       if (name === 'storage') renderStorage();
     }
 
@@ -1716,17 +1719,26 @@
 
     let _mapMode = 'topdown'; // 'topdown' | 'iso'
 
-    function toggleMapMode() {
+    // Iso is the default; the last mode picked is remembered per browser. ?mode=topdown|iso overrides.
+    function preferredMapMode() {
+      const q = location.search.match(/[?&]mode=(iso|topdown)/);
+      if (q) return q[1];
+      if (location.hash === '#iso') return 'iso';
+      try { return localStorage.getItem('pzMapMode') || 'iso'; } catch { return 'iso'; }
+    }
+
+    function toggleMapMode(initial) {
       _mapMode = _mapMode === 'topdown' ? 'iso' : 'topdown';
       const isIso = _mapMode === 'iso';
       document.getElementById('leaflet-map').style.display = isIso ? 'none' : '';
       document.getElementById('iso-wrap').style.display    = isIso ? 'block' : 'none';
       document.getElementById('map-mode-btn').textContent  = isIso ? 'Top-Down' : 'Iso View';
+      if (initial !== true) { try { localStorage.setItem('pzMapMode', _mapMode); } catch {} }
       if (isIso) {
         initIso();
         isoRedrawMarkers();
       } else {
-        if (leafletMap) { leafletMap.invalidateSize(); redrawPlayers(); redrawVehicles(); redrawOverlays(); redrawTowns(); }
+        if (leafletMap) { leafletMap.invalidateSize(); redrawPlayers(); redrawVehicles(); redrawOverlays(); redrawTowns(); redrawModLayers(); }
       }
     }
 
@@ -2509,10 +2521,9 @@
     }
 
     window.addEventListener('load', async () => { await Promise.all([loadTileInfo(), loadIconMap(), loadNameMap()]); startSSE();
-      // Deep link: /zomboid?mode=iso or #iso opens the map in iso view (old /zomboid-iso redirects here).
-      if (/[?&]mode=iso/.test(location.search) || location.hash === '#iso') {
+      // Deep link: ?mode=iso|topdown or #iso opens the map view directly (old /zomboid-iso redirects here).
+      if (/[?&]mode=(iso|topdown)/.test(location.search) || location.hash === '#iso') {
         document.querySelector('.nav-item[data-view=map]')?.click();
-        setTimeout(() => { if (_mapMode !== 'iso') toggleMapMode(); }, 300);
       }
     });
   </script>
