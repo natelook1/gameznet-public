@@ -1764,6 +1764,11 @@
     }
 
     // Single redraw dispatcher — called by shared checkboxes.
+    // Redraw after a data fetch: iso redraws everything from pzData, top-down just the one layer set.
+    function mapDataRedraw(topdownFn) {
+      if (_mapMode === 'iso') isoRedrawMarkers(); else topdownFn();
+    }
+
     function mapRedrawAll() {
       if (_mapMode === 'iso') { isoRedrawMarkers(); }
       else { redrawPlayers(); redrawVehicles(); redrawOverlays(); redrawTowns(); redrawModLayers(); }
@@ -2346,26 +2351,26 @@
 
       fetch(`${API_BASE}/api/pz/vehicles`)
         .then(r => r.json())
-        .then(d => { if (!d.error) { pzData.vehicles = d.vehicles || []; renderVehicles(); renderOverview(); if (leafletMap) redrawVehicles(); } })
+        .then(d => { if (!d.error) { pzData.vehicles = d.vehicles || []; renderVehicles(); renderOverview(); mapDataRedraw(redrawVehicles); } })
         .catch(() => {});
 
       fetch(`${API_BASE}/api/pz/storage`)
         .then(r => r.json())
-        .then(d => { if (!d.error) { pzData.storage = d; renderStorage(); if (leafletMap) redrawOverlays(); } })
+        .then(d => { if (!d.error) { pzData.storage = d; renderStorage(); mapDataRedraw(redrawOverlays); } })
         .catch(() => {});
 
       fetch(`${API_BASE}/api/pz/rare`)
         .then(r => r.json())
-        .then(d => { if (!d.error) { pzData.rare = d; if (leafletMap) redrawOverlays(); } })
+        .then(d => { if (!d.error) { pzData.rare = d; mapDataRedraw(redrawOverlays); } })
         .catch(() => {});
 
       // v2 mod feeds (B42)
       fetch(`${API_BASE}/api/pz/animals`).then(r => r.json())
-        .then(d => { pzData.animals = d.animals || []; redrawModLayers(); }).catch(() => {});
+        .then(d => { pzData.animals = d.animals || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
       fetch(`${API_BASE}/api/pz/corpses`).then(r => r.json())
-        .then(d => { pzData.corpses = d.corpses || []; redrawModLayers(); }).catch(() => {});
+        .then(d => { pzData.corpses = d.corpses || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
       fetch(`${API_BASE}/api/pz/world`).then(r => r.json())
-        .then(d => { if (d.updated) { pzData.world = d; redrawModLayers(); } }).catch(() => {});
+        .then(d => { if (d.updated) { pzData.world = d; mapDataRedraw(redrawModLayers); } }).catch(() => {});
     }
 
     function startSSE() {
@@ -2503,7 +2508,13 @@
       };
     }
 
-    window.addEventListener('load', async () => { await Promise.all([loadTileInfo(), loadIconMap(), loadNameMap()]); startSSE(); });
+    window.addEventListener('load', async () => { await Promise.all([loadTileInfo(), loadIconMap(), loadNameMap()]); startSSE();
+      // Deep link: /zomboid?mode=iso or #iso opens the map in iso view (old /zomboid-iso redirects here).
+      if (/[?&]mode=iso/.test(location.search) || location.hash === '#iso') {
+        document.querySelector('.nav-item[data-view=map]')?.click();
+        setTimeout(() => { if (_mapMode !== 'iso') toggleMapMode(); }, 300);
+      }
+    });
   </script>
 </body>
 </html>
