@@ -1686,22 +1686,25 @@
       });
     }
 
-    // Town zones in world squares, which hold on any cell size. The four original towns come from
-    // spawnpoints.lua extents; the seven B42 towns (one spawn each) are boxes around that spawn. 2026-11-22.
+    // Town zones in world squares, which hold on any cell size. Bounding boxes of the dense
+    // building area around each town's map label (worldmap.xml buildings, 100-square bins
+    // with 3+ buildings, flood-filled from the label, +50 padding). Valley Station is sparse
+    // suburbs, so its box is set by hand from the same data. 2026-11-23.
     const TOWN_ZONES = [
-      { name: 'Muldraugh', x0: 10200, y0: 9000, x1: 11399, y1: 11099 },
-      { name: 'Riverside', x0: 4800, y0: 5100, x1: 7499, y1: 6899 },
-      { name: 'Rosewood', x0: 7500, y0: 11100, x1: 8999, y1: 12299 },
-      { name: 'West Point', x0: 10800, y0: 6300, x1: 12599, y1: 7499 },
-      { name: 'Brandenburg', x0: 1450, y0: 5390, x1: 2850, y1: 6790 },
-      { name: 'Echo Creek', x0: 3170, y0: 10500, x1: 3970, y1: 11300 },
-      { name: 'Ekron', x0: 10, y0: 9360, x1: 810, y1: 10160 },
-      { name: 'Fallas Lake', x0: 6910, y0: 7990, x1: 7510, y1: 8590 },
-      { name: 'Irvington', x0: 1410, y0: 13880, x1: 2410, y1: 14880 },
-      { name: 'March Ridge', x0: 9580, y0: 12510, x1: 10180, y1: 13110 },
-      { name: 'Valley Station', x0: 11995, y0: 4730, x1: 13195, y1: 5930 },
+      { name: 'Louisville', x0: 11950, y0: 1050, x1: 14449, y1: 4049 },
+      { name: 'Muldraugh', x0: 10550, y0: 9250, x1: 11049, y1: 10749 },
+      { name: 'Riverside', x0: 5650, y0: 5150, x1: 6949, y1: 5649 },
+      { name: 'Rosewood', x0: 7750, y0: 11050, x1: 8549, y1: 12049 },
+      { name: 'West Point', x0: 10850, y0: 6550, x1: 12249, y1: 7249 },
+      { name: 'Valley Station', x0: 12750, y0: 4550, x1: 14449, y1: 6049 },
+      { name: 'March Ridge', x0: 9750, y0: 12550, x1: 10549, y1: 13249 },
+      { name: 'Brandenburg', x0: 1350, y0: 5450, x1: 2549, y1: 6649 },
+      { name: 'Irvington', x0: 1750, y0: 13750, x1: 3249, y1: 14949 },
+      { name: 'Ekron', x0: 150, y0: 9450, x1: 1149, y1: 10149 },
+      { name: 'Echo Creek', x0: 3250, y0: 10750, x1: 3849, y1: 11249 },
+      { name: 'Fallas Lake', x0: 6950, y0: 8050, x1: 7549, y1: 8649 },
     ];
-    const TOWN_COLORS = ['#60a5fa','#34d399','#f472b6','#fbbf24','#a78bfa','#f87171','#2dd4bf','#fb923c','#c084fc','#4ade80','#facc15'];
+    const TOWN_COLORS = ['#60a5fa','#34d399','#f472b6','#fbbf24','#a78bfa','#f87171','#2dd4bf','#fb923c','#c084fc','#4ade80','#facc15','#e879f9'];
 
     let townMarkers = [];
 
@@ -2249,12 +2252,11 @@
       Object.entries(liveMap).forEach(([key, t]) => { const [cx,cy] = key.split(',').map(Number); drawCell(cx, cy, t, true); });
     }
 
-    // Floor picker: layerN.dzi (0..4) is the whole map rendered up to floor N. The basement
-    // (layer-1) holds only basements on black, so it goes over a dimmed ground floor with
-    // 'lighter' blending to drop the black.
+    // Floor picker: layerN.dzi (0..4) is the whole map rendered up to floor N; layer-1 is the
+    // basements alone. Shown on its own like the pzmap2dzi viewer does: under a ground image
+    // it reads as floating, since iso draws lower floors further down the screen.
     function isoFloorSources(n) {
-      const u = l => `${PZ_TILES}/iso/base/layer${l}.dzi`;
-      return n >= 0 ? [u(n)] : [{ tileSource: u(0), opacity: 0.35 }, { tileSource: u(-1), compositeOperation: 'lighter' }];
+      return [`${PZ_TILES}/iso/base/layer${n}.dzi`];
     }
     let _isoKeepView = null;
     function isoFloor() {
@@ -2292,7 +2294,6 @@
           prefixUrl: 'https://gzstatic.looknet.ca/iso/openseadragon/images/',
           minZoomImageRatio: 0.1, maxZoomPixelRatio: 4, zoomPerScroll: 1.15,
           smoothingEnabled: false, background: '#0a0a0e',
-          drawer: 'canvas', // basement view blends layers (compositeOperation), unreliable in the WebGL drawer
         });
         isoViewer.addHandler('open', () => {
           isoReady = true;
