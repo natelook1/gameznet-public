@@ -448,6 +448,7 @@
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-dead" checked onchange="mapRedrawAll()"> Dead</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-animals" checked onchange="mapRedrawAll()"> Animals</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-graves" checked onchange="mapRedrawAll()"> Graves</label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-reanimated" checked onchange="mapRedrawAll()"> Reanimated</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-safehouses" checked onchange="mapRedrawAll()"> Safehouses</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-heatmap" onchange="mapRedrawAll()"> Heatmap</label>
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"> Towns</label>
@@ -458,7 +459,7 @@
                 <button id="map-fullscreen-btn" onclick="toggleMapFullscreen()">⛶</button>
                 <button id="map-mode-btn" onclick="toggleMapMode()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:12px;">Iso View</button>
               </div>
-              <div id="map-legend" style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap &nbsp;💎 rare &nbsp;📦 crate &nbsp;🐄 animal &nbsp;🏠 safehouse &nbsp;🪦 grave</div>
+              <div id="map-legend" style="margin-top:6px;font-size:11px;opacity:0.7;">🟢 alive &nbsp;🔴 infected &nbsp;⬜ vehicle &nbsp;🔥 campfire &nbsp;🌿 farming &nbsp;💀 dead &nbsp;🕷 trap &nbsp;💎 rare &nbsp;📦 crate &nbsp;🐄 animal &nbsp;🏠 safehouse &nbsp;🪦 grave &nbsp;🧟 reanimated</div>
               <div id="map-rare-filters" style="display:none;margin-top:4px;padding:4px 6px;background:rgba(253,224,71,0.08);border:1px solid rgba(253,224,71,0.25);border-radius:5px;font-size:11px;gap:8px;flex-wrap:wrap;align-items:center;">
                 <span style="opacity:0.6;white-space:nowrap;">Rare filters:</span>
                 <label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="rare-filter-firearms" checked onchange="mapRedrawAll()"> 🔫 Firearms</label>
@@ -1813,6 +1814,36 @@
           modLayerMarkers.push(m);
         });
       }
+      if (document.getElementById('map-show-reanimated')?.checked) {
+        reanimatedCorpses().forEach(c => {
+          const here = pzToLatLng(c.corpse_x, c.corpse_y);
+          if (c.corpse_x !== c.death_x || c.corpse_y !== c.death_y) {
+            modLayerMarkers.push(L.polyline([pzToLatLng(c.death_x, c.death_y), here],
+              { color: '#a3e635', weight: 1.5, opacity: 0.6, dashArray: '4 4', interactive: false }).addTo(leafletMap));
+          }
+          const m = L.marker(here, {
+            icon: L.divIcon({ className: '',
+              html: `<div style="font-size:15px;line-height:1;text-shadow:0 0 3px #000,0 0 3px #000;opacity:${c.loaded ? 1 : 0.55};">🧟</div>`,
+              iconSize: [16, 16], iconAnchor: [8, 8] }),
+            zIndexOffset: -30,
+          }).addTo(leafletMap);
+          m.bindTooltip(escHtml(reanimatedLabel(c)).replace(/\n/g, '<br>'), { direction: 'top', offset: [0, -6], className: 'player-label' });
+          modLayerMarkers.push(m);
+        });
+      }
+    }
+
+    // Dead players' reanimated corpses (mod corpses.json, /api/pz/corpses).
+    function reanimatedCorpses() {
+      return (pzData.corpses || []).filter(c => c.corpse_x != null && c.corpse_y != null
+        && c.corpse_x >= MAP_MIN_X && c.corpse_x <= MAP_MAX_X && c.corpse_y >= MAP_MIN_Y && c.corpse_y <= MAP_MAX_Y);
+    }
+    function reanimatedLabel(c) {
+      const ago = s => { const m = Math.max(0, Math.round((Date.now() / 1000 - s) / 60)); return m < 60 ? `${m}m ago` : m < 2880 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`; };
+      const moved = Math.round(Math.hypot(c.corpse_x - c.death_x, c.corpse_y - c.death_y));
+      return `🧟 ${c.name}, reanimated\n`
+        + `Died ${ago(c.death_ts)}${moved > 2 ? `, wandered ${moved} tiles from the death spot` : ''}\n`
+        + (c.loaded ? 'Seen now (cell loaded)' : `Last seen ${ago(c.corpse_last_seen)}`);
     }
 
     // Where past characters died (survivor history, /api/pz/lives).
@@ -2043,6 +2074,9 @@
           .forEach(a => drawEmoji(a.x, a.y, a.z || 0, animalEmoji(a.type), 9, animalLabel(a)));
       if (chk('map-show-graves'))
         graveLives().filter(l => inBounds(l.x, l.y)).forEach(l => drawEmoji(l.x, l.y, 0, '🪦', 10, graveLabel(l)));
+      if (chk('map-show-reanimated'))
+        reanimatedCorpses().filter(c => inBounds(c.corpse_x, c.corpse_y))
+          .forEach(c => drawEmoji(c.corpse_x, c.corpse_y, c.corpse_z || 0, '🧟', 11, reanimatedLabel(c), c.loaded ? 1 : 0.55));
 
       // Crates
       if (chk('map-show-crates')) {
@@ -2316,6 +2350,8 @@
       // v2 mod feeds (B42)
       fetch(`${API_BASE}/api/pz/animals`).then(r => r.json())
         .then(d => { pzData.animals = d.animals || []; redrawModLayers(); }).catch(() => {});
+      fetch(`${API_BASE}/api/pz/corpses`).then(r => r.json())
+        .then(d => { pzData.corpses = d.corpses || []; redrawModLayers(); }).catch(() => {});
       fetch(`${API_BASE}/api/pz/world`).then(r => r.json())
         .then(d => { if (d.updated) { pzData.world = d; redrawModLayers(); } }).catch(() => {});
     }
@@ -2409,6 +2445,12 @@
         try {
           const d = JSON.parse(e.data);
           pzData.animals = d.animals || [];
+          if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers();
+        } catch {}
+      });
+      sseSource.addEventListener('corpses', e => {
+        try {
+          pzData.corpses = JSON.parse(e.data).corpses || [];
           if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers();
         } catch {}
       });
