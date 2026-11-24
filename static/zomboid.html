@@ -470,7 +470,7 @@
                   <div class="map-chip-group"><span class="map-chip-group-name">Survivors</span><label class="map-chip" title="Players (🟢 healthy, 🔴 infected)"><input type="checkbox" id="map-show-players" checked onchange="mapRedrawAll()"><span>🟢</span>Players</label><label class="map-chip" title="Dead"><input type="checkbox" id="map-show-dead" checked onchange="mapRedrawAll()"><span>💀</span>Dead</label><label class="map-chip" title="Graves"><input type="checkbox" id="map-show-graves" checked onchange="mapRedrawAll()"><span>🪦</span>Graves</label><label class="map-chip" title="Dead players' zombies, last seen spot"><input type="checkbox" id="map-show-reanimated" checked onchange="mapRedrawAll()"><span>🧟</span>Reanimated</label></div>
                   <div class="map-chip-group"><span class="map-chip-group-name">Bases</span><label class="map-chip" title="Safehouses"><input type="checkbox" id="map-show-safehouses" checked onchange="mapRedrawAll()"><span>🏠</span>Safehouses</label><label class="map-chip" title="Campfires"><input type="checkbox" id="map-show-campfires" checked onchange="mapRedrawAll()"><span>🔥</span>Campfires</label><label class="map-chip" title="Farming"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"><span>🌿</span>Farming</label><label class="map-chip" title="Traps"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"><span>🕷</span>Traps</label><label class="map-chip" title="Animals"><input type="checkbox" id="map-show-animals" checked onchange="mapRedrawAll()"><span>🐄</span>Animals</label></div>
                   <div class="map-chip-group"><span class="map-chip-group-name">Vehicles</span><label class="map-chip" title="Vehicles"><input type="checkbox" id="map-show-vehicles" checked onchange="mapRedrawAll()"><span>⬜</span>Vehicles</label><label class="map-chip" title="Wrecked"><input type="checkbox" id="map-show-destroyed" onchange="mapRedrawAll()"><span>💥</span>Wrecked</label></div>
-                  <div class="map-chip-group"><span class="map-chip-group-name">Loot</span><label class="map-chip" title="Rare"><input type="checkbox" id="map-show-rare" checked onchange="toggleRareFilters();mapRedrawAll()"><span>💎</span>Rare</label><label class="map-chip" title="Crates"><input type="checkbox" id="map-show-crates" onchange="mapRedrawAll()"><span>📦</span>Crates</label><label class="map-chip" title="Warning: may show 300+ markers and lag the map"><input type="checkbox" id="map-show-empty-crates" onchange="mapRedrawAll()"><span>⚠</span>Empty crates</label><label class="map-chip" title="Containers the game spawned: treasure-map stashes, survivor stories, basements. Not base inventory."><input type="checkbox" id="map-show-caches" checked onchange="mapRedrawAll()"><span>🗝</span>Stashes</label></div>
+                  <div class="map-chip-group"><span class="map-chip-group-name">Loot</span><label class="map-chip" title="Rare"><input type="checkbox" id="map-show-rare" checked onchange="toggleRareFilters();mapRedrawAll()"><span>💎</span>Rare</label><label class="map-chip" title="Crates"><input type="checkbox" id="map-show-crates" onchange="mapRedrawAll()"><span>📦</span>Crates</label><label class="map-chip" title="Warning: may show 300+ markers and lag the map"><input type="checkbox" id="map-show-empty-crates" onchange="mapRedrawAll()"><span>⚠</span>Empty crates</label><label class="map-chip" title="Containers the game spawned: treasure-map stashes, survivor stories, basements. Not base inventory."><input type="checkbox" id="map-show-caches" checked onchange="mapRedrawAll()"><span>🎁</span>Stashes</label></div>
                   <div class="map-chip-group"><span class="map-chip-group-name">Overlays</span><label class="map-chip" title="Heatmap"><input type="checkbox" id="map-show-heatmap" onchange="mapRedrawAll()"><span>🌡</span>Heatmap</label><label class="map-chip" title="Towns"><input type="checkbox" id="map-show-towns" onchange="mapRedrawAll()"><span>🏘</span>Towns</label></div>
               </div>
               <div id="map-rare-filters" style="display:none;margin-top:4px;padding:4px 6px;background:rgba(253,224,71,0.08);border:1px solid rgba(253,224,71,0.25);border-radius:5px;font-size:11px;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -1691,7 +1691,7 @@
           if (c.x == null || c.y == null) return;
           if (c.x < MAP_MIN_X || c.x > MAP_MAX_X || c.y < MAP_MIN_Y || c.y > MAP_MAX_Y) return;
           const m = L.marker(pzToLatLng(c.x, c.y), {
-            icon: L.divIcon({ className: '', html: `<div style="font-size:13px;line-height:1;text-shadow:0 0 3px #000;">${cacheEmoji(c)}</div>`, iconSize: [14, 14], iconAnchor: [7, 7] }),
+            icon: L.divIcon({ className: '', html: `<div style="width:20px;height:20px;border-radius:50%;background:rgba(250,204,21,0.9);border:2px solid #111;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;">${cacheEmoji(c)}</div>`, iconSize: [20, 20], iconAnchor: [10, 10] }),
             zIndexOffset: 150,
           }).addTo(leafletMap);
           m.bindTooltip(escHtml(cacheLabel(c)).replace(/\n/g, '<br>'), { direction: 'top', offset: [0, -6], className: 'player-label' });
@@ -1708,7 +1708,7 @@
         : `${c.name}, spawned${c.why && c.why !== 'world' ? ' (' + c.why + ')' : ''}`;
       return `${what} (${total})` + (items.length ? '\n' + items.map(([ft, n]) => `${ft.replace(/^Base\./, '')} ×${n}`).join('\n') : '');
     }
-    function cacheEmoji(c) { return c.kind === 'stash' ? '🗝' : '🧰'; }
+    function cacheEmoji(c) { return c.kind === 'stash' ? '🎁' : '🧰'; }
 
     // Town zones in world squares, which hold on any cell size. Bounding boxes of the dense
     // building area around each town's map label (worldmap.xml buildings, 100-square bins
@@ -2159,7 +2159,11 @@
       }
       if (chk('map-show-caches'))
         (pzData.storage?.world || []).filter(c => c.x != null && inBounds(c.x, c.y))
-          .forEach(c => drawEmoji(c.x, c.y, c.z || 0, cacheEmoji(c), 10, cacheLabel(c)));
+          .forEach(c => {
+            const pt = vpToPx(c.x, c.y, c.z || 0);
+            if (pt) { ctx.beginPath(); ctx.arc(pt.x, pt.y, 11, 0, Math.PI * 2); ctx.fillStyle = 'rgba(250,204,21,0.9)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#111'; ctx.stroke(); }
+            drawEmoji(c.x, c.y, c.z || 0, cacheEmoji(c), 8, cacheLabel(c));
+          });
     }
 
     function isoRedrawMarkers() {
