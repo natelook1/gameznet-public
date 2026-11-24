@@ -172,6 +172,10 @@
     #leaflet-map { width: 100%; height: 100%; background: #0f1a0f; }
     #iso-wrap { position: relative; width: 100%; height: 100%; display: none; }
     #iso-osd  { width: 100%; height: 100%; background: #0a0a0e; }
+    #iso-floors { position:absolute; right:12px; bottom:16px; z-index:900; display:flex; flex-direction:column; gap:2px; background:rgba(15,15,19,0.85); border:1px solid var(--border); border-radius:8px; padding:4px; }
+    #iso-floors button { width:30px; height:26px; background:transparent; border:1px solid transparent; border-radius:5px; color:var(--text); opacity:.6; cursor:pointer; font-size:12px; font-weight:600; }
+    #iso-floors button:hover { opacity:1; border-color:var(--border); }
+    #iso-floors button.active { opacity:1; background:rgba(239,68,68,0.18); border-color:rgba(239,68,68,0.5); color:#ef4444; }
     #iso-heatmap-canvas, #iso-towns-canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
     #map-controls { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 1000; background: rgba(15,15,19,0.85); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--text); backdrop-filter: blur(4px); }
     #map-controls label { color: var(--text); }
@@ -448,6 +452,10 @@
               <canvas id="iso-heatmap-canvas"></canvas>
               <canvas id="iso-towns-canvas"></canvas>
               <canvas id="iso-markers-canvas" style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
+              <div id="iso-floors" title="Floor: each shows the map up to that level">
+                <button data-floor="4">4</button><button data-floor="3">3</button><button data-floor="2">2</button>
+                <button data-floor="1">1</button><button data-floor="0">G</button><button data-floor="-1">B</button>
+              </div>
             </div>
             <div id="map-controls">
               <div id="map-gametime" style="font-size:12px;margin-bottom:8px;color:var(--text);opacity:0.9;display:none;"></div>
@@ -1733,6 +1741,7 @@
       document.getElementById('leaflet-map').style.display = isIso ? 'none' : '';
       document.getElementById('iso-wrap').style.display    = isIso ? 'block' : 'none';
       document.getElementById('map-mode-btn').textContent  = isIso ? 'Top-Down' : 'Iso View';
+      paintIsoFloors();
       if (initial !== true) { try { localStorage.setItem('pzMapMode', _mapMode); } catch {} }
       if (isIso) {
         initIso();
@@ -2240,6 +2249,34 @@
       Object.entries(liveMap).forEach(([key, t]) => { const [cx,cy] = key.split(',').map(Number); drawCell(cx, cy, t, true); });
     }
 
+    // Floor picker: layerN.dzi (0..4) is the whole map rendered up to floor N. The basement
+    // (layer-1) holds only basements on black, so it goes over a dimmed ground floor with
+    // 'lighter' blending to drop the black.
+    function isoFloorSources(n) {
+      const u = l => `${PZ_TILES}/iso/base/layer${l}.dzi`;
+      return n >= 0 ? [u(n)] : [{ tileSource: u(0), opacity: 0.35 }, { tileSource: u(-1), compositeOperation: 'lighter' }];
+    }
+    let _isoKeepView = null;
+    function isoFloor() {
+      try { const v = localStorage.getItem('pzIsoFloor'); if (v !== null && +v >= -1 && +v <= 4) return +v; } catch {}
+      return 2;
+    }
+    function paintIsoFloors() {
+      const cur = isoFloor();
+      document.querySelectorAll('#iso-floors button').forEach(b => b.classList.toggle('active', +b.dataset.floor === cur));
+    }
+    document.getElementById('iso-floors')?.addEventListener('click', e => {
+      const b = e.target.closest('button[data-floor]');
+      if (b) setIsoFloor(+b.dataset.floor);
+    });
+    function setIsoFloor(n) {
+      try { localStorage.setItem('pzIsoFloor', String(n)); } catch {}
+      paintIsoFloors();
+      if (!isoViewer) return;
+      _isoKeepView = { c: isoViewer.viewport.getCenter(), z: isoViewer.viewport.getZoom() };
+      isoViewer.open(isoFloorSources(n));
+    }
+
     let _isoInited = false;
     function initIso() {
       if (_isoInited) return;
@@ -2247,7 +2284,7 @@
       loadIsoInfo().then(() => {
         isoViewer = OpenSeadragon({
           element: document.getElementById('iso-osd'),
-          tileSources: `${PZ_TILES}/iso/base/layer2.dzi`,
+          tileSources: isoFloorSources(isoFloor()),
           sequenceMode: false,
           homeFillsViewer: false,
           showZoomControl: false, showHomeControl: false, showFullPageControl: false, showRotationControl: false,
@@ -2255,10 +2292,14 @@
           prefixUrl: 'https://gzstatic.looknet.ca/iso/openseadragon/images/',
           minZoomImageRatio: 0.1, maxZoomPixelRatio: 4, zoomPerScroll: 1.15,
           smoothingEnabled: false, background: '#0a0a0e',
+          drawer: 'canvas', // basement view blends layers (compositeOperation), unreliable in the WebGL drawer
         });
         isoViewer.addHandler('open', () => {
           isoReady = true;
-          if (isoDziInfo && isoMapConf.bounds) {
+          if (_isoKeepView) {
+            isoViewer.viewport.panTo(_isoKeepView.c, true).zoomTo(_isoKeepView.z, null, true);
+            _isoKeepView = null;
+          } else if (isoDziInfo && isoMapConf.bounds) {
             const { GW, GH, x0, y0 } = isoMapConf;
             const b = isoMapConf.bounds;
             const item0 = isoViewer.world.getItemAt(0);
@@ -2274,7 +2315,7 @@
         });
         isoViewer.addHandler('resize', isoRedrawMarkers);
         let _raf = null;
-        isoViewer.addHandler('viewport-change', () => {
+        isoViewer.addHandler('update-viewport', () => {
           if (_raf) return;
           _raf = requestAnimationFrame(() => { _raf = null;
             if (document.getElementById('map-show-towns')?.checked) isoDrawTowns(true);
