@@ -273,26 +273,40 @@
     const lines = (arr) => { const p = new Path2D(); for (const a of arr) { if (a.length < 4) continue; p.moveTo(a[0], a[1]); for (let i = 2; i < a.length; i += 2) p.lineTo(a[i], a[i + 1]); } return p; };
     const cats = {}; CATS.forEach(c => cats[c.id] = new Path2D());
     const idle = new Path2D();
+    const rot = (cx, cy, yaw, lx, ly) => { const a = yaw * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); return [cx + lx * c - ly * s, cy + lx * s + ly * c]; };
+    const poly = (path, pts) => { path.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) path.lineTo(pts[i][0], pts[i][1]); path.closePath(); };
+    // FRM gives each machine's axis-aligned bounding box plus its rotation.
+    // Recover the real footprint (w x h, rotated) from the box: for angle t,
+    // W = w|cos t| + h|sin t| and H = w|sin t| + h|cos t|. Near 45 degrees that
+    // can't be solved, so assume a square. Drawing the raw box made every
+    // rotated machine look crooked.
     const buildings = st.buildings.map(b => {
       const cls = st.classes[b[0]] || { c: '', name: '?' };
       const cat = catOf(cls.c);
-      const [x0, y0, x1, y1] = [b[1], b[2], b[3], b[4]];
-      cats[cat.id].rect(x0, y0, Math.max(x1 - x0, 200), Math.max(y1 - y0, 200));
-      if (b[6] !== 1 && cat.id === 'production') idle.rect(x0, y0, Math.max(x1 - x0, 200), Math.max(y1 - y0, 200));
-      return { x0, y0, x1, y1, name: cls.name, cat: cat.label, state: b[6] };
+      const [x0, y0, x1, y1, yaw] = [b[1], b[2], b[3], b[4], b[5] || 0];
+      const W = Math.max(x1 - x0, 200), H = Math.max(y1 - y0, 200);
+      const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+      const t = yaw * Math.PI / 180, c = Math.abs(Math.cos(t)), s = Math.abs(Math.sin(t)), d = c * c - s * s;
+      let w = W, h = H;
+      if (s > 0.01 && c > 0.01) {
+        if (Math.abs(d) > 0.15) { w = (W * c - H * s) / d; h = (H * c - W * s) / d; }
+        if (!(w > 50 && h > 50) || Math.abs(d) <= 0.15) { w = h = Math.min(W, H) / (c + s); }
+      }
+      const pts = [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]].map(([lx, ly]) => rot(cx, cy, yaw, lx, ly));
+      poly(cats[cat.id], pts);
+      if (b[6] !== 1 && cat.id === 'production') poly(idle, pts);
+      return { cx, cy, w, h, yaw, name: cls.name, cat: cat.label, state: b[6] };
     });
-    // Structure layer from the autosave (/map-data): [x, y, yaw] in metres.
-    // Floors are 8 m tiles rotated by yaw; walls are 8 m segments along the
-    // wall's local Y axis. World units here are cm, hence the *100.
+    // Structure layer from the autosave (/map-data): [x, y, yaw], x/y in
+    // decimetres (world units here are cm, hence *10). Floors are 8 m tiles
+    // rotated by yaw; walls are 8 m segments along the wall's local Y axis.
     const fp = new Path2D(), wp = new Path2D();
-    const rot = (cx, cy, yaw, lx, ly) => { const a = yaw * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); return [cx + lx * c - ly * s, cy + lx * s + ly * c]; };
-    for (const [mx, my, yaw] of found.floors) {
-      const cx = mx * 100, cy = my * 100;
-      const p = [[-400, -400], [400, -400], [400, 400], [-400, 400]].map(([lx, ly]) => rot(cx, cy, yaw, lx, ly));
-      fp.moveTo(p[0][0], p[0][1]); for (let i = 1; i < 4; i++) fp.lineTo(p[i][0], p[i][1]); fp.closePath();
+    for (const [dx, dy, yaw] of found.floors) {
+      const cx = dx * 10, cy = dy * 10;
+      poly(fp, [[-400, -400], [400, -400], [400, 400], [-400, 400]].map(([lx, ly]) => rot(cx, cy, yaw, lx, ly)));
     }
-    for (const [mx, my, yaw] of found.walls) {
-      const cx = mx * 100, cy = my * 100, a = rot(cx, cy, yaw, 0, -400), b = rot(cx, cy, yaw, 0, 400);
+    for (const [dx, dy, yaw] of found.walls) {
+      const cx = dx * 10, cy = dy * 10, a = rot(cx, cy, yaw, 0, -400), b = rot(cx, cy, yaw, 0, 400);
       wp.moveTo(a[0], a[1]); wp.lineTo(b[0], b[1]);
     }
     return {
@@ -431,9 +445,16 @@
 
   // ── Interaction: drag, wheel, pinch, hover ──
   const mouse = { world: null };
-  const pointers = new Map(); let pinchDist = 0, dragMoved = false;
-  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, [e.offsetX, e.offsetY]); dragMoved = false; canvas.classList.add('dragging'); });
-  canvas.addEventListener('pointerup', e => { pointers.delete(e.pointerId); pinchDist = 0; if (!pointers.size) canvas.classList.remove('dragging'); if (!dragMoved) hover(e.offsetX, e.offsetY, true); });
+  // A tap is a press that moved less than a few pixels in total: a finger always
+  // wobbles a little, and the old "any move > 1 px is a drag" rule meant taps on
+  // phones never opened the info popup.
+  const pointers = new Map(); let pinchDist = 0, dragMoved = false, downAt = null;
+  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, [e.offsetX, e.offsetY]); dragMoved = false; downAt = [e.offsetX, e.offsetY]; canvas.classList.add('dragging'); });
+  canvas.addEventListener('pointerup', e => {
+    pointers.delete(e.pointerId); pinchDist = 0;
+    if (!pointers.size) canvas.classList.remove('dragging');
+    if (!dragMoved) hover(e.offsetX, e.offsetY, e.pointerType === 'touch' || e.pointerType === 'pen');
+  });
   canvas.addEventListener('pointercancel', e => { pointers.delete(e.pointerId); pinchDist = 0; });
   canvas.addEventListener('pointermove', e => {
     mouse.world = toWorld(e.offsetX, e.offsetY);
@@ -446,20 +467,24 @@
       pinchDist = d; dragMoved = true; return;
     }
     const dx = e.offsetX - prev[0], dy = e.offsetY - prev[1];
-    if (Math.abs(dx) + Math.abs(dy) > 1) dragMoved = true;
+    const slop = e.pointerType === 'mouse' ? 4 : 10;
+    if (downAt && Math.hypot(e.offsetX - downAt[0], e.offsetY - downAt[1]) > slop) dragMoved = true;
+    if (!dragMoved) return;   // don't nudge the map until it's really a drag
     view.cx -= dx / view.scale; view.cy -= dy / view.scale;
     $('tip').style.display = 'none';
     draw();
   });
   canvas.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.offsetX, e.offsetY, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
-  canvas.addEventListener('pointerleave', () => { $('tip').style.display = 'none'; });
+  // Touch fires pointerleave right after the tap; only hide for a mouse.
+  canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') $('tip').style.display = 'none'; });
   $('zoom-in').onclick = () => zoomAt(W / 2, H / 2, 1.6);
   $('zoom-out').onclick = () => zoomAt(W / 2, H / 2, 1 / 1.6);
   $('zoom-fit').onclick = () => { fit(); draw(); };
 
-  function hover(sx, sy) {
+  function hover(sx, sy, touch = false) {
     const tip = $('tip');
-    const near = (o, r) => { const [x, y] = toScreen(o.x, o.y); return Math.hypot(x - sx, y - sy) <= r; };
+    const k = touch ? 2.5 : 1;   // fingers need bigger targets
+    const near = (o, r) => { const [x, y] = toScreen(o.x, o.y); return Math.hypot(x - sx, y - sy) <= r * k; };
     let html = '';
     if (live) {
       const p = layerOn.players && live.players.find(p => p.online && near(p, 12));
@@ -473,7 +498,15 @@
     }
     if (!html && geo && layerOn.buildings) {
       const [wx, wy] = toWorld(sx, sy);
-      const b = geo.buildings.find(b => wx >= b.x0 && wx <= b.x1 && wy >= b.y0 && wy <= b.y1);
+      // Point-in-rotated-rectangle, padded a few screen pixels (more for touch).
+      const pad = (touch ? 14 : 3) / view.scale;
+      const inside = b => {
+        const a = -b.yaw * Math.PI / 180, dx = wx - b.cx, dy = wy - b.cy;
+        const lx = dx * Math.cos(a) - dy * Math.sin(a), ly = dx * Math.sin(a) + dy * Math.cos(a);
+        return Math.abs(lx) <= b.w / 2 + pad && Math.abs(ly) <= b.h / 2 + pad;
+      };
+      let b = null, best = Infinity;
+      for (const c of geo.buildings) if (inside(c)) { const dd = Math.hypot(wx - c.cx, wy - c.cy); if (dd < best) { best = dd; b = c; } }
       if (b) html = `<b>${esc(b.name)}</b><br>${esc(b.cat)}${b.cat === 'Production' ? ' · ' + (b.state === 1 ? 'running' : b.state === 2 ? 'paused' : 'idle') : ''}`;
     }
     if (!html && geo && layerOn.nodes) {
