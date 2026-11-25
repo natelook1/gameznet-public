@@ -4333,7 +4333,7 @@
       const isSelf = m.from_name === state.name;
 
       // Date separator
-      const dateLabel = m.sent_at && !m.sent_at.startsWith(m.from_name) ? chatDateLabel(m.sent_at) : '';
+      const dateLabel = m.sent_at && !m.sent_at.startsWith('optimistic-') ? chatDateLabel(m.sent_at) : '';
       if (dateLabel && dateLabel !== lastDateLabel) {
         const sep = document.createElement('div');
         sep.className = 'chat-date-sep';
@@ -4674,9 +4674,14 @@
     input.value = '';
     autoResizeTextarea(input);
 
-    const optimisticKey = `${state.name}|optimistic-${Date.now()}`;
+    // appendDMMessages keys rows as `${from_name}|${sent_at}`, so sent_at must be
+    // the bare marker: passing the full key here made it `Nate|Nate|optimistic-…`,
+    // which neither the stream echo nor the /send reply ever matched, and every
+    // sent message showed twice (2026-11-25).
+    const optimisticStamp = `optimistic-${Date.now()}`;
+    const optimisticKey = `${state.name}|${optimisticStamp}`;
     const target = chatActiveTarget;
-    const optimisticMsg = { from_name: state.name, body: sendBody, sent_at: optimisticKey, reply_to_id: chatReplyTo?.id || null, attachment_id };
+    const optimisticMsg = { from_name: state.name, body: sendBody, sent_at: optimisticStamp, reply_to_id: chatReplyTo?.id || null, attachment_id };
     appendDMMessages(target === 'global' ? 'global' : target, [optimisticMsg]);
     clearReply();
 
