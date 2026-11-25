@@ -4859,6 +4859,10 @@
 
         if (msg.type === 'typing') { showTyping(msg.from_name, msg.to_name); return; }
 
+        // A game server's player count changed (PZ pushes on every join/leave)
+        // A game server's state or player count changed: refresh the strip now
+        if (msg.type === 'server_players' || msg.type === 'server_state') { if (typeof loadClientServers === 'function') loadClientServers(); return; }
+
         if (msg.type === 'dm_read') { markDMSeen(msg.reader, msg.sender); return; }
 
         if (msg.type === 'reaction') { renderReactions(msg.msg_id, msg.reactions); return; }
