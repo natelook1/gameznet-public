@@ -502,16 +502,38 @@
   </nav>
 
   <script>
-    const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
-      ? 'https://gameznet.looknet.ca' : '';
+    // Game data is for GamezNET players only (2026-11-25). Mobile (m.gameznet) sends
+    // the login token from localStorage; the desktop app's local proxy adds its own.
+    // Both serve /api same-origin (CF Pages worker / app.py), so no base URL needed.
+    const GZN_TOKEN = (() => { try { return localStorage.getItem('gzn_token') || ''; } catch { return ''; } })();
+    (() => {
+      const f = window.fetch.bind(window);
+      let warned = false;
+      window.fetch = async (u, o = {}) => {
+        const s = typeof u === 'string' ? u : (u && u.url) || '';
+        const api = /^\/api\//.test(s);
+        if (api && GZN_TOKEN) o = { ...o, headers: { ...(o.headers || {}), 'X-Token': GZN_TOKEN } };
+        const r = await f(u, o);
+        if (api && r.status === 401 && !warned) {
+          warned = true;
+          const b = document.createElement('div');
+          b.textContent = 'Sign in to GamezNET to see live server data.';
+          b.style.cssText = 'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:9999;background:#1a1a21;border:1px solid #ef4444;color:#fca5a5;padding:8px 14px;border-radius:8px;font:13px sans-serif;';
+          document.body.appendChild(b);
+        }
+        return r;
+      };
+    })();
+    const API_BASE = '';
 
     // Map tiles for whichever PZ world is live (B41 Ziggy or B42 gameznet), from /api/pz/map.
-    // Falls back to B41 if the backend can't be reached. The CF Pages copy has no same-origin
-    // API, so it asks gameznet.looknet.ca directly (CORS allows it).
+    // Falls back to B42 tiles if the backend can't be reached.
     let PZ_TILES = 'https://gzstatic.looknet.ca/map-tiles/b42';
-    const pzMapReady = fetch(`${API_BASE || (location.hostname.endsWith('looknet.ca') ? '' : 'https://gameznet.looknet.ca')}/api/pz/map`)
+    const pzMapReady = fetch(`${API_BASE}/api/pz/map`)
       .then(r => r.ok ? r.json() : null).then(d => { if (d && d.tiles_base) PZ_TILES = d.tiles_base; }).catch(() => {});
-    const SSE_BASE = 'https://api-gamez.looknet.ca';
+    // Same-origin stream: app.py proxies it on desktop (adding the token), the CF
+    // worker on mobile (token in the query, EventSource can't send headers).
+    const SSE_BASE = '';
 
     let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {}, storage: {}, rare: { spawns: [] },
                    animals: [], world: {}, profiles: {}, generators: [], farming: [], hordes: [], liveCells: [], drift: null, fluids: [] };  // v2 mod feeds (B42)
@@ -2706,7 +2728,7 @@
     function startSSE() {
       if (sseSource) sseSource.close();
       prefetch();
-      sseSource = new EventSource(`${SSE_BASE}/api/pz/stream`);
+      sseSource = new EventSource(`${SSE_BASE}/api/pz/stream${GZN_TOKEN ? '?token=' + encodeURIComponent(GZN_TOKEN) : ''}`);
 
       sseSource.addEventListener('players', e => {
         try {

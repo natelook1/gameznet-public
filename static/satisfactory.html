@@ -179,7 +179,16 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const fmt = (n, d = 0) => (n == null || !isFinite(n)) ? '–' : Number(n).toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d });
   const fmtMW = mw => mw >= 1000 ? `${fmt(mw / 1000, 2)} GW` : `${fmt(mw, 0)} MW`;
-  const getJSON = async url => { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); };
+  // Game data is for GamezNET players only. Mobile (m.gameznet) sends the login
+  // token from localStorage; the desktop app's local proxy adds its own.
+  const GZN_TOKEN = (() => { try { return localStorage.getItem('gzn_token') || ''; } catch { return ''; } })();
+  let signinShown = false;
+  const getJSON = async url => {
+    const r = await fetch(url, GZN_TOKEN ? { headers: { 'X-Token': GZN_TOKEN } } : {});
+    if (r.status === 401 && !signinShown) { signinShown = true; setMapStatus('Sign in to GamezNET to see live server data.'); }
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  };
 
   // ── Views ──
   let activeView = 'map';
@@ -295,7 +304,7 @@
       updateCounts();
       draw();
     } catch (e) {
-      setMapStatus('Factory layers unavailable (live data offline)');
+      if (!signinShown) setMapStatus('Factory layers unavailable (live data offline)');
     }
   }
   async function loadLive() {
@@ -522,7 +531,7 @@
   async function loadSaves() {
     try {
       const b = await getJSON(`${API}/backups`);
-      const rows = b.backups.map(x => `<tr><td>${new Date(x.created_at).toLocaleString()}</td><td>${esc(x.kind)}</td><td>${esc(x.session || '')}</td><td class="num">${fmt(x.size / 1048576, 1)} MB</td><td><a href="${esc(x.url)}">download</a></td></tr>`).join('');
+      const rows = b.backups.map(x => `<tr><td>${new Date(x.created_at).toLocaleString()}</td><td>${esc(x.kind)}</td><td>${esc(x.session || '')}</td><td class="num">${fmt(x.size / 1048576, 1)} MB</td><td><a href="${esc(x.url)}${GZN_TOKEN ? '?token=' + encodeURIComponent(GZN_TOKEN) : ''}">download</a></td></tr>`).join('');
       $('saves-table').innerHTML = `<p class="muted" style="font-size:12px;margin-bottom:10px;">Nightly${b.autoHourUtc != null ? ' at ' + b.autoHourUtc + ':00 UTC' : ' (off)'}, kept ${b.keepDays} days.</p>` +
         (rows ? `<table><thead><tr><th>When</th><th>Kind</th><th>Session</th><th class="num">Size</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="muted">No backups yet.</p>');
     } catch { $('saves-table').textContent = 'Unavailable.'; }

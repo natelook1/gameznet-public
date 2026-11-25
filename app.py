@@ -279,7 +279,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.14.5"
+VERSION = "1.14.6"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -2701,56 +2701,6 @@ def api_update():
     return jsonify({"success": True})
 
 
-@app.route("/api/satisfactory/save-version", methods=["GET"])
-def api_satisfactory_save_version():
-    import urllib.request as _ur
-    try:
-        req = _ur.Request(f"{_backend_url()}/api/satisfactory/save-version", headers={"User-Agent": "GamezNET"})
-        with _ur.urlopen(req, timeout=5) as resp:
-            return resp.read(), resp.status, {"Content-Type": "application/json"}
-    except Exception as e:
-        return jsonify({"version": 0}), 200
-
-@app.route("/api/satisfactory/players", methods=["GET"])
-def api_satisfactory_players():
-    """Proxy with extended timeout — SF API can take up to 15s to respond."""
-    import urllib.request as _ur
-    try:
-        req = _ur.Request(f"{_backend_url()}/api/satisfactory/players", headers={"User-Agent": "GamezNET"})
-        with _ur.urlopen(req, timeout=20) as resp:
-            return resp.read(), resp.status, {"Content-Type": "application/json"}
-    except Exception as e:
-        log.error("satisfactory players proxy failed: %s", e)
-        return jsonify({"error": str(e)}), 502
-
-@app.route("/api/satisfactory/map-data", methods=["GET"])
-def api_satisfactory_map_data():
-    """Proxy to backend — uses extended timeout since .sav parsing can take several seconds."""
-    import urllib.request as _ur
-    try:
-        req = _ur.Request(f"{_backend_url()}/api/satisfactory/map-data", headers={"User-Agent": "GamezNET"})
-        with _ur.urlopen(req, timeout=120) as resp:
-            return resp.read(), resp.status, {"Content-Type": "application/json"}
-    except Exception as e:
-        log.error("satisfactory map-data proxy failed: %s", e)
-        return jsonify({"error": str(e)}), 502
-
-@app.route("/api/satisfactory/map-background")
-def api_satisfactory_map_background():
-    """Proxy the wiki map image to avoid CORS issues in the browser."""
-    import urllib.request as _ur
-    try:
-        req = _ur.Request(
-            "https://satisfactory.wiki.gg/images/Map.jpg",
-            headers={"User-Agent": "Mozilla/5.0 GamezNET"}
-        )
-        with _ur.urlopen(req, timeout=15) as resp:
-            data = resp.read()
-            return data, 200, {"Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400"}
-    except Exception as e:
-        log.error("satisfactory map background proxy failed: %s", e)
-        return "", 502
-
 @app.route("/conan-exiles")
 def conan_exiles():
     return send_from_directory("static", "conan-exiles.html")
@@ -2758,6 +2708,10 @@ def conan_exiles():
 @app.route("/zomboid")
 def zomboid():
     return send_from_directory("static", "zomboid.html")
+
+@app.route("/zomboid-iso")
+def zomboid_iso():
+    return send_from_directory("static", "zomboid-iso.html")
 
 @app.route("/satisfactory")
 def satisfactory_page():
@@ -2897,6 +2851,29 @@ def api_chat_stream():
     return Response(stream_with_context(_generate()), mimetype="text/event-stream",
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
+@app.route("/api/pz/stream")
+def api_pz_stream():
+    """SSE proxy for the Zomboid page's live updates. The backend needs the
+    player token (game data is players-only since 2026-11-25), and EventSource
+    can't send headers, so the page streams through here and we add it."""
+    import urllib.request as _ur
+    from flask import Response, stream_with_context
+    tok = _player_token() or ""
+    url = f"{_backend_url()}/api/pz/stream?token={_ur.quote(tok)}"
+    def _generate():
+        try:
+            req = _ur.Request(url, headers={"User-Agent": "GamezNET", "Accept": "text/event-stream"})
+            with _ur.urlopen(req, timeout=60) as resp:
+                while True:
+                    chunk = (getattr(resp, "read1", None) or resp.read)(1024)
+                    if not chunk:
+                        break
+                    yield chunk
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n".encode()
+    return Response(stream_with_context(_generate()), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
 @app.route("/api/<path:subpath>", methods=["GET", "POST"])
 def api_proxy(subpath):
     """Catch-all proxy for unhandled /api/* routes — forwards to backend."""
@@ -2921,10 +2898,14 @@ def api_proxy(subpath):
             log.debug(f"[API Proxy] File upload to {url} - Received headers: {dict(request.headers)}")
             log.debug(f"[API Proxy] File upload - Forwarding headers: {fwd_headers}")
         req = _ur.Request(url, data=body, headers=fwd_headers, method=request.method)
-        # The Satisfactory map layers can take ~8 s to build cold on the backend.
-        timeout = 60 if subpath.startswith("satisfactory/map") else 10
+        # Slow backend routes: Satisfactory map layers (~8 s cold), the save
+        # parser (map-data), backup downloads and the game API player query.
+        timeout = 120 if subpath == "satisfactory/map-data" else 60 if subpath.startswith("satisfactory/") else 10
         with _ur.urlopen(req, timeout=timeout) as resp:
-            return resp.read(), resp.status, {"Content-Type": resp.headers.get("Content-Type", "application/json")}
+            out_headers = {"Content-Type": resp.headers.get("Content-Type", "application/json")}
+            if resp.headers.get("Content-Disposition"):   # backup downloads keep their file name
+                out_headers["Content-Disposition"] = resp.headers["Content-Disposition"]
+            return resp.read(), resp.status, out_headers
     except _ue.HTTPError as e:
         body = e.read()
         log.error("api proxy HTTP %s for %s: %s", e.code, subpath, body)
