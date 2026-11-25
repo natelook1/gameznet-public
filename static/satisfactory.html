@@ -227,7 +227,12 @@
   }
 
   // ═════════════════════════════ MAP ═════════════════════════════
-  const canvas = $('map'), ctx = canvas.getContext('2d');
+  const canvas = $('map'), mainCtx = canvas.getContext('2d');
+  let ctx = mainCtx;
+  // Static layers are drawn once per view change into this offscreen canvas and
+  // copied each frame, so animating markers doesn't redraw ~74k foundation tiles.
+  const off = document.createElement('canvas'), offCtx = off.getContext('2d');
+  let offKey = '';
   const view = { cx: WX0 + WSIZE / 2, cy: WY0 + WSIZE / 2, scale: 0.001 };   // scale = CSS px per game unit
   let W = 0, H = 0, dpr = 1;
   const img = new Image(); img.decoding = 'async'; img.src = MAP_IMG; img.onload = () => draw();
@@ -356,8 +361,59 @@
       if (!signinShown) setMapStatus('Factory layers unavailable (live data offline)');
     }
   }
+  // ── Live movers: smooth motion between 3 s polls ──
+  // Each group keeps its last few FRM reads (timestamped by when the backend read
+  // FRM). Markers are drawn LIVE_DELAY ms in the past, sliding between the two
+  // reads around that moment, so motion is continuous instead of 3 s jumps.
+  // The delay covers one poll interval plus the backend's 3 s cache.
+  const LIVE_DELAY = 4500, SNAP_DIST = 300000;   // jumps over 3 km (teleport, respawn) snap
+  const GROUPS = ['players', 'trains', 'vehicles', 'drones'];
+  const snaps = { players: [], trains: [], vehicles: [], drones: [] };
+  let clockSkew = null;   // server ms - client ms, smoothed
+  let liveView = null;    // interpolated frame, used by render and hover
   async function loadLive() {
-    try { live = await getJSON(`${API}/map/live`); updateCounts(); draw(); } catch {}
+    try {
+      live = await getJSON(`${API}/map/live`);
+      if (live.now) {
+        const sk = live.now - Date.now();
+        clockSkew = clockSkew == null ? sk : clockSkew * 0.8 + sk * 0.2;
+      }
+      for (const g of GROUPS) {
+        const t = live.t?.[g] ?? (live.now || Date.now());
+        const list = snaps[g];
+        if (list.length && t <= list[list.length - 1].t) continue;   // same cached read
+        list.push({ t, byId: new Map(live[g].map((o, i) => [o.id ?? `${o.name}#${i}`, o])) });
+        if (list.length > 6) list.shift();
+      }
+      updateCounts(); draw();
+    } catch {}
+  }
+  const lerpAngle = (a, b, k) => { const d = ((b - a) % 360 + 540) % 360 - 180; return a + d * k; };
+  function liveFrame() {
+    if (!live) return null;
+    const rt = Date.now() + (clockSkew || 0) - LIVE_DELAY;
+    const out = { moving: false };
+    for (const g of GROUPS) {
+      const list = snaps[g], last = list[list.length - 1];
+      if (!last) { out[g] = []; continue; }
+      let i = list.length - 1;
+      while (i > 0 && list[i - 1].t > rt) i--;   // list[i] = first read after rt (or the oldest)
+      const b = list[i], a = i > 0 ? list[i - 1] : null;
+      const k = a ? Math.min(1, Math.max(0, (rt - a.t) / (b.t - a.t))) : 1;
+      const res = [];
+      for (const [id, cur] of last.byId) {
+        const ob = b.byId.get(id), oa = a && a.byId.get(id);
+        if (!ob) { if (b === last) res.push(cur); continue; }   // not yet seen at rt
+        let x = ob.x, y = ob.y, rot = ob.rot;
+        if (oa && k < 1 && Math.hypot(ob.x - oa.x, ob.y - oa.y) < SNAP_DIST) {
+          x = oa.x + (ob.x - oa.x) * k; y = oa.y + (ob.y - oa.y) * k; rot = lerpAngle(oa.rot || 0, ob.rot || 0, k);
+        }
+        if (rt < last.t && (ob.x !== cur.x || ob.y !== cur.y || (oa && (oa.x !== ob.x || oa.y !== ob.y)))) out.moving = true;
+        res.push({ ...cur, x, y, rot });
+      }
+      out[g] = res;
+    }
+    return out;
   }
   function updateCounts() {
     const c = Object.assign({}, geo?.counts || {});
@@ -397,6 +453,36 @@
   function render() {
     drawQueued = false;
     if (!W) return;
+    const key = [view.cx, view.cy, view.scale, canvas.width, canvas.height, dpr, img.naturalWidth && img.complete, geo && geo.counts,
+      ...['image', 'foundations', 'cables', 'pipes', 'belts', 'rails', 'buildings', 'nodes'].map(l => layerOn[l])].join('|');
+    if (key !== offKey || geo !== render.geo) {
+      offKey = key; render.geo = geo;
+      if (off.width !== canvas.width || off.height !== canvas.height) { off.width = canvas.width; off.height = canvas.height; }
+      ctx = offCtx; drawStatic(); ctx = mainCtx;
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(off, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    liveView = liveFrame();
+    const live = liveView;
+    if (live) {
+      if (layerOn.drones) for (const d of live.drones) marker(d, 'tri', '#f472b6', 5);
+      if (layerOn.vehicles) for (const v of live.vehicles) marker(v, 'diamond', '#fb923c', 5);
+      if (layerOn.trains) for (const t of live.trains) marker(t, 'arrow', t.derailed ? '#ffffff' : '#ef4444', 7);
+      if (layerOn.players) for (const p of live.players) {
+        if (!p.online) continue;
+        marker(p, 'player', '#22c55e', 8);
+        const [x, y] = toScreen(p.x, p.y);
+        ctx.font = '600 12px -apple-system, Segoe UI, sans-serif'; ctx.textAlign = 'center';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.strokeText(p.name, x, y - 14);
+        ctx.fillStyle = '#dcfce7'; ctx.fillText(p.name, x, y - 14);
+      }
+    }
+    const [mx, my] = mouse.world || [view.cx, view.cy];
+    if (live && live.moving && activeView === 'map' && !document.hidden) draw();
+    $('hud').textContent = `${fmt(mx / 100)} , ${fmt(my / 100)} m · ${view.scale >= 0.01 ? fmt(view.scale * 100, 1) + ' px/m' : fmt(1 / (view.scale * 100), 1) + ' m/px'}`;
+  }
+  function drawStatic() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#0b1016'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     // World transform: game units -> device pixels.
@@ -437,21 +523,6 @@
         ctx.globalAlpha = n.used ? 0.45 : 1; ctx.fill(); ctx.globalAlpha = 1;
       }
     }
-    if (live) {
-      if (layerOn.drones) for (const d of live.drones) marker(d, 'tri', '#f472b6', 5);
-      if (layerOn.vehicles) for (const v of live.vehicles) marker(v, 'diamond', '#fb923c', 5);
-      if (layerOn.trains) for (const t of live.trains) marker(t, 'arrow', t.derailed ? '#ffffff' : '#ef4444', 7);
-      if (layerOn.players) for (const p of live.players) {
-        if (!p.online) continue;
-        marker(p, 'player', '#22c55e', 8);
-        const [x, y] = toScreen(p.x, p.y);
-        ctx.font = '600 12px -apple-system, Segoe UI, sans-serif'; ctx.textAlign = 'center';
-        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.strokeText(p.name, x, y - 14);
-        ctx.fillStyle = '#dcfce7'; ctx.fillText(p.name, x, y - 14);
-      }
-    }
-    const [mx, my] = mouse.world || [view.cx, view.cy];
-    $('hud').textContent = `${fmt(mx / 100)} , ${fmt(my / 100)} m · ${view.scale >= 0.01 ? fmt(view.scale * 100, 1) + ' px/m' : fmt(1 / (view.scale * 100), 1) + ' m/px'}`;
   }
   function marker(o, shape, color, r) {
     const [x, y] = toScreen(o.x, o.y);
@@ -521,6 +592,7 @@
     const k = touch ? 2.5 : 1;   // fingers need bigger targets
     const near = (o, r) => { const [x, y] = toScreen(o.x, o.y); return Math.hypot(x - sx, y - sy) <= r * k; };
     let html = '';
+    const live = liveView;
     if (live) {
       const p = layerOn.players && live.players.find(p => p.online && near(p, 12));
       const t = !p && layerOn.trains && live.trains.find(t => near(t, 10));
