@@ -281,13 +281,25 @@
       if (b[6] !== 1 && cat.id === 'production') idle.rect(x0, y0, Math.max(x1 - x0, 200), Math.max(y1 - y0, 200));
       return { x0, y0, x1, y1, name: cls.name, cat: cat.label, state: b[6] };
     });
-    const fp = new Path2D();
-    for (const f of found) fp.rect(f.x - 400, f.y - 400, 800, 800);   // 8 m foundation tile
+    // Structure layer from the autosave (/map-data): [x, y, yaw] in metres.
+    // Floors are 8 m tiles rotated by yaw; walls are 8 m segments along the
+    // wall's local Y axis. World units here are cm, hence the *100.
+    const fp = new Path2D(), wp = new Path2D();
+    const rot = (cx, cy, yaw, lx, ly) => { const a = yaw * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); return [cx + lx * c - ly * s, cy + lx * s + ly * c]; };
+    for (const [mx, my, yaw] of found.floors) {
+      const cx = mx * 100, cy = my * 100;
+      const p = [[-400, -400], [400, -400], [400, 400], [-400, 400]].map(([lx, ly]) => rot(cx, cy, yaw, lx, ly));
+      fp.moveTo(p[0][0], p[0][1]); for (let i = 1; i < 4; i++) fp.lineTo(p[i][0], p[i][1]); fp.closePath();
+    }
+    for (const [mx, my, yaw] of found.walls) {
+      const cx = mx * 100, cy = my * 100, a = rot(cx, cy, yaw, 0, -400), b = rot(cx, cy, yaw, 0, 400);
+      wp.moveTo(a[0], a[1]); wp.lineTo(b[0], b[1]);
+    }
     return {
       belts: lines(st.belts), rails: lines(st.rails), pipes: lines(st.pipes), cables: lines(st.cables),
-      foundations: fp, cats, idle, buildings, nodes: st.nodes, stations: st.stations,
+      foundations: fp, walls: wp, cats, idle, buildings, nodes: st.nodes, stations: st.stations,
       counts: { belts: st.belts.length, rails: st.rails.length, pipes: st.pipes.length, cables: st.cables.length,
-        buildings: st.buildings.length, foundations: found.length, nodes: st.nodes.length },
+        buildings: st.buildings.length, foundations: found.floors.length + found.walls.length, nodes: st.nodes.length },
     };
   }
 
@@ -296,10 +308,9 @@
     try {
       const [st, md] = await Promise.all([
         getJSON(`${API}/map/static`),
-        getJSON(`${API}/map-data`).catch(() => ({ actors: [] })),
+        getJSON(`${API}/map-data`).catch(() => ({ floors: [], walls: [] })),
       ]);
-      const found = (md.actors || []).filter(a => a.cat === 'foundation');
-      geo = buildGeo(st, found);
+      geo = buildGeo(st, { floors: md.floors || [], walls: md.walls || [] });
       setMapStatus('');
       updateCounts();
       draw();
@@ -360,7 +371,10 @@
     }
     if (geo) {
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      if (layerOn.foundations) { ctx.fillStyle = 'rgba(107,114,128,0.55)'; ctx.fill(geo.foundations); }
+      if (layerOn.foundations) {
+        ctx.fillStyle = 'rgba(120,128,140,0.6)'; ctx.fill(geo.foundations);
+        ctx.strokeStyle = 'rgba(30,33,40,0.9)'; ctx.lineWidth = Math.max(px * 1.2, 60); ctx.stroke(geo.walls);
+      }
       if (layerOn.cables) { ctx.strokeStyle = 'rgba(250,204,21,0.35)'; ctx.lineWidth = Math.max(px * 0.8, 20); ctx.stroke(geo.cables); }
       if (layerOn.pipes) { ctx.strokeStyle = 'rgba(56,189,248,0.75)'; ctx.lineWidth = Math.max(px * 1.2, 90); ctx.stroke(geo.pipes); }
       if (layerOn.belts) { ctx.strokeStyle = 'rgba(229,231,235,0.8)'; ctx.lineWidth = Math.max(px * 1.1, 100); ctx.stroke(geo.belts); }

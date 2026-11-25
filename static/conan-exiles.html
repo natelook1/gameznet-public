@@ -845,10 +845,37 @@
   </nav>
 
   <script>
-    // When served from CF Pages (m.gameznet.looknet.ca), API calls must go to the backend directly
-    const API_BASE = window.location.hostname === 'm.gameznet.looknet.ca'
-      ? 'https://gameznet.looknet.ca'
-      : '';
+    // Game data is for GamezNET players only (2026-11-25). Mobile (m.gameznet) sends
+    // the login token from localStorage; the desktop app's local proxy adds its own.
+    // Both serve /api same-origin (CF Pages worker / app.py). After an admin login
+    // the password rides along too: admin/stats and admin/search check the header,
+    // which this page never sent before, so the admin view always got 401.
+    const GZN_TOKEN = (() => { try { return localStorage.getItem('gzn_token') || ''; } catch { return ''; } })();
+    let conanAdminPw = '';
+    (() => {
+      const f = window.fetch.bind(window);
+      let warned = false;
+      window.fetch = async (u, o = {}) => {
+        const s = typeof u === 'string' ? u : (u && u.url) || '';
+        const api = /^\/api\//.test(s);
+        if (api) {
+          const h = { ...(o.headers || {}) };
+          if (GZN_TOKEN) h['X-Token'] = GZN_TOKEN;
+          if (conanAdminPw && /\/admin\//.test(s)) h['X-Admin-Password'] = conanAdminPw;
+          o = { ...o, headers: h };
+        }
+        const r = await f(u, o);
+        if (api && r.status === 401 && !warned && !/\/admin\//.test(s)) {
+          warned = true;
+          const b = document.createElement('div');
+          b.textContent = 'Sign in to GamezNET to see live server data.';
+          b.style.cssText = 'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:9999;background:#1a1a21;border:1px solid #f97316;color:#fdba74;padding:8px 14px;border-radius:8px;font:13px sans-serif;';
+          document.body.appendChild(b);
+        }
+        return r;
+      };
+    })();
+    const API_BASE = '';
 
     let serverData = { players: [], guilds: [], building_groups: [], buildings: [], placeables: [], thralls: [], teleporters: [], following_thralls: [] };
     let adminAuthenticated = false;
@@ -931,6 +958,7 @@
       }).then(r => r.json()).then(data => {
         if (data.authenticated) {
           adminAuthenticated = true;
+          conanAdminPw = password;
           closeAdminModal();
           setActiveNav('admin');
           switchView('admin');
@@ -989,7 +1017,7 @@
       if (sseSource) { sseSource.close(); }
 
       prefetchData();
-      sseSource = new EventSource(`${API_BASE}/api/conan-exiles/stream`);
+      sseSource = new EventSource(`${API_BASE}/api/conan-exiles/stream${GZN_TOKEN ? '?token=' + encodeURIComponent(GZN_TOKEN) : ''}`);
 
       // Fast path: players update every 5s
       sseSource.addEventListener('players', (e) => {
