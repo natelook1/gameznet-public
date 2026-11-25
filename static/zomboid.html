@@ -890,6 +890,7 @@
             ${p.lastConnection ? `<span>🕐 ${formatLastConn(p.lastConnection)}</span>` : ''}
           </div>
           ${infHtml}
+          ${pzData.near && pzData.near[p.username] != null && isOnline ? `<div style="font-size:12px;color:${pzData.near[p.username] >= 15 ? 'var(--red)' : pzData.near[p.username] >= 5 ? 'var(--yellow, #eab308)' : 'var(--muted)'}">🧟 ${pzData.near[p.username]} zombie${pzData.near[p.username] === 1 ? '' : 's'} within ${pzData.nearRadius || 50} tiles</div>` : ''}
           ${profileHtml}
 
           ${hasWoundData ? `
@@ -2690,7 +2691,7 @@
       fetch(`${API_BASE}/api/pz/corpses`).then(r => r.json())
         .then(d => { pzData.corpses = d.corpses || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
       fetch(`${API_BASE}/api/pz/zombies`).then(r => r.json())
-        .then(d => { pzData.liveCells = d.cells || []; pzData.hordes = d.hordes || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
+        .then(d => { pzData.liveCells = d.cells || []; pzData.hordes = d.hordes || []; pzData.near = d.near || {}; pzData.nearRadius = d.near_radius || 50; mapDataRedraw(redrawModLayers); }).catch(() => {});
       pzLoadDrift(true);
       fetch(`${API_BASE}/api/pz/fluids`).then(r => r.json())
         .then(d => { pzData.fluids = d.fluids || []; mapDataRedraw(redrawModLayers); }).catch(() => {});
@@ -2799,6 +2800,9 @@
           const d = JSON.parse(e.data);
           pzData.liveCells = d.cells || [];
           pzData.hordes = d.hordes || [];
+          pzData.near = d.near || {}; pzData.nearRadius = d.near_radius || 50;
+          // refresh the near-me counts on player cards, at most every 10 s
+          if (typeof renderPlayers === 'function' && document.getElementById('players-list') && Date.now() - (window._nearRenderAt || 0) > 10000) { window._nearRenderAt = Date.now(); try { renderPlayers(); } catch {} }
           if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers();
         } catch {}
       });
