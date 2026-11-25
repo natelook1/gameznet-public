@@ -1293,31 +1293,10 @@
 #factory-iframe-wrap {
   flex: 1; overflow: hidden; position: relative; min-height: 0;
 }
+/* Plain frame. The old satisfactory-calculator embed shifted the iframe up
+   440 px to hide that site's header, which cut the top off our own page. */
 #factory-iframe-wrap iframe {
-  position: absolute; top: -440px; left: 0; width: 100%; height: calc(100% + 440px); border: none;
-}
-#factory-modal-backdrop {
-  position: absolute; inset: 0; z-index: 10;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
-  transition: opacity 0.5s ease;
-}
-#factory-modal-backdrop.hidden { opacity: 0; pointer-events: none; }
-#factory-modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 36px 40px;
-  width: 380px;
-  display: flex; flex-direction: column; align-items: center;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
-}
-#factory-modal-bar-track {
-  width: 100%; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 20px;
-}
-#factory-modal-bar-fill {
-  height: 100%; width: 0%; background: var(--warn); border-radius: 3px;
-  transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
+  position: absolute; inset: 0; width: 100%; height: 100%; border: none;
 }
 
     .yt-topbar {
@@ -2244,7 +2223,7 @@
     <button class="tab-btn conan-tab" onclick="switchTab('conan', this)">⚔️ CONAN</button>
     <button class="tab-btn zomboid-tab" onclick="switchTab('zomboid', this)">🧟 ZOMBOID</button>
     <button class="tab-btn factory-tab" onclick="switchTab('factory', this)">
-      <img src="/static/satisfactory.png" class="factory-tab-logo" alt="Map"> MAP
+      <img src="/static/satisfactory.png" class="factory-tab-logo" alt="Satisfactory"> FACTORY
     </button>
     <button class="tab-btn wow-tab" onclick="switchTab('wow', this)">
       <img src="/static/WoW_icon.svg" class="wow-tab-logo" alt="WoW"> WOW
