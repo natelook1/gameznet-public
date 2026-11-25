@@ -279,7 +279,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.14.9"
+VERSION = "1.14.10"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -2893,6 +2893,11 @@ def api_proxy(subpath):
                 fwd_headers[h] = val
         if "X-Token" not in fwd_headers and _player_token():
             fwd_headers["X-Token"] = _player_token()
+        # Ask for gzip when the page accepts it and pass it through untouched:
+        # without this the Satisfactory map layers crossed the VPN uncompressed
+        # (several MB instead of ~0.8 MB), painfully slow for players far away.
+        if "gzip" in (request.headers.get("Accept-Encoding") or ""):
+            fwd_headers["Accept-Encoding"] = "gzip"
 
         # Debug: log file upload headers
         if 'files/upload' in url:
@@ -2906,6 +2911,8 @@ def api_proxy(subpath):
             out_headers = {"Content-Type": resp.headers.get("Content-Type", "application/json")}
             if resp.headers.get("Content-Disposition"):   # backup downloads keep their file name
                 out_headers["Content-Disposition"] = resp.headers["Content-Disposition"]
+            if resp.headers.get("Content-Encoding"):      # gzip body passed through as-is
+                out_headers["Content-Encoding"] = resp.headers["Content-Encoding"]
             return resp.read(), resp.status, out_headers
     except _ue.HTTPError as e:
         body = e.read()

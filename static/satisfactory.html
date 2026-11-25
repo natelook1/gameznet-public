@@ -317,17 +317,28 @@
     };
   }
 
-  async function loadStatic() {
-    setMapStatus('Loading factory...');
+  // Factory layers (FRM) and the structure layer (autosave) load independently:
+  // draw whatever arrives first. The structure layer answers 503 for ~90 s while
+  // it's rebuilt after a backend restart, so keep retrying it until it's there.
+  let lastStatic = null, lastStructure = { floors: [], walls: [] }, structureRetry = null;
+  function rebuildGeo() { if (lastStatic) { geo = buildGeo(lastStatic, lastStructure); updateCounts(); draw(); } }
+  async function loadStructure() {
+    clearTimeout(structureRetry);
     try {
-      const [st, md] = await Promise.all([
-        getJSON(`${API}/map/static`),
-        getJSON(`${API}/map-data`).catch(() => ({ floors: [], walls: [] })),
-      ]);
-      geo = buildGeo(st, { floors: md.floors || [], walls: md.walls || [] });
+      const md = await getJSON(`${API}/map-data`);
+      lastStructure = { floors: md.floors || [], walls: md.walls || [] };
+      rebuildGeo();
+    } catch (e) {
+      if (!signinShown) structureRetry = setTimeout(loadStructure, 20000);
+    }
+  }
+  async function loadStatic() {
+    if (!lastStatic) setMapStatus('Loading factory...');
+    loadStructure();
+    try {
+      lastStatic = await getJSON(`${API}/map/static`);
       setMapStatus('');
-      updateCounts();
-      draw();
+      rebuildGeo();
     } catch (e) {
       if (!signinShown) setMapStatus('Factory layers unavailable (live data offline)');
     }
