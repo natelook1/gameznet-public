@@ -73,6 +73,25 @@
     .map-btns button:hover { border-color: var(--accent); }
     .tip { position: absolute; pointer-events: none; background: rgba(15,15,19,0.95); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.5; max-width: 280px; display: none; z-index: 5; }
     .tip b { color: var(--accent); }
+    /* Machine info panel (click a building) */
+    .mpanel { position: absolute; top: 12px; right: 56px; width: 330px; max-height: calc(100% - 24px); overflow-y: auto; background: rgba(15,15,19,0.96); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 12px; display: none; z-index: 6; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+    .mpanel.open { display: block; }
+    .mp-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .mp-head h3 { font-size: 15px; font-weight: 700; flex: 1; margin: 0; }
+    .mp-close { background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; padding: 0 4px; }
+    .mp-close:hover { color: var(--text); }
+    .mp-icon { width: 36px; height: 36px; object-fit: contain; flex: none; }
+    .mp-ico { width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-right: 6px; }
+    .mp-sec { margin-top: 10px; }
+    .mp-sec h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 600; margin: 0 0 4px; }
+    .mp-kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; }
+    .mp-kv span:nth-child(odd) { color: var(--muted); }
+    .mp-kv span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
+    .mp-item { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 5px 0; border-bottom: 1px solid #23232d; }
+    .mp-item .r { text-align: right; font-variant-numeric: tabular-nums; }
+    .mp-item .bar { grid-column: 1 / -1; height: 4px; }
+    .mp-recipe { color: var(--accent); font-weight: 600; }
+    @media (max-width: 700px) { .mpanel { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; max-height: 55%; } }
     .map-status { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: rgba(15,15,19,0.9); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 12px; color: var(--muted); display: none; }
 
     @media (max-width: 800px) {
@@ -136,6 +155,7 @@
         </div>
         <div class="map-hud" id="hud"></div>
         <div class="tip" id="tip"></div>
+        <aside class="mpanel" id="mpanel"></aside>
       </section>
 
       <section class="view" id="view-overview">
@@ -313,7 +333,7 @@
       const pts = [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]].map(([lx, ly]) => rot(cx, cy, yaw, lx, ly));
       poly(cats[cat.id], pts);
       if (b[6] !== 1 && cat.id === 'production') poly(idle, pts);
-      return { cx, cy, w, h, yaw, name: cls.name, cat: cat.label, state: b[6] };
+      return { cx, cy, w, h, yaw, name: cls.name, cls: cls.c, cat: cat.label, state: b[6], id: b[7] || null };
     });
     // Structure layer from the autosave (/map-data): [x, y, yaw], x/y in
     // decimetres (world units here are cm, hence *10). Floors are 8 m tiles
@@ -365,12 +385,15 @@
   // Each group keeps its last few FRM reads (timestamped by when the backend read
   // FRM). Markers are drawn LIVE_DELAY ms in the past, sliding between the two
   // reads around that moment, so motion is continuous instead of 3 s jumps.
-  // The delay covers one poll interval plus the backend's 3 s cache.
-  const LIVE_DELAY = 4500, SNAP_DIST = 300000;   // jumps over 3 km (teleport, respawn) snap
+  // The delay covers one poll interval (1.5 s) plus the backend's 1 s cache.
+  // If a read is late, markers keep going along their last velocity for up to
+  // MAX_EXTRAP instead of freezing and then jumping.
+  const LIVE_DELAY = 2500, MAX_EXTRAP = 2000, SNAP_DIST = 300000;   // jumps over 3 km (teleport, respawn) snap
   const GROUPS = ['players', 'trains', 'vehicles', 'drones'];
   const snaps = { players: [], trains: [], vehicles: [], drones: [] };
   let clockSkew = null;   // server ms - client ms, smoothed
   let liveView = null;    // interpolated frame, used by render and hover
+  const headings = new Map();   // smoothed per-entity heading
   async function loadLive() {
     try {
       live = await getJSON(`${API}/map/live`);
@@ -404,11 +427,22 @@
       for (const [id, cur] of last.byId) {
         const ob = b.byId.get(id), oa = a && a.byId.get(id);
         if (!ob) { if (b === last) res.push(cur); continue; }   // not yet seen at rt
-        let x = ob.x, y = ob.y, rot = ob.rot;
-        if (oa && k < 1 && Math.hypot(ob.x - oa.x, ob.y - oa.y) < SNAP_DIST) {
-          x = oa.x + (ob.x - oa.x) * k; y = oa.y + (ob.y - oa.y) * k; rot = lerpAngle(oa.rot || 0, ob.rot || 0, k);
+        let x = ob.x, y = ob.y, vx = 0, vy = 0;
+        const jump = oa && Math.hypot(ob.x - oa.x, ob.y - oa.y) >= SNAP_DIST;
+        if (oa && !jump) {
+          vx = (ob.x - oa.x) / (b.t - a.t); vy = (ob.y - oa.y) / (b.t - a.t);   // units per ms
+          if (rt <= b.t) { x = oa.x + (ob.x - oa.x) * k; y = oa.y + (ob.y - oa.y) * k; }
+          else { const dt = Math.min(rt - b.t, MAX_EXTRAP); x = ob.x + vx * dt; y = ob.y + vy * dt; }   // late read: dead-reckon
         }
-        if (rt < last.t && (ob.x !== cur.x || ob.y !== cur.y || (oa && (oa.x !== ob.x || oa.y !== ob.y)))) out.moving = true;
+        // Heading: FRM's rotation jitters by tens of degrees on straight track, so
+        // point moving things along their direction of travel (arrow tip = +x).
+        const sp = Math.hypot(vx, vy);
+        let rot = ob.rot || 0;
+        if (sp > 0.05) rot = Math.atan2(vy, vx) * 180 / Math.PI + 90;   // > ~1.8 km/h
+        const prev = headings.get(g + id);
+        if (prev != null) rot = lerpAngle(prev, rot, 0.15);
+        headings.set(g + id, rot);
+        if (sp > 0.001) out.moving = true;
         res.push({ ...cur, x, y, rot });
       }
       out[g] = res;
@@ -548,7 +582,10 @@
   canvas.addEventListener('pointerup', e => {
     pointers.delete(e.pointerId); pinchDist = 0;
     if (!pointers.size) canvas.classList.remove('dragging');
-    if (!dragMoved) hover(e.offsetX, e.offsetY, e.pointerType === 'touch' || e.pointerType === 'pen');
+    if (!dragMoved) {
+      hover(e.offsetX, e.offsetY, e.pointerType === 'touch' || e.pointerType === 'pen');
+      if (lastHit && lastHit.id) { $('tip').style.display = 'none'; openMachine(lastHit); }
+    }
   });
   canvas.addEventListener('pointercancel', e => { pointers.delete(e.pointerId); pinchDist = 0; });
   canvas.addEventListener('pointermove', e => {
@@ -587,11 +624,72 @@
   document.addEventListener('fullscreenchange', () => setTimeout(resize, 50));
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('map-max')) { document.body.classList.remove('map-max'); resize(); } });
 
+  // ── Machine info panel ──
+  // Icons come from gzstatic (extracted from the game); a missing icon removes itself.
+  const ICON_BASE = 'https://gzstatic.looknet.ca/sf-icons';
+  const iconSrc = cls => `${ICON_BASE}/${encodeURIComponent(cls.replace(/^(Build_|Desc_|BP_|Recipe_)/, '').replace(/_C$/, ''))}.png`;
+  const icon = (cls, k = 'mp-ico') => cls ? `<img class="${k}" src="${iconSrc(cls)}" alt="" onerror="this.remove()">` : '';
+  let lastHit = null, panelId = null, panelTimer = null;
+  const fmtRate = n => n == null ? '–' : fmt(n, n < 10 ? 2 : 1);
+  function closeMachine() { panelId = null; clearInterval(panelTimer); $('mpanel').classList.remove('open'); }
+  async function openMachine(b) {
+    panelId = b.id;
+    const el = $('mpanel');
+    el.classList.add('open');
+    el.innerHTML = `<div class="mp-head">${icon(b.cls, 'mp-icon')}<h3>${esc(b.name)}</h3><button class="mp-close" title="Close">✕</button></div><div class="muted" id="mp-msg">Loading...</div>`;
+    el.querySelector('.mp-close').onclick = closeMachine;
+    clearInterval(panelTimer);
+    await refreshMachine();
+    panelTimer = setInterval(() => { if (!document.hidden && activeView === 'map') refreshMachine(); }, 5000);
+  }
+  async function refreshMachine() {
+    const id = panelId; if (!id) return;
+    let m;
+    try { m = await getJSON(`${API}/machine/${encodeURIComponent(id)}`); }
+    catch { const msg = $('mp-msg'); if (panelId === id && msg) msg.textContent = 'Details unavailable (live data offline, or the machine was removed).'; return; }
+    if (panelId !== id) return;
+    const pill = { running: 'ok', paused: 'mid', idle: 'bad', unconfigured: 'bad' }[m.state] || 'mid';
+    const items = list => list.map(i => {
+      const pct = i.maxRate ? Math.min(100, i.rate / i.maxRate * 100) : 0;
+      return `<div class="mp-item"><span>${icon(i.cls)}${esc(i.name)}</span><span class="r">${fmtRate(i.rate)} / ${fmtRate(i.maxRate)} /min</span>` +
+        `<div class="bar"><div style="width:${pct}%;background:${pct >= 99 ? 'var(--green)' : pct > 0 ? 'var(--accent)' : 'var(--red)'}"></div></div></div>`;
+    }).join('');
+    const inv = list => list.length ? list.map(i => `<div class="mp-item"><span>${icon(i.cls)}${esc(i.name)}</span><span class="r">${fmt(i.amount)}${i.max ? ' / ' + fmt(i.max) : ''}</span></div>`).join('') : '<div class="muted">Empty</div>';
+    const kv = rows => `<div class="mp-kv">${rows.filter(r => r[1] != null && r[1] !== '').map(([k, v]) => `<span>${k}</span><span>${v}</span>`).join('')}</div>`;
+    let h = `<div class="mp-head">${icon(m.cls, 'mp-icon')}<h3>${esc(m.name)}</h3><span class="pill ${pill}">${esc(m.state)}</span><button class="mp-close" title="Close">✕</button></div>`;
+    if (m.recipe) h += `<div class="mp-recipe">${icon(m.outputs[0]?.cls)}${esc(m.recipe)}</div>`;
+    h += `<div class="mp-sec">${kv([
+      ['Clock speed', m.clock != null ? fmt(m.clock, 1) + ' %' : null],
+      ['Power shards', m.shards || null],
+      ['Somersloops', m.sloops || null],
+      ['Productivity', m.productivity != null ? fmt(m.productivity, 1) + ' %' : null],
+      ['Power use', m.kind === 'generator' || m.power.consumed == null ? null : fmtMW(m.power.consumed) + (m.power.max && Math.abs(m.power.max - m.power.consumed) > 0.01 ? ' of ' + fmtMW(m.power.max) : '')],
+      ['Circuit', m.power.circuit != null && m.power.circuit >= 0 ? '#' + m.power.circuit + (m.power.fuse ? ' <span class="pill bad">fuse blown</span>' : '') : null],
+    ])}</div>`;
+    if (m.gen) {
+      h += `<div class="mp-sec"><h4>Generation</h4>${kv([
+        ['Output', fmtMW((m.gen.capacity || 0) * (m.gen.load || 0) / 100) + ' of ' + fmtMW(m.gen.capacity || 0)],
+        ['Load', fmt(m.gen.load || 0, 1) + ' %'],
+        // FRM reports "Geothermal" for idle burners too; only trust it on geothermal plants.
+        ['Fuel', m.gen.fuelType && (m.gen.fuelType !== 'Geothermal' || /Geo/.test(m.cls)) ? esc(m.gen.fuelType) : null],
+        ['Supplement', m.gen.supplement ? `${esc(m.gen.supplement.name)} ${fmtRate(m.gen.supplement.rate)}/min` : null],
+      ])}${m.gen.nuclearWarning ? `<div class="pill bad" style="margin:6px 0 0">${esc(m.gen.nuclearWarning)}</div>` : ''}</div>`;
+      if (m.fuelInv?.length) h += `<div class="mp-sec"><h4>Fuel</h4>${inv(m.fuelInv)}</div>`;
+      if (m.wasteInv?.length) h += `<div class="mp-sec"><h4>Waste</h4>${inv(m.wasteInv)}</div>`;
+    }
+    if (m.inputs.length) h += `<div class="mp-sec"><h4>Inputs</h4>${items(m.inputs)}</div>`;
+    if (m.outputs.length) h += `<div class="mp-sec"><h4>Outputs</h4>${items(m.outputs)}</div>`;
+    if (m.inInv.length || m.outInv.length) h += `<div class="mp-sec"><h4>Inventory</h4>${inv([...m.inInv, ...m.outInv])}</div>`;
+    const el = $('mpanel'); el.innerHTML = h; el.querySelector('.mp-close').onclick = closeMachine;
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && panelId) closeMachine(); });
+
   function hover(sx, sy, touch = false) {
     const tip = $('tip');
     const k = touch ? 2.5 : 1;   // fingers need bigger targets
     const near = (o, r) => { const [x, y] = toScreen(o.x, o.y); return Math.hypot(x - sx, y - sy) <= r * k; };
     let html = '';
+    lastHit = null;
     const live = liveView;
     if (live) {
       const p = layerOn.players && live.players.find(p => p.online && near(p, 12));
@@ -599,7 +697,7 @@
       const v = !p && !t && layerOn.vehicles && live.vehicles.find(v => near(v, 8));
       const d = !p && !t && !v && layerOn.drones && live.drones.find(d => near(d, 8));
       if (p) html = `<b>${esc(p.name)}</b><br>Health ${fmt(p.hp)}${p.dead ? ' · dead' : ''}`;
-      else if (t) html = `<b>${esc(t.name)}</b><br>${esc(t.status)} · ${fmt(t.speed)} km/h<br>${t.cars} cars${t.station ? '<br>Last station: ' + esc(t.station) : ''}${t.derailed ? '<br><b>DERAILED</b>' : ''}`;
+      else if (t) html = `<b>${esc(t.name)}</b><br>${esc(t.status)} · ${fmt(t.speed)} km/h<br>${t.cars} cars${t.next ? '<br>Next stop: ' + esc(t.next) : ''}${t.station ? '<br>Last station: ' + esc(t.station) : ''}${t.derailed ? '<br><b>DERAILED</b>' : ''}`;
       else if (v) html = `<b>${esc(v.name)}</b><br>${v.autopilot ? 'Autopilot' : 'Manual'} · ${fmt(v.speed)} km/h${v.fuel ? '' : '<br>No fuel'}`;
       else if (d) html = `<b>Drone</b><br>${esc(d.mode)}<br>Home: ${esc(d.home)}${d.dest ? '<br>To: ' + esc(d.dest) : ''}`;
     }
@@ -614,6 +712,7 @@
       };
       let b = null, best = Infinity;
       for (const c of geo.buildings) if (inside(c)) { const dd = Math.hypot(wx - c.cx, wy - c.cy); if (dd < best) { best = dd; b = c; } }
+      lastHit = b;
       if (b) html = `<b>${esc(b.name)}</b><br>${esc(b.cat)}${b.cat === 'Production' ? ' · ' + (b.state === 1 ? 'running' : b.state === 2 ? 'paused' : 'idle') : ''}`;
     }
     if (!html && geo && layerOn.nodes) {
@@ -719,7 +818,7 @@
     else if (activeView === 'players') loadPlayers();
     else if (activeView === 'saves') loadSaves();
   }
-  setInterval(() => { if (document.hidden) return; if (activeView === 'map') loadLive(); }, 3000);
+  setInterval(() => { if (document.hidden) return; if (activeView === 'map') loadLive(); }, 1500);
   setInterval(() => { if (document.hidden) return; loadStatus(); loadFrm(); if (activeView !== 'map') refreshView(); }, 15000);
   setInterval(() => { if (!document.hidden && activeView === 'map') loadStatic(); }, 10 * 60000);
 
