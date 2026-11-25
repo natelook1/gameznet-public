@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Satisfactory</title>
+  <link rel="icon" href="/static/gameznet.ico" type="image/x-icon">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a21; --surface2: #22222c; --border: #2e2e3a;
+      --accent: #f59e0b; --accent-dim: #3a2a0c;
+      --green: #22c55e; --red: #ef4444; --orange: #f97316; --yellow: #eab308; --blue: #38bdf8;
+      --text: #e2e2e8; --muted: #6b6b7a;
+    }
+    html, body { height: 100%; height: 100dvh; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; overflow: hidden; }
+    .container { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+
+    .sidebar { width: 250px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; padding: 18px; gap: 18px; flex-shrink: 0; }
+    .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+    .logo span { color: var(--accent); }
+    .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+    .nav-item { padding: 9px 11px; border-radius: 7px; cursor: pointer; font-size: 13px; color: var(--muted); }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--accent-dim); color: var(--accent); }
+    .sidebar-stat { font-size: 12px; color: var(--muted); line-height: 1.7; }
+    .sidebar-stat strong { color: var(--text); }
+    .layer { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 2px; cursor: pointer; user-select: none; color: var(--text); }
+    .layer input { accent-color: var(--accent); }
+    .swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    .layer .count { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .warn { background: rgba(234,179,8,0.10); border: 1px solid rgba(234,179,8,0.4); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #fde68a; line-height: 1.5; display: none; }
+    .warn.visible { display: block; }
+    .warn code { background: rgba(0,0,0,0.35); padding: 1px 5px; border-radius: 4px; }
+
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+    .header-title { font-size: 19px; font-weight: 700; }
+    .header-meta { font-size: 12px; color: var(--muted); }
+    .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
+    .pill.ok { background: #14532d; color: #86efac; }
+    .pill.bad { background: #450a0a; color: #fca5a5; }
+    .pill.mid { background: #422006; color: #fde68a; }
+    .content { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 18px; min-height: 0; }
+    .content.map-active { padding: 0; overflow: hidden; }
+    .view { display: none; flex-direction: column; gap: 18px; }
+    .view.active { display: flex; }
+    #view-map.active { flex: 1; min-height: 0; position: relative; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+    .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+    .stat-value { font-size: 26px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .card h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--border); cursor: pointer; white-space: nowrap; }
+    td { padding: 6px 8px; border-bottom: 1px solid #23232d; font-variant-numeric: tabular-nums; }
+    td.num, th.num { text-align: right; }
+    .bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; min-width: 80px; }
+    .bar > div { height: 100%; background: var(--accent); }
+    .muted { color: var(--muted); }
+    input.search { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 7px 10px; font-size: 13px; width: 240px; }
+    a { color: var(--accent); }
+
+    /* Map */
+    #map { position: absolute; inset: 0; background: #0b1016; cursor: grab; touch-action: none; }
+    #map.dragging { cursor: grabbing; }
+    .map-hud { position: absolute; left: 12px; bottom: 12px; background: rgba(15,15,19,0.85); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; pointer-events: none; }
+    .map-btns { position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .map-btns button { width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--border); background: rgba(26,26,33,0.92); color: var(--text); font-size: 16px; cursor: pointer; }
+    .map-btns button:hover { border-color: var(--accent); }
+    .tip { position: absolute; pointer-events: none; background: rgba(15,15,19,0.95); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.5; max-width: 280px; display: none; z-index: 5; }
+    .tip b { color: var(--accent); }
+    .map-status { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: rgba(15,15,19,0.9); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 12px; color: var(--muted); display: none; }
+
+    @media (max-width: 800px) {
+      .sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 20; transform: translateX(-100%); transition: transform .2s; }
+      .sidebar.open { transform: none; }
+      .menu-btn { display: inline-block !important; }
+      .header { padding: 10px 14px; }
+      .content { padding: 14px; }
+    }
+    .menu-btn { display: none; background: none; border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 9px; font-size: 16px; margin-right: 8px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">GamezNET <span>Satisfactory</span></div>
+    <div>
+      <div class="section-title">Views</div>
+      <div class="nav-item active" data-view="map">Map</div>
+      <div class="nav-item" data-view="overview">Overview</div>
+      <div class="nav-item" data-view="power">Power</div>
+      <div class="nav-item" data-view="production">Production</div>
+      <div class="nav-item" data-view="players">Players</div>
+      <div class="nav-item" data-view="saves">Saves</div>
+    </div>
+    <div class="warn" id="frm-warn">Live factory data is offline, usually right after a server restart. In game, type <code>/frm http start</code> in chat.</div>
+    <div id="layers-box">
+      <div class="section-title">Layers</div>
+      <div id="layers"></div>
+    </div>
+    <div>
+      <div class="section-title">Server</div>
+      <div class="sidebar-stat" id="side-status">Loading...</div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="header">
+      <div style="display:flex;align-items:center;">
+        <button class="menu-btn" id="menu-btn">☰</button>
+        <div>
+          <div class="header-title" id="hdr-title">Satisfactory</div>
+          <div class="header-meta" id="hdr-meta"></div>
+        </div>
+      </div>
+      <div class="header-meta" id="hdr-right"></div>
+    </div>
+
+    <div class="content map-active" id="content">
+      <section class="view active" id="view-map">
+        <canvas id="map"></canvas>
+        <div class="map-status" id="map-status"></div>
+        <div class="map-btns">
+          <button id="zoom-in" title="Zoom in">+</button>
+          <button id="zoom-out" title="Zoom out">−</button>
+          <button id="zoom-fit" title="Whole map">⤢</button>
+        </div>
+        <div class="map-hud" id="hud"></div>
+        <div class="tip" id="tip"></div>
+      </section>
+
+      <section class="view" id="view-overview">
+        <div class="stats-grid" id="ov-stats"></div>
+        <div class="card"><h3>Space Elevator</h3><div id="ov-elevator" class="muted">Loading...</div></div>
+      </section>
+
+      <section class="view" id="view-power">
+        <div class="stats-grid" id="pw-stats"></div>
+        <div class="card"><h3>Circuits</h3><div id="pw-circuits" class="muted">Loading...</div></div>
+      </section>
+
+      <section class="view" id="view-production">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input class="search" id="prod-search" placeholder="Filter items...">
+          <span class="muted" style="font-size:12px;">Per minute. Net = produced − consumed.</span>
+        </div>
+        <div class="card"><div id="prod-table" class="muted">Loading...</div></div>
+      </section>
+
+      <section class="view" id="view-players">
+        <div class="card"><div id="players-table" class="muted">Loading...</div></div>
+      </section>
+
+      <section class="view" id="view-saves">
+        <div class="card"><h3>Backups</h3><div id="saves-table" class="muted">Loading...</div></div>
+        <div class="card" style="font-size:13px;line-height:1.6;">
+          <h3>Detailed view</h3>
+          The latest autosave can also be opened on satisfactory-calculator.com's interactive map for a full building-by-building view:
+          <a id="scim-link" href="#" target="_blank" rel="noopener">open the latest autosave</a>.
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const API = '/api/satisfactory';
+  const MAP_IMG = 'https://photos.looknet.ca/satisfactory/map.avif';
+  // World bounds of the map image, in game units (cm). Same frame as FRM and SCIM.
+  const WX0 = -324698.16796875, WY0 = -375000, WSIZE = 750000;
+
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const fmt = (n, d = 0) => (n == null || !isFinite(n)) ? '–' : Number(n).toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d });
+  const fmtMW = mw => mw >= 1000 ? `${fmt(mw / 1000, 2)} GW` : `${fmt(mw, 0)} MW`;
+  const getJSON = async url => { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); };
+
+  // ── Views ──
+  let activeView = 'map';
+  document.querySelectorAll('.nav-item').forEach(n => n.onclick = () => showView(n.dataset.view));
+  $('menu-btn').onclick = () => $('sidebar').classList.toggle('open');
+  function showView(v) {
+    activeView = v;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === v));
+    document.querySelectorAll('.view').forEach(s => s.classList.toggle('active', s.id === 'view-' + v));
+    $('content').classList.toggle('map-active', v === 'map');
+    $('layers-box').style.display = v === 'map' ? '' : 'none';
+    $('sidebar').classList.remove('open');
+    if (v === 'map') resize();
+    refreshView();
+  }
+
+  // ── Status (header + sidebar) ──
+  async function loadStatus() {
+    try {
+      const s = await getJSON(`${API}/status`);
+      if (!s.online) { $('hdr-meta').innerHTML = 'Server offline'; $('side-status').textContent = 'Server offline'; return s; }
+      const tick = s.tickRate == null ? '' : `<span class="pill ${s.struggling ? 'bad' : 'ok'}">${fmt(s.tickRate, 1)} tick/s</span>`;
+      $('hdr-title').textContent = s.session || 'Satisfactory';
+      $('hdr-meta').innerHTML = `Tier ${s.techTier ?? '?'}${s.gamePhase ? ' · ' + esc(s.gamePhase) : ''} · ${s.players}/${s.playerLimit} online${s.paused ? '<span class="pill mid">PAUSED</span>' : ''}${tick}`;
+      const hrs = s.playSeconds ? Math.floor(s.playSeconds / 3600) : null;
+      $('side-status').innerHTML = `Session <strong>${esc(s.session)}</strong><br>Play time <strong>${hrs != null ? fmt(hrs) + ' h' : '–'}</strong><br>Last backup <strong>${s.lastBackup ? new Date(s.lastBackup.created_at).toLocaleString() : 'none'}</strong>`;
+      return s;
+    } catch { $('hdr-meta').textContent = 'Status unavailable'; }
+  }
+  async function loadFrm() {
+    try { const f = await getJSON(`${API}/frm`); $('frm-warn').classList.toggle('visible', !f.up); return f.up; } catch { return false; }
+  }
+
+  // ═════════════════════════════ MAP ═════════════════════════════
+  const canvas = $('map'), ctx = canvas.getContext('2d');
+  const view = { cx: WX0 + WSIZE / 2, cy: WY0 + WSIZE / 2, scale: 0.001 };   // scale = CSS px per game unit
+  let W = 0, H = 0, dpr = 1;
+  const img = new Image(); img.decoding = 'async'; img.src = MAP_IMG; img.onload = () => draw();
+
+  // Building categories, by class name.
+  const CATS = [
+    { id: 'production', label: 'Production', color: '#f59e0b', re: /Constructor|Assembler|Manufacturer|Smelter|Foundry|OilRefinery|Blender|Packager|Converter|HadronCollider|QuantumEncoder|Encoder/i },
+    { id: 'power',      label: 'Power',      color: '#facc15', re: /Generator|PowerStorage/i },
+    { id: 'extraction', label: 'Extraction', color: '#2dd4bf', re: /Miner|OilPump|WaterPump|Fracking/i },
+    { id: 'transport',  label: 'Stations',   color: '#a78bfa', re: /TrainStation|TrainDocking|DroneStation|TruckStation/i },
+    { id: 'special',    label: 'HUB / Elevator', color: '#f8fafc', re: /SpaceElevator|HubTerminal/i },
+    { id: 'other',      label: 'Other buildings', color: '#94a3b8', re: /./ },
+  ];
+  const catOf = cls => CATS.find(c => c.re.test(cls)) || CATS[CATS.length - 1];
+
+  const LAYERS = [
+    { id: 'image',       label: 'Terrain',        color: '#3f5a4a', on: true },
+    { id: 'foundations', label: 'Foundations',    color: '#6b7280', on: true },
+    { id: 'cables',      label: 'Power lines',    color: '#facc15', on: false },
+    { id: 'pipes',       label: 'Pipes',          color: '#38bdf8', on: true },
+    { id: 'belts',       label: 'Belts',          color: '#e5e7eb', on: true },
+    { id: 'rails',       label: 'Railways',       color: '#a3a3a3', on: true },
+    { id: 'buildings',   label: 'Buildings',      color: '#f59e0b', on: true },
+    { id: 'nodes',       label: 'Resource nodes', color: '#84cc16', on: false },
+    { id: 'drones',      label: 'Drones',         color: '#f472b6', on: true },
+    { id: 'vehicles',    label: 'Vehicles',       color: '#fb923c', on: true },
+    { id: 'trains',      label: 'Trains',         color: '#ef4444', on: true },
+    { id: 'players',     label: 'Players',        color: '#22c55e', on: true },
+  ];
+  const layerOn = {};
+  try { Object.assign(layerOn, JSON.parse(localStorage.getItem('sf-layers') || '{}')); } catch {}
+  LAYERS.forEach(l => { if (!(l.id in layerOn)) layerOn[l.id] = l.on; });
+  function renderLayerList(counts = {}) {
+    $('layers').innerHTML = LAYERS.map(l => `<label class="layer"><input type="checkbox" data-l="${l.id}" ${layerOn[l.id] ? 'checked' : ''}><span class="swatch" style="background:${l.color}"></span>${l.label}<span class="count">${counts[l.id] != null ? fmt(counts[l.id]) : ''}</span></label>`).join('');
+    $('layers').querySelectorAll('input').forEach(i => i.onchange = () => {
+      layerOn[i.dataset.l] = i.checked;
+      try { localStorage.setItem('sf-layers', JSON.stringify(layerOn)); } catch {}
+      draw();
+    });
+  }
+  renderLayerList();
+
+  // Static geometry, built once into world-space Path2D objects per layer.
+  let geo = null;          // { belts, rails, pipes, cables, foundations, cats: {id: Path2D}, buildings: [...], nodes }
+  let live = null;
+  function buildGeo(st, found) {
+    const lines = (arr) => { const p = new Path2D(); for (const a of arr) { if (a.length < 4) continue; p.moveTo(a[0], a[1]); for (let i = 2; i < a.length; i += 2) p.lineTo(a[i], a[i + 1]); } return p; };
+    const cats = {}; CATS.forEach(c => cats[c.id] = new Path2D());
+    const idle = new Path2D();
+    const buildings = st.buildings.map(b => {
+      const cls = st.classes[b[0]] || { c: '', name: '?' };
+      const cat = catOf(cls.c);
+      const [x0, y0, x1, y1] = [b[1], b[2], b[3], b[4]];
+      cats[cat.id].rect(x0, y0, Math.max(x1 - x0, 200), Math.max(y1 - y0, 200));
+      if (b[6] !== 1 && cat.id === 'production') idle.rect(x0, y0, Math.max(x1 - x0, 200), Math.max(y1 - y0, 200));
+      return { x0, y0, x1, y1, name: cls.name, cat: cat.label, state: b[6] };
+    });
+    const fp = new Path2D();
+    for (const f of found) fp.rect(f.x - 400, f.y - 400, 800, 800);   // 8 m foundation tile
+    return {
+      belts: lines(st.belts), rails: lines(st.rails), pipes: lines(st.pipes), cables: lines(st.cables),
+      foundations: fp, cats, idle, buildings, nodes: st.nodes, stations: st.stations,
+      counts: { belts: st.belts.length, rails: st.rails.length, pipes: st.pipes.length, cables: st.cables.length,
+        buildings: st.buildings.length, foundations: found.length, nodes: st.nodes.length },
+    };
+  }
+
+  async function loadStatic() {
+    setMapStatus('Loading factory...');
+    try {
+      const [st, md] = await Promise.all([
+        getJSON(`${API}/map/static`),
+        getJSON(`${API}/map-data`).catch(() => ({ actors: [] })),
+      ]);
+      const found = (md.actors || []).filter(a => a.cat === 'foundation');
+      geo = buildGeo(st, found);
+      setMapStatus('');
+      updateCounts();
+      draw();
+    } catch (e) {
+      setMapStatus('Factory layers unavailable (live data offline)');
+    }
+  }
+  async function loadLive() {
+    try { live = await getJSON(`${API}/map/live`); updateCounts(); draw(); } catch {}
+  }
+  function updateCounts() {
+    const c = Object.assign({}, geo?.counts || {});
+    if (live) { c.players = live.players.filter(p => p.online).length; c.trains = live.trains.length; c.vehicles = live.vehicles.length; c.drones = live.drones.length; }
+    renderLayerList(c);
+  }
+  function setMapStatus(t) { const el = $('map-status'); el.textContent = t; el.style.display = t ? 'block' : 'none'; }
+
+  // ── View transform ──
+  function resize() {
+    const r = canvas.getBoundingClientRect();
+    if (!r.width) return;
+    dpr = window.devicePixelRatio || 1;
+    W = r.width; H = r.height;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    if (!view.fitted) fit();
+    draw();
+  }
+  function fit() { view.cx = WX0 + WSIZE / 2; view.cy = WY0 + WSIZE / 2; view.scale = Math.min(W, H) / WSIZE * 0.98; view.fitted = true; }
+  const minScale = () => Math.min(W, H) / WSIZE * 0.5;
+  const maxScale = 0.08;   // ~8 px per metre
+  const toScreen = (x, y) => [(x - view.cx) * view.scale + W / 2, (y - view.cy) * view.scale + H / 2];
+  const toWorld = (sx, sy) => [(sx - W / 2) / view.scale + view.cx, (sy - H / 2) / view.scale + view.cy];
+  function zoomAt(sx, sy, factor) {
+    const [wx, wy] = toWorld(sx, sy);
+    view.scale = Math.min(maxScale, Math.max(minScale(), view.scale * factor));
+    view.cx = wx - (sx - W / 2) / view.scale;
+    view.cy = wy - (sy - H / 2) / view.scale;
+    draw();
+  }
+  window.addEventListener('resize', resize);
+  new ResizeObserver(resize).observe(canvas);
+
+  // ── Drawing ──
+  let drawQueued = false;
+  function draw() { if (!drawQueued) { drawQueued = true; requestAnimationFrame(render); } }
+  function render() {
+    drawQueued = false;
+    if (!W) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#0b1016'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // World transform: game units -> device pixels.
+    const s = view.scale * dpr;
+    ctx.setTransform(s, 0, 0, s, (W / 2 - view.cx * view.scale) * dpr, (H / 2 - view.cy * view.scale) * dpr);
+    const px = 1 / view.scale;   // one CSS pixel in game units
+    if (layerOn.image && img.complete && img.naturalWidth) {
+      ctx.imageSmoothingEnabled = view.scale < 0.02;
+      ctx.globalAlpha = 0.85; ctx.drawImage(img, WX0, WY0, WSIZE, WSIZE); ctx.globalAlpha = 1;
+    }
+    if (geo) {
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      if (layerOn.foundations) { ctx.fillStyle = 'rgba(107,114,128,0.55)'; ctx.fill(geo.foundations); }
+      if (layerOn.cables) { ctx.strokeStyle = 'rgba(250,204,21,0.35)'; ctx.lineWidth = Math.max(px * 0.8, 20); ctx.stroke(geo.cables); }
+      if (layerOn.pipes) { ctx.strokeStyle = 'rgba(56,189,248,0.75)'; ctx.lineWidth = Math.max(px * 1.2, 90); ctx.stroke(geo.pipes); }
+      if (layerOn.belts) { ctx.strokeStyle = 'rgba(229,231,235,0.8)'; ctx.lineWidth = Math.max(px * 1.1, 100); ctx.stroke(geo.belts); }
+      if (layerOn.rails) {
+        ctx.strokeStyle = 'rgba(15,15,19,0.9)'; ctx.lineWidth = Math.max(px * 3, 450); ctx.stroke(geo.rails);
+        ctx.strokeStyle = 'rgba(163,163,163,0.95)'; ctx.lineWidth = Math.max(px * 1.4, 250); ctx.stroke(geo.rails);
+      }
+      if (layerOn.buildings) {
+        for (const c of CATS) { ctx.fillStyle = c.color; ctx.globalAlpha = 0.9; ctx.fill(geo.cats[c.id]); }
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = 'rgba(11,16,22,0.55)'; ctx.fill(geo.idle);   // dim idle/paused machines
+        if (view.scale > 0.006) { ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = px; for (const c of CATS) ctx.stroke(geo.cats[c.id]); }
+      }
+    }
+    // Screen-space markers from here on.
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (geo && layerOn.nodes) {
+      for (const n of geo.nodes) {
+        const [x, y] = toScreen(n.x, n.y); if (x < -10 || y < -10 || x > W + 10 || y > H + 10) continue;
+        ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = n.purity === 'Pure' ? '#84cc16' : n.purity === 'Normal' ? '#eab308' : '#f97316';
+        ctx.globalAlpha = n.used ? 0.45 : 1; ctx.fill(); ctx.globalAlpha = 1;
+      }
+    }
+    if (live) {
+      if (layerOn.drones) for (const d of live.drones) marker(d, 'tri', '#f472b6', 5);
+      if (layerOn.vehicles) for (const v of live.vehicles) marker(v, 'diamond', '#fb923c', 5);
+      if (layerOn.trains) for (const t of live.trains) marker(t, 'arrow', t.derailed ? '#ffffff' : '#ef4444', 7);
+      if (layerOn.players) for (const p of live.players) {
+        if (!p.online) continue;
+        marker(p, 'player', '#22c55e', 8);
+        const [x, y] = toScreen(p.x, p.y);
+        ctx.font = '600 12px -apple-system, Segoe UI, sans-serif'; ctx.textAlign = 'center';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.strokeText(p.name, x, y - 14);
+        ctx.fillStyle = '#dcfce7'; ctx.fillText(p.name, x, y - 14);
+      }
+    }
+    const [mx, my] = mouse.world || [view.cx, view.cy];
+    $('hud').textContent = `${fmt(mx / 100)} , ${fmt(my / 100)} m · ${view.scale >= 0.01 ? fmt(view.scale * 100, 1) + ' px/m' : fmt(1 / (view.scale * 100), 1) + ' m/px'}`;
+  }
+  function marker(o, shape, color, r) {
+    const [x, y] = toScreen(o.x, o.y);
+    if (x < -20 || y < -20 || x > W + 20 || y > H + 20) return;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(((o.rot || 0) - 90) * Math.PI / 180);
+    ctx.beginPath();
+    if (shape === 'arrow') { ctx.moveTo(r * 1.3, 0); ctx.lineTo(-r, r * 0.8); ctx.lineTo(-r * 0.5, 0); ctx.lineTo(-r, -r * 0.8); ctx.closePath(); }
+    else if (shape === 'tri') { ctx.moveTo(r, 0); ctx.lineTo(-r, r * 0.8); ctx.lineTo(-r, -r * 0.8); ctx.closePath(); }
+    else if (shape === 'diamond') { ctx.moveTo(r, 0); ctx.lineTo(0, r * 0.7); ctx.lineTo(-r, 0); ctx.lineTo(0, -r * 0.7); ctx.closePath(); }
+    else { ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.moveTo(r + 5, 0); ctx.lineTo(r - 1, 4); ctx.lineTo(r - 1, -4); ctx.closePath(); }
+    ctx.fillStyle = color; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.stroke();
+    ctx.restore();
+  }
+
+  // ── Interaction: drag, wheel, pinch, hover ──
+  const mouse = { world: null };
+  const pointers = new Map(); let pinchDist = 0, dragMoved = false;
+  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, [e.offsetX, e.offsetY]); dragMoved = false; canvas.classList.add('dragging'); });
+  canvas.addEventListener('pointerup', e => { pointers.delete(e.pointerId); pinchDist = 0; if (!pointers.size) canvas.classList.remove('dragging'); if (!dragMoved) hover(e.offsetX, e.offsetY, true); });
+  canvas.addEventListener('pointercancel', e => { pointers.delete(e.pointerId); pinchDist = 0; });
+  canvas.addEventListener('pointermove', e => {
+    mouse.world = toWorld(e.offsetX, e.offsetY);
+    if (!pointers.has(e.pointerId)) { hover(e.offsetX, e.offsetY); draw(); return; }
+    const prev = pointers.get(e.pointerId); pointers.set(e.pointerId, [e.offsetX, e.offsetY]);
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      if (pinchDist) zoomAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, d / pinchDist);
+      pinchDist = d; dragMoved = true; return;
+    }
+    const dx = e.offsetX - prev[0], dy = e.offsetY - prev[1];
+    if (Math.abs(dx) + Math.abs(dy) > 1) dragMoved = true;
+    view.cx -= dx / view.scale; view.cy -= dy / view.scale;
+    $('tip').style.display = 'none';
+    draw();
+  });
+  canvas.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.offsetX, e.offsetY, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+  canvas.addEventListener('pointerleave', () => { $('tip').style.display = 'none'; });
+  $('zoom-in').onclick = () => zoomAt(W / 2, H / 2, 1.6);
+  $('zoom-out').onclick = () => zoomAt(W / 2, H / 2, 1 / 1.6);
+  $('zoom-fit').onclick = () => { fit(); draw(); };
+
+  function hover(sx, sy) {
+    const tip = $('tip');
+    const near = (o, r) => { const [x, y] = toScreen(o.x, o.y); return Math.hypot(x - sx, y - sy) <= r; };
+    let html = '';
+    if (live) {
+      const p = layerOn.players && live.players.find(p => p.online && near(p, 12));
+      const t = !p && layerOn.trains && live.trains.find(t => near(t, 10));
+      const v = !p && !t && layerOn.vehicles && live.vehicles.find(v => near(v, 8));
+      const d = !p && !t && !v && layerOn.drones && live.drones.find(d => near(d, 8));
+      if (p) html = `<b>${esc(p.name)}</b><br>Health ${fmt(p.hp)}${p.dead ? ' · dead' : ''}`;
+      else if (t) html = `<b>${esc(t.name)}</b><br>${esc(t.status)} · ${fmt(t.speed)} km/h<br>${t.cars} cars${t.station ? '<br>Last station: ' + esc(t.station) : ''}${t.derailed ? '<br><b>DERAILED</b>' : ''}`;
+      else if (v) html = `<b>${esc(v.name)}</b><br>${v.autopilot ? 'Autopilot' : 'Manual'} · ${fmt(v.speed)} km/h${v.fuel ? '' : '<br>No fuel'}`;
+      else if (d) html = `<b>Drone</b><br>${esc(d.mode)}<br>Home: ${esc(d.home)}${d.dest ? '<br>To: ' + esc(d.dest) : ''}`;
+    }
+    if (!html && geo && layerOn.buildings) {
+      const [wx, wy] = toWorld(sx, sy);
+      const b = geo.buildings.find(b => wx >= b.x0 && wx <= b.x1 && wy >= b.y0 && wy <= b.y1);
+      if (b) html = `<b>${esc(b.name)}</b><br>${esc(b.cat)}${b.cat === 'Production' ? ' · ' + (b.state === 1 ? 'running' : b.state === 2 ? 'paused' : 'idle') : ''}`;
+    }
+    if (!html && geo && layerOn.nodes) {
+      const n = geo.nodes.find(n => near(n, 6));
+      if (n) html = `<b>${esc(n.name)}</b><br>${esc(n.purity)} ${esc(n.type)}${n.used ? ' · tapped' : ''}`;
+    }
+    if (!html) { tip.style.display = 'none'; return; }
+    tip.innerHTML = html; tip.style.display = 'block';
+    tip.style.left = Math.min(sx + 14, W - tip.offsetWidth - 8) + 'px';
+    tip.style.top = Math.min(sy + 14, H - tip.offsetHeight - 8) + 'px';
+  }
+
+  // ═════════════════════════ OTHER VIEWS ═════════════════════════
+  const card = (label, value, sub = '') => `<div class="stat-card"><div class="stat-label">${label}</div><div class="stat-value">${value}</div>${sub ? `<div class="stat-sub">${sub}</div>` : ''}</div>`;
+
+  async function loadOverview() {
+    const [s, p, lv] = await Promise.all([loadStatus(), getJSON(`${API}/power`).catch(() => null), getJSON(`${API}/map/live`).catch(() => null)]);
+    const online = lv ? lv.players.filter(x => x.online).map(x => x.name) : [];
+    $('ov-stats').innerHTML = [
+      card('Players', s ? `${s.players}/${s.playerLimit}` : '–', online.length ? esc(online.join(', ')) : ''),
+      card('Tech tier', s?.techTier ?? '–', s?.gamePhase ? esc(s.gamePhase) : ''),
+      card('Power use', p ? fmtMW(p.consumed) : '–', p ? `of ${fmtMW(p.produced)} produced` : 'live data offline'),
+      card('Capacity', p ? fmtMW(p.capacity) : '–', p ? `${fmt(p.consumed / p.capacity * 100)}% used` : ''),
+      card('Trains', lv ? lv.trains.length : '–', lv ? `${lv.trains.filter(t => t.status === 'Self-Driving').length} self-driving` : ''),
+      card('Tick rate', s?.tickRate != null ? fmt(s.tickRate, 1) : '–', s?.struggling ? 'server struggling' : 'healthy'),
+    ].join('');
+  }
+
+  async function loadPower() {
+    try {
+      const p = await getJSON(`${API}/power`);
+      $('pw-stats').innerHTML = [
+        card('Produced', fmtMW(p.produced)), card('Consumed', fmtMW(p.consumed)),
+        card('Capacity', fmtMW(p.capacity)), card('Peak demand', fmtMW(p.maxConsumed), p.maxConsumed > p.capacity ? 'over capacity!' : 'within capacity'),
+      ].join('');
+      const rows = p.circuits.filter(c => c.capacity > 0 || c.consumed > 0).sort((a, b) => b.capacity - a.capacity).map(c => {
+        const pct = c.capacity ? Math.min(100, c.consumed / c.capacity * 100) : 0;
+        return `<tr><td>#${c.id}${c.fuseTriggered ? ' <span class="pill bad">FUSE</span>' : ''}</td><td class="num">${fmtMW(c.consumed)}</td><td class="num">${fmtMW(c.capacity)}</td><td><div class="bar"><div style="width:${pct}%;background:${pct > 90 ? 'var(--red)' : 'var(--accent)'}"></div></div></td><td class="num">${c.batteryCapacity ? fmt(c.batteryPercent) + '%' : '–'}</td></tr>`;
+      }).join('');
+      $('pw-circuits').innerHTML = `<table><thead><tr><th>Circuit</th><th class="num">Using</th><th class="num">Capacity</th><th>Load</th><th class="num">Battery</th></tr></thead><tbody>${rows}</tbody></table>`;
+    } catch { $('pw-circuits').textContent = 'Live data offline.'; $('pw-stats').innerHTML = ''; }
+  }
+
+  let prodItems = [], prodSort = { k: 'prod', dir: -1 };
+  async function loadProduction() {
+    try { prodItems = (await getJSON(`${API}/production`)).items.map(i => ({ ...i, net: (i.prod || 0) - (i.cons || 0) })); renderProduction(); }
+    catch { $('prod-table').textContent = 'Live data offline.'; }
+  }
+  function renderProduction() {
+    const q = $('prod-search').value.trim().toLowerCase();
+    const rows = prodItems.filter(i => !q || i.name.toLowerCase().includes(q))
+      .sort((a, b) => prodSort.k === 'name' ? a.name.localeCompare(b.name) * prodSort.dir : ((a[prodSort.k] || 0) - (b[prodSort.k] || 0)) * prodSort.dir)
+      .map(i => `<tr><td>${esc(i.name)}</td><td class="num">${fmt(i.prod, 1)}</td><td class="num muted">${fmt(i.maxProd, 1)}</td><td class="num">${fmt(i.cons, 1)}</td><td class="num" style="color:${i.net < -0.05 ? 'var(--red)' : i.net > 0.05 ? 'var(--green)' : 'var(--muted)'}">${i.net > 0 ? '+' : ''}${fmt(i.net, 1)}</td></tr>`).join('');
+    const th = (k, l, num) => `<th class="${num ? 'num' : ''}" data-k="${k}">${l}${prodSort.k === k ? (prodSort.dir < 0 ? ' ↓' : ' ↑') : ''}</th>`;
+    $('prod-table').innerHTML = `<table><thead><tr>${th('name', 'Item')}${th('prod', 'Produced', 1)}${th('maxProd', 'Max', 1)}${th('cons', 'Consumed', 1)}${th('net', 'Net', 1)}</tr></thead><tbody>${rows}</tbody></table>`;
+    $('prod-table').querySelectorAll('th').forEach(t => t.onclick = () => { prodSort = { k: t.dataset.k, dir: prodSort.k === t.dataset.k ? -prodSort.dir : -1 }; renderProduction(); });
+  }
+  $('prod-search').oninput = renderProduction;
+
+  async function loadPlayers() {
+    try {
+      const lv = await getJSON(`${API}/map/live`);
+      const rows = lv.players.sort((a, b) => b.online - a.online).map(p => `<tr><td>${esc(p.name)}</td><td>${p.online ? '<span class="pill ok">online</span>' : '<span class="muted">offline</span>'}${p.dead ? ' <span class="pill bad">dead</span>' : ''}</td><td class="num">${fmt(p.hp)}</td><td><a href="#" data-x="${p.x}" data-y="${p.y}">show on map</a></td></tr>`).join('');
+      $('players-table').innerHTML = `<table><thead><tr><th>Name</th><th>Status</th><th class="num">Health</th><th>Last position</th></tr></thead><tbody>${rows}</tbody></table>`;
+      $('players-table').querySelectorAll('a[data-x]').forEach(a => a.onclick = e => { e.preventDefault(); showView('map'); view.cx = +a.dataset.x; view.cy = +a.dataset.y; view.scale = 0.004; draw(); });
+    } catch { $('players-table').textContent = 'Live data offline.'; }
+  }
+
+  async function loadSaves() {
+    try {
+      const b = await getJSON(`${API}/backups`);
+      const rows = b.backups.map(x => `<tr><td>${new Date(x.created_at).toLocaleString()}</td><td>${esc(x.kind)}</td><td>${esc(x.session || '')}</td><td class="num">${fmt(x.size / 1048576, 1)} MB</td><td><a href="${esc(x.url)}">download</a></td></tr>`).join('');
+      $('saves-table').innerHTML = `<p class="muted" style="font-size:12px;margin-bottom:10px;">Nightly${b.autoHourUtc != null ? ' at ' + b.autoHourUtc + ':00 UTC' : ' (off)'}, kept ${b.keepDays} days.</p>` +
+        (rows ? `<table><thead><tr><th>When</th><th>Kind</th><th>Session</th><th class="num">Size</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="muted">No backups yet.</p>');
+    } catch { $('saves-table').textContent = 'Unavailable.'; }
+    $('scim-link').href = 'https://satisfactory-calculator.com/en/interactive-map?url=' + encodeURIComponent('https://photos.looknet.ca/satisfactory/latest.sav');
+  }
+
+  // ── Refresh loop: only the visible view polls ──
+  function refreshView() {
+    if (activeView === 'overview') loadOverview();
+    else if (activeView === 'power') loadPower();
+    else if (activeView === 'production') loadProduction();
+    else if (activeView === 'players') loadPlayers();
+    else if (activeView === 'saves') loadSaves();
+  }
+  setInterval(() => { if (document.hidden) return; if (activeView === 'map') loadLive(); }, 3000);
+  setInterval(() => { if (document.hidden) return; loadStatus(); loadFrm(); if (activeView !== 'map') refreshView(); }, 15000);
+  setInterval(() => { if (!document.hidden && activeView === 'map') loadStatic(); }, 10 * 60000);
+
+  const startView = new URLSearchParams(location.search).get('view');
+  loadStatus(); loadFrm().then(() => { loadStatic(); loadLive(); });
+  resize();
+  if (startView && startView !== 'map') showView(startView);
+})();
+</script>
+</body>
+</html>
