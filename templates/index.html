@@ -5263,12 +5263,13 @@
 
   async function launchGame(appid, ip, port) {
     try {
-      await fetch('/api/launch_game', {
+      const r = await fetch('/api/launch_game', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ appid, ip, port })
       });
-      toast('Launching game...', 'success');
+      const d = await r.json().catch(() => ({}));
+      toast(d.note || 'Launching game...', 'success');
       closeSrvModal();
     } catch (e) {
       toast('Failed to launch game', 'error');

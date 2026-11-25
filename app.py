@@ -279,7 +279,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.14.2"
+VERSION = "1.14.3"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -1095,8 +1095,17 @@ def api_launch_game():
             # per-server accounts, so it always comes up empty. Launch plain instead and
             # let the player connect from Join > Favorites, where the account is saved.
             os.startfile(f"steam://run/{appid}")
-        elif str(appid) == "526870":  # Satisfactory uses +open
-            os.startfile(f"steam://run/{appid}//+open {ip}:{port}/")
+        elif str(appid) == "526870":
+            # Satisfactory has no command-line join: dedicated servers are joined from the
+            # in-game Server Manager (added once by IP:port). Launch plain and put the
+            # address on the clipboard for pasting there; '+open' was silently ignored.
+            try:
+                subprocess.run("clip", input=f"{ip}:{port}".encode("ascii", "ignore"), check=False,
+                               creationflags=subprocess.CREATE_NO_WINDOW)
+            except Exception:
+                pass
+            os.startfile(f"steam://run/{appid}")
+            return jsonify({"success": True, "note": f"Satisfactory joins from its Server Manager: {ip}:{port} is on your clipboard"})
         elif str(appid) == "440900":  # Conan Exiles Enhanced
             # FLS auth requires FuncomLauncher to be running. Strategy:
             # 1. Launch launcher via Steam (-applaunch) so FLS session initializes
