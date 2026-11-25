@@ -279,7 +279,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.14.4"
+VERSION = "1.14.5"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -2759,6 +2759,10 @@ def conan_exiles():
 def zomboid():
     return send_from_directory("static", "zomboid.html")
 
+@app.route("/satisfactory")
+def satisfactory_page():
+    return send_from_directory("static", "satisfactory.html")
+
 @app.route("/static/map-tiles/<path:tile_path>")
 def map_tiles_proxy(tile_path):
     import urllib.request as _ur
@@ -2917,7 +2921,9 @@ def api_proxy(subpath):
             log.debug(f"[API Proxy] File upload to {url} - Received headers: {dict(request.headers)}")
             log.debug(f"[API Proxy] File upload - Forwarding headers: {fwd_headers}")
         req = _ur.Request(url, data=body, headers=fwd_headers, method=request.method)
-        with _ur.urlopen(req, timeout=10) as resp:
+        # The Satisfactory map layers can take ~8 s to build cold on the backend.
+        timeout = 60 if subpath.startswith("satisfactory/map") else 10
+        with _ur.urlopen(req, timeout=timeout) as resp:
             return resp.read(), resp.status, {"Content-Type": resp.headers.get("Content-Type", "application/json")}
     except _ue.HTTPError as e:
         body = e.read()
