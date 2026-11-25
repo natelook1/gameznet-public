@@ -533,6 +533,25 @@
       card('Trains', lv ? lv.trains.length : '–', lv ? `${lv.trains.filter(t => t.status === 'Self-Driving').length} self-driving` : ''),
       card('Tick rate', s?.tickRate != null ? fmt(s.tickRate, 1) : '–', s?.struggling ? 'server struggling' : 'healthy'),
     ].join('');
+    loadElevator();
+  }
+
+  async function loadElevator() {
+    const el = $('ov-elevator');
+    try {
+      const d = await getJSON(`${API}/progress`);
+      const e = d.elevator;
+      if (!e) { el.textContent = 'No Space Elevator built yet.'; return; }
+      if (e.fullyUpgraded) { el.innerHTML = '<span style="color:var(--green)">Fully upgraded. Project Assembly complete.</span>'; return; }
+      const rows = e.parts.map(p => {
+        const pct = p.total ? Math.min(100, p.delivered / p.total * 100) : 0;
+        return `<tr><td>${esc(p.name)}</td><td style="width:45%"><div class="bar"><div style="width:${pct}%;background:${pct >= 100 ? 'var(--green)' : 'var(--accent)'}"></div></div></td><td class="num">${fmt(p.delivered)} / ${fmt(p.total)}</td></tr>`;
+      }).join('');
+      el.classList.remove('muted');
+      el.innerHTML = (e.upgradeReady ? '<p style="color:var(--green);font-size:13px;margin-bottom:8px;">All parts delivered: ready to send the next phase.</p>' : '') +
+        `<table><tbody>${rows}</tbody></table>` +
+        (d.milestone ? `<p class="muted" style="font-size:12px;margin-top:10px;">HUB milestone: ${esc(d.milestone.name)} (tier ${d.milestone.tier})${d.milestone.shipReturn && d.milestone.shipReturn !== '00:00:00' ? ', ship back in ' + esc(d.milestone.shipReturn) : ''}</p>` : '');
+    } catch { el.textContent = 'Live data offline.'; }
   }
 
   async function loadPower() {
