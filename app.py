@@ -78,6 +78,9 @@ NON_STEAM_PROCESSES = {
     'WorldOfWarplanes64.exe': 'World of Warplanes',
     'WorldOfSeaBattleClient.exe': 'World of Sea Battle',
 
+    # ── CCP (standalone launcher, so no Steam library path) ───────────────────
+    'exefile.exe': 'EVE Online',
+
     # ── Riot Games ────────────────────────────────────────────────────────────
     'League of Legends.exe': 'League of Legends',
     'VALORANT-Win64-Shipping.exe': 'VALORANT',
@@ -276,7 +279,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.13.26"
+VERSION = "1.13.27"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -730,18 +733,28 @@ def check_version():
     global _update_required, _update_available, _latest_version
     import urllib.request
     try:
-        req = urllib.request.Request(f"{_backend_url()}/api/version", headers={'User-Agent': 'GamezNET'})
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read().decode())
-            min_ver = data.get("min_version", "1.0.0")
-            _latest_version = data.get("latest_version") or min_ver
-            _update_required = _version_tuple(VERSION) < _version_tuple(min_ver)
-            # Optional update: a newer installer exists but isn't mandatory.
-            _update_available = _update_required or _version_tuple(VERSION) < _version_tuple(_latest_version)
-            if _update_required:
-                log.warning("Update required: client=%s min=%s", VERSION, min_ver)
+        # Try the current path first, then the other one: disconnected installs use
+        # the public URL, connected ones the VPN address, and either can be down.
+        data, last_err = None, None
+        for base in dict.fromkeys([_backend_url(), WORKER_URL, VPN_BACKEND_URL]):
+            try:
+                req = urllib.request.Request(f"{base}/api/version", headers={'User-Agent': 'GamezNET'})
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode())
+                break
+            except Exception as e:
+                last_err = f"{base}: {e}"
+        if data is None:
+            raise RuntimeError(last_err)
+        min_ver = data.get("min_version", "1.0.0")
+        _latest_version = data.get("latest_version") or min_ver
+        _update_required = _version_tuple(VERSION) < _version_tuple(min_ver)
+        # Optional update: a newer installer exists but isn't mandatory.
+        _update_available = _update_required or _version_tuple(VERSION) < _version_tuple(_latest_version)
+        if _update_required:
+            log.warning("Update required: client=%s min=%s", VERSION, min_ver)
     except Exception as e:
-        log.debug("Version check failed: %s", e)
+        log.warning("Version check failed: %s", e)
 
 @app.route("/")
 def index():
