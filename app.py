@@ -279,7 +279,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.13.27"
+VERSION = "1.13.31"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -781,6 +781,7 @@ def api_status():
         "auto_update": _auto_update_enabled(),
         "update_available": _update_available,
         "latest_version": _latest_version,
+        "updating": _updating,
     })
 
 def _player_token():
@@ -3482,6 +3483,33 @@ if __name__ == "__main__":
     # Open browser after Flask is up (skip on silent update — existing tab reloads itself)
     if "--no-browser" not in sys.argv:
         threading.Thread(target=open_browser, daemon=True).start()
+
+    # After an update, say so with a tray toast (silent updates stay in the tray
+    # and open no tab, so this is how the user finds out).
+    def _announce_update():
+        try:
+            with open(CONFIG_FILE) as f:
+                cfg = json.load(f)
+        except Exception:
+            cfg = {}
+        prev = cfg.get("last_run_version")
+        if prev == VERSION:
+            return
+        cfg["last_run_version"] = VERSION
+        try:
+            _write_config(cfg)
+        except Exception:
+            pass
+        if not prev:
+            return   # first run of this feature: nothing to announce
+        for _ in range(30):   # the tray icon appears shortly after startup
+            _icon = icon_holder.get("icon")
+            if _icon:
+                try: _icon.notify(f"Updated to v{VERSION}", "GamezNET")
+                except Exception: pass
+                return
+            time.sleep(1)
+    threading.Thread(target=_announce_update, daemon=True).start()
 
     # Run tray icon on main thread (blocks until Exit clicked)
     run_tray(flask_thread)
