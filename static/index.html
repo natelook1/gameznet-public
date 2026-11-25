@@ -1046,11 +1046,6 @@
     `;
   }
 
-  // ── Map Tab ─────────────────────────────────────────────────────────────────
-  const SF_R2_URL = 'https://photos.looknet.ca/satisfactory/latest.sav';
-  const SF_SCIM_BASE = 'https://satisfactory-calculator.com/en/interactive-map';
-  const SF_SCIM_HASH = '#-376193.5,-375000,0.00026';
-
   function ConanTab() {
     return html`
       <div style="display:flex; flex-direction:column; flex:1; overflow:hidden; min-height:0; height:100%;">
@@ -1067,42 +1062,13 @@
     `;
   }
 
+  // Satisfactory: the GamezNET page (live FRM map, power, production, saves),
+  // replacing the satisfactory-calculator embed 2026-11-25. Same origin, so it
+  // reads gzn_token from localStorage for the players-only game APIs.
   function MapTab() {
-    const [status, setStatus] = useState('connecting...');
-    const [dot, setDot] = useState('#888');
-    const src = `${SF_SCIM_BASE}?switchGameBranch=Experimental&url=${encodeURIComponent(SF_R2_URL)}${SF_SCIM_HASH}`;
-
-    useEffect(() => {
-      async function poll() {
-        try {
-          const r = await req('/api/satisfactory/players');
-          if (!r.ok) throw new Error();
-          const d = await r.json();
-          const n = d.serverState?.numConnectedPlayers ?? 0;
-          const name = d.serverState?.activeSessionName ?? '';
-          setDot('#4caf50');
-          setStatus(name ? `${name} · ${n} player${n !== 1 ? 's' : ''} online` : `${n} player${n !== 1 ? 's' : ''} online`);
-        } catch {
-          setDot('#888');
-          setStatus('server offline');
-        }
-      }
-      poll();
-      const iv = setInterval(poll, 10000);
-      return () => clearInterval(iv);
-    }, []);
-
     return html`
-      <div style="display:flex; flex-direction:column; flex:1; overflow:hidden; min-height:0;">
-        <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; font-size:12px; font-weight:600; color:var(--accent);">
-          <img src="/satisfactory.png" style="height:16px;" />
-          SATISFACTORY MAP
-          <span style="width:7px; height:7px; border-radius:50%; background:${dot}; display:inline-block; margin-left:4px;"></span>
-          <span style="color:var(--muted); font-weight:400;">${status}</span>
-        </div>
-        <div style="flex:1; overflow:hidden; position:relative; min-height:0;">
-          <iframe src=${src} style="position:absolute; top:-440px; left:0; width:100%; height:calc(100% + 440px); border:none;" allowfullscreen></iframe>
-        </div>
+      <div style="display:flex; flex-direction:column; flex:1; overflow:hidden; min-height:0; height:100%;">
+        <iframe src="/satisfactory" style="flex:1; border:none; width:100%; height:100%; min-height:600px;" allowfullscreen></iframe>
       </div>
     `;
   }
