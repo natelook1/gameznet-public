@@ -3556,13 +3556,12 @@
     paintAutoUpdate();
     maybeAutoUpdate();
   }
+  // The app installs auto-updates itself (works minimized or in the tray), so the
+  // page only tells you it's coming; it no longer triggers the install.
   function maybeAutoUpdate() {
-    if (!state.autoUpdate || !state.updateAvailable || state.busy || _autoUpdateTimer || auAlreadyTried()) return;
-    toast('New version found, updating in 10 seconds (turn off Auto-update to cancel)');
-    _autoUpdateTimer = setTimeout(() => {
-      _autoUpdateTimer = null;
-      if (state.autoUpdate && state.updateAvailable && !state.busy && !auAlreadyTried()) { auMarkTried(); triggerUpdate({ auto: true }); }
-    }, 10000);
+    if (!state.autoUpdate || !state.updateAvailable || auAlreadyTried()) return;
+    auMarkTried();
+    toast(`New version v${state.latestVersion} found, installing automatically`);
   }
 
   // ── Update Trigger ─────────────────────────────────────────────────────────

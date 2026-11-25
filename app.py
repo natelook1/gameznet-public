@@ -276,7 +276,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.13.25"
+VERSION = "1.13.26"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -643,6 +643,10 @@ def update_telemetry():
         # Version check runs every ~60s regardless of connection state
         if version_timer <= 0:
             check_version()
+            try:
+                _maybe_background_auto_update()
+            except Exception as e:
+                log.warning("Background auto-update check failed: %s", e)
             version_timer = 30
         version_timer -= 1
 
@@ -774,6 +778,32 @@ def _player_token():
             return json.load(f).get("token", "") or ""
     except Exception:
         return ""
+
+def _maybe_background_auto_update():
+    """Auto-update from the app itself, so it works with the window in the
+    background or closed to the tray (the page's timers are throttled or stopped
+    there). One attempt per installed->target version pair, recorded in the
+    config, so a failed install doesn't retry on every poll or relaunch."""
+    if not _auto_update_enabled() or not _update_available or _updating or _connecting:
+        return
+    key = f"{VERSION}->{_latest_version or '?'}"
+    try:
+        with open(CONFIG_FILE) as f:
+            cfg = json.load(f)
+    except Exception:
+        cfg = {}
+    if cfg.get("auto_update_attempt") == key:
+        return
+    cfg["auto_update_attempt"] = key
+    _write_config(cfg)
+    log.info("Auto-update: installing %s (from %s) in the background", _latest_version, VERSION)
+    _icon = icon_holder.get("icon")
+    if _icon:
+        try: _icon.notify(f"Updating GamezNET to v{_latest_version}", "GamezNET")
+        except Exception: pass
+    # Same code path as the Update button (download, silent install, relaunch).
+    with app.test_request_context("/api/update", method="POST", json={"auto": True}):
+        api_update()
 
 def _auto_update_enabled():
     try:
