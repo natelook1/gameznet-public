@@ -4113,6 +4113,21 @@
   const chatChannelName = id => (chatChannels.find(c => c.id === id) || {}).name || id;
   const chatChannelLoaded = new Set();
 
+  // My own message echoed by the stream before /send answered: turn the pending
+  // optimistic copy into the real one instead of adding a duplicate.
+  function adoptOptimistic(target, msg) {
+    if (msg.from_name !== state.name) return false;
+    const box = document.getElementById(`chat-box-${target}`);
+    if (!box) return false;
+    const pending = [...box.querySelectorAll('[data-key]')].find(el =>
+      el.dataset.key.startsWith(`${state.name}|optimistic-`) &&
+      (el.querySelector('.chat-msg-body')?.textContent || '').trim() === String(msg.body || '').trim());
+    if (!pending) return false;
+    pending.dataset.key = `${state.name}|${msg.sent_at}`;
+    if (msg.id) pending.dataset.msgId = msg.id;
+    return true;
+  }
+
   async function loadChatChannels() {
     try {
       const r = await fetch('/api/chat/channels', { headers: { 'X-Token': state.token } });
@@ -4678,7 +4693,9 @@
       const box = document.getElementById(`chat-box-${target}`);
       if (box && sent_at) {
         const el = box.querySelector(`[data-key="${CSS.escape(optimisticKey)}"]`);
-        if (el) { el.dataset.key = `${state.name}|${sent_at}`; if (msgId) el.dataset.msgId = msgId; }
+        const echoed = box.querySelector(`[data-key="${CSS.escape(`${state.name}|${sent_at}`)}"]`);
+        if (el && echoed && echoed !== el) el.remove();   // the stream echo got here first
+        else if (el) { el.dataset.key = `${state.name}|${sent_at}`; if (msgId) el.dataset.msgId = msgId; }
         if (target === 'global' && sent_at > chatSince) chatSince = sent_at;
       }
     } catch {
@@ -4884,7 +4901,7 @@
           const c = chatChannels.find(x => x.id === msg.channel);
           if (!c || !c.joined) return;   // not a member: ignore
           const t = chatTargetForChannel(msg.channel);
-          appendDMMessages(t, [msg]);
+          if (!adoptOptimistic(t, msg)) appendDMMessages(t, [msg]);
           if (msg.channel === 'zomboid') {
             // like the in-game chat window: newest 50 lines only
             const box = document.getElementById(`chat-box-${t}`);
@@ -4900,6 +4917,7 @@
           }
           return;
         }
+        if (adoptOptimistic('global', msg)) { if (msg.sent_at) chatSince = msg.sent_at; return; }
         if (chatActiveTarget === 'global') {
           appendMessages([msg]);
         } else {
