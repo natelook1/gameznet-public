@@ -279,7 +279,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.14.13"
+VERSION = "1.14.14"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -793,6 +793,40 @@ def _player_token():
     except Exception:
         return ""
 
+def _ensure_player_token():
+    """Backfill the player token for installs provisioned before tokens were saved
+    to config (pre-2026-03-25). Without it every heartbeat 401s (the backend has
+    required X-Token since 2026-08-22): the tunnel handshakes but the player never
+    shows online. Looks the token up by the stored WireGuard private key."""
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+    except Exception:
+        return ""
+    if data.get("token"):
+        return data["token"]
+    private_key = data.get("private_key")
+    if not private_key:
+        return ""
+    for base in (WORKER_URL, VPN_BACKEND_URL):
+        try:
+            req = urllib.request.Request(
+                f"{base}/api/token-migrate",
+                data=json.dumps({"private_key": private_key}).encode(),
+                headers={"Content-Type": "application/json", "User-Agent": "GamezNET"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                token = json.loads(resp.read().decode()).get("token")
+            if token:
+                data["token"] = token
+                _write_config(data)
+                log.info("Player token backfilled from %s", base)
+                return token
+        except Exception as e:
+            log.warning("token-migrate via %s failed: %s", base, e)
+    return ""
+
 def _maybe_background_auto_update():
     """Auto-update from the app itself, so it works with the window in the
     background or closed to the tray (the page's timers are throttled or stopped
@@ -856,6 +890,7 @@ def api_connect():
         return jsonify({"error": "No configuration found. Please redeem a token first."}), 400
 
     try:
+        _ensure_player_token()
         with open(CONFIG_FILE, "r") as f:
             config_data = json.load(f)
         log.info("Config loaded — player=%s vpn_ip=%s", config_data.get("name"), config_data.get("vpn_ip"))
@@ -3450,6 +3485,8 @@ if __name__ == "__main__":
 
     # Start Telemetry Thread
     threading.Thread(target=update_telemetry, daemon=True).start()
+
+    threading.Thread(target=_ensure_player_token, daemon=True).start()
 
     # Start Heartbeat Thread
     threading.Thread(target=heartbeat_loop, daemon=True).start()
