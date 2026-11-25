@@ -82,6 +82,9 @@
       .header { padding: 10px 14px; }
       .content { padding: 14px; }
     }
+    /* Full screen: real Fullscreen API where available, else (iOS) hide the chrome. */
+    body.map-max .sidebar, body.map-max .header { display: none !important; }
+    #view-map:fullscreen { background: #0b1016; }
     .menu-btn { display: none; background: none; border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 9px; font-size: 16px; margin-right: 8px; }
   </style>
 </head>
@@ -129,6 +132,7 @@
           <button id="zoom-in" title="Zoom in">+</button>
           <button id="zoom-out" title="Zoom out">−</button>
           <button id="zoom-fit" title="Whole map">⤢</button>
+          <button id="map-full" title="Full screen">⛶</button>
         </div>
         <div class="map-hud" id="hud"></div>
         <div class="tip" id="tip"></div>
@@ -269,12 +273,21 @@
   // Static geometry, built once into world-space Path2D objects per layer.
   let geo = null;          // { belts, rails, pipes, cables, foundations, cats: {id: Path2D}, buildings: [...], nodes }
   let live = null;
+  // A Path2D with tens of thousands of subpaths builds in quadratic time in
+  // Chromium/Edge: 74k foundation tiles took ~19 s on first load (2026-11-25).
+  // Keep each Path2D under 500 shapes (~130 ms total); drawing cost is the same.
+  class ChunkedPath {
+    constructor() { this.ps = []; this.cur = null; this.n = 0; }
+    get p() { if (!this.cur || this.n >= 500) { this.cur = new Path2D(); this.ps.push(this.cur); this.n = 0; } this.n++; return this.cur; }
+    fill(ctx) { for (const q of this.ps) ctx.fill(q); }
+    stroke(ctx) { for (const q of this.ps) ctx.stroke(q); }
+  }
   function buildGeo(st, found) {
-    const lines = (arr) => { const p = new Path2D(); for (const a of arr) { if (a.length < 4) continue; p.moveTo(a[0], a[1]); for (let i = 2; i < a.length; i += 2) p.lineTo(a[i], a[i + 1]); } return p; };
-    const cats = {}; CATS.forEach(c => cats[c.id] = new Path2D());
-    const idle = new Path2D();
+    const lines = (arr) => { const cp = new ChunkedPath(); for (const a of arr) { if (a.length < 4) continue; const p = cp.p; p.moveTo(a[0], a[1]); for (let i = 2; i < a.length; i += 2) p.lineTo(a[i], a[i + 1]); } return cp; };
+    const cats = {}; CATS.forEach(c => cats[c.id] = new ChunkedPath());
+    const idle = new ChunkedPath();
     const rot = (cx, cy, yaw, lx, ly) => { const a = yaw * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); return [cx + lx * c - ly * s, cy + lx * s + ly * c]; };
-    const poly = (path, pts) => { path.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) path.lineTo(pts[i][0], pts[i][1]); path.closePath(); };
+    const poly = (cp, pts) => { const path = cp.p; path.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) path.lineTo(pts[i][0], pts[i][1]); path.closePath(); };
     // FRM gives each machine's axis-aligned bounding box plus its rotation.
     // Recover the real footprint (w x h, rotated) from the box: for angle t,
     // W = w|cos t| + h|sin t| and H = w|sin t| + h|cos t|. Near 45 degrees that
@@ -300,14 +313,14 @@
     // Structure layer from the autosave (/map-data): [x, y, yaw], x/y in
     // decimetres (world units here are cm, hence *10). Floors are 8 m tiles
     // rotated by yaw; walls are 8 m segments along the wall's local Y axis.
-    const fp = new Path2D(), wp = new Path2D();
+    const fp = new ChunkedPath(), wp = new ChunkedPath();
     for (const [dx, dy, yaw] of found.floors) {
       const cx = dx * 10, cy = dy * 10;
       poly(fp, [[-400, -400], [400, -400], [400, 400], [-400, 400]].map(([lx, ly]) => rot(cx, cy, yaw, lx, ly)));
     }
     for (const [dx, dy, yaw] of found.walls) {
       const cx = dx * 10, cy = dy * 10, a = rot(cx, cy, yaw, 0, -400), b = rot(cx, cy, yaw, 0, 400);
-      wp.moveTo(a[0], a[1]); wp.lineTo(b[0], b[1]);
+      const p = wp.p; p.moveTo(a[0], a[1]); p.lineTo(b[0], b[1]);
     }
     return {
       belts: lines(st.belts), rails: lines(st.rails), pipes: lines(st.pipes), cables: lines(st.cables),
@@ -397,21 +410,21 @@
     if (geo) {
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       if (layerOn.foundations) {
-        ctx.fillStyle = 'rgba(120,128,140,0.6)'; ctx.fill(geo.foundations);
-        ctx.strokeStyle = 'rgba(30,33,40,0.9)'; ctx.lineWidth = Math.max(px * 1.2, 60); ctx.stroke(geo.walls);
+        ctx.fillStyle = 'rgba(120,128,140,0.6)'; geo.foundations.fill(ctx);
+        ctx.strokeStyle = 'rgba(30,33,40,0.9)'; ctx.lineWidth = Math.max(px * 1.2, 60); geo.walls.stroke(ctx);
       }
-      if (layerOn.cables) { ctx.strokeStyle = 'rgba(250,204,21,0.35)'; ctx.lineWidth = Math.max(px * 0.8, 20); ctx.stroke(geo.cables); }
-      if (layerOn.pipes) { ctx.strokeStyle = 'rgba(56,189,248,0.75)'; ctx.lineWidth = Math.max(px * 1.2, 90); ctx.stroke(geo.pipes); }
-      if (layerOn.belts) { ctx.strokeStyle = 'rgba(229,231,235,0.8)'; ctx.lineWidth = Math.max(px * 1.1, 100); ctx.stroke(geo.belts); }
+      if (layerOn.cables) { ctx.strokeStyle = 'rgba(250,204,21,0.35)'; ctx.lineWidth = Math.max(px * 0.8, 20); geo.cables.stroke(ctx); }
+      if (layerOn.pipes) { ctx.strokeStyle = 'rgba(56,189,248,0.75)'; ctx.lineWidth = Math.max(px * 1.2, 90); geo.pipes.stroke(ctx); }
+      if (layerOn.belts) { ctx.strokeStyle = 'rgba(229,231,235,0.8)'; ctx.lineWidth = Math.max(px * 1.1, 100); geo.belts.stroke(ctx); }
       if (layerOn.rails) {
-        ctx.strokeStyle = 'rgba(15,15,19,0.9)'; ctx.lineWidth = Math.max(px * 3, 450); ctx.stroke(geo.rails);
-        ctx.strokeStyle = 'rgba(163,163,163,0.95)'; ctx.lineWidth = Math.max(px * 1.4, 250); ctx.stroke(geo.rails);
+        ctx.strokeStyle = 'rgba(15,15,19,0.9)'; ctx.lineWidth = Math.max(px * 3, 450); geo.rails.stroke(ctx);
+        ctx.strokeStyle = 'rgba(163,163,163,0.95)'; ctx.lineWidth = Math.max(px * 1.4, 250); geo.rails.stroke(ctx);
       }
       if (layerOn.buildings) {
-        for (const c of CATS) { ctx.fillStyle = c.color; ctx.globalAlpha = 0.9; ctx.fill(geo.cats[c.id]); }
+        for (const c of CATS) { ctx.fillStyle = c.color; ctx.globalAlpha = 0.9; geo.cats[c.id].fill(ctx); }
         ctx.globalAlpha = 1;
-        ctx.fillStyle = 'rgba(11,16,22,0.55)'; ctx.fill(geo.idle);   // dim idle/paused machines
-        if (view.scale > 0.006) { ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = px; for (const c of CATS) ctx.stroke(geo.cats[c.id]); }
+        ctx.fillStyle = 'rgba(11,16,22,0.55)'; geo.idle.fill(ctx);   // dim idle/paused machines
+        if (view.scale > 0.006) { ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = px; for (const c of CATS) geo.cats[c.id].stroke(ctx); }
       }
     }
     // Screen-space markers from here on.
@@ -491,6 +504,17 @@
   $('zoom-in').onclick = () => zoomAt(W / 2, H / 2, 1.6);
   $('zoom-out').onclick = () => zoomAt(W / 2, H / 2, 1 / 1.6);
   $('zoom-fit').onclick = () => { fit(); draw(); };
+  $('map-full').onclick = async () => {
+    const el = $('view-map');
+    try {
+      if (document.fullscreenElement) { await document.exitFullscreen(); return; }
+      if (el.requestFullscreen && document.fullscreenEnabled) { await el.requestFullscreen(); return; }
+    } catch {}
+    document.body.classList.toggle('map-max');   // iOS / frames without fullscreen permission
+    resize();
+  };
+  document.addEventListener('fullscreenchange', () => setTimeout(resize, 50));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('map-max')) { document.body.classList.remove('map-max'); resize(); } });
 
   function hover(sx, sy, touch = false) {
     const tip = $('tip');
