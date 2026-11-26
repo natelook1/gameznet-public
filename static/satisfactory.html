@@ -484,6 +484,19 @@
       updateCounts(); draw();
     } catch {}
   }
+  // Real car positions from our server mod (modCars, stamped modAt), smoothed
+  // between its reports the same way as everything else.
+  function modPosAt(list, id, rt) {
+    const fs = [];
+    for (const q of list) { const o = q.byId.get(id); if (o && o.modCars && o.modAt && (!fs.length || fs[fs.length - 1].at !== o.modAt)) fs.push({ at: o.modAt, cars: o.modCars }); }
+    if (!fs.length) return null;
+    let i = 0; while (i < fs.length && fs[i].at <= rt) i++;
+    if (i === 0) return fs[0].cars;
+    if (i === fs.length) return fs[fs.length - 1].cars;
+    const a = fs[i - 1], b = fs[i], k = (rt - a.at) / ((b.at - a.at) || 1);
+    if (a.cars.length !== b.cars.length) return b.cars;
+    return b.cars.map((c, j) => { const p = a.cars[j]; return Math.hypot(c[0] - p[0], c[1] - p[1]) > SNAP_DIST ? c : [p[0] + (c[0] - p[0]) * k, p[1] + (c[1] - p[1]) * k, lerpAngle(p[2], c[2], k), c[3]]; });
+  }
   const lerpAngle = (a, b, k) => { const d = ((b - a) % 360 + 540) % 360 - 180; return a + d * k; };
   function liveFrame() {
     if (!live) return null;
@@ -517,7 +530,9 @@
         if (prev != null) rot = lerpAngle(prev, rot, 0.15);
         headings.set(g + id, rot);
         if (sp > 0.001) out.moving = true;
-        res.push({ ...cur, x, y, rot, vx, vy });
+        const o = { ...cur, x, y, rot, vx, vy };
+        if (g === 'trains') o.modPos = modPosAt(list, id, rt);
+        res.push(o);
       }
       out[g] = res;
     }
@@ -771,8 +786,30 @@
     return pts[pts.length - 1];
   }
   const CAR_COLORS = { loco: '#ef4444', full: '#f59e0b', empty: '#64748b' };
+  function drawCar(t, c, i, x0, y0, x1, y1, w) {
+    if (Math.max(x0, x1) < -40 || Math.min(x0, x1) > W + 40 || Math.max(y0, y1) < -40 || Math.min(y0, y1) > H + 40) return;
+    const loco = /Locomotive/i.test(c.cls);
+    const col = t.derailed ? '#ffffff' : loco ? CAR_COLORS.loco : (c.cargo.length ? CAR_COLORS.full : CAR_COLORS.empty);
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+    ctx.lineWidth = w + 2; ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.stroke();
+    ctx.lineWidth = w; ctx.strokeStyle = col; ctx.stroke();
+    trainCars.push({ x0, y0, x1, y1, w, train: t, car: c, idx: i });
+  }
   function drawTrain(t) {
     const cars = t.carList && t.carList.length ? t.carList : null;
+    // Real positions from our server mod: each car where it actually is.
+    if (cars && t.modPos && t.modPos.length === cars.length) {
+      const w = Math.max(5, 300 * view.scale);
+      ctx.lineCap = 'butt';
+      t.modPos.forEach(([x, y, yaw, len], i) => {
+        const a = yaw * Math.PI / 180, hx = Math.cos(a) * len / 2, hy = Math.sin(a) * len / 2;
+        const [x0, y0] = toScreen(x - hx, y - hy), [x1, y1] = toScreen(x + hx, y + hy);
+        drawCar(t, cars[i], i, x0, y0, x1, y1, w);
+      });
+      ctx.lineCap = 'round';
+      if (CAR_LEN * view.scale < 6) marker(t, 'arrow', t.derailed ? '#ffffff' : '#ef4444', 7);
+      return;
+    }
     // Recent path, newest first; capped to a little over the train's length.
     let tr = trails.get(t.id);
     if (!tr) { tr = []; trails.set(t.id, tr); }
