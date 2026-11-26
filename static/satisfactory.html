@@ -28,10 +28,13 @@
     .layer { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 2px; cursor: pointer; user-select: none; color: var(--text); }
     .layer input { accent-color: var(--accent); }
     .swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
-    .hrow { display: flex; align-items: center; gap: 6px; }
-    .hrow input { flex: 1; accent-color: var(--accent); min-width: 0; }
-    .hrow button { width: 26px; height: 24px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-size: 11px; }
-    .hrow button:hover { border-color: var(--accent); }
+    .hbox { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 32px; padding: 4px 0 6px; border-radius: 7px; border: 1px solid var(--border); background: rgba(26,26,33,0.92); }
+    .hbox button { width: 26px !important; height: 24px !important; font-size: 11px !important; border-radius: 5px !important; background: var(--surface2) !important; }
+    .hbox input { writing-mode: vertical-lr; direction: rtl; width: 20px; height: 130px; margin: 2px 0; accent-color: var(--accent); cursor: pointer; }
+    #h-label { font-size: 10px; color: var(--muted); text-align: center; line-height: 1.15; font-variant-numeric: tabular-nums; }
+    .hbox.cut { border-color: var(--accent); }
+    .hbox.cut #h-label { color: var(--accent); }
+    @media (max-height: 560px) { .hbox input { height: 80px; } }
     .layer .count { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
     .warn { background: rgba(234,179,8,0.10); border: 1px solid rgba(234,179,8,0.4); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #fde68a; line-height: 1.5; display: none; }
     .warn.visible { display: block; }
@@ -155,11 +158,6 @@
       <div class="section-title">Layers</div>
       <div id="layers"></div>
     </div>
-    <div id="height-box" style="display:none">
-      <div class="section-title">Height cutaway</div>
-      <div class="hrow"><button id="h-down" title="Down one floor (in view)">▼</button><input type="range" id="h-cut" step="4"><button id="h-up" title="Up one floor (in view)">▲</button></div>
-      <div class="sidebar-stat" id="h-label">All floors</div>
-    </div>
     <div>
       <div class="section-title">Server</div>
       <div class="sidebar-stat" id="side-status">Loading...</div>
@@ -187,6 +185,12 @@
           <button id="zoom-out" title="Zoom out">−</button>
           <button id="zoom-fit" title="Whole map">⤢</button>
           <button id="map-full" title="Full screen">⛶</button>
+          <div id="height-box" class="hbox" style="display:none" title="Height cutaway: hide everything above a level">
+            <button id="h-up" title="Up one floor (in view)">▲</button>
+            <input type="range" id="h-cut" step="4" aria-label="Height cutaway">
+            <button id="h-down" title="Down one floor (in view)">▼</button>
+            <div id="h-label">All</div>
+          </div>
           <button id="map-hd" title="Live quality: SD (1 update/s) or HD (every update). Desktop app only." style="display:none;font-size:11px;font-weight:700">SD</button>
         </div>
         <div class="map-hud" id="hud"></div>
@@ -420,7 +424,10 @@
   // Height cutaway: null = all floors, else hide bands above cutZ (cm).
   let cutZ = null;
   function cutLabel() {
-    $('h-label').textContent = cutZ == null ? 'All floors' : `Up to ${fmt(cutZ / 100)} m`;
+    const L = $('h-label'), box = $('height-box');
+    L.textContent = cutZ == null ? 'All' : `${Math.round(cutZ / 100)} m`;
+    box.title = cutZ == null ? 'Height cutaway: all floors shown' : `Height cutaway: showing up to ${fmt(cutZ / 100)} m`;
+    box.classList.toggle('cut', cutZ != null);
     const r = $('h-cut'); if (cutZ == null) r.value = r.max; else r.value = Math.round(cutZ / 100);
   }
   function setCut(z) { cutZ = z; cutLabel(); $('tip').style.display = 'none'; draw(); }
@@ -656,7 +663,7 @@
     liveView = liveFrame();
     const live = liveView;
     if (followTrain && trainPanelId && live) {
-      const ft = live.trains.find(t => t.id === trainPanelId);
+      const ft = (live[trainKind] || []).find(t => t.id === trainPanelId);
       if (ft) { view.cx = ft.x; view.cy = ft.y; }
     }
     if (live) {
@@ -1039,6 +1046,7 @@
     if (!dragMoved) {
       hover(e.offsetX, e.offsetY, e.pointerType === 'touch' || e.pointerType === 'pen');
       if (lastHit && lastHit.train) { $('tip').style.display = 'none'; openTrain(lastHit.train); }
+      else if (lastHit && lastHit.unit) { $('tip').style.display = 'none'; openTrain(lastHit.unit, lastHit.kind); }
       else if (lastHit && lastHit.stack) { $('tip').style.display = 'none'; openStack(lastHit.stack); }
       else if (lastHit && lastHit.id) { $('tip').style.display = 'none'; openMachine(lastHit); }
     }
@@ -1113,11 +1121,12 @@
   }
 
   // ── Train panel (click a train) ──
-  let trainPanelId = null, trainTimer = null, followTrain = false;
-  function findTrain(id) { return liveView?.trains?.find(t => t.id === id) || live?.trains?.find(t => t.id === id) || null; }
-  function openTrain(id) {
+  // Also used for vehicles and drones (trainKind = the live list the id belongs to).
+  let trainPanelId = null, trainTimer = null, followTrain = false, trainKind = 'trains';
+  function findTrain(id) { return liveView?.[trainKind]?.find(t => t.id === id) || live?.[trainKind]?.find(t => t.id === id) || null; }
+  function openTrain(id, kind = 'trains') {
     closeMachine();
-    trainPanelId = id; followTrain = false;
+    trainPanelId = id; trainKind = kind; followTrain = false;
     $('mpanel').classList.add('open');
     renderTrain();
     clearInterval(trainTimer);
@@ -1127,7 +1136,25 @@
   function renderTrain() {
     const t = findTrain(trainPanelId);
     const el = $('mpanel');
-    if (!t) { el.innerHTML = `<div class="mp-head"><h3>Train</h3><button class="mp-close" title="Close">✕</button></div><div class="muted">This train isn't reporting right now.</div>`; el.querySelector('.mp-close').onclick = closeTrain; return; }
+    const kindName = { trains: 'Train', vehicles: 'Vehicle', drones: 'Drone' }[trainKind];
+    if (!t) { el.innerHTML = `<div class="mp-head"><h3>${kindName}</h3><button class="mp-close" title="Close">✕</button></div><div class="muted">This train isn't reporting right now.</div>`; el.querySelector('.mp-close').onclick = closeTrain; return; }
+    const followBtn = `<button id="tp-follow" style="margin-top:8px;font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid ${followTrain ? 'var(--accent)' : 'var(--border)'};background:var(--surface2);color:var(--text);cursor:pointer">${followTrain ? 'Following ✓' : 'Follow on map'}</button>`;
+    if (trainKind !== 'trains') {
+      const drone = trainKind === 'drones', z = t.z != null ? `<span>Height</span><span>${fmt(t.z / 100)} m</span>` : '';
+      let h = `<div class="mp-head">${icon(drone ? 'BP_DroneTransport_C' : t.cls, 'mp-icon')}<h3>${esc(drone ? 'Drone' : t.name || 'Vehicle')}</h3><button class="mp-close" title="Close">✕</button></div><div class="mp-sec"><div class="mp-kv">` +
+        (t.speed != null ? `<span>Speed</span><span>${fmt(Math.abs(t.speed))} km/h</span>` : '') +
+        (t.autopilot != null ? `<span>Autopilot</span><span>${t.autopilot ? 'on' : 'off'}</span>` : '') +
+        (t.fuel === false ? `<span>Fuel</span><span><span class="pill bad">empty</span></span>` : '') +
+        (t.mode ? `<span>State</span><span>${esc(t.mode)}</span>` : '') +
+        (t.home ? `<span>Home</span><span>${esc(t.home)}</span>` : '') +
+        (t.dest ? `<span>Heading to</span><span>${esc(t.dest)}</span>` : '') + z +
+        `</div>${followBtn}</div>`;
+      if ((t.cargo || []).length) h += `<div class="mp-sec"><h4>Carrying</h4>${t.cargo.map(g => `<div class="mp-item"><span>${icon(g.cls)}${esc(g.name)}</span><span class="r">${fmt(g.amount)}</span></div>`).join('')}</div>`;
+      el.innerHTML = h;
+      el.querySelector('.mp-close').onclick = closeTrain;
+      el.querySelector('#tp-follow').onclick = () => { followTrain = !followTrain; renderTrain(); draw(); };
+      return;
+    }
     const cars = t.carList || [];
     const tot = {};
     for (const c of cars) for (const i of c.cargo || []) (tot[i.name] ||= { cls: i.cls, n: 0 }).n += i.amount;
@@ -1298,8 +1325,8 @@
       if (p) html = head('', esc(p.name), p.dead ? 'dead' : 'Player') + (p.hp != null ? bar(p.hp, p.hp > 50 ? 'var(--green)' : p.hp > 20 ? 'var(--accent)' : 'var(--red)') + `<div class="tc-note">health ${fmt(p.hp)}</div>` : '');
       else if (car) { html = carCard(car.train, car.car, car.idx); lastHit = { train: car.train.id }; }
       else if (t) { html = trainCard(t); lastHit = { train: t.id }; }
-      else if (v) html = head(ic(v.cls), esc(v.name), `${fmt(Math.abs(v.speed))} km/h${v.autopilot === true ? ' · autopilot' : ''}`) + (v.fuel === false ? '<div class="tc-note">no fuel</div>' : '');
-      else if (d) html = head(ic('BP_DroneTransport_C'), 'Drone', [d.mode, d.home && 'home ' + d.home, d.dest && 'to ' + d.dest].filter(Boolean).map(esc).join(' · '));
+      else if (v) lastHit = { unit: v.id, kind: 'vehicles' }, html = head(ic(v.cls), esc(v.name), `${fmt(Math.abs(v.speed))} km/h${v.autopilot === true ? ' · autopilot' : ''}`) + (v.fuel === false ? '<div class="tc-note">no fuel</div>' : '');
+      else if (d) lastHit = { unit: d.id, kind: 'drones' }, html = head(ic('BP_DroneTransport_C'), 'Drone', [d.mode, d.home && 'home ' + d.home, d.dest && 'to ' + d.dest].filter(Boolean).map(esc).join(' · '));
     }
     if (!html && geo && layerOn.buildings) {
       const [wx, wy] = toWorld(sx, sy);
