@@ -124,7 +124,7 @@
       <div class="nav-item" data-view="players">Players</div>
       <div class="nav-item" data-view="saves">Saves</div>
     </div>
-    <div class="warn" id="frm-warn">Live factory data is offline, usually right after a server restart. In game, type <code>/frm http start</code> in chat.</div>
+    <div class="warn" id="frm-warn">Live factory data is temporarily unavailable, usually just after the game server restarts. It normally comes back within a minute.</div>
     <div id="layers-box">
       <div class="section-title">Layers</div>
       <div id="layers"></div>
@@ -680,10 +680,14 @@
       }
     return out.sort((a, b) => a[2] - b[2]);
   }
-  // Nearest point on the track to (x, y), within maxD.
-  function snapRail(x, y, maxD = 3000) {
+  // Nearest point on the track to (x, y), within maxD. With `prefer` (a set of
+  // track-piece indices), a preferred piece within PREFER_D wins over a closer
+  // other one: double track runs a few metres apart, and the smoothed position
+  // cuts curves slightly, so plain nearest-track made long trains flip sides.
+  const PREFER_D = 1200;
+  function snapRail(x, y, maxD = 3000, prefer = null) {
     if (!rail) return null;
-    let best = null, bd = maxD;
+    let best = null, bd = maxD, pbest = null, pbd = PREFER_D;
     const gx = Math.floor(x / RAIL_CELL), gy = Math.floor(y / RAIL_CELL);
     for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
       const cell = rail.grid.get((gx + dx) + ',' + (gy + dy)); if (!cell) continue;
@@ -693,10 +697,18 @@
         const t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / l2));
         const px = ax + vx * t, py = ay + vy * t, d = Math.hypot(x - px, y - py);
         if (d < bd) { bd = d; best = { pi, si, t, x: px, y: py, vx, vy }; }
+        if (prefer && prefer.has(pi) && d < pbd) { pbd = d; pbest = { pi, si, t, x: px, y: py, vx, vy }; }
       }
     }
-    return best;
+    return pbest || best;
   }
+  // A track piece plus the pieces joined to either end of it.
+  function pieceAndNeighbours(pi) {
+    const a = rail.polys[pi], out = new Set([pi]);
+    for (const [x, y] of [[a[0], a[1]], [a[a.length - 2], a[a.length - 1]]]) for (const e of endsNear(x, y, pi)) out.add(e[0]);
+    return out;
+  }
+  const trainPiece = new Map();   // train id -> track piece it was last drawn on
   // Walk `len` cm along the track from a snapped point in direction (dx, dy).
   // Returns the path as [[x, y], ...] starting at the snapped point.
   function walkRail(sn, dx, dy, len, trail) {
@@ -716,9 +728,19 @@
       // End of this piece of track: continue onto a connected piece.
       const near = endsNear(cx, cy, pi);
       if (!near.length) break;
-      // Several pieces start here only at a junction; otherwise take the closest end.
-      const cand = near.filter(e => e[2] <= near[0][2] + 150);
       const hx = pts.length > 1 ? cx - pts[pts.length - 2][0] : dx, hy = pts.length > 1 ? cy - pts[pts.length - 2][1] : dy;
+      // Only pieces that carry on roughly the way we're going (within 60 deg): at a
+      // switch the two branches meet at a sharp angle and can't be driven between.
+      // Replay of real train readings: car jumps 0.94% -> 0.83% of frames.
+      const dirOK = e => {
+        const b = rail.polys[e[0]], m = b.length / 2;
+        const [ax, ay, bx2, by2] = e[1] === 0 ? [b[0], b[1], b[2], b[3]] : [b[(m - 1) * 2], b[(m - 1) * 2 + 1], b[(m - 2) * 2], b[(m - 2) * 2 + 1]];
+        const ux = bx2 - ax, uy = by2 - ay;
+        return (ux * hx + uy * hy) / ((Math.hypot(ux, uy) * Math.hypot(hx, hy)) || 1) > 0.5;
+      };
+      // Several pieces start here only at a junction; otherwise take the closest end.
+      const close = near.filter(e => e[2] <= near[0][2] + 150), drv = close.filter(dirOK);
+      const cand = drv.length ? drv : close;
       let pick = null, score = Infinity;
       for (const [q, end] of cand) {
         const b = rail.polys[q], m = b.length / 2, j = end === 0 ? 1 : m - 2;
@@ -755,7 +777,9 @@
     let tr = trails.get(t.id);
     if (!tr) { tr = []; trails.set(t.id, tr); }
     if (!tr.length || Math.hypot(tr[0][0] - t.x, tr[0][1] - t.y) > 200) { tr.unshift([t.x, t.y]); if (tr.length > 60) tr.pop(); }
-    const sn = cars && snapRail(t.x, t.y);
+    const prev = trainPiece.get(t.id);
+    const sn = cars && snapRail(t.x, t.y, 3000, prev != null && rail.polys[prev] ? pieceAndNeighbours(prev) : null);
+    if (sn) trainPiece.set(t.id, sn.pi);
     if (!sn) { marker(t, 'arrow', t.derailed ? '#ffffff' : '#ef4444', 7); return; }
     // "Behind" = against the direction of travel, or against the train's facing
     // when stopped (FRM rotation; marker convention: forward = rot - 90 deg).

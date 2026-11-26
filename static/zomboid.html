@@ -1687,12 +1687,12 @@
           if (s.x == null || s.y == null) return;
           if (s.x < MAP_MIN_X || s.x > MAP_MAX_X || s.y < MAP_MIN_Y || s.y > MAP_MAX_Y) return;
           if (!rareFilterEnabled(rareItemCategory(s))) return;
-          const emoji = s.kind === 'zombie' ? '🧟' : s.kind === 'ground' ? '🎒' : '💎';
+          const emoji = rareEmoji(s);
           const m = L.marker(pzToLatLng(s.x, s.y), {
             icon: L.divIcon({ className: '', html: `<div style="font-size:14px;line-height:1;text-shadow:0 0 3px #000;">${emoji}</div>`, iconSize: [16, 16], iconAnchor: [8, 8] }),
             zIndexOffset: 200,
           }).addTo(leafletMap);
-          const lbl = s.kind === 'zombie' ? (s.why || 'special zombie') : (s.label || (s.item || '').replace(/^Base\./, ''));
+          const lbl = rareLabel(s);
           m.bindTooltip(lbl, { direction: 'top', offset: [0, -6], className: 'player-label' });
           overlayMarkers.push(m);
         });
@@ -1851,6 +1851,21 @@
       if (/hat_army|vest_bullet|vest_police|alicepack|gasmask|nightvision|jacket_army|trousers_army/.test(t)) return 'military';
       if (/generator|blowtorch|propane|weldingmask|sledgehammer|chainsaw|antibiotic/.test(t)) return 'tools';
       return 'other';
+    }
+
+    // tier 'spotted': someone entered the room but nobody opened the container yet,
+    // so the backend sends the category only
+    const RARE_CAT_NAMES = { firearms: 'Firearm', melee: 'Melee weapon', ammo: 'Ammo', military: 'Military gear',
+      tools: 'Tool', literature: 'Literature', other: 'Rare item' };
+    function rareEmoji(s) {
+      if (s.kind === 'zombie') return '🧟';
+      if (s.tier === 'spotted') return '❔';
+      return s.kind === 'ground' ? '🎒' : '💎';
+    }
+    function rareLabel(s) {
+      if (s.kind === 'zombie') return s.why || 'special zombie';
+      if (s.tier === 'spotted') return `${RARE_CAT_NAMES[s.cat] || 'Rare item'}?`;
+      return s.label || (s.item || '').replace(/^Base\./, '');
     }
 
     function rareFilterEnabled(category) {
@@ -2323,8 +2338,8 @@
         (pzData.rare?.spawns || []).forEach(s => {
           if (s.x == null || s.y == null) return;
           if (!rareFilterEnabled(rareItemCategory(s))) return;
-          const emoji = s.kind === 'zombie' ? '🧟' : s.kind === 'ground' ? '🎒' : '💎';
-          const lbl   = s.kind === 'zombie' ? (s.why || 'special zombie') : (s.label || (s.item || '').replace(/^Base\./, ''));
+          const emoji = rareEmoji(s);
+          const lbl   = rareLabel(s);
           drawEmoji(s.x, s.y, s.z || 0, emoji, 11, lbl);
           drawLabel(s.x, s.y, s.z || 0, lbl.substring(0, 18), '#fde047');
         });
