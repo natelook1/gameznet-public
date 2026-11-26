@@ -655,6 +655,10 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     liveView = liveFrame();
     const live = liveView;
+    if (followTrain && trainPanelId && live) {
+      const ft = live.trains.find(t => t.id === trainPanelId);
+      if (ft) { view.cx = ft.x; view.cy = ft.y; }
+    }
     if (live) {
       if (layerOn.drones) for (const d of live.drones) iconMarker(d, 'DroneTransport', '#f472b6', 9) || marker(d, 'tri', '#f472b6', 5);
       if (layerOn.vehicles) for (const v of live.vehicles) iconMarker(v, iconKey(v.cls), '#fb923c', 10) || marker(v, 'diamond', '#fb923c', 5);
@@ -1034,7 +1038,8 @@
     if (!pointers.size) canvas.classList.remove('dragging');
     if (!dragMoved) {
       hover(e.offsetX, e.offsetY, e.pointerType === 'touch' || e.pointerType === 'pen');
-      if (lastHit && lastHit.stack) { $('tip').style.display = 'none'; openStack(lastHit.stack); }
+      if (lastHit && lastHit.train) { $('tip').style.display = 'none'; openTrain(lastHit.train); }
+      else if (lastHit && lastHit.stack) { $('tip').style.display = 'none'; openStack(lastHit.stack); }
       else if (lastHit && lastHit.id) { $('tip').style.display = 'none'; openMachine(lastHit); }
     }
   });
@@ -1054,6 +1059,7 @@
     if (downAt && Math.hypot(e.offsetX - downAt[0], e.offsetY - downAt[1]) > slop) dragMoved = true;
     if (!dragMoved) return;   // don't nudge the map until it's really a drag
     view.cx -= dx / view.scale; view.cy -= dy / view.scale;
+    if (followTrain) { followTrain = false; if (trainPanelId) renderTrain(); }
     $('tip').style.display = 'none';
     draw();
   });
@@ -1105,8 +1111,44 @@
     el.querySelector('.mp-close').onclick = closeMachine;
     el.querySelectorAll('.mp-pick').forEach(r => r.onclick = () => { const m = floors[+r.dataset.f].items[+r.dataset.j]; if (m.id) openMachine(m); });
   }
+
+  // ── Train panel (click a train) ──
+  let trainPanelId = null, trainTimer = null, followTrain = false;
+  function findTrain(id) { return liveView?.trains?.find(t => t.id === id) || live?.trains?.find(t => t.id === id) || null; }
+  function openTrain(id) {
+    closeMachine();
+    trainPanelId = id; followTrain = false;
+    $('mpanel').classList.add('open');
+    renderTrain();
+    clearInterval(trainTimer);
+    trainTimer = setInterval(() => { if (!document.hidden && activeView === 'map') renderTrain(); }, 1000);
+  }
+  function closeTrain() { trainPanelId = null; followTrain = false; clearInterval(trainTimer); $('mpanel').classList.remove('open'); }
+  function renderTrain() {
+    const t = findTrain(trainPanelId);
+    const el = $('mpanel');
+    if (!t) { el.innerHTML = `<div class="mp-head"><h3>Train</h3><button class="mp-close" title="Close">✕</button></div><div class="muted">This train isn't reporting right now.</div>`; el.querySelector('.mp-close').onclick = closeTrain; return; }
+    const cars = t.carList || [];
+    const tot = {};
+    for (const c of cars) for (const i of c.cargo || []) (tot[i.name] ||= { cls: i.cls, n: 0 }).n += i.amount;
+    const locos = cars.filter(c => /Locomotive/i.test(c.cls)).length;
+    let h = `<div class="mp-head">${icon('BP_Locomotive_C', 'mp-icon')}<h3>${esc(t.name)}</h3>${statusPill(t.status)}<button class="mp-close" title="Close">✕</button></div>`;
+    h += `<div class="mp-sec"><div class="mp-kv">` +
+      `<span>Speed</span><span>${fmt(Math.abs(t.speed))} km/h</span>` +
+      (t.next ? `<span>Next stop</span><span>${esc(t.next)}</span>` : '') +
+      `<span>Cars</span><span>${cars.length}${locos ? ` (${locos} locomotive${locos > 1 ? 's' : ''})` : ''}</span>` +
+      (t.derailed ? `<span>State</span><span><span class="pill bad">derailed</span></span>` : '') +
+      `</div><button id="tp-follow" style="margin-top:8px;font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid ${followTrain ? 'var(--accent)' : 'var(--border)'};background:var(--surface2);color:var(--text);cursor:pointer">${followTrain ? 'Following ✓' : 'Follow on map'}</button></div>`;
+    const totals = Object.entries(tot).sort((a, b) => b[1].n - a[1].n);
+    if (totals.length) h += `<div class="mp-sec"><h4>Carrying</h4>${totals.map(([n, x]) => `<div class="mp-item"><span>${icon(x.cls)}${esc(n)}</span><span class="r">${fmt(x.n)}</span></div>`).join('')}</div>`;
+    h += `<div class="mp-sec"><h4>Cars, front to back</h4>${cars.map((c, i) => `<div class="mp-item"><span>${icon(c.cls)}${i + 1}. ${esc(c.name || 'Car')}</span><span class="r">${(c.cargo || []).length ? c.cargo.map(g => `${fmt(g.amount)} ${esc(g.name)}`).join(', ') : (/Locomotive/i.test(c.cls) ? '' : '<span class="muted">empty</span>')}</span></div>`).join('')}</div>`;
+    el.innerHTML = h;
+    el.querySelector('.mp-close').onclick = closeTrain;
+    el.querySelector('#tp-follow').onclick = () => { followTrain = !followTrain; renderTrain(); draw(); };
+  }
   function closeMachine() { panelId = null; clearInterval(panelTimer); $('mpanel').classList.remove('open'); }
   async function openMachine(b) {
+    if (trainPanelId) { trainPanelId = null; followTrain = false; clearInterval(trainTimer); }
     panelId = b.id;
     const el = $('mpanel');
     el.classList.add('open');
@@ -1156,7 +1198,7 @@
     if (m.inInv.length || m.outInv.length) h += `<div class="mp-sec"><h4>Inventory</h4>${inv([...m.inInv, ...m.outInv])}</div>`;
     const el = $('mpanel'); el.innerHTML = h; el.querySelector('.mp-close').onclick = closeMachine;
   }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && panelId) closeMachine(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (panelId) closeMachine(); if (trainPanelId) closeTrain(); } });
 
 
   // ── Tooltip cards ──
@@ -1254,8 +1296,8 @@
       const v = !p && !t && layerOn.vehicles && live.vehicles.find(v => near(v, 8));
       const d = !p && !t && !v && layerOn.drones && live.drones.find(d => near(d, 8));
       if (p) html = head('', esc(p.name), p.dead ? 'dead' : 'Player') + (p.hp != null ? bar(p.hp, p.hp > 50 ? 'var(--green)' : p.hp > 20 ? 'var(--accent)' : 'var(--red)') + `<div class="tc-note">health ${fmt(p.hp)}</div>` : '');
-      else if (car) html = carCard(car.train, car.car, car.idx);
-      else if (t) html = trainCard(t);
+      else if (car) { html = carCard(car.train, car.car, car.idx); lastHit = { train: car.train.id }; }
+      else if (t) { html = trainCard(t); lastHit = { train: t.id }; }
       else if (v) html = head(ic(v.cls), esc(v.name), `${fmt(Math.abs(v.speed))} km/h${v.autopilot === true ? ' · autopilot' : ''}`) + (v.fuel === false ? '<div class="tc-note">no fuel</div>' : '');
       else if (d) html = head(ic('BP_DroneTransport_C'), 'Drone', [d.mode, d.home && 'home ' + d.home, d.dest && 'to ' + d.dest].filter(Boolean).map(esc).join(' · '));
     }
