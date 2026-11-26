@@ -279,7 +279,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.14.20"
+VERSION = "1.14.21"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -2888,6 +2888,7 @@ def api_chat_stream():
 
 @app.route("/api/pz/stream")
 @app.route("/api/conan-exiles/stream")
+@app.route("/api/satisfactory/live/stream")
 def api_pz_stream():
     """SSE proxy for the Zomboid and Conan pages' live updates. The backend needs
     the player token (game data is players-only since 2026-11-25), and
@@ -2895,7 +2896,9 @@ def api_pz_stream():
     import urllib.request as _ur
     from flask import Response, stream_with_context
     tok = _player_token() or ""
-    url = f"{_backend_url()}{request.path}?token={_ur.quote(tok)}"
+    # Pass the page's own query (e.g. the Satisfactory map's q=sd|hd) along with our token.
+    extra = "&".join(f"{_ur.quote(k)}={_ur.quote(v)}" for k, v in request.args.items() if k != "token")
+    url = f"{_backend_url()}{request.path}?token={_ur.quote(tok)}" + (f"&{extra}" if extra else "")
     def _generate():
         try:
             req = _ur.Request(url, headers={"User-Agent": "GamezNET", "Accept": "text/event-stream"})

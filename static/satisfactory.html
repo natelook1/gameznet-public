@@ -173,6 +173,7 @@
           <button id="zoom-out" title="Zoom out">−</button>
           <button id="zoom-fit" title="Whole map">⤢</button>
           <button id="map-full" title="Full screen">⛶</button>
+          <button id="map-hd" title="Live quality: SD (1 update/s) or HD (every update). Desktop app only." style="display:none;font-size:11px;font-weight:700">SD</button>
         </div>
         <div class="map-hud" id="hud"></div>
         <div class="tip" id="tip"></div>
@@ -249,7 +250,7 @@
     $('content').classList.toggle('map-active', v === 'map');
     $('layers-box').style.display = v === 'map' ? '' : 'none';
     $('sidebar').classList.remove('open');
-    if (v === 'map') resize();
+    if (v === 'map') { resize(); openStream(); } else closeStream();
     refreshView();
   }
 
@@ -482,9 +483,20 @@
   let clockSkew = null;   // server ms - client ms, smoothed
   let liveView = null;    // interpolated frame, used by render and hover
   const headings = new Map();   // smoothed per-entity heading
+  // Live data arrives two ways: the stream from our server mod (SD/HD) when it's
+  // reporting, else polling /map/live (FRM). Both go through ingest().
+  const carListCache = new Map();   // train id -> last full car list (stream frames between "full" ones omit cargo)
   async function loadLive() {
-    try {
-      live = await getJSON(`${API}/map/live`);
+    if (streamLive()) return;   // the stream is delivering: no polling
+    try { ingest(await getJSON(`${API}/map/live`)); } catch {}
+  }
+  function ingest(data) {
+    {
+      live = data;
+      for (const t of live.trains || []) {
+        if (t.carList) carListCache.set(t.id, t.carList);
+        else t.carList = carListCache.get(t.id) || null;
+      }
       if (live.now) {
         const sk = live.now - Date.now();
         clockSkew = clockSkew == null ? sk : clockSkew * 0.8 + sk * 0.2;
@@ -497,8 +509,34 @@
         if (list.length > 6) list.shift();
       }
       updateCounts(); draw();
-    } catch {}
+    }
   }
+
+  // ── Live stream (SD everywhere, HD in the desktop app) ──
+  const IS_DESKTOP = location.port === '7734' || location.hostname === 'gameznet.local';
+  let hd = IS_DESKTOP && (() => { try { return localStorage.getItem('sf-hd') === '1'; } catch { return false; } })();
+  let es = null, lastFrameAt = 0;
+  const streamLive = () => Date.now() - lastFrameAt < 4000;
+  function openStream() {
+    if (es || typeof EventSource === 'undefined') return;
+    const qs = `q=${hd ? 'hd' : 'sd'}` + (GZN_TOKEN ? `&token=${encodeURIComponent(GZN_TOKEN)}` : '');
+    es = new EventSource(`${API}/live/stream?${qs}`);
+    es.addEventListener('frame', e => { lastFrameAt = Date.now(); try { ingest(JSON.parse(e.data)); } catch {} });
+    es.addEventListener('offline', () => { lastFrameAt = 0; });
+    es.onerror = () => { lastFrameAt = 0; };   // EventSource reconnects by itself
+  }
+  function closeStream() { if (es) { es.close(); es = null; } lastFrameAt = 0; }
+  function updateHdButton() {
+    const b = $('map-hd'); if (!IS_DESKTOP) return;
+    b.style.display = ''; b.textContent = hd ? 'HD' : 'SD';
+    b.style.borderColor = hd ? 'var(--accent)' : '';
+  }
+  $('map-hd').onclick = () => {
+    hd = !hd; try { localStorage.setItem('sf-hd', hd ? '1' : '0'); } catch {}
+    updateHdButton(); closeStream(); openStream();
+  };
+  updateHdButton();
+  document.addEventListener('visibilitychange', () => { if (document.hidden) closeStream(); else if (activeView === 'map') openStream(); });
   // Real car positions from our server mod (modCars, stamped modAt), smoothed
   // between its reports the same way as everything else.
   function modPosAt(list, id, rt) {
@@ -518,7 +556,7 @@
     const now = Date.now() + (clockSkew || 0);
     const out = { moving: false };
     for (const g of GROUPS) {
-      const rt = now - LIVE_DELAY[g];
+      const rt = now - (streamLive() ? (hd ? 900 : 1700) : LIVE_DELAY[g]);
       const list = snaps[g], last = list[list.length - 1];
       if (!last) { out[g] = []; continue; }
       let i = list.length - 1;
@@ -1257,6 +1295,7 @@
 
   const startView = new URLSearchParams(location.search).get('view');
   loadStatus(); loadFrm().then(() => { loadStatic(); loadLive(); });
+  if (!startView || startView === 'map') openStream();
   resize();
   if (startView && startView !== 'map') showView(startView);
 })();
