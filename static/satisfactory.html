@@ -524,7 +524,7 @@
         else t.carList = carListCache.get(t.id) || null;
       }
       for (const g of ['vehicles', 'drones']) for (const v of live[g] || []) {
-        if (v.cargo) carListCache.set(g + v.id, { cargo: v.cargo, fuel: v.fuel, at: v.at });
+        if (v.cargo) carListCache.set(g + v.id, { cargo: v.cargo, at: v.at, fuelItems: v.fuelItems });
         else Object.assign(v, carListCache.get(g + v.id) || {});
       }
       if (live.now) {
@@ -677,7 +677,11 @@
     }
     if (live) {
       if (layerOn.drones) for (const d of live.drones) iconMarker(d, 'DroneTransport', '#f472b6', 9) || marker(d, 'tri', '#f472b6', 5);
-      if (layerOn.vehicles) for (const v of live.vehicles) iconMarker(v, iconKey(v.cls), '#fb923c', 10) || marker(v, 'diamond', '#fb923c', 5);
+      if (layerOn.vehicles) for (const v of live.vehicles) {
+        const empty = v.fuel === false, col = empty ? '#ef4444' : '#fb923c';
+        iconMarker(v, iconKey(v.cls), col, 10) || marker(v, 'diamond', col, 5);
+        if (empty) fuelBadge(v);
+      }
       trainCars = [];
       if (layerOn.trains) for (const t of live.trains) drawTrain(t);
       if (layerOn.players) for (const p of live.players) {
@@ -1010,6 +1014,16 @@
   }
   const iconKey = cls => cls ? cls.replace(/^(Build_|Desc_|BP_|Recipe_)/, '').replace(/_C$/, '') : null;
   // An icon marker: a dark disc, the icon, and a notch showing the heading.
+  // Out of fuel: a red pump badge on the marker's upper right.
+  function fuelBadge(o) {
+    const [x, y] = toScreen(o.x, o.y);
+    if (x < -30 || y < -30 || x > W + 30 || y > H + 30) return;
+    const bx = x + 10, by = y - 10;
+    ctx.beginPath(); ctx.arc(bx, by, 7, 0, Math.PI * 2); ctx.fillStyle = '#ef4444'; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = '#0b1016'; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.fillRect(bx - 3, by - 3.5, 4, 7); ctx.fillRect(bx + 1.5, by - 2, 1.5, 4);
+    ctx.fillStyle = '#ef4444'; ctx.fillRect(bx - 2, by - 2.5, 2, 2);
+  }
   function iconMarker(o, key, color, r) {
     const im = iconImg(key);
     if (!im) return false;
@@ -1153,7 +1167,7 @@
       let h = `<div class="mp-head">${icon(drone ? 'BP_DroneTransport_C' : t.cls, 'mp-icon')}<h3>${esc(drone ? 'Drone' : t.name || 'Vehicle')}</h3><button class="mp-close" title="Close">✕</button></div><div class="mp-sec"><div class="mp-kv">` +
         (t.speed != null ? `<span>Speed</span><span>${fmt(Math.abs(t.speed))} km/h</span>` : '') +
         (t.autopilot != null ? `<span>Autopilot</span><span>${t.autopilot ? 'on' : 'off'}</span>` : '') +
-        (t.fuel === false ? `<span>Fuel</span><span><span class="pill bad">empty</span></span>` : '') +
+        (t.fuel === false ? `<span>Fuel</span><span><span class="pill bad">empty</span></span>` : t.fuel === true ? `<span>Fuel</span><span>${(t.fuelItems || []).length ? t.fuelItems.map(f => `${fmt(f.amount)} ${esc(f.name)}`).join(', ') : 'last piece burning'}</span>` : '') +
         (t.at ? `<span>Docked at</span><span>${esc(t.at)}</span>` : '') +
         (t.mode ? `<span>State</span><span>${esc(t.mode)}</span>` : '') +
         (t.home ? `<span>Home</span><span>${esc(t.home)}</span>` : '') +
@@ -1335,7 +1349,8 @@
       if (p) html = head('', esc(p.name), p.dead ? 'dead' : 'Player') + (p.hp != null ? bar(p.hp, p.hp > 50 ? 'var(--green)' : p.hp > 20 ? 'var(--accent)' : 'var(--red)') + `<div class="tc-note">health ${fmt(p.hp)}</div>` : '');
       else if (car) { html = carCard(car.train, car.car, car.idx); lastHit = { train: car.train.id }; }
       else if (t) { html = trainCard(t); lastHit = { train: t.id }; }
-      else if (v) lastHit = { unit: v.id, kind: 'vehicles' }, html = head(ic(v.cls), esc(v.name), `${fmt(Math.abs(v.speed))} km/h${v.autopilot === true ? ' · autopilot' : ''}`) + (v.fuel === false ? '<div class="tc-note">no fuel</div>' : '');
+      else if (v) lastHit = { unit: v.id, kind: 'vehicles' }, html = head(ic(v.cls), esc(v.name), `${fmt(Math.abs(v.speed))} km/h${v.autopilot === true ? ' · autopilot' : ''}`) + (v.fuel === false ? '<div class="tc-note" style="color:var(--red);font-weight:600">out of fuel</div>'
+        : v.fuel === true ? `<div class="tc-note">fuel: ${(v.fuelItems || []).length ? v.fuelItems.map(f => `${fmt(f.amount)} ${esc(f.name)}`).join(', ') : 'last piece burning'}</div>` : '');
       else if (d) lastHit = { unit: d.id, kind: 'drones' }, html = head(ic('BP_DroneTransport_C'), 'Drone', [d.mode, d.home && 'home ' + d.home, d.dest && 'to ' + d.dest].filter(Boolean).map(esc).join(' · '));
     }
     if (!html && geo && layerOn.buildings) {
