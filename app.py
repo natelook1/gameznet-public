@@ -30,6 +30,10 @@ import tempfile
 # to be loaded and HTTPSHandler defined before anything can race it.
 import ssl
 import urllib.request
+import mimetypes
+# Windows' registry can map .mjs to text/plain, and browsers refuse module scripts
+# served as text/plain (the WoW tab's preact.mjs failed to load in the desktop app).
+mimetypes.add_type("text/javascript", ".mjs")
 from logging.handlers import RotatingFileHandler
 from io import BytesIO
 from flask import Flask, request, jsonify, render_template, send_from_directory
@@ -279,7 +283,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.14.26"
+VERSION = "1.14.27"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
