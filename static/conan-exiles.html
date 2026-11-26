@@ -852,6 +852,7 @@
     // which this page never sent before, so the admin view always got 401.
     const GZN_TOKEN = (() => { try { return localStorage.getItem('gzn_token') || ''; } catch { return ''; } })();
     let conanAdminPw = '';
+    let gznAuthFailed = false;  // set on the first 401: stop streaming/polling, it can't succeed
     (() => {
       const f = window.fetch.bind(window);
       let warned = false;
@@ -865,6 +866,7 @@
           o = { ...o, headers: h };
         }
         const r = await f(u, o);
+        if (api && r.status === 401 && !/\/admin\//.test(s)) gznAuthFailed = true;
         if (api && r.status === 401 && !warned && !/\/admin\//.test(s)) {
           warned = true;
           const b = document.createElement('div');
@@ -876,6 +878,7 @@
       };
     })();
     const API_BASE = '';
+    let conanPollIv = null;
 
     let serverData = { players: [], guilds: [], building_groups: [], buildings: [], placeables: [], thralls: [], teleporters: [], following_thralls: [] };
     let adminAuthenticated = false;
@@ -1093,8 +1096,9 @@
         console.warn('[SSE] Not available, falling back to polling');
         sseSource.close();
         sseSource = null;
+        if (gznAuthFailed) return;  // signed out: every endpoint 401s, don't poll
         prefetchData();
-        setInterval(prefetchData, 15000);
+        if (!conanPollIv) conanPollIv = setInterval(() => { if (!document.hidden && !gznAuthFailed) prefetchData(); }, 30000);
       };
     }
 

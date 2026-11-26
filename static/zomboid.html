@@ -506,6 +506,7 @@
     // the login token from localStorage; the desktop app's local proxy adds its own.
     // Both serve /api same-origin (CF Pages worker / app.py), so no base URL needed.
     const GZN_TOKEN = (() => { try { return localStorage.getItem('gzn_token') || ''; } catch { return ''; } })();
+    let gznAuthFailed = false;  // set on the first 401: stop streaming/polling, it can't succeed
     (() => {
       const f = window.fetch.bind(window);
       let warned = false;
@@ -514,6 +515,7 @@
         const api = /^\/api\//.test(s);
         if (api && GZN_TOKEN) o = { ...o, headers: { ...(o.headers || {}), 'X-Token': GZN_TOKEN } };
         const r = await f(u, o);
+        if (api && r.status === 401 && !/\/admin\//.test(s)) gznAuthFailed = true;
         if (api && r.status === 401 && !warned) {
           warned = true;
           const b = document.createElement('div');
@@ -1994,7 +1996,7 @@
       fetch(`${API_BASE}/api/pz/density/drift?hours=6`).then(r => r.json())
         .then(d => { pzData.drift = d; mapDataRedraw(redrawModLayers); }).catch(() => {});
     }
-    setInterval(() => pzLoadDrift(true), 300000);
+    setInterval(() => { if (!document.hidden && !gznAuthFailed) pzLoadDrift(true); }, 300000);
 
     // Water storage (mod 2.5.0+)
     function fluidLabel(f) {
@@ -2912,16 +2914,20 @@
       });
 
       let _failed = false;
-      sseSource.addEventListener('players', () => { _failed = false; });
+      sseSource.addEventListener('players', () => { _failed = false; sseRetryMs = 30000; });
       sseSource.onerror = () => {
         if (_failed) return;
         _failed = true;
         sseSource.close(); sseSource = null;
-        prefetch();
-        const iv = setInterval(prefetch, 15000);
-        setTimeout(() => { clearInterval(iv); _failed = false; startSSE(); }, 30000);
+        // Signed out / token expired: every endpoint 401s, so retrying only burns requests.
+        if (gznAuthFailed) return;
+        // Poll while the stream is down, then retry it with exponential backoff (30s → 10min).
+        const iv = setInterval(() => { if (!document.hidden && !gznAuthFailed) prefetch(); }, 30000);
+        setTimeout(() => { clearInterval(iv); if (!gznAuthFailed) startSSE(); }, sseRetryMs);
+        sseRetryMs = Math.min(sseRetryMs * 2, 600000);
       };
     }
+    let sseRetryMs = 30000;
 
     window.addEventListener('load', async () => { await Promise.all([loadTileInfo(), loadIconMap(), loadNameMap()]); startSSE();
       // Deep link: ?mode=iso|topdown or #iso opens the map view directly (old /zomboid-iso redirects here).

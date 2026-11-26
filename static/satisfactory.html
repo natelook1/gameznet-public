@@ -69,6 +69,24 @@
     .bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; min-width: 80px; }
     .bar > div { height: 100%; background: var(--accent); }
     .muted { color: var(--muted); }
+    .sh-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .sh-bar select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 7px 8px; font-size: 13px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .seg button { background: var(--surface2); color: var(--muted); border: 0; padding: 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button.on { background: var(--accent); color: #111; }
+    .sh-type { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); }
+    .sh-name { font-weight: 600; }
+    .sh-name a { color: var(--text); text-decoration: none; } .sh-name a:hover { color: var(--accent); }
+    .sh-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .sh-items { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+    .sh-it { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .sh-it .mp-ico { width: 18px; height: 18px; }
+    .sh-in { color: var(--green); } .sh-out { color: #60a5fa; }
+    .sh-alert { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid #23232d; font-size: 13px; }
+    .sh-alert:last-child { border-bottom: 0; }
+    #sh-table td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
+    @media (max-width: 700px) { #sh-table .sh-col-rate { display: none; } input.search { width: 100%; } }
     input.search { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 7px 10px; font-size: 13px; width: 240px; }
     a { color: var(--accent); }
 
@@ -151,6 +169,7 @@
       <div class="nav-item" data-view="overview">Overview</div>
       <div class="nav-item" data-view="power">Power</div>
       <div class="nav-item" data-view="production">Production</div>
+      <div class="nav-item" data-view="shipping">Shipping</div>
       <div class="nav-item" data-view="players">Players</div>
       <div class="nav-item" data-view="saves">Saves</div>
     </div>
@@ -220,6 +239,17 @@
         <div class="card"><div id="prod-table" class="muted">Loading...</div></div>
       </section>
 
+      <section class="view" id="view-shipping">
+        <div class="stats-grid" id="sh-stats"></div>
+        <div class="card" id="sh-alerts-card" style="display:none"><h3>Needs attention <span id="sh-alert-n" class="pill bad"></span></h3><div id="sh-alerts"></div></div>
+        <div class="sh-bar">
+          <div class="seg" id="sh-kind"><button data-k="all" class="on">All</button><button data-k="train">Trains</button><button data-k="truck">Trucks</button><button data-k="drone">Drones</button></div>
+          <input class="search" id="sh-search" placeholder="Filter stations or items...">
+          <select id="sh-hours" title="Train throughput window"><option value="1">last hour</option><option value="24" selected>last 24 h</option><option value="168">last 7 days</option></select>
+        </div>
+        <div class="card"><div id="sh-table" class="muted">Loading...</div></div>
+      </section>
+
       <section class="view" id="view-players">
         <div class="card"><div id="players-table" class="muted">Loading...</div></div>
       </section>
@@ -254,9 +284,11 @@
   const SHARE = new URLSearchParams(location.search).get('share') || '';
   if (SHARE) document.documentElement.classList.add('shared');
   let signinShown = false;
+  let authFailed = false;   // 401: signed out / share revoked, so stop polling (it can't succeed)
   const getJSON = async url => {
     const h = {}; if (GZN_TOKEN) h['X-Token'] = GZN_TOKEN; if (SHARE) h['X-SF-Share'] = SHARE;
     const r = await fetch(url, { headers: h });
+    if (r.status === 401) authFailed = true;
     if (r.status === 401 && !signinShown) { signinShown = true; setMapStatus(SHARE ? 'This share link is no longer active.' : 'Sign in to GamezNET to see live server data.'); }
     if (!r.ok) throw new Error(r.status);
     return r.json();
@@ -1514,6 +1546,93 @@
   }
   $('prod-search').oninput = renderProduction;
 
+  // ── Shipping: train stations, truck stations, drone ports ──
+  let shData = null, shKind = 'all', shAllAlerts = false;
+  const DRONE_STATUS = { 'docked': ['docked', 'ok'], 'loading': ['loading', 'ok'], 'takeoff': ['taking off', 'ok'], 'en-route': ['en route', 'ok'],
+    'docking': ['docking', 'ok'], 'unloading': ['unloading', 'ok'], 'no-fuel': ['no fuel', 'bad'], 'cannot-unload': ["can't unload", 'bad'], 'no-drone': ['no drone', 'mid'] };
+  async function loadShipping() {
+    try { shData = await getJSON(`${API}/stations?hours=${$('sh-hours').value}`); renderShipping(); }
+    catch { $('sh-table').textContent = 'Live data offline.'; }
+  }
+  const shIt = (cls, name, txt, c = '') => `<span class="sh-it ${c}" title="${esc(name)}">${icon(cls)}${txt}</span>`;
+  const perMin = n => n >= 10 ? fmt(n) : fmt(n, 1);
+  function shRows() {
+    const d = shData, out = [], H = d.hours * 60;
+    // Train flow names items without a class: borrow it from any stock anywhere.
+    const cls = {};
+    for (const t of d.stations || []) for (const p of t.platforms) for (const g of p.stock || []) cls[g.name] = g.cls;
+    for (const t of [...(d.truckStations || []), ...(d.dronePorts || [])]) for (const g of [...(t.stock || []), ...(t.stockIn || []), ...(t.stockOut || []), ...(t.fuel || [])]) cls[g.name] ||= g.cls;
+    for (const t of d.stations || []) {
+      const ld = t.platforms.filter(p => p.mode === 'load').length, ul = t.platforms.filter(p => p.mode === 'unload').length;
+      const flow = (t.flow || []).filter(f => f.loaded || f.unloaded);
+      const rate = flow.reduce((n, f) => n + f.loaded + f.unloaded, 0) / H;
+      const busy = t.platforms.some(p => p.active) || t.docking !== 'none';
+      out.push({ kind: 'train', t, name: t.name, rate, items: flow.map(f => f.item).join(' '),
+        status: busy ? ['train docked', 'ok'] : null,
+        sub: `${t.platforms.length} platform${t.platforms.length === 1 ? '' : 's'}${ld ? ` · ${ld} load` : ''}${ul ? ` · ${ul} unload` : ''}`,
+        cells: flow.length ? flow.map(f => (f.loaded ? shIt(cls[f.item], f.item, `↑${perMin(f.loaded / H)}`, 'sh-out') : '') + (f.unloaded ? shIt(cls[f.item], f.item, `↓${perMin(f.unloaded / H)}`, 'sh-in') : '')).join('')
+          : (t.platforms.flatMap(p => p.stock || []).map(g => shIt(g.cls, g.name, fmt(g.amount))).join('') || '<span class="muted">no traffic</span>') });
+    }
+    for (const t of d.truckStations || []) {
+      const fuel = (t.fuel || []).reduce((n, g) => n + g.amount, 0);
+      out.push({ kind: 'truck', t, name: t.name, rate: null, items: (t.stock || []).map(g => g.name).join(' '),
+        status: t.docked ? ['truck docked', 'ok'] : null,
+        sub: `${t.mode === 'load' ? 'loading station' : 'unloading station'} · ${fuel ? `fuel ${fmt(fuel)} ${esc(t.fuel[0].name)}` : 'no fuel stocked'}`,
+        cells: (t.stock || []).map(g => shIt(g.cls, g.name, fmt(g.amount))).join('') || '<span class="muted">empty</span>' });
+    }
+    for (const t of d.dronePorts || []) {
+      const st = DRONE_STATUS[t.status] || [t.status, 'mid'];
+      const io = [...(t.stockOut || []).map(g => shIt(g.cls, g.name, fmt(g.amount), 'sh-out')), ...(t.stockIn || []).map(g => shIt(g.cls, g.name, fmt(g.amount), 'sh-in'))].join('');
+      out.push({ kind: 'drone', t, name: t.name || 'Drone port', rate: (t.inPerMin || 0) + (t.outPerMin || 0),
+        items: [...(t.stockIn || []), ...(t.stockOut || [])].map(g => g.name).join(' ') + ' ' + (t.pairedName || ''), status: st,
+        sub: [t.pairedName ? `↔ ${esc(t.pairedName)}` : (t.paired ? '↔ paired' : 'not paired'), t.tripSec ? `round trip ${fmt(t.tripSec)} s` : '',
+          t.inPerMin ? `<span class="sh-in">↓${perMin(t.inPerMin)}/min</span>` : '', t.outPerMin ? `<span class="sh-out">↑${perMin(t.outPerMin)}/min</span>` : ''].filter(Boolean).join(' · '),
+        cells: io || '<span class="muted">empty</span>' });
+    }
+    return out;
+  }
+  function renderShipping() {
+    const d = shData; if (!d) return;
+    const rows = shRows();
+    const tr = rows.filter(r => r.kind === 'train'), tk = rows.filter(r => r.kind === 'truck'), dr = rows.filter(r => r.kind === 'drone');
+    const trRate = tr.reduce((n, r) => n + (r.t.flow || []).reduce((m, f) => m + f.unloaded, 0), 0) / (d.hours * 60);
+    const drRate = dr.reduce((n, r) => n + (r.t.inPerMin || 0), 0);
+    const drOk = dr.filter(r => r.status[1] === 'ok').length;
+    const card = (l, v, sub) => `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-value">${v}</div><div class="stat-sub">${sub}</div></div>`;
+    $('sh-stats').innerHTML = card('Train stations', tr.length, `${perMin(trRate)} items/min delivered · ${tr.filter(r => r.rate).length} with traffic`) +
+      card('Truck stations', tk.length, `${tk.filter(r => r.t.mode === 'load').length} loading · ${tk.filter(r => r.t.mode !== 'load').length} unloading · ${tk.filter(r => r.t.docked).length} truck docked`) +
+      card('Drone ports', dr.length, `${perMin(drRate)} items/min delivered · ${drOk} working`);
+    // Problems worth acting on, worst first.
+    const alerts = [
+      ...dr.filter(r => r.t.status === 'cannot-unload').map(r => [r, (r.t.stockOut || []).length
+        ? "drone can't unload: output is full, nothing is taking items away"
+        : `drone stuck: ${r.t.pairedName ? esc(r.t.pairedName) : 'its partner'} is full`]),
+      ...dr.filter(r => r.t.status === 'no-fuel').map(r => [r, 'drone port out of fuel']),
+    ];
+    $('sh-alerts-card').style.display = alerts.length ? '' : 'none';
+    $('sh-alert-n').textContent = alerts.length;
+    const shown = shAllAlerts ? alerts : alerts.slice(0, 5);
+    $('sh-alerts').innerHTML = shown.map(([r, msg]) => `<div class="sh-alert"><span><a href="#" data-sh="${esc(r.t.id)}" class="sh-name" style="color:var(--text)">${esc(r.name)}</a> <span class="muted">· ${msg}</span></span><span class="sh-type">${r.kind}</span></div>`).join('') +
+      (alerts.length > 5 ? `<a href="#" id="sh-more" style="display:inline-block;font-size:12px;padding-top:8px;color:var(--accent)">${shAllAlerts ? 'Show fewer' : `Show all ${alerts.length}`}</a>` : '');
+    if ($('sh-more')) $('sh-more').onclick = e => { e.preventDefault(); shAllAlerts = !shAllAlerts; renderShipping(); };
+    const q = $('sh-search').value.trim().toLowerCase();
+    const list = rows.filter(r => (shKind === 'all' || r.kind === shKind) && (!q || (r.name + ' ' + r.items).toLowerCase().includes(q)))
+      .sort((a, b) => (b.rate || 0) - (a.rate || 0) || a.name.localeCompare(b.name));
+    const typeName = { train: 'Train', truck: 'Truck', drone: 'Drone' };
+    $('sh-table').innerHTML = list.length ? `<table><thead><tr><th>Station</th><th>Items <span class="muted" style="font-weight:400">(<span class="sh-out">↑ out</span> / <span class="sh-in">↓ in</span>)</span></th><th class="num sh-col-rate">Items/min</th></tr></thead><tbody>${list.map(r =>
+      `<tr><td><div class="sh-type">${typeName[r.kind]}</div><div class="sh-name"><a href="#" data-sh="${esc(r.t.id)}">${esc(r.name)}</a>${r.status ? `<span class="pill ${r.status[1]}">${esc(r.status[0])}</span>` : ''}</div><div class="sh-sub">${r.sub}</div></td>` +
+      `<td><div class="sh-items">${r.cells}</div></td><td class="num sh-col-rate">${r.rate ? perMin(r.rate) : '<span class="muted">–</span>'}</td></tr>`).join('')}</tbody></table>` +
+      `<p class="muted" style="font-size:11px;margin-top:10px">Trains: items loaded/unloaded per minute over the ${$('sh-hours').selectedOptions[0].text}. Drones: the game's average per minute. Trucks: current stock (throughput not tracked yet).</p>`
+      : '<p class="muted">No stations match.</p>';
+    document.querySelectorAll('#view-shipping a[data-sh]').forEach(a => a.onclick = e => {
+      e.preventDefault(); const r = rows.find(x => x.t.id === a.dataset.sh); if (!r) return;
+      showView('map'); view.cx = r.t.x; view.cy = r.t.y; view.scale = 0.008; draw();
+    });
+  }
+  $('sh-kind').onclick = e => { const b = e.target.closest('button'); if (!b) return; shKind = b.dataset.k; $('sh-kind').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderShipping(); };
+  $('sh-search').oninput = renderShipping;
+  $('sh-hours').onchange = loadShipping;
+
   async function loadPlayers() {
     try {
       const lv = await getJSON(`${API}/map/live`);
@@ -1538,12 +1657,13 @@
     if (activeView === 'overview') loadOverview();
     else if (activeView === 'power') loadPower();
     else if (activeView === 'production') loadProduction();
+    else if (activeView === 'shipping') loadShipping();
     else if (activeView === 'players') loadPlayers();
     else if (activeView === 'saves') loadSaves();
   }
-  setInterval(() => { if (document.hidden) return; if (activeView === 'map') loadLive(); }, 2000);
-  setInterval(() => { if (document.hidden) return; loadStatus(); loadFrm(); if (activeView !== 'map') refreshView(); }, 15000);
-  setInterval(() => { if (!document.hidden && activeView === 'map') loadStatic(); }, 10 * 60000);
+  setInterval(() => { if (document.hidden || authFailed) return; if (activeView === 'map') loadLive(); }, 5000);  // fallback only while the stream is down
+  setInterval(() => { if (document.hidden || authFailed) return; loadStatus(); loadFrm(); if (activeView !== 'map') refreshView(); }, 15000);
+  setInterval(() => { if (!document.hidden && !authFailed && activeView === 'map') loadStatic(); }, 10 * 60000);
 
   const startView = new URLSearchParams(location.search).get('view');
   loadStatus(); loadFrm().then(() => { loadStatic(); loadLive(); });
