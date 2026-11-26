@@ -643,7 +643,7 @@
   function render() {
     drawQueued = false;
     if (!W) return;
-    const key = [view.cx, view.cy, view.scale, canvas.width, canvas.height, dpr, img.naturalWidth && img.complete, geo && geo.counts, cutZ,
+    const key = [view.cx, view.cy, view.scale, canvas.width, canvas.height, dpr, img.naturalWidth && img.complete, geo && geo.counts, cutZ, iconsReady,
       ...['image', 'foundations', 'cables', 'pipes', 'belts', 'rails', 'buildings', 'nodes'].map(l => layerOn[l])].join('|');
     if (key !== offKey || geo !== render.geo) {
       offKey = key; render.geo = geo;
@@ -656,8 +656,8 @@
     liveView = liveFrame();
     const live = liveView;
     if (live) {
-      if (layerOn.drones) for (const d of live.drones) marker(d, 'tri', '#f472b6', 5);
-      if (layerOn.vehicles) for (const v of live.vehicles) marker(v, 'diamond', '#fb923c', 5);
+      if (layerOn.drones) for (const d of live.drones) iconMarker(d, 'DroneTransport', '#f472b6', 9) || marker(d, 'tri', '#f472b6', 5);
+      if (layerOn.vehicles) for (const v of live.vehicles) iconMarker(v, iconKey(v.cls), '#fb923c', 10) || marker(v, 'diamond', '#fb923c', 5);
       trainCars = [];
       if (layerOn.trains) for (const t of live.trains) drawTrain(t);
       if (layerOn.players) for (const p of live.players) {
@@ -711,11 +711,30 @@
     // Screen-space markers from here on.
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (geo && layerOn.nodes) {
+      const big = view.scale > 0.0035;   // icons once zoomed in enough to tell nodes apart
       for (const n of geo.nodes) {
-        const [x, y] = toScreen(n.x, n.y); if (x < -10 || y < -10 || x > W + 10 || y > H + 10) continue;
-        ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-        ctx.fillStyle = n.purity === 'Pure' ? '#84cc16' : n.purity === 'Normal' ? '#eab308' : '#f97316';
-        ctx.globalAlpha = n.used ? 0.45 : 1; ctx.fill(); ctx.globalAlpha = 1;
+        const [x, y] = toScreen(n.x, n.y); if (x < -14 || y < -14 || x > W + 14 || y > H + 14) continue;
+        const col = n.purity === 'Pure' ? '#84cc16' : n.purity === 'Normal' ? '#eab308' : '#f97316';
+        const im = big && iconImg(RES_ICON[n.name]);
+        ctx.globalAlpha = n.used ? 0.45 : 1;
+        if (im) {
+          ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fillStyle = 'rgba(11,16,22,0.8)'; ctx.fill();
+          ctx.lineWidth = 2.5; ctx.strokeStyle = col; ctx.stroke();
+          ctx.drawImage(im, x - 8, y - 8, 16, 16);
+        } else { ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill(); }
+        ctx.globalAlpha = 1;
+      }
+    }
+    // Building icons in the middle of each footprint, once a machine is big enough on screen.
+    if (geo && layerOn.buildings && view.scale > 0.012) {
+      for (const b of geo.buildings) {
+        if (cutZ != null && b.z0 >= cutZ + 400) continue;
+        const sz = Math.min(b.w, b.h) * view.scale * 0.7;
+        if (sz < 12) continue;
+        const [x, y] = toScreen(b.cx, b.cy); if (x < -40 || y < -40 || x > W + 40 || y > H + 40) continue;
+        const im = iconImg(iconKey(b.cls)); if (!im) continue;
+        const s2 = Math.min(sz, 48);
+        ctx.globalAlpha = 0.9; ctx.drawImage(im, x - s2 / 2, y - s2 / 2, s2, s2); ctx.globalAlpha = 1;
       }
     }
   }
@@ -885,7 +904,7 @@
         drawCar(t, cars[i], i, x0, y0, x1, y1, w);
       });
       ctx.lineCap = 'round';
-      if (CAR_LEN * view.scale < 6) marker(t, 'arrow', t.derailed ? '#ffffff' : '#ef4444', 7);
+      if (CAR_LEN * view.scale < 6) iconMarker(t, 'Locomotive', t.derailed ? '#ffffff' : '#ef4444', 10) || marker(t, 'arrow', t.derailed ? '#ffffff' : '#ef4444', 7);
       return;
     }
     // Recent path, newest first; capped to a little over the train's length.
@@ -951,6 +970,43 @@
       if (Math.hypot(sx - (c.x0 + vx * k), sy - (c.y0 + vy * k)) <= c.w / 2 + pad) return c;
     }
     return null;
+  }
+  // In-game icons on the map. Each icon file loads once; until it has, callers
+  // fall back to the plain shapes. A loaded icon bumps iconsReady so the cached
+  // static layer (building icons) redraws.
+  const iconImgs = new Map();
+  let iconsReady = 0;
+  function iconImg(key) {
+    if (!key) return null;
+    let im = iconImgs.get(key);
+    if (!im) {
+      im = new Image(); im.decoding = 'async';
+      im.onload = () => { iconsReady++; draw(); };
+      im.onerror = () => { im.failed = true; };
+      im.src = `${ICON_BASE}/${encodeURIComponent(key)}.png`;
+      iconImgs.set(key, im);
+    }
+    return im.complete && im.naturalWidth && !im.failed ? im : null;
+  }
+  const iconKey = cls => cls ? cls.replace(/^(Build_|Desc_|BP_|Recipe_)/, '').replace(/_C$/, '') : null;
+  // An icon marker: a dark disc, the icon, and a notch showing the heading.
+  function iconMarker(o, key, color, r) {
+    const im = iconImg(key);
+    if (!im) return false;
+    const [x, y] = toScreen(o.x, o.y);
+    if (x < -30 || y < -30 || x > W + 30 || y > H + 30) return true;
+    ctx.beginPath(); ctx.arc(x, y, r + 3, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(11,16,22,0.85)'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = color; ctx.stroke();
+    if (o.rot != null) {
+      const a = ((o.rot || 0) - 90) * Math.PI / 180;
+      ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * (r + 9), y + Math.sin(a) * (r + 9));
+      ctx.lineTo(x + Math.cos(a + 0.5) * (r + 3), y + Math.sin(a + 0.5) * (r + 3));
+      ctx.lineTo(x + Math.cos(a - 0.5) * (r + 3), y + Math.sin(a - 0.5) * (r + 3));
+      ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+    }
+    ctx.drawImage(im, x - r, y - r, r * 2, r * 2);
+    return true;
   }
   function marker(o, shape, color, r) {
     const [x, y] = toScreen(o.x, o.y);
@@ -1260,7 +1316,7 @@
       if (e.fullyUpgraded) { el.innerHTML = '<span style="color:var(--green)">Fully upgraded. Project Assembly complete.</span>'; return; }
       const rows = e.parts.map(p => {
         const pct = p.total ? Math.min(100, p.delivered / p.total * 100) : 0;
-        return `<tr><td>${esc(p.name)}</td><td style="width:45%"><div class="bar"><div style="width:${pct}%;background:${pct >= 100 ? 'var(--green)' : 'var(--accent)'}"></div></div></td><td class="num">${fmt(p.delivered)} / ${fmt(p.total)}</td></tr>`;
+        return `<tr><td>${icon(p.cls)}${esc(p.name)}</td><td style="width:45%"><div class="bar"><div style="width:${pct}%;background:${pct >= 100 ? 'var(--green)' : 'var(--accent)'}"></div></div></td><td class="num">${fmt(p.delivered)} / ${fmt(p.total)}</td></tr>`;
       }).join('');
       el.classList.remove('muted');
       el.innerHTML = (e.upgradeReady ? '<p style="color:var(--green);font-size:13px;margin-bottom:8px;">All parts delivered: ready to send the next phase.</p>' : '') +
@@ -1357,7 +1413,7 @@
     const q = $('prod-search').value.trim().toLowerCase();
     const rows = prodItems.filter(i => !q || i.name.toLowerCase().includes(q))
       .sort((a, b) => prodSort.k === 'name' ? a.name.localeCompare(b.name) * prodSort.dir : ((a[prodSort.k] || 0) - (b[prodSort.k] || 0)) * prodSort.dir)
-      .map(i => `<tr><td>${esc(i.name)}</td><td class="num">${fmt(i.prod, 1)}</td><td class="num muted">${fmt(i.maxProd, 1)}</td><td class="num">${fmt(i.cons, 1)}</td><td class="num" style="color:${i.net < -0.05 ? 'var(--red)' : i.net > 0.05 ? 'var(--green)' : 'var(--muted)'}">${i.net > 0 ? '+' : ''}${fmt(i.net, 1)}</td></tr>`).join('');
+      .map(i => `<tr><td>${icon(i.cls)}${esc(i.name)}</td><td class="num">${fmt(i.prod, 1)}</td><td class="num muted">${fmt(i.maxProd, 1)}</td><td class="num">${fmt(i.cons, 1)}</td><td class="num" style="color:${i.net < -0.05 ? 'var(--red)' : i.net > 0.05 ? 'var(--green)' : 'var(--muted)'}">${i.net > 0 ? '+' : ''}${fmt(i.net, 1)}</td></tr>`).join('');
     const th = (k, l, num) => `<th class="${num ? 'num' : ''}" data-k="${k}">${l}${prodSort.k === k ? (prodSort.dir < 0 ? ' ↓' : ' ↑') : ''}</th>`;
     $('prod-table').innerHTML = `<table><thead><tr>${th('name', 'Item')}${th('prod', 'Produced', 1)}${th('maxProd', 'Max', 1)}${th('cons', 'Consumed', 1)}${th('net', 'Net', 1)}</tr></thead><tbody>${rows}</tbody></table>`;
     $('prod-table').querySelectorAll('th').forEach(t => t.onclick = () => { prodSort = { k: t.dataset.k, dir: prodSort.k === t.dataset.k ? -prodSort.dir : -1 }; renderProduction(); });
