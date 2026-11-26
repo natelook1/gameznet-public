@@ -854,8 +854,19 @@
     if (cars && t.modPos && t.modPos.length === cars.length) {
       const w = Math.max(5, 300 * view.scale);
       ctx.lineCap = 'butt';
-      t.modPos.forEach(([x, y, yaw, len], i) => {
-        const a = yaw * Math.PI / 180, hx = Math.cos(a) * len / 2, hy = Math.sin(a) * len / 2;
+      // Positions slide in straight lines between reports, which cuts curves;
+      // pull each car back onto the track (nearest rail within 8 m, preferring
+      // the piece the car before it is on) and take the track's direction.
+      let prevPiece = null;
+      t.modPos.forEach(([x0w, y0w, yaw0, len], i) => {
+        let x = x0w, y = y0w, a = yaw0 * Math.PI / 180;
+        const sn = rail && snapRail(x, y, 800, prevPiece != null ? pieceAndNeighbours(prevPiece) : null);
+        if (sn) {
+          x = sn.x; y = sn.y; prevPiece = sn.pi;
+          const ta = Math.atan2(sn.vy, sn.vx);
+          a = Math.cos(ta - a) >= 0 ? ta : ta + Math.PI;   // keep the car's own facing
+        }
+        const hx = Math.cos(a) * len / 2, hy = Math.sin(a) * len / 2;
         const [x0, y0] = toScreen(x - hx, y - hy), [x1, y1] = toScreen(x + hx, y + hy);
         drawCar(t, cars[i], i, x0, y0, x1, y1, w);
       });
