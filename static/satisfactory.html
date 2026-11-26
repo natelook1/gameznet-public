@@ -28,6 +28,10 @@
     .layer { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 2px; cursor: pointer; user-select: none; color: var(--text); }
     .layer input { accent-color: var(--accent); }
     .swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    .hrow { display: flex; align-items: center; gap: 6px; }
+    .hrow input { flex: 1; accent-color: var(--accent); min-width: 0; }
+    .hrow button { width: 26px; height: 24px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-size: 11px; }
+    .hrow button:hover { border-color: var(--accent); }
     .layer .count { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
     .warn { background: rgba(234,179,8,0.10); border: 1px solid rgba(234,179,8,0.4); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #fde68a; line-height: 1.5; display: none; }
     .warn.visible { display: block; }
@@ -124,6 +128,11 @@
     <div id="layers-box">
       <div class="section-title">Layers</div>
       <div id="layers"></div>
+    </div>
+    <div id="height-box" style="display:none">
+      <div class="section-title">Height cutaway</div>
+      <div class="hrow"><button id="h-down" title="Down one floor (in view)">▼</button><input type="range" id="h-cut" step="4"><button id="h-up" title="Up one floor (in view)">▲</button></div>
+      <div class="sidebar-stat" id="h-label">All floors</div>
     </div>
     <div>
       <div class="section-title">Server</div>
@@ -309,8 +318,25 @@
   }
   function buildGeo(st, found) {
     const lines = (arr) => { const cp = new ChunkedPath(); for (const a of arr) { if (a.length < 4) continue; const p = cp.p; p.moveTo(a[0], a[1]); for (let i = 2; i < a.length; i += 2) p.lineTo(a[i], a[i + 1]); } return cp; };
-    const cats = {}; CATS.forEach(c => cats[c.id] = new ChunkedPath());
-    const idle = new ChunkedPath();
+    // Everything that has a height goes into 4 m bands, drawn bottom-up: each
+    // floor's foundations and machines cover the floors below (like looking down
+    // at the real building), and the height cutaway hides bands above a level.
+    const bandMap = new Map();
+    const band = z => {
+      const k = Math.floor(z / 400);
+      if (!bandMap.has(k)) {
+        const cats = {}; CATS.forEach(c => cats[c.id] = new ChunkedPath());
+        bandMap.set(k, { z: k * 400, cats, idle: new ChunkedPath(), fp: new ChunkedPath(), wp: new ChunkedPath(),
+          belts: new ChunkedPath(), pipes: new ChunkedPath(), rails: new ChunkedPath(), pts: [] });
+      }
+      return bandMap.get(k);
+    };
+    const linesZ = (arr, zs, key) => arr.forEach((a, i) => {
+      if (a.length < 4) return;
+      const bd = band(zs?.[i] ?? 0), p = bd[key].p;
+      p.moveTo(a[0], a[1]); for (let j = 2; j < a.length; j += 2) p.lineTo(a[j], a[j + 1]);
+    });
+    linesZ(st.belts, st.beltsZ, 'belts'); linesZ(st.pipes, st.pipesZ, 'pipes'); linesZ(st.rails, st.railsZ, 'rails');
     const rot = (cx, cy, yaw, lx, ly) => { const a = yaw * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); return [cx + lx * c - ly * s, cy + lx * s + ly * c]; };
     const poly = (cp, pts) => { const path = cp.p; path.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) path.lineTo(pts[i][0], pts[i][1]); path.closePath(); };
     // FRM gives each machine's axis-aligned bounding box plus its rotation.
@@ -331,25 +357,27 @@
         if (!(w > 50 && h > 50) || Math.abs(d) <= 0.15) { w = h = Math.min(W, H) / (c + s); }
       }
       const pts = [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]].map(([lx, ly]) => rot(cx, cy, yaw, lx, ly));
-      poly(cats[cat.id], pts);
-      if (b[6] !== 1 && cat.id === 'production') poly(idle, pts);
-      return { cx, cy, w, h, yaw, name: cls.name, cls: cls.c, cat: cat.label, state: b[6], id: b[7] || null };
+      const z0 = b[8] ?? 0, z1 = b[9] ?? z0, bd = band(z0);
+      bd.pts.push(cx, cy);
+      poly(bd.cats[cat.id], pts);
+      if (b[6] !== 1 && cat.id === 'production') poly(bd.idle, pts);
+      return { cx, cy, w, h, yaw, z0, z1, name: cls.name, cls: cls.c, cat: cat.label, state: b[6], id: b[7] || null };
     });
     // Structure layer from the autosave (/map-data): [x, y, yaw], x/y in
     // decimetres (world units here are cm, hence *10). Floors are 8 m tiles
     // rotated by yaw; walls are 8 m segments along the wall's local Y axis.
-    const fp = new ChunkedPath(), wp = new ChunkedPath();
-    for (const [dx, dy, yaw] of found.floors) {
-      const cx = dx * 10, cy = dy * 10;
-      poly(fp, [[-400, -400], [400, -400], [400, 400], [-400, 400]].map(([lx, ly]) => rot(cx, cy, yaw, lx, ly)));
+    // [x, y, yaw, z]: x/y in dm, z in m (older caches have no z: ground band).
+    for (const [dx, dy, yaw, zm] of found.floors) {
+      const cx = dx * 10, cy = dy * 10, bd = band((zm ?? 0) * 100);
+      poly(bd.fp, [[-400, -400], [400, -400], [400, 400], [-400, 400]].map(([lx, ly]) => rot(cx, cy, yaw, lx, ly)));
+      bd.pts.push(cx, cy);
     }
-    for (const [dx, dy, yaw] of found.walls) {
+    for (const [dx, dy, yaw, zm] of found.walls) {
       const cx = dx * 10, cy = dy * 10, a = rot(cx, cy, yaw, 0, -400), b = rot(cx, cy, yaw, 0, 400);
-      const p = wp.p; p.moveTo(a[0], a[1]); p.lineTo(b[0], b[1]);
+      const p = band((zm ?? 0) * 100).wp.p; p.moveTo(a[0], a[1]); p.lineTo(b[0], b[1]);
     }
     return {
-      belts: lines(st.belts), rails: lines(st.rails), pipes: lines(st.pipes), cables: lines(st.cables),
-      foundations: fp, walls: wp, cats, idle, buildings, nodes: st.nodes, stations: st.stations,
+      cables: lines(st.cables), bands: [...bandMap.values()].sort((a, b) => a.z - b.z), buildings, nodes: st.nodes, stations: st.stations,
       counts: { belts: st.belts.length, rails: st.rails.length, pipes: st.pipes.length, cables: st.cables.length,
         buildings: st.buildings.length, foundations: found.floors.length + found.walls.length, nodes: st.nodes.length },
     };
@@ -359,7 +387,50 @@
   // draw whatever arrives first. The structure layer answers 503 for ~90 s while
   // it's rebuilt after a backend restart, so keep retrying it until it's there.
   let lastStatic = null, lastStructure = { floors: [], walls: [] }, structureRetry = null;
-  function rebuildGeo() { if (lastStatic) { geo = buildGeo(lastStatic, lastStructure); updateCounts(); draw(); } }
+  // Height cutaway: null = all floors, else hide bands above cutZ (cm).
+  let cutZ = null;
+  function cutLabel() {
+    $('h-label').textContent = cutZ == null ? 'All floors' : `Up to ${fmt(cutZ / 100)} m`;
+    const r = $('h-cut'); if (cutZ == null) r.value = r.max; else r.value = Math.round(cutZ / 100);
+  }
+  function setCut(z) { cutZ = z; cutLabel(); $('tip').style.display = 'none'; draw(); }
+  function initCutaway() {
+    if (!geo || !geo.bands.length) return;
+    // Slider spans where the foundations and machines actually are: a few stray
+    // pieces sit hundreds of metres below the map and made it uselessly coarse.
+    const total = geo.bands.reduce((n, bd) => n + bd.pts.length, 0);
+    let acc = 0, loB = geo.bands[0], hiB = geo.bands[geo.bands.length - 1];
+    for (const bd of geo.bands) { acc += bd.pts.length; if (acc >= total * 0.005) { loB = bd; break; } }
+    acc = 0;
+    for (let i = geo.bands.length - 1; i >= 0; i--) { acc += geo.bands[i].pts.length; if (acc >= total * 0.005) { hiB = geo.bands[i]; break; } }
+    const lo = Math.floor(loB.z / 100), hi = Math.ceil(hiB.z / 100) + 4;
+    const r = $('h-cut'); r.min = lo; r.max = hi;
+    $('height-box').style.display = geo.bands.length > 1 ? '' : 'none';
+    if (cutZ != null && cutZ / 100 > hi) cutZ = null;
+    cutLabel();
+  }
+  // Height bands with something (4+ foundations/machines) inside the current view.
+  function levelsInView() {
+    const [x0, y0] = toWorld(0, 0), [x1, y1] = toWorld(W, H), out = [];
+    for (const bd of geo.bands) {
+      let n = 0;
+      for (let i = 0; i < bd.pts.length && n < 4; i += 2) { const x = bd.pts[i], y = bd.pts[i + 1]; if (x >= x0 && x <= x1 && y >= y0 && y <= y1) n++; }
+      if (n >= 4) out.push(bd.z);
+    }
+    return out;
+  }
+  $('h-cut').oninput = e => { const v = +e.target.value; setCut(v >= +e.target.max ? null : Math.floor(v * 100 / 400) * 400); };
+  $('h-down').onclick = () => {
+    const L = levelsInView(); if (!L.length) return;
+    const top = cutZ == null ? L[L.length - 1] : cutZ;
+    const below = L.filter(z => z < top); if (below.length) setCut(below[below.length - 1]);
+  };
+  $('h-up').onclick = () => {
+    if (cutZ == null) return;
+    const above = levelsInView().filter(z => z > cutZ);
+    setCut(above.length ? above[0] : null);
+  };
+  function rebuildGeo() { if (lastStatic) { geo = buildGeo(lastStatic, lastStructure); rail = buildRailGraph(lastStatic.rails || []); initCutaway(); updateCounts(); draw(); } }
   async function loadStructure() {
     clearTimeout(structureRetry);
     try {
@@ -385,10 +456,12 @@
   // Each group keeps its last few FRM reads (timestamped by when the backend read
   // FRM). Markers are drawn LIVE_DELAY ms in the past, sliding between the two
   // reads around that moment, so motion is continuous instead of 3 s jumps.
-  // The delay covers one poll interval (1.5 s) plus the backend's 1 s cache.
+  // FRM reads cost the game server tick time, so the backend reads players and
+  // trains every 2 s and vehicles/drones every 6 s. Each group is drawn far
+  // enough in the past to have a read on both sides of the moment shown.
   // If a read is late, markers keep going along their last velocity for up to
   // MAX_EXTRAP instead of freezing and then jumping.
-  const LIVE_DELAY = 2500, MAX_EXTRAP = 2000, SNAP_DIST = 300000;   // jumps over 3 km (teleport, respawn) snap
+  const LIVE_DELAY = { players: 3500, trains: 3500, vehicles: 7000, drones: 7000 }, MAX_EXTRAP = 2000, SNAP_DIST = 300000;   // jumps over 3 km (teleport, respawn) snap
   const GROUPS = ['players', 'trains', 'vehicles', 'drones'];
   const snaps = { players: [], trains: [], vehicles: [], drones: [] };
   let clockSkew = null;   // server ms - client ms, smoothed
@@ -414,9 +487,10 @@
   const lerpAngle = (a, b, k) => { const d = ((b - a) % 360 + 540) % 360 - 180; return a + d * k; };
   function liveFrame() {
     if (!live) return null;
-    const rt = Date.now() + (clockSkew || 0) - LIVE_DELAY;
+    const now = Date.now() + (clockSkew || 0);
     const out = { moving: false };
     for (const g of GROUPS) {
+      const rt = now - LIVE_DELAY[g];
       const list = snaps[g], last = list[list.length - 1];
       if (!last) { out[g] = []; continue; }
       let i = list.length - 1;
@@ -443,7 +517,7 @@
         if (prev != null) rot = lerpAngle(prev, rot, 0.15);
         headings.set(g + id, rot);
         if (sp > 0.001) out.moving = true;
-        res.push({ ...cur, x, y, rot });
+        res.push({ ...cur, x, y, rot, vx, vy });
       }
       out[g] = res;
     }
@@ -487,7 +561,7 @@
   function render() {
     drawQueued = false;
     if (!W) return;
-    const key = [view.cx, view.cy, view.scale, canvas.width, canvas.height, dpr, img.naturalWidth && img.complete, geo && geo.counts,
+    const key = [view.cx, view.cy, view.scale, canvas.width, canvas.height, dpr, img.naturalWidth && img.complete, geo && geo.counts, cutZ,
       ...['image', 'foundations', 'cables', 'pipes', 'belts', 'rails', 'buildings', 'nodes'].map(l => layerOn[l])].join('|');
     if (key !== offKey || geo !== render.geo) {
       offKey = key; render.geo = geo;
@@ -502,7 +576,8 @@
     if (live) {
       if (layerOn.drones) for (const d of live.drones) marker(d, 'tri', '#f472b6', 5);
       if (layerOn.vehicles) for (const v of live.vehicles) marker(v, 'diamond', '#fb923c', 5);
-      if (layerOn.trains) for (const t of live.trains) marker(t, 'arrow', t.derailed ? '#ffffff' : '#ef4444', 7);
+      trainCars = [];
+      if (layerOn.trains) for (const t of live.trains) drawTrain(t);
       if (layerOn.players) for (const p of live.players) {
         if (!p.online) continue;
         marker(p, 'player', '#22c55e', 8);
@@ -529,22 +604,26 @@
     }
     if (geo) {
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      if (layerOn.foundations) {
-        ctx.fillStyle = 'rgba(120,128,140,0.6)'; geo.foundations.fill(ctx);
-        ctx.strokeStyle = 'rgba(30,33,40,0.9)'; ctx.lineWidth = Math.max(px * 1.2, 60); geo.walls.stroke(ctx);
-      }
       if (layerOn.cables) { ctx.strokeStyle = 'rgba(250,204,21,0.35)'; ctx.lineWidth = Math.max(px * 0.8, 20); geo.cables.stroke(ctx); }
-      if (layerOn.pipes) { ctx.strokeStyle = 'rgba(56,189,248,0.75)'; ctx.lineWidth = Math.max(px * 1.2, 90); geo.pipes.stroke(ctx); }
-      if (layerOn.belts) { ctx.strokeStyle = 'rgba(229,231,235,0.8)'; ctx.lineWidth = Math.max(px * 1.1, 100); geo.belts.stroke(ctx); }
-      if (layerOn.rails) {
-        ctx.strokeStyle = 'rgba(15,15,19,0.9)'; ctx.lineWidth = Math.max(px * 3, 450); geo.rails.stroke(ctx);
-        ctx.strokeStyle = 'rgba(163,163,163,0.95)'; ctx.lineWidth = Math.max(px * 1.4, 250); geo.rails.stroke(ctx);
-      }
-      if (layerOn.buildings) {
-        for (const c of CATS) { ctx.fillStyle = c.color; ctx.globalAlpha = 0.9; geo.cats[c.id].fill(ctx); }
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = 'rgba(11,16,22,0.55)'; geo.idle.fill(ctx);   // dim idle/paused machines
-        if (view.scale > 0.006) { ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = px; for (const c of CATS) geo.cats[c.id].stroke(ctx); }
+      // Bottom band first; bands above the cutaway are skipped.
+      for (const bd of geo.bands) {
+        if (cutZ != null && bd.z > cutZ) break;
+        if (layerOn.foundations) {
+          ctx.fillStyle = 'rgba(120,128,140,0.6)'; bd.fp.fill(ctx);
+          ctx.strokeStyle = 'rgba(30,33,40,0.9)'; ctx.lineWidth = Math.max(px * 1.2, 60); bd.wp.stroke(ctx);
+        }
+        if (layerOn.pipes) { ctx.strokeStyle = 'rgba(56,189,248,0.75)'; ctx.lineWidth = Math.max(px * 1.2, 90); bd.pipes.stroke(ctx); }
+        if (layerOn.belts) { ctx.strokeStyle = 'rgba(229,231,235,0.8)'; ctx.lineWidth = Math.max(px * 1.1, 100); bd.belts.stroke(ctx); }
+        if (layerOn.rails) {
+          ctx.strokeStyle = 'rgba(15,15,19,0.9)'; ctx.lineWidth = Math.max(px * 3, 450); bd.rails.stroke(ctx);
+          ctx.strokeStyle = 'rgba(163,163,163,0.95)'; ctx.lineWidth = Math.max(px * 1.4, 250); bd.rails.stroke(ctx);
+        }
+        if (layerOn.buildings) {
+          for (const c of CATS) { ctx.fillStyle = c.color; ctx.globalAlpha = 0.9; bd.cats[c.id].fill(ctx); }
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = 'rgba(11,16,22,0.55)'; bd.idle.fill(ctx);   // dim idle/paused machines
+          if (view.scale > 0.006) { ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = px; for (const c of CATS) bd.cats[c.id].stroke(ctx); }
+        }
       }
     }
     // Screen-space markers from here on.
@@ -557,6 +636,182 @@
         ctx.globalAlpha = n.used ? 0.45 : 1; ctx.fill(); ctx.globalAlpha = 1;
       }
     }
+  }
+
+  // ── Full-length trains ──
+  // FRM gives a train's front position and its cars in order, but no per-car
+  // positions. Draw the cars by walking back along the track from the front.
+  // At junctions take the branch the train actually came along (its recent
+  // positions), else the straightest one.
+  const CAR_LEN = 1660, CAR_GAP = 40;   // cm per car (estimate; tune here)
+  const RAIL_CELL = 5000;               // spatial grid cell, 50 m
+  let rail = null;
+  const trails = new Map();             // train id -> recent head positions [[x,y],...], newest first
+  let trainCars = [];                   // drawn cars this frame (screen space), for hover
+  function buildRailGraph(lines) {
+    const polys = lines.filter(a => a.length >= 4);
+    const grid = new Map(), ends = new Map();
+    const gkey = (x, y) => Math.floor(x / RAIL_CELL) + ',' + Math.floor(y / RAIL_CELL);
+    // Track pieces don't meet exactly (half the joints are ~1 m apart, some 4-6 m):
+    // index ends on a 6 m grid and match by distance in endsNear().
+    const ekey = (x, y) => Math.floor(x / 600) + ',' + Math.floor(y / 600);
+    polys.forEach((a, pi) => {
+      for (let i = 0; i + 3 < a.length; i += 2) {
+        const x0 = Math.min(a[i], a[i + 2]), x1 = Math.max(a[i], a[i + 2]), y0 = Math.min(a[i + 1], a[i + 3]), y1 = Math.max(a[i + 1], a[i + 3]);
+        for (let gx = Math.floor(x0 / RAIL_CELL); gx <= Math.floor(x1 / RAIL_CELL); gx++)
+          for (let gy = Math.floor(y0 / RAIL_CELL); gy <= Math.floor(y1 / RAIL_CELL); gy++) {
+            const k = gx + ',' + gy; if (!grid.has(k)) grid.set(k, []); grid.get(k).push([pi, i / 2]);
+          }
+      }
+      const n = a.length / 2;
+      for (const [end, x, y] of [[0, a[0], a[1]], [n - 1, a[a.length - 2], a[a.length - 1]]]) {
+        const k = ekey(x, y); if (!ends.has(k)) ends.set(k, []); ends.get(k).push([pi, end, x, y]);
+      }
+    });
+    return { polys, grid, ends, gkey, ekey };
+  }
+  // Track-piece ends within 6 m of (x, y), excluding piece `pi`; nearest first.
+  function endsNear(x, y, pi) {
+    const gx = Math.floor(x / 600), gy = Math.floor(y / 600), out = [];
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++)
+      for (const e of rail.ends.get((gx + dx) + ',' + (gy + dy)) || []) {
+        const d = Math.hypot(e[2] - x, e[3] - y);
+        if (e[0] !== pi && d <= 600) out.push([e[0], e[1], d]);
+      }
+    return out.sort((a, b) => a[2] - b[2]);
+  }
+  // Nearest point on the track to (x, y), within maxD.
+  function snapRail(x, y, maxD = 3000) {
+    if (!rail) return null;
+    let best = null, bd = maxD;
+    const gx = Math.floor(x / RAIL_CELL), gy = Math.floor(y / RAIL_CELL);
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+      const cell = rail.grid.get((gx + dx) + ',' + (gy + dy)); if (!cell) continue;
+      for (const [pi, si] of cell) {
+        const a = rail.polys[pi], ax = a[si * 2], ay = a[si * 2 + 1], bx = a[si * 2 + 2], by = a[si * 2 + 3];
+        const vx = bx - ax, vy = by - ay, l2 = vx * vx + vy * vy || 1;
+        const t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / l2));
+        const px = ax + vx * t, py = ay + vy * t, d = Math.hypot(x - px, y - py);
+        if (d < bd) { bd = d; best = { pi, si, t, x: px, y: py, vx, vy }; }
+      }
+    }
+    return best;
+  }
+  // Walk `len` cm along the track from a snapped point in direction (dx, dy).
+  // Returns the path as [[x, y], ...] starting at the snapped point.
+  function walkRail(sn, dx, dy, len, trail) {
+    const pts = [[sn.x, sn.y]];
+    let pi = sn.pi, a = rail.polys[pi];
+    let dir = (sn.vx * dx + sn.vy * dy) >= 0 ? 1 : -1;   // +1: toward higher indices
+    let i = dir > 0 ? sn.si + 1 : sn.si;                  // next vertex index
+    let left = len, cx = sn.x, cy = sn.y, hops = 0;
+    while (left > 0 && hops < 40) {
+      const n = a.length / 2;
+      while (left > 0 && i >= 0 && i < n) {
+        const nx = a[i * 2], ny = a[i * 2 + 1], d = Math.hypot(nx - cx, ny - cy);
+        if (d >= left) { const k = left / (d || 1); pts.push([cx + (nx - cx) * k, cy + (ny - cy) * k]); return pts; }
+        left -= d; cx = nx; cy = ny; pts.push([cx, cy]); i += dir;
+      }
+      if (left <= 0) break;
+      // End of this piece of track: continue onto a connected piece.
+      const near = endsNear(cx, cy, pi);
+      if (!near.length) break;
+      // Several pieces start here only at a junction; otherwise take the closest end.
+      const cand = near.filter(e => e[2] <= near[0][2] + 150);
+      const hx = pts.length > 1 ? cx - pts[pts.length - 2][0] : dx, hy = pts.length > 1 ? cy - pts[pts.length - 2][1] : dy;
+      let pick = null, score = Infinity;
+      for (const [q, end] of cand) {
+        const b = rail.polys[q], m = b.length / 2, j = end === 0 ? 1 : m - 2;
+        const fx = b[j * 2], fy = b[j * 2 + 1];
+        let sc;
+        if (trail && trail.length > 2) {
+          // Distance from this branch's next point to the train's recent path.
+          sc = Infinity; for (const [tx, ty] of trail) sc = Math.min(sc, Math.hypot(fx - tx, fy - ty));
+        } else {
+          const ux = fx - cx, uy = fy - cy;
+          sc = -((ux * hx + uy * hy) / ((Math.hypot(ux, uy) * Math.hypot(hx, hy)) || 1));   // straightest
+        }
+        if (sc < score) { score = sc; pick = [q, end]; }
+      }
+      pi = pick[0]; a = rail.polys[pi]; dir = pick[1] === 0 ? 1 : -1; i = pick[1] === 0 ? 1 : a.length / 2 - 2; hops++;
+      const sx2 = a[(pick[1] === 0 ? 0 : a.length / 2 - 1) * 2], sy2 = a[(pick[1] === 0 ? 0 : a.length / 2 - 1) * 2 + 1];
+      left -= Math.hypot(sx2 - cx, sy2 - cy); cx = sx2; cy = sy2; pts.push([cx, cy]);
+    }
+    return pts;
+  }
+  // Point and direction at distance d along a path.
+  function alongPath(pts, d) {
+    for (let i = 1; i < pts.length; i++) {
+      const [ax, ay] = pts[i - 1], [bx, by] = pts[i], l = Math.hypot(bx - ax, by - ay);
+      if (d <= l) { const k = d / (l || 1); return [ax + (bx - ax) * k, ay + (by - ay) * k]; }
+      d -= l;
+    }
+    return pts[pts.length - 1];
+  }
+  const CAR_COLORS = { loco: '#ef4444', full: '#f59e0b', empty: '#64748b' };
+  function drawTrain(t) {
+    const cars = t.carList && t.carList.length ? t.carList : null;
+    // Recent path, newest first; capped to a little over the train's length.
+    let tr = trails.get(t.id);
+    if (!tr) { tr = []; trails.set(t.id, tr); }
+    if (!tr.length || Math.hypot(tr[0][0] - t.x, tr[0][1] - t.y) > 200) { tr.unshift([t.x, t.y]); if (tr.length > 60) tr.pop(); }
+    const sn = cars && snapRail(t.x, t.y);
+    if (!sn) { marker(t, 'arrow', t.derailed ? '#ffffff' : '#ef4444', 7); return; }
+    // "Behind" = against the direction of travel, or against the train's facing
+    // when stopped (FRM rotation; marker convention: forward = rot - 90 deg).
+    const sp = Math.hypot(t.vx || 0, t.vy || 0);
+    let bx, by;
+    if (sp > 0.05) { bx = -t.vx; by = -t.vy; if ((t.speed || 0) < 0) { bx = -bx; by = -by; } }
+    else { const a = ((t.rot || 0) - 90) * Math.PI / 180; bx = -Math.cos(a); by = -Math.sin(a); }
+    const total = cars.length * (CAR_LEN + CAR_GAP);
+    // FRM's position is (probably) the middle of the lead car: start the path half a car ahead.
+    const plen = ps => { let L = 0; for (let i = 1; i < ps.length; i++) L += Math.hypot(ps[i][0] - ps[i - 1][0], ps[i][1] - ps[i - 1][1]); return L; };
+    let back = walkRail(sn, bx, by, total, tr.slice(1));
+    // A stopped train's facing (FRM rotation) can point the wrong way, e.g. at a
+    // terminus where the track ends behind it: try the other side, keep the longer.
+    if (sp <= 0.05 && plen(back) < total * 0.98) {
+      const other = walkRail(sn, -bx, -by, total, null);
+      if (plen(other) > plen(back)) { back = other; bx = -bx; by = -by; }
+    }
+    const bl = Math.hypot(bx, by) || 1;
+    // Track ends before the train does (parked on a stub, or track FRM doesn't
+    // list): carry on straight so every car is still drawn.
+    const got = plen(back);
+    if (got < total) {
+      const [ex, ey] = back[back.length - 1], [px, py] = back.length > 1 ? back[back.length - 2] : [ex - bx, ey - by];
+      const ux = ex - px, uy = ey - py, ul = Math.hypot(ux, uy) || 1;
+      back.push([ex + ux / ul * (total - got), ey + uy / ul * (total - got)]);
+    }
+    // The front half of the lead car, also along the track (straight if it runs out).
+    const ahead = walkRail(sn, -bx, -by, CAR_LEN / 2, null);
+    const aLen = plen(ahead);
+    if (aLen < CAR_LEN / 2 - 1) { const [ex, ey] = ahead[ahead.length - 1]; ahead.push([ex - bx / bl * (CAR_LEN / 2 - aLen), ey - by / bl * (CAR_LEN / 2 - aLen)]); }
+    const path = [...ahead.reverse(), ...back.slice(1)];
+    const w = Math.max(5, 300 * view.scale);   // ~3 m wide, at least 5 px
+    ctx.lineCap = 'butt';
+    cars.forEach((c, i) => {
+      const s0 = i * (CAR_LEN + CAR_GAP), s1 = s0 + CAR_LEN;
+      const p0 = alongPath(path, s0), p1 = alongPath(path, s1);
+      const [x0, y0] = toScreen(p0[0], p0[1]), [x1, y1] = toScreen(p1[0], p1[1]);
+      if (Math.max(x0, x1) < -40 || Math.min(x0, x1) > W + 40 || Math.max(y0, y1) < -40 || Math.min(y0, y1) > H + 40) return;
+      const loco = /Locomotive/i.test(c.cls);
+      const col = t.derailed ? '#ffffff' : loco ? CAR_COLORS.loco : (c.cargo.length ? CAR_COLORS.full : CAR_COLORS.empty);
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+      ctx.lineWidth = w + 2; ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.stroke();
+      ctx.lineWidth = w; ctx.strokeStyle = col; ctx.stroke();
+      trainCars.push({ x0, y0, x1, y1, w, train: t, car: c, idx: i });
+    });
+    ctx.lineCap = 'round';
+    // At far zoom the cars are a few pixels long: keep the arrow so trains stay visible.
+    if (CAR_LEN * view.scale < 6) marker(t, 'arrow', t.derailed ? '#ffffff' : '#ef4444', 7);
+  }
+  function carAt(sx, sy, pad) {
+    for (let i = trainCars.length - 1; i >= 0; i--) {
+      const c = trainCars[i], vx = c.x1 - c.x0, vy = c.y1 - c.y0, l2 = vx * vx + vy * vy || 1;
+      const k = Math.max(0, Math.min(1, ((sx - c.x0) * vx + (sy - c.y0) * vy) / l2));
+      if (Math.hypot(sx - (c.x0 + vx * k), sy - (c.y0 + vy * k)) <= c.w / 2 + pad) return c;
+    }
+    return null;
   }
   function marker(o, shape, color, r) {
     const [x, y] = toScreen(o.x, o.y);
@@ -584,7 +839,8 @@
     if (!pointers.size) canvas.classList.remove('dragging');
     if (!dragMoved) {
       hover(e.offsetX, e.offsetY, e.pointerType === 'touch' || e.pointerType === 'pen');
-      if (lastHit && lastHit.id) { $('tip').style.display = 'none'; openMachine(lastHit); }
+      if (lastHit && lastHit.stack) { $('tip').style.display = 'none'; openStack(lastHit.stack); }
+      else if (lastHit && lastHit.id) { $('tip').style.display = 'none'; openMachine(lastHit); }
     }
   });
   canvas.addEventListener('pointercancel', e => { pointers.delete(e.pointerId); pinchDist = 0; });
@@ -631,6 +887,29 @@
   const icon = (cls, k = 'mp-ico') => cls ? `<img class="${k}" src="${iconSrc(cls)}" alt="" onerror="this.remove()">` : '';
   let lastHit = null, panelId = null, panelTimer = null;
   const fmtRate = n => n == null ? '–' : fmt(n, n < 10 ? 2 : 1);
+
+  // Machines under one spot grouped into floors (bottoms within 3 m count as the
+  // same floor), top floor first. Null when they're all on one floor.
+  function stackOf(hits) {
+    if (hits.length < 2) return null;
+    const sorted = [...hits].sort((a, b) => b.z0 - a.z0), floors = [];
+    for (const h of sorted) {
+      const f = floors[floors.length - 1];
+      if (f && f.z - h.z0 < 300) f.items.push(h); else floors.push({ z: h.z0, items: [h] });
+    }
+    return floors.length > 1 ? floors : null;
+  }
+  function openStack(floors) {
+    panelId = null; clearInterval(panelTimer);
+    const el = $('mpanel'); el.classList.add('open');
+    const n = floors.length;
+    el.innerHTML = `<div class="mp-head"><h3>${n} floors here</h3><button class="mp-close" title="Close">✕</button></div>` +
+      floors.map((f, i) => `<div class="mp-sec"><h4>Floor ${n - i} · ${fmt(f.z / 100)} m</h4>` +
+        f.items.map((m, j) => `<div class="mp-item mp-pick" data-f="${i}" data-j="${j}" style="cursor:pointer"><span>${icon(m.cls)}${esc(m.name)}</span><span class="r">${m.cat === 'Production' ? (m.state === 1 ? 'running' : m.state === 2 ? 'paused' : 'idle') : esc(m.cat)}</span></div>`).join('') +
+        '</div>').join('');
+    el.querySelector('.mp-close').onclick = closeMachine;
+    el.querySelectorAll('.mp-pick').forEach(r => r.onclick = () => { const m = floors[+r.dataset.f].items[+r.dataset.j]; if (m.id) openMachine(m); });
+  }
   function closeMachine() { panelId = null; clearInterval(panelTimer); $('mpanel').classList.remove('open'); }
   async function openMachine(b) {
     panelId = b.id;
@@ -693,10 +972,17 @@
     const live = liveView;
     if (live) {
       const p = layerOn.players && live.players.find(p => p.online && near(p, 12));
-      const t = !p && layerOn.trains && live.trains.find(t => near(t, 10));
+      const car = !p && layerOn.trains && carAt(sx, sy, touch ? 8 : 3);
+      const t = !p && !car && layerOn.trains && live.trains.find(t => near(t, 10));
       const v = !p && !t && layerOn.vehicles && live.vehicles.find(v => near(v, 8));
       const d = !p && !t && !v && layerOn.drones && live.drones.find(d => near(d, 8));
       if (p) html = `<b>${esc(p.name)}</b><br>Health ${fmt(p.hp)}${p.dead ? ' · dead' : ''}`;
+      else if (car) {
+        const tt = car.train, c = car.car;
+        html = `<b>${esc(tt.name)}</b> · car ${car.idx + 1} of ${tt.carList.length}<br>${esc(c.name)}` +
+          (c.cargo.length ? '<br>' + c.cargo.map(i => `${esc(i.name)}: ${fmt(i.amount)}`).join('<br>') : (/Locomotive/i.test(c.cls) ? '' : '<br><span style="color:var(--muted)">empty</span>')) +
+          `<br>${esc(tt.status)} · ${fmt(Math.abs(tt.speed))} km/h${tt.next ? '<br>Next stop: ' + esc(tt.next) : ''}`;
+      }
       else if (t) html = `<b>${esc(t.name)}</b><br>${esc(t.status)} · ${fmt(t.speed)} km/h<br>${t.cars} cars${t.next ? '<br>Next stop: ' + esc(t.next) : ''}${t.station ? '<br>Last station: ' + esc(t.station) : ''}${t.derailed ? '<br><b>DERAILED</b>' : ''}`;
       else if (v) html = `<b>${esc(v.name)}</b><br>${v.autopilot ? 'Autopilot' : 'Manual'} · ${fmt(v.speed)} km/h${v.fuel ? '' : '<br>No fuel'}`;
       else if (d) html = `<b>Drone</b><br>${esc(d.mode)}<br>Home: ${esc(d.home)}${d.dest ? '<br>To: ' + esc(d.dest) : ''}`;
@@ -711,9 +997,16 @@
         return Math.abs(lx) <= b.w / 2 + pad && Math.abs(ly) <= b.h / 2 + pad;
       };
       let b = null, best = Infinity;
-      for (const c of geo.buildings) if (inside(c)) { const dd = Math.hypot(wx - c.cx, wy - c.cy); if (dd < best) { best = dd; b = c; } }
-      lastHit = b;
-      if (b) html = `<b>${esc(b.name)}</b><br>${esc(b.cat)}${b.cat === 'Production' ? ' · ' + (b.state === 1 ? 'running' : b.state === 2 ? 'paused' : 'idle') : ''}`;
+      const hits = geo.buildings.filter(c => (cutZ == null || c.z0 < cutZ + 400) && inside(c));
+      for (const c of hits) { const dd = Math.hypot(wx - c.cx, wy - c.cy); if (dd < best) { best = dd; b = c; } }
+      const stack = stackOf(hits);
+      if (stack) {
+        lastHit = { stack };
+        html = `<b>${stack.length} floors here</b><br>` + stack.slice(0, 6).map(f => `${fmt(f.z / 100)} m · ${f.items.length > 1 ? f.items.length + ' machines' : esc(f.items[0].name)}`).join('<br>') +
+          (stack.length > 6 ? '<br>…' : '') + '<br><span style="color:var(--muted)">click to choose</span>';
+        b = null;
+      } else lastHit = b;
+      if (b) html = `<b>${esc(b.name)}</b><br>${esc(b.cat)} · ${fmt(b.z0 / 100)} m${b.cat === 'Production' ? ' · ' + (b.state === 1 ? 'running' : b.state === 2 ? 'paused' : 'idle') : ''}`;
     }
     if (!html && geo && layerOn.nodes) {
       const n = geo.nodes.find(n => near(n, 6));
@@ -818,7 +1111,7 @@
     else if (activeView === 'players') loadPlayers();
     else if (activeView === 'saves') loadSaves();
   }
-  setInterval(() => { if (document.hidden) return; if (activeView === 'map') loadLive(); }, 1500);
+  setInterval(() => { if (document.hidden) return; if (activeView === 'map') loadLive(); }, 2000);
   setInterval(() => { if (document.hidden) return; loadStatus(); loadFrm(); if (activeView !== 'map') refreshView(); }, 15000);
   setInterval(() => { if (!document.hidden && activeView === 'map') loadStatic(); }, 10 * 60000);
 
