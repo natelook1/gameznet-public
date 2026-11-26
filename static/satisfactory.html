@@ -268,7 +268,11 @@
 
 <script>
 (() => {
-  const API = '/api/satisfactory';
+  // Public site: call the API host directly, not through the CF Pages worker
+  // (every worker request counts against the Workers quota). On the LAN,
+  // api-gamez resolves locally, so traffic stays local (Chrome asks once to
+  // allow local network access). Desktop app (app.py) stays same-origin.
+  const API = (/(^|\.)gameznet\.looknet\.ca$|\.pages\.dev$/.test(location.hostname) ? 'https://api-gamez.looknet.ca' : '') + '/api/satisfactory';
   const MAP_IMG = 'https://photos.looknet.ca/satisfactory/map.avif';
   // World bounds of the map image, in game units (cm). Same frame as FRM and SCIM.
   const WX0 = -324698.16796875, WY0 = -375000, WSIZE = 750000;
@@ -366,6 +370,7 @@
     { id: 'rails',       label: 'Railways',       color: '#a3a3a3', on: true },
     { id: 'buildings',   label: 'Buildings',      color: '#f59e0b', on: true },
     { id: 'nodes',       label: 'Resource nodes', color: '#84cc16', on: false },
+    { id: 'hubs',        label: 'Truck & drone stations', color: '#a78bfa', on: true },
     { id: 'drones',      label: 'Drones',         color: '#f472b6', on: true },
     { id: 'vehicles',    label: 'Vehicles',       color: '#fb923c', on: true },
     { id: 'trains',      label: 'Trains',         color: '#ef4444', on: true },
@@ -665,6 +670,7 @@
   function updateCounts() {
     const c = Object.assign({}, geo?.counts || {});
     if (live) { c.players = live.players.filter(p => p.online).length; c.trains = live.trains.length; c.vehicles = live.vehicles.length; c.drones = live.drones.length; }
+    if (hubs.length) c.hubs = hubs.length;
     renderLayerList(c);
   }
   function setMapStatus(t) { const el = $('map-status'); el.textContent = t; el.style.display = t ? 'block' : 'none'; }
@@ -717,6 +723,7 @@
       if (ft) { view.cx = ft.x; view.cy = ft.y; }
     }
     if (live) {
+      if (layerOn.hubs) for (const h of hubs) iconMarker({ x: h.x, y: h.y }, h.kind === 'truck' ? 'TruckStation' : 'DroneStation', hubColor(h), 9) || marker(h, 'diamond', hubColor(h), 5);
       if (layerOn.drones) for (const d of live.drones) iconMarker(d, 'DroneTransport', '#f472b6', 9) || marker(d, 'tri', '#f472b6', 5);
       if (layerOn.vehicles) for (const v of live.vehicles) {
         const empty = v.fuel === false, col = empty ? '#ef4444' : isStuck(v) ? '#facc15' : '#fb923c';
@@ -1352,14 +1359,41 @@
     for (const [n, x] of Object.entries(tot).slice(0, 4)) h += row(ic(x.cls), esc(n), fmt(x.n));
     return h;
   }
-  // Station throughput for hover cards (refreshed at most once a minute).
-  let stationFlow = null, stationFlowAt = 0;
-  function stationFlowFor(name) {
-    if (Date.now() - stationFlowAt > 60000) {
-      stationFlowAt = Date.now();
-      getJSON(`${API}/stations?hours=24`).then(r => { stationFlow = new Map(r.stations.map(s => [s.name, s])); }).catch(() => {});
+  // Stations (train flow for hover cards; truck stations + drone ports drawn on the
+  // map: the mod's building list doesn't include them). Refreshed at most once a minute.
+  let stationFlow = null, stationFlowAt = 0, hubs = [];
+  function loadStations() {
+    if (Date.now() - stationFlowAt < 60000) return;
+    stationFlowAt = Date.now();
+    getJSON(`${API}/stations?hours=24`).then(r => {
+      stationFlow = new Map(r.stations.map(s => [s.name, s]));
+      hubs = [...(r.truckStations || []).map(t => ({ ...t, kind: 'truck' })), ...(r.dronePorts || []).map(t => ({ ...t, kind: 'drone' }))];
+      updateCounts(); draw();
+    }).catch(() => {});
+  }
+  function stationFlowFor(name) { loadStations(); return stationFlow?.get(name) || null; }
+  const DRONE_ST = { 'docked': 'docked', 'loading': 'loading', 'takeoff': 'taking off', 'en-route': 'drone en route', 'docking': 'drone docking',
+    'unloading': 'unloading', 'no-fuel': 'out of fuel', 'cannot-unload': "drone can't unload", 'no-drone': 'no drone' };
+  const hubColor = h => h.kind === 'truck' ? '#a78bfa' : (h.status === 'cannot-unload' || h.status === 'no-fuel') ? '#ef4444' : h.status === 'no-drone' ? '#6b7280' : '#f472b6';
+  function hubCard(h) {
+    const items = (list, cls = '') => (list || []).map(g => row(ic(g.cls), esc(g.name), `<span class="${cls}">${fmt(g.amount)}</span>`)).join('');
+    if (h.kind === 'truck') {
+      let c = head(ic(null, 'TruckStation'), esc(h.name), `Truck station · ${h.mode === 'load' ? 'loading' : 'unloading'}`);
+      if (h.docked) c += '<div class="tc-note">truck docked</div>';
+      const fuel = (h.fuel || [])[0];
+      c += `<div class="tc-note">${fuel ? `fuel for trucks: ${fmt(fuel.amount)} ${esc(fuel.name)}` : 'no fuel stocked'}</div>`;
+      const fl = (h.flow || []).map(x => ({ ...x, n: x.loaded + x.unloaded })).sort((a, b) => b.n - a.n).slice(0, 4);
+      if (fl.length) { c += '<div class="tc-note">last 24 h</div>'; for (const x of fl) c += row(ic(null, RES_ICON[x.item]), esc(x.item), `${x.loaded ? '↑' + fmt(x.loaded) : ''}${x.loaded && x.unloaded ? ' ' : ''}${x.unloaded ? '↓' + fmt(x.unloaded) : ''}`); }
+      if ((h.stock || []).length) c += '<div class="tc-note">in stock</div>' + items(h.stock);
+      return c;
     }
-    return stationFlow?.get(name) || null;
+    const bad = h.status === 'cannot-unload' || h.status === 'no-fuel';
+    let c = head(ic(null, 'DroneStation'), esc(h.name || 'Drone port'), `Drone port · <span style="${bad ? 'color:var(--red);font-weight:600' : ''}">${esc(DRONE_ST[h.status] || h.status || '')}</span>`);
+    if (h.pairedName) c += `<div class="tc-note">↔ ${esc(h.pairedName)}${h.tripSec ? ` · round trip ${fmt(h.tripSec)} s` : ''}</div>`;
+    if (h.inPerMin || h.outPerMin) c += `<div class="tc-note">${h.inPerMin ? `↓${fmt(h.inPerMin, 1)}/min in` : ''}${h.inPerMin && h.outPerMin ? ' · ' : ''}${h.outPerMin ? `↑${fmt(h.outPerMin, 1)}/min out` : ''}</div>`;
+    if ((h.stockOut || []).length) c += '<div class="tc-note">received, waiting to be taken away</div>' + items(h.stockOut);
+    if ((h.stockIn || []).length) c += '<div class="tc-note">waiting to be sent</div>' + items(h.stockIn);
+    return c;
   }
   function stationCard(st) {
     const f = stationFlowFor(st.name);
@@ -1394,6 +1428,10 @@
       else if (v) lastHit = { unit: v.id, kind: 'vehicles' }, html = head(ic(v.cls), esc(v.name), `${fmt(Math.abs(v.speed))} km/h${v.autopilot === true ? ' · autopilot' : ''}`) + (v.fuel === false ? '<div class="tc-note" style="color:var(--red);font-weight:600">out of fuel</div>'
         : v.fuel === true ? (isStuck(v) ? `<div class="tc-note" style="color:#facc15;font-weight:600">stopped ${fmtDur(v.stoppedSec)}</div>` : '') + `<div class="tc-note">fuel: ${(v.fuelItems || []).length ? v.fuelItems.map(f => `${fmt(f.amount)} ${esc(f.name)}`).join(', ') : 'last piece burning'}</div>` : '');
       else if (d) lastHit = { unit: d.id, kind: 'drones' }, html = head(ic('BP_DroneTransport_C'), 'Drone', [d.mode, d.home && 'home ' + d.home, d.dest && 'to ' + d.dest].filter(Boolean).map(esc).join(' · '));
+    }
+    if (!html && layerOn.hubs) {
+      const h = hubs.find(h => near(h, 10));
+      if (h) html = hubCard(h);
     }
     if (!html && geo && layerOn.buildings) {
       const [wx, wy] = toWorld(sx, sy);
@@ -1684,6 +1722,7 @@
   }
   const polling = () => !document.hidden && !authFailed && !idlePaused;
   setInterval(() => { if (polling() && activeView === 'map') loadLive(); }, 5000);  // fallback only while the stream is down
+  setInterval(() => { if (polling() && activeView === 'map') loadStations(); }, 15000);
   setInterval(() => { if (polling()) { loadStatus(); if (activeView !== 'map') refreshView(); } }, 30000);
   setInterval(() => { if (polling()) loadFrm(); }, 60000);
   setInterval(() => { if (polling() && activeView === 'map') loadStatic(); }, 10 * 60000);
@@ -1706,7 +1745,7 @@
   for (const ev of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, onInput, { passive: true });
 
   const startView = new URLSearchParams(location.search).get('view');
-  loadStatus(); loadFrm().then(() => { loadStatic(); loadLive(); });
+  loadStatus(); loadFrm().then(() => { loadStatic(); loadLive(); loadStations(); });
   if (!startView || startView === 'map') openStream();
   resize();
   if (startView && startView !== 'map') showView(startView);

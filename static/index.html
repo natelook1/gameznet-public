@@ -268,10 +268,11 @@
   import { h, render } from '/vendor/preact.mjs';
   import { useState, useEffect, useRef } from '/vendor/hooks.mjs';
   import htm from '/vendor/htm.mjs';
-  import { WowTab } from '/wow.js?v=1.15.6';
+  import { WowTab } from '/wow.js?v=1.15.7';
   const html = htm.bind(h);
 
-  const API = 'https://gameznet.looknet.ca';
+  // Direct to the API host, not via the CF Pages worker (Workers quota).
+  const API = 'https://api-gamez.looknet.ca';
 
   function req(path, opts = {}) {
     const token = localStorage.getItem('gzn_token');
@@ -286,6 +287,13 @@
       }
     });
   }
+
+  // Polls skip while the tab is hidden or idle (no input for 10 min), so a phone or
+  // tab left open doesn't poll the backend all day. They resume on the next tick.
+  const IDLE_MS = 10 * 60000;
+  let lastInput = Date.now();
+  for (const ev of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, () => { lastInput = Date.now(); }, { passive: true });
+  const whenActive = fn => (...args) => { if (!document.hidden && Date.now() - lastInput < IDLE_MS) return fn(...args); };
 
   function fmtTime(iso) {
     return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -483,7 +491,7 @@
         } catch {}
       }
       load();
-      const iv = setInterval(load, 15000);
+      const iv = setInterval(whenActive(load), 15000);
       return () => clearInterval(iv);
     }, []);
 
@@ -710,7 +718,7 @@
       if (last) req('/api/chat/channels/read', { method: 'POST', body: JSON.stringify({ channel: ch, last_id: last }) }).catch(() => {});
     }
 
-    useEffect(() => { loadChannels(); const iv = setInterval(loadChannels, 15000); return () => clearInterval(iv); }, []);
+    useEffect(() => { loadChannels(); const iv = setInterval(whenActive(loadChannels), 15000); return () => clearInterval(iv); }, []);
 
     useEffect(() => {
       chanRef.current = channel;
@@ -730,7 +738,7 @@
         } catch {}
       }
       init();
-      const iv = setInterval(async () => {
+      const iv = setInterval(whenActive(async () => {
         try {
           const ch = chanRef.current;
           const res = await req(`/api/chat?channel=${encodeURIComponent(ch)}&since=${encodeURIComponent(lastSince.current)}`);
@@ -744,7 +752,7 @@
             return [...prev, ...fresh.filter(m => !ids.has(m.id))].slice(ch === 'zomboid' ? -50 : -300);
           });
         } catch {}
-      }, 3000);
+      }), 3000);
       return () => { alive = false; clearInterval(iv); };
     }, [channel]);
 
@@ -855,7 +863,7 @@
       await loadMsgs(ch.id);
       setLoadingMsgs(false);
       setTimeout(() => bottomRef.current?.scrollIntoView(), 80);
-      pollRef.current = setInterval(() => loadMsgs(ch.id), 8000);
+      pollRef.current = setInterval(whenActive(() => loadMsgs(ch.id)), 8000);
     }
 
     function closeChannel() {
@@ -955,7 +963,7 @@
         await loadUnread();
       }
       load();
-      const iv = setInterval(load, 10000);
+      const iv = setInterval(whenActive(load), 10000);
       return () => clearInterval(iv);
     }, [me.name]);
 
@@ -974,7 +982,7 @@
       await req(`/api/chat/dm/read?user1=${encodeURIComponent(me.name)}&user2=${encodeURIComponent(player.name)}`, { method: 'POST' });
       setUnread(prev => { const n = { ...prev }; delete n[player.name]; return n; });
       onUnreadChange(0);
-      pollRef.current = setInterval(() => loadHistory(player.name), 4000);
+      pollRef.current = setInterval(whenActive(() => loadHistory(player.name)), 4000);
     }
 
     function closeConvo() {
@@ -1130,7 +1138,7 @@
     useEffect(() => {
       loadFiles();
       loadOnlineUsers();
-      const iv = setInterval(() => { loadFiles(); loadOnlineUsers(); }, 30000);
+      const iv = setInterval(whenActive(() => { loadFiles(); loadOnlineUsers(); }), 30000);
       return () => clearInterval(iv);
     }, []);
 
@@ -1510,14 +1518,14 @@
         } catch {}
       }
       checkUnread();
-      const iv = setInterval(checkUnread, 10000);
+      const iv = setInterval(whenActive(checkUnread), 10000);
       return () => clearInterval(iv);
     }, [me.name]);
 
     useEffect(() => {
       async function heartbeat() { try { await req('/api/mobile/heartbeat', { method: 'POST' }); } catch {} }
       heartbeat();
-      const iv = setInterval(heartbeat, 15000);
+      const iv = setInterval(whenActive(heartbeat), 15000);
       return () => clearInterval(iv);
     }, [me.name]);
 

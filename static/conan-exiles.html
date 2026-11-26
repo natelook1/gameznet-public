@@ -852,13 +852,39 @@
     // which this page never sent before, so the admin view always got 401.
     const GZN_TOKEN = (() => { try { return localStorage.getItem('gzn_token') || ''; } catch { return ''; } })();
     let conanAdminPw = '';
-    let gznAuthFailed = false;  // set on the first 401: stop streaming/polling, it can't succeed
+    // Public site: call the API host directly, not through the CF Pages worker
+    // (every worker request counts against the Workers quota). On the LAN,
+    // api-gamez resolves locally, so traffic stays local (Chrome asks once to
+    // allow local network access). Desktop app (app.py) stays same-origin.
+    const API_HOST = /(^|\.)gameznet\.looknet\.ca$|\.pages\.dev$/.test(location.hostname) ? 'https://api-gamez.looknet.ca' : '';
+    let gznAuthFailed = false;
+    // Idle pause: after 10 min without input, close the live stream and stop polling
+    // so a tab left open doesn't hit the backend all day. Any input resumes.
+    const IDLE_MS = 10 * 60000;
+    let lastInput = Date.now(), idlePaused = false;
+    function gznIdlePause(onPause, onResume) {
+      const pill = document.createElement('div');
+      pill.textContent = 'Paused while idle, move the mouse or tap to resume';
+      pill.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9999;display:none;background:#1a1a21;border:1px solid #f59e0b;color:#fcd34d;padding:6px 12px;border-radius:999px;font:12px sans-serif;pointer-events:none;';
+      document.body.appendChild(pill);
+      setInterval(() => {
+        if (idlePaused || Date.now() - lastInput < IDLE_MS) return;
+        idlePaused = true; pill.style.display = 'block'; onPause();
+      }, 30000);
+      const onInput = () => {
+        lastInput = Date.now();
+        if (!idlePaused) return;
+        idlePaused = false; pill.style.display = 'none'; onResume();
+      };
+      for (const ev of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, onInput, { passive: true });
+    }
+  // set on the first 401: stop streaming/polling, it can't succeed
     (() => {
       const f = window.fetch.bind(window);
       let warned = false;
       window.fetch = async (u, o = {}) => {
         const s = typeof u === 'string' ? u : (u && u.url) || '';
-        const api = /^\/api\//.test(s);
+        const api = /^(https:\/\/api-gamez\.looknet\.ca)?\/api\//.test(s);
         if (api) {
           const h = { ...(o.headers || {}) };
           if (GZN_TOKEN) h['X-Token'] = GZN_TOKEN;
@@ -877,7 +903,7 @@
         return r;
       };
     })();
-    const API_BASE = '';
+    const API_BASE = API_HOST;
     let conanPollIv = null;
 
     let serverData = { players: [], guilds: [], building_groups: [], buildings: [], placeables: [], thralls: [], teleporters: [], following_thralls: [] };
@@ -1098,7 +1124,7 @@
         sseSource = null;
         if (gznAuthFailed) return;  // signed out: every endpoint 401s, don't poll
         prefetchData();
-        if (!conanPollIv) conanPollIv = setInterval(() => { if (!document.hidden && !gznAuthFailed) prefetchData(); }, 30000);
+        if (!conanPollIv) conanPollIv = setInterval(() => { if (!document.hidden && !gznAuthFailed && !idlePaused) prefetchData(); }, 30000);
       };
     }
 
@@ -1699,6 +1725,7 @@
 
     window.addEventListener('load', () => {
       loadServerData();
+      gznIdlePause(() => { if (sseSource) { sseSource.close(); sseSource = null; } }, () => { if (!gznAuthFailed) loadServerData(); });
     });
   </script>
 </body>

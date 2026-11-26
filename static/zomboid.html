@@ -506,13 +506,39 @@
     // the login token from localStorage; the desktop app's local proxy adds its own.
     // Both serve /api same-origin (CF Pages worker / app.py), so no base URL needed.
     const GZN_TOKEN = (() => { try { return localStorage.getItem('gzn_token') || ''; } catch { return ''; } })();
-    let gznAuthFailed = false;  // set on the first 401: stop streaming/polling, it can't succeed
+    // Public site: call the API host directly, not through the CF Pages worker
+    // (every worker request counts against the Workers quota). On the LAN,
+    // api-gamez resolves locally, so traffic stays local (Chrome asks once to
+    // allow local network access). Desktop app (app.py) stays same-origin.
+    const API_HOST = /(^|\.)gameznet\.looknet\.ca$|\.pages\.dev$/.test(location.hostname) ? 'https://api-gamez.looknet.ca' : '';
+    let gznAuthFailed = false;
+    // Idle pause: after 10 min without input, close the live stream and stop polling
+    // so a tab left open doesn't hit the backend all day. Any input resumes.
+    const IDLE_MS = 10 * 60000;
+    let lastInput = Date.now(), idlePaused = false;
+    function gznIdlePause(onPause, onResume) {
+      const pill = document.createElement('div');
+      pill.textContent = 'Paused while idle, move the mouse or tap to resume';
+      pill.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9999;display:none;background:#1a1a21;border:1px solid #f59e0b;color:#fcd34d;padding:6px 12px;border-radius:999px;font:12px sans-serif;pointer-events:none;';
+      document.body.appendChild(pill);
+      setInterval(() => {
+        if (idlePaused || Date.now() - lastInput < IDLE_MS) return;
+        idlePaused = true; pill.style.display = 'block'; onPause();
+      }, 30000);
+      const onInput = () => {
+        lastInput = Date.now();
+        if (!idlePaused) return;
+        idlePaused = false; pill.style.display = 'none'; onResume();
+      };
+      for (const ev of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, onInput, { passive: true });
+    }
+  // set on the first 401: stop streaming/polling, it can't succeed
     (() => {
       const f = window.fetch.bind(window);
       let warned = false;
       window.fetch = async (u, o = {}) => {
         const s = typeof u === 'string' ? u : (u && u.url) || '';
-        const api = /^\/api\//.test(s);
+        const api = /^(https:\/\/api-gamez\.looknet\.ca)?\/api\//.test(s);
         if (api && GZN_TOKEN) o = { ...o, headers: { ...(o.headers || {}), 'X-Token': GZN_TOKEN } };
         const r = await f(u, o);
         if (api && r.status === 401 && !/\/admin\//.test(s)) gznAuthFailed = true;
@@ -526,7 +552,7 @@
         return r;
       };
     })();
-    const API_BASE = '';
+    const API_BASE = API_HOST;
 
     // Map tiles for whichever PZ world is live (B41 Ziggy or B42 gameznet), from /api/pz/map.
     // Falls back to B42 tiles if the backend can't be reached.
@@ -535,7 +561,7 @@
       .then(r => r.ok ? r.json() : null).then(d => { if (d && d.tiles_base) PZ_TILES = d.tiles_base; }).catch(() => {});
     // Same-origin stream: app.py proxies it on desktop (adding the token), the CF
     // worker on mobile (token in the query, EventSource can't send headers).
-    const SSE_BASE = '';
+    const SSE_BASE = API_HOST;
 
     let pzData = { players: [], livePlayers: [], vehicles: [], stats: {}, overlays: {}, gametime: {}, wounds: {}, storage: {}, rare: { spawns: [] },
                    animals: [], world: {}, profiles: {}, generators: [], farming: [], hordes: [], liveCells: [], drift: null, fluids: [] };  // v2 mod feeds (B42)
@@ -1996,7 +2022,7 @@
       fetch(`${API_BASE}/api/pz/density/drift?hours=6`).then(r => r.json())
         .then(d => { pzData.drift = d; mapDataRedraw(redrawModLayers); }).catch(() => {});
     }
-    setInterval(() => { if (!document.hidden && !gznAuthFailed) pzLoadDrift(true); }, 300000);
+    setInterval(() => { if (!document.hidden && !gznAuthFailed && !idlePaused) pzLoadDrift(true); }, 300000);
 
     // Water storage (mod 2.5.0+)
     function fluidLabel(f) {
@@ -2922,14 +2948,15 @@
         // Signed out / token expired: every endpoint 401s, so retrying only burns requests.
         if (gznAuthFailed) return;
         // Poll while the stream is down, then retry it with exponential backoff (30s → 10min).
-        const iv = setInterval(() => { if (!document.hidden && !gznAuthFailed) prefetch(); }, 30000);
-        setTimeout(() => { clearInterval(iv); if (!gznAuthFailed) startSSE(); }, sseRetryMs);
+        const iv = setInterval(() => { if (!document.hidden && !gznAuthFailed && !idlePaused) prefetch(); }, 30000);
+        setTimeout(() => { clearInterval(iv); if (!gznAuthFailed && !idlePaused) startSSE(); }, sseRetryMs);
         sseRetryMs = Math.min(sseRetryMs * 2, 600000);
       };
     }
     let sseRetryMs = 30000;
 
     window.addEventListener('load', async () => { await Promise.all([loadTileInfo(), loadIconMap(), loadNameMap()]); startSSE();
+      gznIdlePause(() => { if (sseSource) { sseSource.close(); sseSource = null; } }, () => { if (!gznAuthFailed) startSSE(); });
       // Deep link: ?mode=iso|topdown or #iso opens the map view directly (old /zomboid-iso redirects here).
       if (/[?&]mode=(iso|topdown)/.test(location.search) || location.hash === '#iso') {
         document.querySelector('.nav-item[data-view=map]')?.click();
