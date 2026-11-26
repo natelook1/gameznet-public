@@ -276,6 +276,9 @@
   const $ = id => document.getElementById(id);
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const fmt = (n, d = 0) => (n == null || !isFinite(n)) ? '–' : Number(n).toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d });
+  const fmtDur = sec => sec < 3600 ? `${Math.max(1, Math.round(sec / 60))} min` : sec < 86400 ? `${fmt(sec / 3600, 1)} h` : `${fmt(sec / 86400, 1)} days`;
+  const STUCK_SEC = 300;
+  const isStuck = v => v.fuel !== false && !v.at && (v.stoppedSec || 0) >= STUCK_SEC;
   const fmtMW = mw => mw >= 1000 ? `${fmt(mw / 1000, 2)} GW` : `${fmt(mw, 0)} MW`;
   // Game data is for GamezNET players only. Mobile (m.gameznet) sends the login
   // token from localStorage; the desktop app's local proxy adds its own.
@@ -710,7 +713,7 @@
     if (live) {
       if (layerOn.drones) for (const d of live.drones) iconMarker(d, 'DroneTransport', '#f472b6', 9) || marker(d, 'tri', '#f472b6', 5);
       if (layerOn.vehicles) for (const v of live.vehicles) {
-        const empty = v.fuel === false, col = empty ? '#ef4444' : '#fb923c';
+        const empty = v.fuel === false, col = empty ? '#ef4444' : isStuck(v) ? '#facc15' : '#fb923c';
         iconMarker(v, iconKey(v.cls), col, 10) || marker(v, 'diamond', col, 5);
         if (empty) fuelBadge(v);
       }
@@ -1201,6 +1204,7 @@
         (t.autopilot != null ? `<span>Autopilot</span><span>${t.autopilot ? 'on' : 'off'}</span>` : '') +
         (t.fuel === false ? `<span>Fuel</span><span><span class="pill bad">empty</span></span>` : t.fuel === true ? `<span>Fuel</span><span>${(t.fuelItems || []).length ? t.fuelItems.map(f => `${fmt(f.amount)} ${esc(f.name)}`).join(', ') : 'last piece burning'}</span>` : '') +
         (t.at ? `<span>Docked at</span><span>${esc(t.at)}</span>` : '') +
+        (!drone && (t.stoppedSec || 0) >= 60 ? `<span>Stopped for</span><span${isStuck(t) ? ' style="color:#facc15;font-weight:600"' : ''}>${fmtDur(t.stoppedSec)}</span>` : '') +
         (t.mode ? `<span>State</span><span>${esc(t.mode)}</span>` : '') +
         (t.home ? `<span>Home</span><span>${esc(t.home)}</span>` : '') +
         (t.dest ? `<span>Heading to</span><span>${esc(t.dest)}</span>` : '') + z +
@@ -1382,7 +1386,7 @@
       else if (car) { html = carCard(car.train, car.car, car.idx); lastHit = { train: car.train.id }; }
       else if (t) { html = trainCard(t); lastHit = { train: t.id }; }
       else if (v) lastHit = { unit: v.id, kind: 'vehicles' }, html = head(ic(v.cls), esc(v.name), `${fmt(Math.abs(v.speed))} km/h${v.autopilot === true ? ' · autopilot' : ''}`) + (v.fuel === false ? '<div class="tc-note" style="color:var(--red);font-weight:600">out of fuel</div>'
-        : v.fuel === true ? `<div class="tc-note">fuel: ${(v.fuelItems || []).length ? v.fuelItems.map(f => `${fmt(f.amount)} ${esc(f.name)}`).join(', ') : 'last piece burning'}</div>` : '');
+        : v.fuel === true ? (isStuck(v) ? `<div class="tc-note" style="color:#facc15;font-weight:600">stopped ${fmtDur(v.stoppedSec)}</div>` : '') + `<div class="tc-note">fuel: ${(v.fuelItems || []).length ? v.fuelItems.map(f => `${fmt(f.amount)} ${esc(f.name)}`).join(', ') : 'last piece burning'}</div>` : '');
       else if (d) lastHit = { unit: d.id, kind: 'drones' }, html = head(ic('BP_DroneTransport_C'), 'Drone', [d.mode, d.home && 'home ' + d.home, d.dest && 'to ' + d.dest].filter(Boolean).map(esc).join(' · '));
     }
     if (!html && geo && layerOn.buildings) {
@@ -1551,11 +1555,14 @@
   const DRONE_STATUS = { 'docked': ['docked', 'ok'], 'loading': ['loading', 'ok'], 'takeoff': ['taking off', 'ok'], 'en-route': ['en route', 'ok'],
     'docking': ['docking', 'ok'], 'unloading': ['unloading', 'ok'], 'no-fuel': ['no fuel', 'bad'], 'cannot-unload': ["can't unload", 'bad'], 'no-drone': ['no drone', 'mid'] };
   async function loadShipping() {
-    try { shData = await getJSON(`${API}/stations?hours=${$('sh-hours').value}`); renderShipping(); }
+    try {
+      const [st, lv] = await Promise.all([getJSON(`${API}/stations?hours=${$('sh-hours').value}`), getJSON(`${API}/map/live`).catch(() => null)]);
+      shData = st; shData.vehicles = lv?.vehicles || []; renderShipping();
+    }
     catch { $('sh-table').textContent = 'Live data offline.'; }
   }
   const shIt = (cls, name, txt, c = '') => `<span class="sh-it ${c}" title="${esc(name)}">${icon(cls)}${txt}</span>`;
-  const perMin = n => n >= 10 ? fmt(n) : fmt(n, 1);
+  const perMin = n => n >= 10 || !n ? fmt(n) : fmt(n, 1);
   function shRows() {
     const d = shData, out = [], H = d.hours * 60;
     // Train flow names items without a class: borrow it from any stock anywhere.
@@ -1575,10 +1582,13 @@
     }
     for (const t of d.truckStations || []) {
       const fuel = (t.fuel || []).reduce((n, g) => n + g.amount, 0);
-      out.push({ kind: 'truck', t, name: t.name, rate: null, items: (t.stock || []).map(g => g.name).join(' '),
+      const flow = (t.flow || []).filter(f => f.loaded || f.unloaded);
+      const rate = flow.reduce((n, f) => n + f.loaded + f.unloaded, 0) / H;
+      out.push({ kind: 'truck', t, name: t.name, rate, items: [...(t.stock || []).map(g => g.name), ...flow.map(f => f.item)].join(' '),
         status: t.docked ? ['truck docked', 'ok'] : null,
         sub: `${t.mode === 'load' ? 'loading station' : 'unloading station'} · ${fuel ? `fuel ${fmt(fuel)} ${esc(t.fuel[0].name)}` : 'no fuel stocked'}`,
-        cells: (t.stock || []).map(g => shIt(g.cls, g.name, fmt(g.amount))).join('') || '<span class="muted">empty</span>' });
+        cells: flow.length ? flow.map(f => (f.loaded ? shIt(cls[f.item], f.item, `↑${perMin(f.loaded / H)}`, 'sh-out') : '') + (f.unloaded ? shIt(cls[f.item], f.item, `↓${perMin(f.unloaded / H)}`, 'sh-in') : '')).join('')
+          : ((t.stock || []).map(g => shIt(g.cls, g.name, fmt(g.amount))).join('') || '<span class="muted">empty</span>') });
     }
     for (const t of d.dronePorts || []) {
       const st = DRONE_STATUS[t.status] || [t.status, 'mid'];
@@ -1597,10 +1607,12 @@
     const tr = rows.filter(r => r.kind === 'train'), tk = rows.filter(r => r.kind === 'truck'), dr = rows.filter(r => r.kind === 'drone');
     const trRate = tr.reduce((n, r) => n + (r.t.flow || []).reduce((m, f) => m + f.unloaded, 0), 0) / (d.hours * 60);
     const drRate = dr.reduce((n, r) => n + (r.t.inPerMin || 0), 0);
+    const tkRate = tk.reduce((n, r) => n + (r.t.flow || []).reduce((m, f) => m + f.unloaded, 0), 0) / (d.hours * 60);
+    const stuck = (d.vehicles || []).filter(isStuck).sort((a, b) => b.stoppedSec - a.stoppedSec);
     const drOk = dr.filter(r => r.status[1] === 'ok').length;
     const card = (l, v, sub) => `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-value">${v}</div><div class="stat-sub">${sub}</div></div>`;
     $('sh-stats').innerHTML = card('Train stations', tr.length, `${perMin(trRate)} items/min delivered · ${tr.filter(r => r.rate).length} with traffic`) +
-      card('Truck stations', tk.length, `${tk.filter(r => r.t.mode === 'load').length} loading · ${tk.filter(r => r.t.mode !== 'load').length} unloading · ${tk.filter(r => r.t.docked).length} truck docked`) +
+      card('Truck stations', tk.length, `${perMin(tkRate)} items/min delivered · ${(d.vehicles || []).length} trucks${stuck.length ? `, <span style="color:#facc15">${stuck.length} stuck</span>` : ''}`) +
       card('Drone ports', dr.length, `${perMin(drRate)} items/min delivered · ${drOk} working`);
     // Problems worth acting on, worst first.
     const alerts = [
@@ -1608,6 +1620,7 @@
         ? "drone can't unload: output is full, nothing is taking items away"
         : `drone stuck: ${r.t.pairedName ? esc(r.t.pairedName) : 'its partner'} is full`]),
       ...dr.filter(r => r.t.status === 'no-fuel').map(r => [r, 'drone port out of fuel']),
+      ...stuck.map(v => [{ kind: 'truck', name: v.name || 'Vehicle', t: { id: 'veh:' + v.id, x: v.x, y: v.y } }, `stopped ${fmtDur(v.stoppedSec)} with fuel, not at a station`]),
     ];
     $('sh-alerts-card').style.display = alerts.length ? '' : 'none';
     $('sh-alert-n').textContent = alerts.length;
@@ -1622,10 +1635,12 @@
     $('sh-table').innerHTML = list.length ? `<table><thead><tr><th>Station</th><th>Items <span class="muted" style="font-weight:400">(<span class="sh-out">↑ out</span> / <span class="sh-in">↓ in</span>)</span></th><th class="num sh-col-rate">Items/min</th></tr></thead><tbody>${list.map(r =>
       `<tr><td><div class="sh-type">${typeName[r.kind]}</div><div class="sh-name"><a href="#" data-sh="${esc(r.t.id)}">${esc(r.name)}</a>${r.status ? `<span class="pill ${r.status[1]}">${esc(r.status[0])}</span>` : ''}</div><div class="sh-sub">${r.sub}</div></td>` +
       `<td><div class="sh-items">${r.cells}</div></td><td class="num sh-col-rate">${r.rate ? perMin(r.rate) : '<span class="muted">–</span>'}</td></tr>`).join('')}</tbody></table>` +
-      `<p class="muted" style="font-size:11px;margin-top:10px">Trains: items loaded/unloaded per minute over the ${$('sh-hours').selectedOptions[0].text}. Drones: the game's average per minute. Trucks: current stock (throughput not tracked yet).</p>`
+      `<p class="muted" style="font-size:11px;margin-top:10px">Trains: items loaded/unloaded per minute over the ${$('sh-hours').selectedOptions[0].text}. Drones: the game's average per minute. Trucks: loaded/unloaded per minute (tracked since this update; current stock until a truck has docked).</p>`
       : '<p class="muted">No stations match.</p>';
     document.querySelectorAll('#view-shipping a[data-sh]').forEach(a => a.onclick = e => {
-      e.preventDefault(); const r = rows.find(x => x.t.id === a.dataset.sh); if (!r) return;
+      e.preventDefault();
+      const v = a.dataset.sh.startsWith('veh:') && (d.vehicles || []).find(x => 'veh:' + x.id === a.dataset.sh);
+      const r = v ? { t: v } : rows.find(x => x.t.id === a.dataset.sh); if (!r) return;
       showView('map'); view.cx = r.t.x; view.cy = r.t.y; view.scale = 0.008; draw();
     });
   }
