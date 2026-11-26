@@ -28,6 +28,7 @@
     .layer { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 2px; cursor: pointer; user-select: none; color: var(--text); }
     .layer input { accent-color: var(--accent); }
     .swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    .shared .nav-item[data-view="saves"] { display: none; }
     .hbox { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 32px; padding: 4px 0 6px; border-radius: 7px; border: 1px solid var(--border); background: rgba(26,26,33,0.92); }
     .hbox button { width: 26px !important; height: 24px !important; font-size: 11px !important; border-radius: 5px !important; background: var(--surface2) !important; }
     .hbox input { writing-mode: vertical-lr; direction: rtl; width: 20px; height: 130px; margin: 2px 0; accent-color: var(--accent); cursor: pointer; }
@@ -249,10 +250,14 @@
   // Game data is for GamezNET players only. Mobile (m.gameznet) sends the login
   // token from localStorage; the desktop app's local proxy adds its own.
   const GZN_TOKEN = (() => { try { return localStorage.getItem('gzn_token') || ''; } catch { return ''; } })();
+  // ?share=KEY: the public read-only link (no sign-in; saves and backups stay private).
+  const SHARE = new URLSearchParams(location.search).get('share') || '';
+  if (SHARE) document.documentElement.classList.add('shared');
   let signinShown = false;
   const getJSON = async url => {
-    const r = await fetch(url, GZN_TOKEN ? { headers: { 'X-Token': GZN_TOKEN } } : {});
-    if (r.status === 401 && !signinShown) { signinShown = true; setMapStatus('Sign in to GamezNET to see live server data.'); }
+    const h = {}; if (GZN_TOKEN) h['X-Token'] = GZN_TOKEN; if (SHARE) h['X-SF-Share'] = SHARE;
+    const r = await fetch(url, { headers: h });
+    if (r.status === 401 && !signinShown) { signinShown = true; setMapStatus(SHARE ? 'This share link is no longer active.' : 'Sign in to GamezNET to see live server data.'); }
     if (!r.ok) throw new Error(r.status);
     return r.json();
   };
@@ -518,6 +523,10 @@
         if (t.carList) carListCache.set(t.id, t.carList);
         else t.carList = carListCache.get(t.id) || null;
       }
+      for (const g of ['vehicles', 'drones']) for (const v of live[g] || []) {
+        if (v.cargo) carListCache.set(g + v.id, { cargo: v.cargo, fuel: v.fuel, at: v.at });
+        else Object.assign(v, carListCache.get(g + v.id) || {});
+      }
       if (live.now) {
         const sk = live.now - Date.now();
         clockSkew = clockSkew == null ? sk : clockSkew * 0.8 + sk * 0.2;
@@ -540,7 +549,7 @@
   const streamLive = () => Date.now() - lastFrameAt < 4000;
   function openStream() {
     if (es || typeof EventSource === 'undefined') return;
-    const qs = `q=${hd ? 'hd' : 'sd'}` + (GZN_TOKEN ? `&token=${encodeURIComponent(GZN_TOKEN)}` : '');
+    const qs = `q=${hd ? 'hd' : 'sd'}` + (GZN_TOKEN ? `&token=${encodeURIComponent(GZN_TOKEN)}` : '') + (SHARE ? `&share=${encodeURIComponent(SHARE)}` : '');
     es = new EventSource(`${API}/live/stream?${qs}`);
     es.addEventListener('frame', e => { lastFrameAt = Date.now(); try { ingest(JSON.parse(e.data)); } catch {} });
     es.addEventListener('offline', () => { lastFrameAt = 0; });
@@ -1145,6 +1154,7 @@
         (t.speed != null ? `<span>Speed</span><span>${fmt(Math.abs(t.speed))} km/h</span>` : '') +
         (t.autopilot != null ? `<span>Autopilot</span><span>${t.autopilot ? 'on' : 'off'}</span>` : '') +
         (t.fuel === false ? `<span>Fuel</span><span><span class="pill bad">empty</span></span>` : '') +
+        (t.at ? `<span>Docked at</span><span>${esc(t.at)}</span>` : '') +
         (t.mode ? `<span>State</span><span>${esc(t.mode)}</span>` : '') +
         (t.home ? `<span>Home</span><span>${esc(t.home)}</span>` : '') +
         (t.dest ? `<span>Heading to</span><span>${esc(t.dest)}</span>` : '') + z +
