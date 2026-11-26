@@ -1753,6 +1753,7 @@
       const total = items.reduce((s, [, n]) => s + n, 0);
       const what = c.kind === 'stash' ? c.name
         : `${c.name}, spawned${c.why && c.why !== 'world' ? ' (' + c.why + ')' : ''}`;
+      if (c.spotted) return `${what} (not opened yet)`;
       return `${what} (${total})` + (items.length ? '\n' + items.map(([ft, n]) => `${ft.replace(/^Base\./, '')} ×${n}`).join('\n') : '');
     }
     function cacheEmoji(c) { return c.kind === 'stash' ? '🎁' : '🧰'; }
