@@ -77,6 +77,20 @@
     .map-btns button:hover { border-color: var(--accent); }
     .tip { position: absolute; pointer-events: none; background: rgba(15,15,19,0.95); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.5; max-width: 280px; display: none; z-index: 5; }
     .tip b { color: var(--accent); }
+    /* Tooltip cards (hover) */
+    .tip { max-width: 300px; }
+    .tc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .tc-head img { width: 32px; height: 32px; object-fit: contain; flex: none; }
+    .tc-title { font-weight: 700; color: var(--text); line-height: 1.25; }
+    .tc-sub { font-size: 11px; color: var(--muted); }
+    .tc-row { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+    .tc-row img { width: 18px; height: 18px; object-fit: contain; flex: none; }
+    .tc-row .v { margin-left: auto; padding-left: 10px; }
+    .tc-bar { height: 4px; border-radius: 2px; background: var(--surface2); overflow: hidden; margin: 3px 0 2px; }
+    .tc-bar > div { height: 100%; }
+    .tc-note { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .tc-pill { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; margin-left: 4px; }
+    .tc-pill.ok { background: #14532d; color: #86efac; } .tc-pill.mid { background: #422006; color: #fde68a; } .tc-pill.bad { background: #450a0a; color: #fca5a5; }
     /* Power history chart */
     .ch-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
     .ch-head h3 { margin: 0; }
@@ -1088,7 +1102,89 @@
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && panelId) closeMachine(); });
 
+
+  // ── Tooltip cards ──
+  // Resource names (nodes only carry the name) -> icon file key.
+  const RES_ICON = { 'Iron Ore': 'OreIron', 'Copper Ore': 'OreCopper', 'Limestone': 'Stone', 'Coal': 'Coal', 'Caterium Ore': 'OreGold',
+    'Raw Quartz': 'RawQuartz', 'Sulfur': 'Sulfur', 'Bauxite': 'OreBauxite', 'Uranium': 'OreUranium', 'SAM': 'SAM', 'SAM Ore': 'SAM',
+    'Crude Oil': 'LiquidOil', 'Water': 'Water', 'Nitrogen Gas': 'NitrogenGas' };
+  const ic = (cls, key) => { const src = key ? `${ICON_BASE}/${key}.png` : (cls ? iconSrc(cls) : ''); return src ? `<img src="${src}" alt="" onerror="this.remove()">` : ''; };
+  const head = (iconHtml, title, sub, pill) => `<div class="tc-head">${iconHtml}<div><div class="tc-title">${title}${pill || ''}</div>${sub ? `<div class="tc-sub">${sub}</div>` : ''}</div></div>`;
+  const row = (iconHtml, label, value) => `<div class="tc-row">${iconHtml}<span>${label}</span>${value != null ? `<span class="v">${value}</span>` : ''}</div>`;
+  const bar = (pct, color) => `<div class="tc-bar"><div style="width:${Math.max(0, Math.min(100, pct))}%;background:${color}"></div></div>`;
+  const pillFor = st => st === 'running' || st === 1 ? '<span class="tc-pill ok">running</span>' : st === 'paused' || st === 2 ? '<span class="tc-pill mid">paused</span>' : '<span class="tc-pill bad">idle</span>';
+  const statusPill = s => /Self/.test(s || '') ? `<span class="tc-pill ok">${esc(s)}</span>` : /Derail/.test(s || '') ? `<span class="tc-pill bad">${esc(s)}</span>` : s ? `<span class="tc-pill mid">${esc(s)}</span>` : '';
+
+  // Machine details for hover cards (the mod answers in ~0.5 s); cached briefly.
+  const tipDetail = new Map();   // id -> { at, d }
+  let tipWant = null, tipTimer = null, tipLast = null;
+  function wantDetail(id) {
+    const c = tipDetail.get(id);
+    if (c && Date.now() - c.at < 8000) return c.d;
+    if (tipWant !== id) {
+      tipWant = id; clearTimeout(tipTimer);
+      tipTimer = setTimeout(async () => {
+        try { const d = await getJSON(`${API}/machine/${encodeURIComponent(id)}`); tipDetail.set(id, { at: Date.now(), d }); } catch { tipDetail.set(id, { at: Date.now(), d: null }); }
+        if (tipWant === id && tipLast) hover(...tipLast);   // refresh the card under the cursor
+      }, 250);
+    }
+    return c ? c.d : undefined;
+  }
+  function machineCard(b) {
+    const d = b.id ? wantDetail(b.id) : null;
+    let h = head(ic(b.cls), esc(b.name), `${esc(b.cat)} · ${fmt(b.z0 / 100)} m`, b.cat === 'Production' || d ? pillFor(d ? d.state : b.state) : '');
+    if (d === undefined) return h + '<div class="tc-note">loading…</div>';
+    if (!d) return h;
+    if (d.recipe) h += `<div class="tc-row" style="color:var(--accent);font-weight:600">${ic(d.outputs?.[0]?.cls)}<span>${esc(d.recipe)}</span></div>`;
+    for (const o of (d.outputs || []).slice(0, 3)) h += row(ic(o.cls), esc(o.name), `${fmtRate(o.rate)} / ${fmtRate(o.maxRate)} /min`);
+    if (d.productivity != null && d.outputs?.length) h += bar(d.productivity, d.productivity >= 99 ? 'var(--green)' : d.productivity > 0 ? 'var(--accent)' : 'var(--red)');
+    const notes = [];
+    if (d.clock && Math.abs(d.clock - 100) > 0.5) notes.push(`clock ${fmt(d.clock, 1)}%`);
+    if (d.sloops) notes.push(esc(String(d.sloops)));
+    if (d.gen) notes.push(`${fmtMW((d.gen.capacity || 0) * (d.gen.load || 0) / 100)} of ${fmtMW(d.gen.capacity || 0)}`);
+    else if (d.power?.consumed != null) notes.push(fmtMW(d.power.consumed));
+    if (notes.length) h += `<div class="tc-note">${notes.join(' · ')}</div>`;
+    return h + '<div class="tc-note">click for details</div>';
+  }
+  function carCard(tt, c, idx) {
+    let h = head(ic(c.cls), esc(tt.name), `car ${idx + 1} of ${tt.carList.length} · ${esc(c.name)}`, statusPill(tt.status));
+    h += `<div class="tc-note">${fmt(Math.abs(tt.speed))} km/h${tt.next ? ' · next: ' + esc(tt.next) : ''}</div>`;
+    if (c.cargo.length) for (const i of c.cargo.slice(0, 5)) h += row(ic(i.cls), esc(i.name), fmt(i.amount));
+    else if (!/Locomotive/i.test(c.cls)) h += '<div class="tc-note">empty</div>';
+    return h;
+  }
+  function trainCard(t) {
+    const tot = {};
+    for (const c of t.carList || []) for (const i of c.cargo) (tot[i.name] ||= { cls: i.cls, n: 0 }).n += i.amount;
+    let h = head(ic('BP_Locomotive_C'), esc(t.name), `${t.cars} cars · ${fmt(Math.abs(t.speed))} km/h`, statusPill(t.status));
+    if (t.next) h += `<div class="tc-note">next: ${esc(t.next)}</div>`;
+    for (const [n, x] of Object.entries(tot).slice(0, 4)) h += row(ic(x.cls), esc(n), fmt(x.n));
+    return h;
+  }
+  // Station throughput for hover cards (refreshed at most once a minute).
+  let stationFlow = null, stationFlowAt = 0;
+  function stationFlowFor(name) {
+    if (Date.now() - stationFlowAt > 60000) {
+      stationFlowAt = Date.now();
+      getJSON(`${API}/stations?hours=24`).then(r => { stationFlow = new Map(r.stations.map(s => [s.name, s])); }).catch(() => {});
+    }
+    return stationFlow?.get(name) || null;
+  }
+  function stationCard(st) {
+    const f = stationFlowFor(st.name);
+    let h = head(ic('Build_TrainStation_C'), esc(st.name), 'Train station');
+    if (f) {
+      const pl = f.platforms || [];
+      const ld = pl.filter(p => p.mode === 'load').length, ul = pl.filter(p => p.mode === 'unload').length;
+      if (pl.length) h += `<div class="tc-note">${pl.length} platform${pl.length > 1 ? 's' : ''}${ld ? ` · ${ld} loading` : ''}${ul ? ` · ${ul} unloading` : ''}</div>`;
+      const top = (f.flow || []).map(x => ({ ...x, n: x.loaded + x.unloaded })).sort((a, b) => b.n - a.n).slice(0, 4);
+      if (top.length) { h += '<div class="tc-note">last 24 h</div>'; for (const x of top) h += row(ic(null, RES_ICON[x.item]), esc(x.item), `${x.loaded ? '↑' + fmt(x.loaded) : ''}${x.loaded && x.unloaded ? ' ' : ''}${x.unloaded ? '↓' + fmt(x.unloaded) : ''}`); }
+      else h += '<div class="tc-note">no deliveries recorded yet</div>';
+    }
+    return h;
+  }
   function hover(sx, sy, touch = false) {
+    tipLast = [sx, sy, touch];
     const tip = $('tip');
     const k = touch ? 2.5 : 1;   // fingers need bigger targets
     const near = (o, r) => { const [x, y] = toScreen(o.x, o.y); return Math.hypot(x - sx, y - sy) <= r * k; };
@@ -1101,16 +1197,11 @@
       const t = !p && !car && layerOn.trains && live.trains.find(t => near(t, 10));
       const v = !p && !t && layerOn.vehicles && live.vehicles.find(v => near(v, 8));
       const d = !p && !t && !v && layerOn.drones && live.drones.find(d => near(d, 8));
-      if (p) html = `<b>${esc(p.name)}</b><br>Health ${fmt(p.hp)}${p.dead ? ' · dead' : ''}`;
-      else if (car) {
-        const tt = car.train, c = car.car;
-        html = `<b>${esc(tt.name)}</b> · car ${car.idx + 1} of ${tt.carList.length}<br>${esc(c.name)}` +
-          (c.cargo.length ? '<br>' + c.cargo.map(i => `${esc(i.name)}: ${fmt(i.amount)}`).join('<br>') : (/Locomotive/i.test(c.cls) ? '' : '<br><span style="color:var(--muted)">empty</span>')) +
-          `<br>${esc(tt.status)} · ${fmt(Math.abs(tt.speed))} km/h${tt.next ? '<br>Next stop: ' + esc(tt.next) : ''}`;
-      }
-      else if (t) html = `<b>${esc(t.name)}</b><br>${esc(t.status)} · ${fmt(t.speed)} km/h<br>${t.cars} cars${t.next ? '<br>Next stop: ' + esc(t.next) : ''}${t.station ? '<br>Last station: ' + esc(t.station) : ''}${t.derailed ? '<br><b>DERAILED</b>' : ''}`;
-      else if (v) html = `<b>${esc(v.name)}</b><br>${v.autopilot ? 'Autopilot' : 'Manual'} · ${fmt(v.speed)} km/h${v.fuel ? '' : '<br>No fuel'}`;
-      else if (d) html = `<b>Drone</b><br>${esc(d.mode)}<br>Home: ${esc(d.home)}${d.dest ? '<br>To: ' + esc(d.dest) : ''}`;
+      if (p) html = head('', esc(p.name), p.dead ? 'dead' : 'Player') + (p.hp != null ? bar(p.hp, p.hp > 50 ? 'var(--green)' : p.hp > 20 ? 'var(--accent)' : 'var(--red)') + `<div class="tc-note">health ${fmt(p.hp)}</div>` : '');
+      else if (car) html = carCard(car.train, car.car, car.idx);
+      else if (t) html = trainCard(t);
+      else if (v) html = head(ic(v.cls), esc(v.name), `${fmt(Math.abs(v.speed))} km/h${v.autopilot === true ? ' · autopilot' : ''}`) + (v.fuel === false ? '<div class="tc-note">no fuel</div>' : '');
+      else if (d) html = head(ic('BP_DroneTransport_C'), 'Drone', [d.mode, d.home && 'home ' + d.home, d.dest && 'to ' + d.dest].filter(Boolean).map(esc).join(' · '));
     }
     if (!html && geo && layerOn.buildings) {
       const [wx, wy] = toWorld(sx, sy);
@@ -1131,11 +1222,11 @@
           (stack.length > 6 ? '<br>…' : '') + '<br><span style="color:var(--muted)">click to choose</span>';
         b = null;
       } else lastHit = b;
-      if (b) html = `<b>${esc(b.name)}</b><br>${esc(b.cat)} · ${fmt(b.z0 / 100)} m${b.cat === 'Production' ? ' · ' + (b.state === 1 ? 'running' : b.state === 2 ? 'paused' : 'idle') : ''}`;
+      if (b) html = /Station/i.test(b.cls) && geo.stations ? (st => st ? stationCard(st) : machineCard(b))(geo.stations.reduce((m, s) => { const dd = Math.hypot(s.x - b.cx, s.y - b.cy); return !m || dd < m.dd ? { ...s, dd } : m; }, null)) : machineCard(b);
     }
     if (!html && geo && layerOn.nodes) {
       const n = geo.nodes.find(n => near(n, 6));
-      if (n) html = `<b>${esc(n.name)}</b><br>${esc(n.purity)} ${esc(n.type)}${n.used ? ' · tapped' : ''}`;
+      if (n) html = head(ic(null, RES_ICON[n.name]), esc(n.name), `<span style="color:${n.purity === 'Pure' ? '#84cc16' : n.purity === 'Normal' ? '#eab308' : '#f97316'}">${esc(n.purity)}</span> ${esc(n.type)}${n.used ? ' · tapped' : ''}`);
     }
     if (!html) { tip.style.display = 'none'; return; }
     tip.innerHTML = html; tip.style.display = 'block';
