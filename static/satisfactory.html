@@ -287,7 +287,13 @@
   const SHARE = new URLSearchParams(location.search).get('share') || '';
   if (SHARE) document.documentElement.classList.add('shared');
   let signinShown = false;
-  let authFailed = false;   // 401: signed out / share revoked, so stop polling (it can't succeed)
+  let authFailed = false;
+  // Idle pause: a tab left open on a second monitor otherwise polls all day (each
+  // request is a CF Pages worker invocation). After IDLE_MS without input, stop
+  // polling and the live stream; any input resumes.
+  const IDLE_MS = 10 * 60000;
+  let lastInput = Date.now(), idlePaused = false;
+  const isIdle = () => Date.now() - lastInput > IDLE_MS;   // 401: signed out / share revoked, so stop polling (it can't succeed)
   const getJSON = async url => {
     const h = {}; if (GZN_TOKEN) h['X-Token'] = GZN_TOKEN; if (SHARE) h['X-SF-Share'] = SHARE;
     const r = await fetch(url, { headers: h });
@@ -601,7 +607,7 @@
     updateHdButton(); closeStream(); openStream();
   };
   updateHdButton();
-  document.addEventListener('visibilitychange', () => { if (document.hidden) closeStream(); else if (activeView === 'map') openStream(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) closeStream(); else if (activeView === 'map' && !idlePaused) openStream(); });
   // Real car positions from our server mod (modCars, stamped modAt), smoothed
   // between its reports the same way as everything else.
   function modPosAt(list, id, rt) {
@@ -1243,7 +1249,7 @@
     el.querySelector('.mp-close').onclick = closeMachine;
     clearInterval(panelTimer);
     await refreshMachine();
-    panelTimer = setInterval(() => { if (!document.hidden && activeView === 'map') refreshMachine(); }, 5000);
+    panelTimer = setInterval(() => { if (!document.hidden && !idlePaused && activeView === 'map') refreshMachine(); }, 10000);
   }
   async function refreshMachine() {
     const id = panelId; if (!id) return;
@@ -1676,9 +1682,28 @@
     else if (activeView === 'players') loadPlayers();
     else if (activeView === 'saves') loadSaves();
   }
-  setInterval(() => { if (document.hidden || authFailed) return; if (activeView === 'map') loadLive(); }, 5000);  // fallback only while the stream is down
-  setInterval(() => { if (document.hidden || authFailed) return; loadStatus(); loadFrm(); if (activeView !== 'map') refreshView(); }, 15000);
-  setInterval(() => { if (!document.hidden && !authFailed && activeView === 'map') loadStatic(); }, 10 * 60000);
+  const polling = () => !document.hidden && !authFailed && !idlePaused;
+  setInterval(() => { if (polling() && activeView === 'map') loadLive(); }, 5000);  // fallback only while the stream is down
+  setInterval(() => { if (polling()) { loadStatus(); if (activeView !== 'map') refreshView(); } }, 30000);
+  setInterval(() => { if (polling()) loadFrm(); }, 60000);
+  setInterval(() => { if (polling() && activeView === 'map') loadStatic(); }, 10 * 60000);
+
+  const idlePill = document.createElement('div');
+  idlePill.textContent = 'Paused while idle, move the mouse or tap to resume';
+  idlePill.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9999;display:none;background:#1a1a21;border:1px solid #f59e0b;color:#fcd34d;padding:6px 12px;border-radius:999px;font:12px sans-serif;pointer-events:none;';
+  document.body.appendChild(idlePill);
+  setInterval(() => {
+    if (idlePaused || !isIdle()) return;
+    idlePaused = true; closeStream(); idlePill.style.display = 'block';
+  }, 30000);
+  const onInput = () => {
+    lastInput = Date.now();
+    if (!idlePaused) return;
+    idlePaused = false; idlePill.style.display = 'none';
+    if (activeView === 'map') { openStream(); loadLive(); }
+    loadStatus(); refreshView();
+  };
+  for (const ev of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, onInput, { passive: true });
 
   const startView = new URLSearchParams(location.search).get('view');
   loadStatus(); loadFrm().then(() => { loadStatic(); loadLive(); });
