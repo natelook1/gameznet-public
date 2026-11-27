@@ -764,15 +764,23 @@
       if (!signinShown) structureRetry = setTimeout(loadStructure, 20000);
     }
   }
+  // A failed load (e.g. the backend restarting for a release, ~15 s) retries quickly:
+  // 5 s, 10 s, 20 s ... up to a minute, instead of waiting for the 10-minute refresh.
+  let staticRetry = null, staticRetryMs = 5000;
   async function loadStatic() {
+    clearTimeout(staticRetry);
     if (!lastStatic) setMapStatus('Loading factory...');
     loadStructure();
     try {
       lastStatic = await getJSON(`${API}/map/static`);
+      staticRetryMs = 5000;
       setMapStatus('');
       rebuildGeo();
     } catch (e) {
-      if (!signinShown) setMapStatus('Factory layers unavailable (live data offline)');
+      if (signinShown) return;
+      if (!lastStatic) setMapStatus('Factory layers unavailable right now, retrying...');
+      staticRetry = setTimeout(loadStatic, staticRetryMs);
+      staticRetryMs = Math.min(60000, staticRetryMs * 2);
     }
   }
   // ── Live movers: smooth motion between 3 s polls ──
