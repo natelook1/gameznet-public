@@ -5170,6 +5170,19 @@
         ports.innerHTML = `
           <button class="srv-modal-port-btn" onclick="copyText('${s.host}:${s.port}','Java port copied!')">Java :${s.port} ⧉</button>
           <button class="srv-modal-port-btn" onclick="copyText('${s.host}:${bp}','Bedrock port copied!')">Bedrock :${bp} ⧉</button>`;
+      } else if (s.steam_appid == 526870) {
+        // Satisfactory: the server is modded, so players need Satisfactory Mod Manager + Satisfactory Mod Loader.
+        const ipPort = s.host + ':' + s.port;
+        ports.innerHTML = `<button class="srv-modal-port-btn" onclick="copyText('${s.host}','Address copied!')">${s.host} ⧉</button>`
+          + `<button class="srv-modal-port-btn" onclick="copyText('${s.port}','Port copied!')">Port ${s.port} ⧉</button>`
+          + '<details style="width:100%;margin-top:4px;"><summary style="font-size:10px;color:var(--text-dim);cursor:pointer;letter-spacing:1px;text-transform:uppercase;">How to connect ▾</summary>'
+          + '<div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.7;padding:6px 8px;background:var(--bg2);border-radius:3px;">'
+          + 'This server is modded. You need:<br>'
+          + '1. <b style="color:var(--text);">Satisfactory Mod Manager</b> (the app): <a href="https://smm.ficsit.app" target="_blank" style="color:var(--accent);">smm.ficsit.app</a><br>'
+          + '2. <b style="color:var(--text);">Satisfactory Mod Loader</b> (the mod): install it in the app, mods <b style="color:var(--text);">On</b><br>'
+          + '3. In game: Server Manager → Add Server → <code>' + s.host + '</code> port <code>' + s.port + '</code><br>'
+          + '<button class="srv-modal-port-btn" style="margin-top:6px;" onclick="openFactoryGuide()">Open the full guide</button>'
+          + '</div></details>';
       } else if (s.steam_appid == 440900) {
         const ipPort = s.host + ':' + s.port;
         const b1 = document.createElement('button');
@@ -7388,6 +7401,13 @@
     if (_factoryInitialized) return;
     _factoryInitialized = true;
     document.getElementById('factory-iframe').src = '/satisfactory';
+  }
+  // Server card "Open the full guide": the Factory tab on its How to join view.
+  function openFactoryGuide() {
+    closeSrvModal();
+    _factoryInitialized = true;
+    document.getElementById('factory-iframe').src = '/satisfactory?view=join';
+    switchTab('factory', document.querySelector('.tab-btn.factory-tab'));
   }
 
 

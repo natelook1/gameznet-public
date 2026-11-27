@@ -87,6 +87,32 @@
     .sh-alert:last-child { border-bottom: 0; }
     #sh-table td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
     @media (max-width: 700px) { #sh-table .sh-col-rate { display: none; } input.search { width: 100%; } }
+    .join { max-width: 760px; }
+    .join h2 { font-size: 20px; margin-bottom: 10px; }
+    .join-lead { font-size: 14px; line-height: 1.6; }
+    .join-note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .join-steps { list-style: none; counter-reset: step; margin: 18px 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+    .join-steps > li { counter-increment: step; position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px 14px 58px; }
+    .join-steps > li::before { content: counter(step); position: absolute; left: 16px; top: 13px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #111; font-weight: 800; display: grid; place-items: center; font-size: 14px; }
+    .join-steps h3 { font-size: 15px; margin-bottom: 6px; }
+    .join-steps p { font-size: 13px; line-height: 1.6; margin-top: 4px; }
+    .join-sub { color: var(--muted); font-size: 12px !important; }
+    .join code { background: var(--surface2); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+    .join-btn { display: inline-block; background: var(--accent); color: #111 !important; font-weight: 700; padding: 8px 14px; border-radius: 8px; text-decoration: none; font-size: 13px; }
+    .join-addr { display: grid; grid-template-columns: auto auto; justify-content: start; align-items: center; gap: 6px 10px; margin: 8px 0; font-size: 14px; }
+    .join-addr b { font-family: ui-monospace, monospace; font-size: 15px; }
+    .join-addr button { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+    .join-addr button.done { border-color: var(--green); color: var(--green); }
+    .join-shot { margin: 10px 0 4px; }
+    .join-shot img { display: block; max-width: 100%; border: 1px solid var(--border); border-radius: 8px; cursor: zoom-in; }
+    .join-shot img.zoom { position: fixed; inset: 0; margin: auto; max-width: 96vw; max-height: 96vh; z-index: 50; cursor: zoom-out; box-shadow: 0 0 0 100vmax rgba(0,0,0,.8); }
+    .join-shot figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+    .join-shot figcaption b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #111; font-size: 11px; }
+    .join-sub-steps { margin: 8px 0 4px 18px; font-size: 13px; line-height: 1.8; }
+    .join .k { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #111; font-size: 11px; }
+    .join-help dt { font-weight: 600; font-size: 13px; margin-top: 10px; }
+    .join-help dt:first-child { margin-top: 0; }
+    .join-help dd { font-size: 13px; color: var(--muted); line-height: 1.55; margin: 3px 0 0; }
     input.search { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 7px 10px; font-size: 13px; width: 240px; }
     a { color: var(--accent); }
 
@@ -166,6 +192,7 @@
     <div>
       <div class="section-title">Views</div>
       <div class="nav-item active" data-view="map">Factory</div>
+      <div class="nav-item" data-view="join">How to join</div>
       <div class="nav-item" data-view="overview">Overview</div>
       <div class="nav-item" data-view="power">Power</div>
       <div class="nav-item" data-view="production">Production</div>
@@ -216,6 +243,69 @@
         <div class="map-hud" id="hud"></div>
         <div class="tip" id="tip"></div>
         <aside class="mpanel" id="mpanel"></aside>
+      </section>
+
+      <section class="view" id="view-join">
+        <div class="join">
+          <h2>How to join the GamezNET Satisfactory server</h2>
+          <p class="join-lead">The server runs mods, so your game needs two things from the modding community:
+            the <b>Satisfactory Mod Manager</b> app, and the <b>Satisfactory Mod Loader</b> mod installed with it.
+            That's all: the GamezNET mod that powers this page runs on the server only.</p>
+          <p class="join-note">PC only (Steam or Epic). Consoles and unmodded games can't join a modded server.</p>
+
+          <ol class="join-steps">
+            <li><h3>Connect to GamezNET</h3>
+              <p>The server is on the GamezNET network. Open the GamezNET app and make sure you're <b>Connected</b>.</p></li>
+
+            <li><h3>Download Satisfactory Mod Manager (the app)</h3>
+              <p>Go to <a href="https://ficsit.app" target="_blank" rel="noopener">ficsit.app</a>, the official Satisfactory modding site,
+                and click <b>Download the Mod Manager</b> (<b class="k">A</b>). Or use this button, which downloads the same file:</p>
+              <p><a class="join-btn" href="https://smm.ficsit.app" target="_blank" rel="noopener">Download Satisfactory Mod Manager</a></p>
+              <figure class="join-shot"><img src="/static/sf-guide/ficsit-download.png" alt="ficsit.app home page with the Download the Mod Manager button" loading="lazy">
+                <figcaption><b>A</b> Download the Mod Manager</figcaption></figure>
+              <p>Run the downloaded <code>SatisfactoryModManager-Setup.exe</code> and start Satisfactory Mod Manager.</p></li>
+
+            <li><h3>Install Satisfactory Mod Loader (the mod)</h3>
+              <figure class="join-shot"><img src="/static/sf-guide/smm-installed.png" alt="Satisfactory Mod Manager with Satisfactory Mod Loader installed and mods on" loading="lazy"></figure>
+              <ol class="join-sub-steps">
+                <li>Check the game install at the top left (<b class="k">B</b>) is the one you play: Steam or Epic.</li>
+                <li>Click <b>Search mods</b> (<b class="k">C</b>) and type <b>Satisfactory Mod Loader</b>.</li>
+                <li>It's the one by <b>Satisfactory Modding</b> with the SML logo (<b class="k">D</b>).</li>
+                <li>Click the install icon on the right of its row. When it's installed the icon turns green (<b class="k">E</b>).</li>
+                <li>Make sure <b>Mods on</b> is selected (<b class="k">F</b>).</li>
+              </ol>
+              <p class="join-sub">That's the only mod you need: the server's own GamezNET mod runs on the server, not your PC.
+                Other mods can stop you joining if the server doesn't have them, so leave them off unless they're cosmetic, client-only mods.</p></li>
+
+            <li><h3>Start Satisfactory</h3>
+              <p>Click <b>Play Satisfactory</b> (<b class="k">G</b>), bottom left. Starting the game the usual way works too:
+                mods stay on until you switch them off in Satisfactory Mod Manager.</p>
+              <figure class="join-shot"><img src="/static/sf-guide/smm-play.png" alt="Play Satisfactory button" loading="lazy" style="max-width:320px"></figure></li>
+
+            <li><h3>Join the server</h3>
+              <p>In <b>Server Manager</b>, add the server:</p>
+              <div class="join-addr">
+                <span>Address <b>192.168.30.58</b></span><button data-copy="192.168.30.58">Copy</button>
+                <span>Port <b>7781</b></span><button data-copy="7781">Copy</button>
+              </div></li>
+          </ol>
+
+          <div class="card join-help"><h3>If it doesn't work</h3>
+            <dl>
+              <dt>"Cannot connect to a modded server on a vanilla game client"</dt>
+              <dd>Your game is starting without mods. Check that Satisfactory Mod Loader is installed and <b>Mods on</b> is selected (step 3).</dd>
+              <dt>"This server is running Satisfactory Mod Loader, and your client doesn't have it installed"</dt>
+              <dd>Same fix: install Satisfactory Mod Loader and turn mods on.</dd>
+              <dt>A message about missing mods or an SML version</dt>
+              <dd>Your Satisfactory Mod Loader version doesn't match the server's (3.12.1). Update it in Satisfactory Mod Manager;
+                if yours is newer than the server's, ask Nate to update the server. If it lists another mod, turn that mod off.</dd>
+              <dt>The server doesn't show up or times out</dt>
+              <dd>GamezNET isn't connected (step 1), or the server is restarting: check the status at the top of this page.</dd>
+              <dt>Playing without mods again</dt>
+              <dd>Switch mods <b>Off</b> in Satisfactory Mod Manager. Single-player and other servers work as normal either way.</dd>
+            </dl>
+          </div>
+        </div>
       </section>
 
       <section class="view" id="view-overview">
@@ -1688,6 +1778,11 @@
       showView('map'); view.cx = r.t.x; view.cy = r.t.y; view.scale = 0.008; draw();
     });
   }
+  document.querySelectorAll('.join-shot img').forEach(im => im.onclick = () => im.classList.toggle('zoom'));
+  document.querySelectorAll('#view-join [data-copy]').forEach(b => b.onclick = async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); } catch { const t = document.createElement('textarea'); t.value = b.dataset.copy; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+    b.textContent = 'Copied'; b.classList.add('done'); setTimeout(() => { b.textContent = 'Copy'; b.classList.remove('done'); }, 1500);
+  });
   $('sh-kind').onclick = e => { const b = e.target.closest('button'); if (!b) return; shKind = b.dataset.k; $('sh-kind').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderShipping(); };
   $('sh-search').oninput = renderShipping;
   $('sh-hours').onchange = loadShipping;
