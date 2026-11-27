@@ -72,7 +72,11 @@
     /* Power + Overview */
     .h3-sub { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12px; margin-left: 6px; }
     .attn { border-color: #7f1d1d; background: linear-gradient(0deg, rgba(127,29,29,.18), rgba(127,29,29,.18)), var(--surface); }
-    .attn h3 { color: #fca5a5; }
+    .attn h3 { color: #fca5a5; margin-bottom: 0; }
+    .attn-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .attn-tog { background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+    .attn-tog:hover { color: var(--text); border-color: var(--muted); }
+    .attn.attn-min { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; font-size: 12px; color: #fca5a5; }
     .attn-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.06); }
     .attn-row:last-child { border-bottom: 0; }
     .attn-row .mp-ico { width: 22px; height: 22px; }
@@ -230,6 +234,14 @@
     .mp-ico { width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-right: 6px; }
     .mp-sec { margin-top: 10px; }
     .mp-sec h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 600; margin: 0 0 4px; }
+    .tt { list-style: none; margin: 0; padding: 0; counter-reset: tt; }
+    .tt li { counter-increment: tt; position: relative; padding: 5px 0 5px 26px; border-left: 2px solid #2f2f3a; margin-left: 9px; }
+    .tt li::before { content: counter(tt); position: absolute; left: -10px; top: 5px; width: 18px; height: 18px; border-radius: 50%; background: #2f2f3a; color: var(--muted); font-size: 10px; font-weight: 700; display: grid; place-items: center; }
+    .tt li.next::before { background: var(--accent); color: #111; }
+    .tt li.next .tt-st { color: var(--accent); }
+    .tt-st { font-weight: 600; }
+    .tt-rule { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .tt-it .mp-ico { width: 16px; height: 16px; vertical-align: -3px; margin: 0 1px; }
     .mp-kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; }
     .mp-kv span:nth-child(odd) { color: var(--muted); }
     .mp-kv span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
@@ -410,7 +422,7 @@
 
       <section class="view" id="view-shipping">
         <div class="stats-grid" id="sh-stats"></div>
-        <div class="card" id="sh-alerts-card" style="display:none"><h3>Needs attention <span id="sh-alert-n" class="pill bad"></span></h3><div id="sh-alerts"></div></div>
+        <div class="card attn" id="sh-alerts-card" style="display:none"></div>
         <div class="sh-bar">
           <div class="seg" id="sh-kind"><button data-k="all" class="on">All</button><button data-k="train">Trains</button><button data-k="truck">Trucks</button><button data-k="drone">Drones</button></div>
           <input class="search" id="sh-search" placeholder="Filter stations or items...">
@@ -779,6 +791,8 @@
       for (const t of live.trains || []) {
         if (t.carList) carListCache.set(t.id, t.carList);
         else t.carList = carListCache.get(t.id) || null;
+        if (t.timetable !== undefined) carListCache.set('tt:' + t.id, t.timetable);
+        else t.timetable = carListCache.get('tt:' + t.id) || null;
       }
       for (const g of ['vehicles', 'drones']) for (const v of live[g] || []) {
         if (v.cargo) carListCache.set(g + v.id, { cargo: v.cargo, at: v.at, fuelItems: v.fuelItems });
@@ -1453,6 +1467,15 @@
       `</div><button id="tp-follow" style="margin-top:8px;font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid ${followTrain ? 'var(--accent)' : 'var(--border)'};background:var(--surface2);color:var(--text);cursor:pointer">${followTrain ? 'Following ✓' : 'Follow on map'}</button></div>`;
     const totals = Object.entries(tot).sort((a, b) => b[1].n - a[1].n);
     if (totals.length) h += `<div class="mp-sec"><h4>Carrying</h4>${totals.map(([n, x]) => `<div class="mp-item"><span>${icon(x.cls)}${esc(n)}</span><span class="r">${fmt(x.n)}</span></div>`).join('')}</div>`;
+    const tt = t.timetable;
+    if (tt && tt.stops.length) {
+      const its = (list, cls) => list.map(i => `<span class="tt-it ${cls}" title="${esc(i.name)}">${icon(i.cls)}</span>`).join('');
+      h += `<div class="mp-sec"><h4>Timetable <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">${tt.stops.length} stop${tt.stops.length > 1 ? 's' : ''}</span></h4><ol class="tt">${tt.stops.map((st, i) => {
+        const rule = [st.full ? 'until full' : 'load/unload once', st.wait ? `${st.and ? 'and' : 'or'} ${fmt(st.wait)} s` : ''].filter(Boolean).join(' ');
+        return `<li class="${i === tt.cur ? 'next' : ''}"><div class="tt-st">${esc(st.station || '(station removed)')}${i === tt.cur ? ' <span class="pill ok">next</span>' : ''}</div>` +
+          `<div class="tt-rule">${rule}${st.load.length ? ` · load ${its(st.load, 'ld')}` : ''}${st.unload.length ? ` · unload ${its(st.unload, 'ul')}` : ''}</div></li>`;
+      }).join('')}</ol></div>`;
+    }
     h += `<div class="mp-sec"><h4>Cars, front to back</h4>${cars.map((c, i) => `<div class="mp-item"><span>${icon(c.cls)}${i + 1}. ${esc(c.name || 'Car')}</span><span class="r">${(c.cargo || []).length ? c.cargo.map(g => `${fmt(g.amount)} ${esc(g.name)}`).join(', ') : (/Locomotive/i.test(c.cls) ? '' : '<span class="muted">empty</span>')}</span></div>`).join('')}</div>`;
     el.innerHTML = h;
     el.querySelector('.mp-close').onclick = closeTrain;
@@ -1716,11 +1739,23 @@
     if (dry.length) out.push(['Tractor', `${dry.length} vehicle${dry.length > 1 ? 's' : ''}`, 'out of fuel', { view: 'map' }]);
     return out;
   }
+  // "Needs attention" can be folded to one line; remembered per browser, all views at once.
+  let attnHidden = (() => { try { return localStorage.getItem('sf-attn-hidden') === '1'; } catch { return false; } })();
+  function setAttnHidden(v) { attnHidden = v; try { localStorage.setItem('sf-attn-hidden', v ? '1' : '0'); } catch {} refreshView(); }
+  const attnHead = n => `<div class="attn-head"><h3>Needs attention <span class="pill bad">${n}</span></h3><button class="attn-tog" data-attn="hide">Hide</button></div>`;
+  // Collapsed: a slim bar. Returns true when it rendered the collapsed form.
+  function attnCollapsed(el, n) {
+    el.classList.toggle('attn-min', attnHidden);
+    if (!attnHidden) return false;
+    el.innerHTML = `<span>⚠ ${n} issue${n === 1 ? '' : 's'} need${n === 1 ? 's' : ''} attention</span><button class="attn-tog" data-attn="show">Show</button>`;
+    return true;
+  }
+  document.addEventListener('click', e => { const b = e.target.closest('[data-attn]'); if (b) { e.preventDefault(); setAttnHidden(b.dataset.attn === 'hide'); } });
   function renderAttention(el, items) {
     el.style.display = items.length ? '' : 'none';
-    if (!items.length) return;
+    if (!items.length || attnCollapsed(el, items.length)) return;
     const show = items.slice(0, 6);
-    el.innerHTML = `<h3>Needs attention <span class="pill bad">${items.length}</span></h3>` +
+    el.innerHTML = attnHead(items.length) +
       show.map((it, i) => `<div class="attn-row">${ico(it[0])}<a href="#" data-i="${i}">${it[1]}</a><span class="why">${it[2]}</span></div>`).join('') +
       (items.length > show.length ? `<div class="attn-more">and ${items.length - show.length} more: see <a href="#" data-go="shipping" style="color:var(--accent)">Shipping</a></div>` : '');
     el.querySelectorAll('a[data-i]').forEach(a => a.onclick = e => {
@@ -1978,10 +2013,11 @@
       ...dr.filter(r => r.t.status === 'no-fuel').map(r => [r, 'drone port out of fuel']),
       ...stuck.map(v => [{ kind: 'truck', name: v.name || 'Vehicle', t: { id: 'veh:' + v.id, x: v.x, y: v.y } }, `stopped ${fmtDur(v.stoppedSec)} with fuel, not at a station`]),
     ];
-    $('sh-alerts-card').style.display = alerts.length ? '' : 'none';
-    $('sh-alert-n').textContent = alerts.length;
+    const ac = $('sh-alerts-card');
+    ac.style.display = alerts.length ? '' : 'none';
+    if (alerts.length && !attnCollapsed(ac, alerts.length)) ac.innerHTML = attnHead(alerts.length) + '<div id="sh-alerts"></div>';
     const shown = shAllAlerts ? alerts : alerts.slice(0, 5);
-    $('sh-alerts').innerHTML = shown.map(([r, msg]) => `<div class="sh-alert"><span><a href="#" data-sh="${esc(r.t.id)}" class="sh-name" style="color:var(--text)">${esc(r.name)}</a> <span class="muted">· ${msg}</span></span><span class="sh-type">${r.kind}</span></div>`).join('') +
+    if ($('sh-alerts')) $('sh-alerts').innerHTML = shown.map(([r, msg]) => `<div class="sh-alert"><span><a href="#" data-sh="${esc(r.t.id)}" class="sh-name" style="color:var(--text)">${esc(r.name)}</a> <span class="muted">· ${msg}</span></span><span class="sh-type">${r.kind}</span></div>`).join('') +
       (alerts.length > 5 ? `<a href="#" id="sh-more" style="display:inline-block;font-size:12px;padding-top:8px;color:var(--accent)">${shAllAlerts ? 'Show fewer' : `Show all ${alerts.length}`}</a>` : '');
     if ($('sh-more')) $('sh-more').onclick = e => { e.preventDefault(); shAllAlerts = !shAllAlerts; renderShipping(); };
     const q = $('sh-search').value.trim().toLowerCase();
