@@ -103,6 +103,16 @@
     .gen-bar { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: #2a2a33; overflow: hidden; margin-top: 4px; }
     .gen-bar > i { display: block; height: 100%; background: var(--green); }
     .gen.off .gen-n { color: var(--muted); }
+    .circ-map { background: transparent; color: var(--accent); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; font-size: 11px; cursor: pointer; margin-left: 8px; }
+    .circ-map:hover { border-color: var(--accent); }
+    .why { font-size: 13px; padding: 8px 0; border-bottom: 1px solid #23232d; line-height: 1.5; }
+    .why:last-child { border-bottom: 0; }
+    .why b { color: var(--text); }
+    .why .t { color: var(--muted); font-size: 11px; margin-right: 8px; font-variant-numeric: tabular-nums; }
+    .why .hint { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .sw-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid #23232d; font-size: 13px; }
+    .sw-row:last-child { border-bottom: 0; }
+    .sw-row .sub { font-size: 11px; color: var(--muted); }
     .circ-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
     .circ { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 12px; }
     .circ.main { grid-column: 1 / -1; }
@@ -409,7 +419,9 @@
         <div class="card"><div class="ch-head"><h3>Power use, last <span id="pw-hours-l">24 hours</span></h3>
           <div class="ch-range" id="pw-range"><button data-h="6">6 h</button><button data-h="24" class="on">24 h</button><button data-h="168">7 d</button></div></div>
           <div id="pw-chart" class="chart"><div class="muted">Loading...</div></div></div>
+        <div class="card" id="pw-why-card" style="display:none"><h3>What happened</h3><div id="pw-why"></div></div>
         <div class="card"><h3>Circuits</h3><div id="pw-circuits" class="circ-grid muted">Loading...</div></div>
+        <div class="card" id="pw-sw-card" style="display:none"><h3>Power switches</h3><div id="pw-switches"></div></div>
       </section>
 
       <section class="view" id="view-production">
@@ -948,6 +960,17 @@
       if (ft) { view.cx = ft.x; view.cy = ft.y; }
     }
     if (live) {
+      if (focusMarks && Date.now() < focusMarks.until) {
+        const ph = (Date.now() % 1200) / 1200;
+        for (const m of focusMarks.pts) {
+          const [x, y] = toScreen(m.x, m.y);
+          ctx.beginPath(); ctx.arc(x, y, 10 + ph * 16, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(239,68,68,${1 - ph})`; ctx.lineWidth = 3; ctx.stroke();
+          ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fillStyle = '#ef4444'; ctx.fill();
+          ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        }
+        draw();   // keep pulsing
+      }
       if (layerOn.hubs) for (const h of hubs) iconMarker({ x: h.x, y: h.y }, h.kind === 'truck' ? 'TruckStation' : 'DroneStation', hubColor(h), 9) || marker(h, 'diamond', hubColor(h), 5);
       if (layerOn.drones) for (const d of live.drones) iconMarker(d, 'DroneTransport', '#f472b6', 9) || marker(d, 'tri', '#f472b6', 5);
       if (layerOn.vehicles) for (const v of live.vehicles) {
@@ -1702,6 +1725,22 @@
   // ═════════════════════════ OTHER VIEWS ═════════════════════════
   const card = (label, value, sub = '') => `<div class="stat-card"><div class="stat-label">${label}</div><div class="stat-value">${value}</div>${sub ? `<div class="stat-sub">${sub}</div>` : ''}</div>`;
 
+  // Jump the map to a place and pulse rings on the given points (batteries, generators,
+  // a switch) so they're easy to find in game.
+  let focusMarks = null;
+  function mapFocus(f) {
+    showView('map');
+    const pts = f.pts && f.pts.length ? f.pts : [{ x: f.x, y: f.y }];
+    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+    const w = Math.max(f.w || 0, Math.max(...xs) - Math.min(...xs), 6000), h = Math.max(f.h || 0, Math.max(...ys) - Math.min(...ys), 6000);
+    view.cx = (Math.max(...xs) + Math.min(...xs)) / 2 || f.x; view.cy = (Math.max(...ys) + Math.min(...ys)) / 2 || f.y;
+    view.scale = Math.min(maxScale, Math.max(minScale(), Math.min(W / (w * 1.6), H / (h * 1.6))));
+    focusMarks = { pts, until: Date.now() + 20000 };
+    draw();
+  }
+  // A circuit's place -> focus target (its batteries/generators, else its centre).
+  const circuitFocus = c => c?.place && { x: c.place.x, y: c.place.y, w: c.place.w, h: c.place.h, pts: c.place.anchors.length ? c.place.anchors : [{ x: c.place.x, y: c.place.y }] };
+
   // ── Shared: rated output per generator type (MW) and the "needs attention" list ──
   const GEN_TYPES = [
     { re: /GeneratorNuclear/, name: 'Nuclear', icon: 'GeneratorNuclear', mw: 2500 },
@@ -1729,7 +1768,7 @@
   // Things to act on, worst first: [icon key, title html, why, target ({ view } or { x, y })]
   function attentionItems({ power, stations, live }) {
     const out = [];
-    for (const c of power?.circuits || []) if (c.fuseTriggered) out.push(['PowerSwitch', `Circuit #${c.id}`, `fuse blown${c.maxConsumed ? `, needs ${fmtMW(c.maxConsumed)}` : ''}`, { view: 'power' }]);
+    for (const c of power?.circuits || []) if (c.fuseTriggered) out.push(['PowerSwitch', `Circuit #${c.id}`, `fuse blown${c.maxConsumed ? `, needs ${fmtMW(c.maxConsumed)}` : ''}`, circuitFocus(c) ? { focus: circuitFocus(c) } : { view: 'power' }]);
     for (const c of power?.circuits || []) if (c.batteryCapacity > 0 && c.batteryPercent < 2 && c.capacity < c.maxConsumed && !c.fuseTriggered) out.push(['PowerStorageMk1', `Circuit #${c.id}`, 'batteries empty', { view: 'power' }]);
     for (const d of (stations?.dronePorts || []).filter(d => d.status === 'cannot-unload' || d.status === 'no-fuel'))
       out.push(['DroneStation', esc(d.name || 'Drone port'), d.status === 'no-fuel' ? 'drone port out of fuel' : "drone can't unload", { x: d.x, y: d.y }]);
@@ -1761,6 +1800,7 @@
     el.querySelectorAll('a[data-i]').forEach(a => a.onclick = e => {
       e.preventDefault(); const t = show[+a.dataset.i][3];
       if (t.view) return showView(t.view);
+      if (t.focus) return mapFocus(t.focus);
       showView('map'); view.cx = t.x; view.cy = t.y; view.scale = 0.008; draw();
     });
     el.querySelectorAll('a[data-go]').forEach(a => a.onclick = e => { e.preventDefault(); showView(a.dataset.go); });
@@ -1853,15 +1893,67 @@
       $('pw-circuits').classList.remove('muted');
       $('pw-circuits').innerHTML = cs.map((c, i) => {
         const bad = c.fuseTriggered || (c.batteryCapacity > 0 && c.batteryPercent < 2 && c.capacity < c.maxConsumed);
-        return `<div class="circ${i === 0 ? ' main' : ''}${bad ? ' bad' : ''}"><div class="circ-head"><b>${i === 0 ? 'Main grid' : 'Circuit'} <span class="muted">#${c.id}</span></b>` +
+        return `<div class="circ${i === 0 ? ' main' : ''}${bad ? ' bad' : ''}"><div class="circ-head"><b>${i === 0 ? 'Main grid' : 'Circuit'} <span class="muted">#${c.id}</span>${c.place ? `<button class="circ-map" data-circ="${c.id}">Show on map</button>` : ''}</b>` +
           `${c.fuseTriggered ? '<span class="pill bad">fuse blown</span>' : c.capacity ? `<span class="muted">${fmt(c.consumed / c.capacity * 100)}% load</span>` : '<span class="muted">no generators</span>'}</div>` +
           `<div class="circ-kv"><span>Using</span>${bar(c.consumed, c.capacity || c.maxConsumed, c.capacity && c.consumed / c.capacity > 0.9 ? 'var(--red)' : 'var(--accent)')}<span class="num">${fmtMW(c.consumed)} / ${fmtMW(c.capacity)}</span>` +
           (c.batteryCapacity ? `<span>Battery</span>${bar(c.batteryPercent, 100, c.batteryPercent < 10 ? 'var(--red)' : 'var(--green)')}<span class="num">${fmt(c.batteryPercent)}%</span>` : '') +
           `</div></div>`;
       }).join('') + (dead.length ? `<div class="circ main" style="color:var(--muted)">${dead.length} circuit${dead.length > 1 ? 's' : ''} with machines but no generator: ${dead.map(c => '#' + c.id).join(', ')}</div>` : '');
+      $('pw-circuits').querySelectorAll('[data-circ]').forEach(b => b.onclick = () => mapFocus(circuitFocus(p.circuits.find(c => c.id === +b.dataset.circ))));
+      renderSwitches(p);
+      renderWhy(p);
     } catch { $('pw-circuits').textContent = 'Live data offline.'; $('pw-grid').innerHTML = '<div class="muted">Live data offline.</div>'; }
   }
 
+
+  // Switches: on/off, priority, the circuits they join.
+  const circuitOf = (p, raw) => p.circuits.find(c => (c.members || [c.id]).includes(raw));
+  function renderSwitches(p) {
+    const sw = p.switches || [];
+    $('pw-sw-card').style.display = sw.length ? '' : 'none';
+    if (!sw.length) return;
+    const label = (p, raw) => { const c = circuitOf(p, raw); return raw < 0 ? 'nothing' : c ? `#${c.id}${c.fuseTriggered ? ' (fuse blown)' : ''}` : `#${raw}`; };
+    $('pw-switches').innerHTML = [...sw].sort((a, b) => a.on - b.on || (a.priority ?? 99) - (b.priority ?? 99)).map((w, i) =>
+      `<div class="sw-row"><div><b>${esc(w.name || (w.priority != null ? 'Priority switch' : 'Power switch'))}</b>${w.priority != null ? ` <span class="muted">priority ${w.priority}</span>` : ''}` +
+      `<div class="sub">joins ${label(p, w.c0)} and ${label(p, w.c1)}</div></div>` +
+      `<span class="pill ${w.on ? 'ok' : 'bad'}">${w.on ? 'on' : 'off'}</span><button class="circ-map" data-sw="${i}">Show on map</button></div>`).join('');
+    const sorted = [...sw].sort((a, b) => a.on - b.on || (a.priority ?? 99) - (b.priority ?? 99));
+    $('pw-switches').querySelectorAll('[data-sw]').forEach(b => b.onclick = () => { const w = sorted[+b.dataset.sw]; mapFocus({ x: w.x, y: w.y, pts: [{ x: w.x, y: w.y }] }); });
+  }
+
+  // "What happened": a diagnosis of each blown circuit from its state now, plus the
+  // incident log (fuses blowing, switches flipping) recorded since mod 0.10.
+  async function renderWhy(p) {
+    const blown = p.circuits.filter(c => c.fuseTriggered);
+    let ev = [];
+    try { ev = (await getJSON(`${API}/power/events?hours=72`)).events; } catch {}
+    const t = ts => new Date(ts).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    const sws = c => (p.switches || []).filter(w => (c.members || [c.id]).includes(w.c0) || (c.members || [c.id]).includes(w.c1));
+    const diag = blown.map(c => {
+      const why = [];
+      if (!c.capacity) why.push('it has no generators of its own');
+      if (c.batteryCapacity) why.push(c.batteryPercent < 2 ? 'its batteries are empty' : `its batteries are at ${fmt(c.batteryPercent)}%`);
+      const feed = sws(c);
+      const off = feed.filter(w => !w.on);
+      if (off.length) why.push(`it is cut off from the grid: ${off.map(w => `<b>${esc(w.name || 'switch')}</b>${w.priority != null ? ` (priority ${w.priority})` : ''} is OFF`).join(', ')}`);
+      else if (feed.length) why.push(`its switch${feed.length > 1 ? 'es are' : ' is'} on, so the fuse blew on demand (needs ${fmtMW(c.maxConsumed)})`);
+      else if (!c.capacity) why.push('no power switch connects it to the grid (a power line may have been removed)');
+      const hint = off.some(w => w.priority != null)
+        ? 'Priority switches turn off by themselves when the grid is overloaded. Turn it back on, then reset the fuse at a battery or generator on this circuit.'
+        : off.length ? 'Turn the switch back on, then reset the fuse at a battery or generator on this circuit.'
+        : 'Reset the fuse at a battery or generator on this circuit; if it blows again, demand is more than it can supply.';
+      return `<div class="why"><b>Circuit #${c.id}: fuse blown.</b> ${why.length ? 'Likely cause: ' + why.join('; ') + '.' : ''}` +
+        `${circuitFocus(c) ? ` <button class="circ-map" data-why="${c.id}">Show on map</button>` : ''}<div class="hint">${hint}</div></div>`;
+    });
+    const names = { 'fuse': 'fuse blew', 'fuse-reset': 'fuse reset', 'switch-off': 'switch turned off', 'switch-on': 'switch turned on' };
+    const log = ev.slice(0, 20).map(e => `<div class="why"><span class="t">${t(e.ts)}</span>` +
+      (e.kind.startsWith('switch') ? `<b>${esc(e.name || (e.priority != null ? 'Priority switch' : 'Power switch'))}</b> ${names[e.kind]}${e.priority != null && e.kind === 'switch-off' ? ' (priority load shedding?)' : ''}`
+        : `<b>Circuit #${e.circuit}</b> ${names[e.kind] || e.kind}${e.kind === 'fuse' && e.before ? `: it was using ${fmtMW(e.before.consumed)} of ${fmtMW(e.before.capacity)}${e.before.batteryCapacity ? `, batteries ${fmt(e.before.batteryPercent)}%` : ''}${(e.switches || []).some(w => !w.on) ? ', with a switch off' : ''}` : ''}`) + '</div>').join('');
+    $('pw-why-card').style.display = diag.length || log ? '' : 'none';
+    $('pw-why').innerHTML = diag.join('') + (log ? `<div class="muted" style="font-size:11px;margin:10px 0 2px;text-transform:uppercase;letter-spacing:1px">Recent power events</div>${log}` : '') +
+      (!log ? '<div class="muted" style="font-size:11px;margin-top:8px">Power events (fuses blowing, switches flipping) are recorded from now on, so the next one will show its exact time and cause.</div>' : '');
+    $('pw-why').querySelectorAll('[data-why]').forEach(b => b.onclick = () => mapFocus(circuitFocus(p.circuits.find(c => c.id === +b.dataset.why))));
+  }
 
   // ── Power history chart: consumed (line) against capacity (dashed reference) ──
   let pwHours = 24, pwPoints = [];
