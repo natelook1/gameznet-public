@@ -283,7 +283,7 @@ def detect_game_steam(steam_id):
 WORKER_URL = "https://gameznet.looknet.ca"
 VPN_BACKEND_URL = "http://192.168.30.58:3000"  # Direct backend over VPN — bypasses DNS/Traefik
 TUNNEL_NAME = "GamezNET"
-VERSION = "1.15.8"
+VERSION = "1.15.9"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".gameznet_config.json")
 
 def _write_config(data):
@@ -2929,7 +2929,8 @@ def api_proxy(subpath):
         ct = request.content_type or "application/json"
         # Forward auth headers so token-gated routes (WoW, mobile, etc.) work
         fwd_headers = {"User-Agent": "GamezNET", "Content-Type": ct}
-        for h in ("X-Token", "X-Session", "X-Filename", "X-Description", "X-Admin-Password", "X-Allowed-Users", "X-Blueprint-Folder"):
+        # If-None-Match: the big Satisfactory map layers revalidate by ETag (304 = keep the cached copy).
+        for h in ("X-Token", "X-Session", "X-Filename", "X-Description", "X-Admin-Password", "X-Allowed-Users", "X-Blueprint-Folder", "If-None-Match"):
             val = request.headers.get(h) or request.headers.get(h.lower())
             if val:
                 fwd_headers[h] = val
@@ -2955,8 +2956,14 @@ def api_proxy(subpath):
                 out_headers["Content-Disposition"] = resp.headers["Content-Disposition"]
             if resp.headers.get("Content-Encoding"):      # gzip body passed through as-is
                 out_headers["Content-Encoding"] = resp.headers["Content-Encoding"]
+            for h in ("ETag", "Cache-Control", "Vary"):
+                if resp.headers.get(h):
+                    out_headers[h] = resp.headers[h]
             return resp.read(), resp.status, out_headers
     except _ue.HTTPError as e:
+        if e.code == 304:   # not modified: urllib raises it, but it's a normal answer
+            out = {h: e.headers[h] for h in ("ETag", "Cache-Control", "Vary") if e.headers.get(h)}
+            return b"", 304, out
         body = e.read()
         log.error("api proxy HTTP %s for %s: %s", e.code, subpath, body)
         return body, e.code, {"Content-Type": e.headers.get("Content-Type", "application/json")}

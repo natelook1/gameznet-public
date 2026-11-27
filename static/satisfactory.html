@@ -438,7 +438,23 @@
   let offKey = '';
   const view = { cx: WX0 + WSIZE / 2, cy: WY0 + WSIZE / 2, scale: 0.001 };   // scale = CSS px per game unit
   let W = 0, H = 0, dpr = 1;
-  const img = new Image(); img.decoding = 'async'; img.src = MAP_IMG; img.onload = () => draw();
+  // Terrain in three sizes: load the smallest that's sharp enough for the current zoom and
+  // step up (never down) when zooming in. The 8192 px original is 3 MB and ~268 MB decoded,
+  // which phones pay for nothing at whole-map zoom; 2048 px is ~280 KB.
+  const TERRAIN = [{ n: 2048, url: '/static/sf-map/map-2048.avif' }, { n: 4096, url: '/static/sf-map/map-4096.avif' }, { n: 8192, url: MAP_IMG }];
+  let img = new Image(), terrainTier = -1, shownTier = -1;   // requested / on screen
+  function terrainFor() {
+    const need = view.scale * WSIZE * dpr;   // device pixels across the whole map
+    // Touch devices stop at 4096 px: the 8192 px original decodes to ~268 MB and can crash a phone tab.
+    const top = matchMedia('(pointer: coarse)').matches ? 1 : TERRAIN.length - 1;
+    let t = TERRAIN.findIndex(x => x.n >= need * 0.8); if (t < 0 || t > top) t = top;
+    if (t <= terrainTier) return;
+    terrainTier = t;
+    const next = new Image(); next.decoding = 'async';
+    next.onload = () => { if (t > shownTier) { shownTier = t; img = next; draw(); } };
+    next.onerror = () => { if (next.src !== MAP_IMG) next.src = MAP_IMG; };   // small sizes missing: use the original
+    next.src = TERRAIN[t].url;
+  }
 
   // Building categories, by class name.
   const CATS = [
@@ -542,20 +558,35 @@
     // decimetres (world units here are cm, hence *10). Floors are 8 m tiles
     // rotated by yaw; walls are 8 m segments along the wall's local Y axis.
     // [x, y, yaw, z]: x/y in dm, z in m (older caches have no z: ground band).
-    for (const [dx, dy, yaw, zm] of found.floors) {
-      const cx = dx * 10, cy = dy * 10, bd = band((zm ?? 0) * 100);
-      poly(bd.fp, [[-400, -400], [400, -400], [400, 400], [-400, 400]].map(([lx, ly]) => rot(cx, cy, yaw, lx, ly)));
-      bd.pts.push(cx, cy);
-    }
-    for (const [dx, dy, yaw, zm] of found.walls) {
-      const cx = dx * 10, cy = dy * 10, a = rot(cx, cy, yaw, 0, -400), b = rot(cx, cy, yaw, 0, 400);
-      const p = band((zm ?? 0) * 100).wp.p; p.moveTo(a[0], a[1]); p.lineTo(b[0], b[1]);
-    }
-    return {
-      cables: lines(st.cables), bands: [...bandMap.values()].sort((a, b) => a.z - b.z), buildings, nodes: st.nodes, stations: st.stations,
+    const g = {
+      cables: lines(st.cables), bands: [], buildings, nodes: st.nodes, stations: st.stations,
       counts: { belts: st.belts.length, rails: st.rails.length, pipes: st.pipes.length, cables: st.cables.length,
         buildings: st.buildings.length, foundations: found.floors.length + found.walls.length, nodes: st.nodes.length },
+      built: 0,
     };
+    // Foundations (~85k tiles) are added by step(), a few milliseconds at a time, so the page
+    // stays responsive while they fill in: building them in one go froze a phone for ~1 s.
+    // One sin/cos per tile, corners written straight into the path.
+    const D2R = Math.PI / 180, fl = found.floors, wl = found.walls;
+    let i = 0, j = 0;
+    g.step = budgetMs => {
+      const t0 = performance.now();
+      while (i < fl.length && performance.now() - t0 < budgetMs) for (const end = Math.min(fl.length, i + 1500); i < end; i++) {
+        const f = fl[i], cx = f[0] * 10, cy = f[1] * 10, bd = band((f[3] ?? 0) * 100), r = f[2] * D2R;
+        const u = 400 * Math.cos(r), v = 400 * Math.sin(r), p = bd.fp.p;   // corner (lx, ly) -> (cx + lx*c - ly*s, cy + lx*s + ly*c)
+        p.moveTo(cx - u + v, cy - v - u); p.lineTo(cx + u + v, cy + v - u); p.lineTo(cx + u - v, cy + v + u); p.lineTo(cx - u - v, cy - v + u); p.closePath();
+        bd.pts.push(cx, cy);
+      }
+      while (i >= fl.length && j < wl.length && performance.now() - t0 < budgetMs) for (const end = Math.min(wl.length, j + 3000); j < end; j++) {
+        const f = wl[j], cx = f[0] * 10, cy = f[1] * 10, r = f[2] * D2R, u = 400 * Math.cos(r), v = 400 * Math.sin(r);
+        const p = band((f[3] ?? 0) * 100).wp.p; p.moveTo(cx + v, cy - u); p.lineTo(cx - v, cy + u);   // (0, -400) and (0, 400)
+      }
+      g.bands = [...bandMap.values()].sort((a, b) => a.z - b.z);
+      g.built = i + j;
+      return i >= fl.length && j >= wl.length;
+    };
+    g.step(0);   // machines/belts bands only (no tiles yet): draws right away
+    return g;
   }
 
   // Factory layers (FRM) and the structure layer (autosave) load independently:
@@ -608,7 +639,18 @@
     const above = levelsInView().filter(z => z > cutZ);
     setCut(above.length ? above[0] : null);
   };
-  function rebuildGeo() { if (lastStatic) { geo = buildGeo(lastStatic, lastStructure); rail = buildRailGraph(lastStatic.rails || []); initCutaway(); updateCounts(); draw(); } }
+  function rebuildGeo() {
+    if (!lastStatic) return;
+    const g = geo = buildGeo(lastStatic, lastStructure);
+    rail = buildRailGraph(lastStatic.rails || []); initCutaway(); updateCounts(); draw();
+    const pump = () => {
+      if (geo !== g) return;              // superseded by a newer rebuild
+      const done = g.step(12);            // ~12 ms per slice keeps frames flowing
+      draw();
+      if (done) initCutaway(); else setTimeout(pump, 0);
+    };
+    if (g.built < g.counts.foundations) setTimeout(pump, 0);
+  }
   async function loadStructure() {
     clearTimeout(structureRetry);
     try {
@@ -769,7 +811,7 @@
   function resize() {
     const r = canvas.getBoundingClientRect();
     if (!r.width) return;
-    dpr = window.devicePixelRatio || 1;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);   // 3x phone screens: 2.25x the pixels for no visible gain
     W = r.width; H = r.height;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     if (!view.fitted) fit();
@@ -796,7 +838,7 @@
   function render() {
     drawQueued = false;
     if (!W) return;
-    const key = [view.cx, view.cy, view.scale, canvas.width, canvas.height, dpr, img.naturalWidth && img.complete, geo && geo.counts, cutZ, iconsReady,
+    const key = [view.cx, view.cy, view.scale, canvas.width, canvas.height, dpr, img.naturalWidth && img.complete, geo && geo.counts, geo && geo.built, cutZ, iconsReady,
       ...['image', 'foundations', 'cables', 'pipes', 'belts', 'rails', 'buildings', 'nodes'].map(l => layerOn[l])].join('|');
     if (key !== offKey || geo !== render.geo) {
       offKey = key; render.geo = geo;
@@ -842,6 +884,7 @@
     const s = view.scale * dpr;
     ctx.setTransform(s, 0, 0, s, (W / 2 - view.cx * view.scale) * dpr, (H / 2 - view.cy * view.scale) * dpr);
     const px = 1 / view.scale;   // one CSS pixel in game units
+    if (layerOn.image) terrainFor();
     if (layerOn.image && img.complete && img.naturalWidth) {
       ctx.imageSmoothingEnabled = view.scale < 0.02;
       ctx.globalAlpha = 0.85; ctx.drawImage(img, WX0, WY0, WSIZE, WSIZE); ctx.globalAlpha = 1;
