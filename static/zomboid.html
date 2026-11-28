@@ -344,10 +344,11 @@
           <div>
             <h3 style="margin-bottom: 14px; font-size: 15px; font-weight: 600;">Kill Leaderboard</h3>
             <div class="table-container">
-              <div class="table-header" style="grid-template-columns: 2fr 1fr 1fr;">
+              <div class="table-header" style="grid-template-columns: 2fr 1fr 1fr 2fr;">
                 <div>Player</div>
-                <div>Total Kills</div>
-                <div>Breakdown</div>
+                <div>This life</div>
+                <div>All lives</div>
+                <div>Weapons</div>
               </div>
               <div class="table-rows" id="stats-kills-table">
                 <div class="table-row" style="grid-column:1/-1; text-align:center; color:var(--muted);">Loading...</div>
@@ -468,7 +469,7 @@
               </div>
               <div id="map-layers">
                   <div class="map-chip-group"><span class="map-chip-group-name">Survivors</span><label class="map-chip" title="Players (🟢 healthy, 🔴 infected)"><input type="checkbox" id="map-show-players" checked onchange="mapRedrawAll()"><span>🟢</span>Players</label><label class="map-chip" title="Dead"><input type="checkbox" id="map-show-dead" checked onchange="mapRedrawAll()"><span>💀</span>Dead</label><label class="map-chip" title="Graves"><input type="checkbox" id="map-show-graves" checked onchange="mapRedrawAll()"><span>🪦</span>Graves</label><label class="map-chip" title="Dead players' zombies, last seen spot"><input type="checkbox" id="map-show-reanimated" checked onchange="mapRedrawAll()"><span>🧟</span>Reanimated</label></div>
-                  <div class="map-chip-group"><span class="map-chip-group-name">Bases</span><label class="map-chip" title="Safehouses"><input type="checkbox" id="map-show-safehouses" checked onchange="mapRedrawAll()"><span>🏠</span>Safehouses</label><label class="map-chip" title="Campfires"><input type="checkbox" id="map-show-campfires" checked onchange="mapRedrawAll()"><span>🔥</span>Campfires</label><label class="map-chip" title="Farming"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"><span>🌿</span>Farming</label><label class="map-chip" title="Traps"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"><span>🕷</span>Traps</label><label class="map-chip" title="Animals"><input type="checkbox" id="map-show-animals" checked onchange="mapRedrawAll()"><span>🐄</span>Animals</label><label class="map-chip" title="Generators (last known; faded = not in the latest scan)"><input type="checkbox" id="map-show-generators" checked onchange="mapRedrawAll()"><span>⚡</span>Generators</label><label class="map-chip" title="Water storage: rain collectors and base containers (faded = not in the latest scan)"><input type="checkbox" id="map-show-fluids" checked onchange="mapRedrawAll()"><span>🛢</span>Water</label></div>
+                  <div class="map-chip-group"><span class="map-chip-group-name">Bases</span><label class="map-chip" title="Safehouses"><input type="checkbox" id="map-show-safehouses" checked onchange="mapRedrawAll()"><span>🏠</span>Safehouses</label><label class="map-chip" title="Campfires"><input type="checkbox" id="map-show-campfires" checked onchange="mapRedrawAll()"><span>🔥</span>Campfires</label><label class="map-chip" title="Farming"><input type="checkbox" id="map-show-farming" checked onchange="mapRedrawAll()"><span>🌿</span>Farming</label><label class="map-chip" title="Traps"><input type="checkbox" id="map-show-traps" checked onchange="mapRedrawAll()"><span>🕷</span>Traps</label><label class="map-chip" title="Animals"><input type="checkbox" id="map-show-animals" checked onchange="mapRedrawAll()"><span>🐄</span>Animals</label><label class="map-chip" title="Generators (last known; faded = not in the latest scan)"><input type="checkbox" id="map-show-generators" checked onchange="mapRedrawAll()"><span>⚡</span>Generators</label></div>
                   <div class="map-chip-group"><span class="map-chip-group-name">Vehicles</span><label class="map-chip" title="Vehicles"><input type="checkbox" id="map-show-vehicles" checked onchange="mapRedrawAll()"><span>⬜</span>Vehicles</label><label class="map-chip" title="Wrecked"><input type="checkbox" id="map-show-destroyed" checked onchange="mapRedrawAll()"><span>💥</span>Wrecked</label></div>
                   <div class="map-chip-group"><span class="map-chip-group-name">Loot</span><label class="map-chip" title="Rare"><input type="checkbox" id="map-show-rare" checked onchange="toggleRareFilters();mapRedrawAll()"><span>💎</span>Rare</label><label class="map-chip" title="Crates"><input type="checkbox" id="map-show-crates" checked onchange="mapRedrawAll()"><span>📦</span>Crates</label><label class="map-chip" title="Warning: may show 300+ markers and lag the map"><input type="checkbox" id="map-show-empty-crates" checked onchange="mapRedrawAll()"><span>⚠</span>Empty crates</label><label class="map-chip" title="Containers the game spawned: treasure-map stashes, survivor stories, basements. Not base inventory."><input type="checkbox" id="map-show-caches" checked onchange="mapRedrawAll()"><span>🎁</span>Stashes</label></div>
                   <div class="map-chip-group"><span class="map-chip-group-name">Overlays</span><label class="map-chip" title="Heatmap"><input type="checkbox" id="map-show-heatmap" checked onchange="mapRedrawAll()"><span>🌡</span>Heatmap</label><label class="map-chip" title="Zombie hordes near players (8+), arrow = walking direction"><input type="checkbox" id="map-show-hordes" checked onchange="mapRedrawAll()"><span>🧟</span>Hordes</label><label class="map-chip" title="Zombie density change over the last 6 hours (red gained, blue lost)"><input type="checkbox" id="map-show-drift" checked onchange="pzLoadDrift(true); mapRedrawAll()"><span>↗</span>Drift 6h</label><label class="map-chip" title="Towns"><input type="checkbox" id="map-show-towns" checked onchange="mapRedrawAll()"><span>🏘</span>Towns</label></div>
@@ -900,10 +901,11 @@
         const gearTagsHtml = clothing.slice(0, 8).map(g => `<span class="tag">${prettifyItem(g)}</span>`).join('');
 
         const killTotal = Object.values(p.kills || {}).reduce((s, v) => s + v, 0);
-        const killBreakdown = Object.entries(p.kills || {})
+        const weaponKills = Object.keys(p.kills_by_weapon || {}).length ? p.kills_by_weapon : (life?.alive ? life.weapons : null);
+        const killBreakdown = Object.entries(weaponKills || p.kills || {})
           .filter(([, v]) => v > 0)
           .sort((a, b) => b[1] - a[1])
-          .map(([cat, count]) => `<div class="kills-row"><span>${cat}</span><span>${count}</span></div>`).join('');
+          .map(([cat, count]) => `<div class="kills-row"><span>${escHtml(cat)}</span><span>${count}</span></div>`).join('');
 
         const isOnline = liveNames.has(p.username) || liveNames.has(p.name);
         // B42: the mod's infection stat or a live bite wound marks a player as bitten.
@@ -973,7 +975,7 @@
 
           ${killBreakdown ? `
           <div>
-            <div class="section-title" style="margin-bottom:5px;">Kill Breakdown</div>
+            <div class="section-title" style="margin-bottom:5px;">Kills by weapon</div>
             ${killBreakdown}
           </div>` : ''}
         </div>`;
@@ -1012,28 +1014,25 @@
 
       document.getElementById('stats-deaths-table').innerHTML = deathRows;
 
-      // Kill leaderboard — aggregate from live player data
-      const killMap = {};
-      const killBreakdownMap = {};
-      (pzData.players || []).forEach(p => {
-        if (!p.kills) return;
-        const total = Object.values(p.kills).reduce((s, v) => s + v, 0);
-        if (total > 0) {
-          killMap[p.name] = total;
-          killBreakdownMap[p.name] = Object.entries(p.kills)
-            .filter(([, v]) => v > 0)
-            .sort((a, b) => b[1] - a[1])
-            .map(([cat, n]) => `${cat}: ${n}`)
-            .join(', ');
-        }
-      });
-      const killRows = Object.entries(killMap)
-        .sort((a, b) => b[1] - a[1])
-        .map(([name, total]) => `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr;">
-          <div style="font-weight:600">${name}</div>
-          <div>${total}</div>
-          <div style="font-size:11px;color:var(--muted)">${killBreakdownMap[name] || ''}</div>
-        </div>`).join('') || '<div class="table-row" style="grid-column:1/-1;text-align:center;color:var(--muted);">No kill data</div>';
+      // Kill leaderboard from survivor history (B42 mod profiles): current life,
+      // all lives, and kills by weapon (mod 2.12.0+, counted from then on).
+      const livesData = pzData.lives || {};
+      const curLife = {};
+      for (const l of (livesData.lives || [])) if (l.alive && (!curLife[l.username] || l.id > curLife[l.username].id)) curLife[l.username] = l;
+      const weaponText = w => Object.entries(w || {}).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
+        .slice(0, 4).map(([k, n]) => `${escHtml(k)} ${n}`).join(', ');
+      const killRows = (livesData.players || [])
+        .filter(p => p.kills > 0 || curLife[p.username]?.kills > 0)
+        .sort((a, b) => (curLife[b.username]?.kills || 0) - (curLife[a.username]?.kills || 0) || b.kills - a.kills)
+        .map(p => {
+          const cur = curLife[p.username];
+          return `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr 2fr;">
+          <div style="font-weight:600">${escHtml(cur?.character || p.username)}${cur?.character ? ` <span style="color:var(--muted);font-size:12px;font-weight:400;">${escHtml(p.username)}</span>` : ''}</div>
+          <div>${cur ? cur.kills : '<span style="color:var(--muted)">dead</span>'}</div>
+          <div>${p.kills}</div>
+          <div style="font-size:11px;color:var(--muted)">${weaponText(p.weapons) || '—'}</div>
+        </div>`;
+        }).join('') || '<div class="table-row" style="grid-column:1/-1;text-align:center;color:var(--muted);">No kill data</div>';
       document.getElementById('stats-kills-table').innerHTML = killRows;
 
       // Skill leaders — for each skill, find the player with the highest level
@@ -1062,12 +1061,17 @@
     // Key parts averaged into one condition score; a car is drivable with a live
     // engine, a battery and four tyres (fuel shown separately, it can be siphoned in).
     const VEH_KEY_PARTS = ['Engine', 'Battery', 'TireFrontLeft', 'TireFrontRight', 'TireRearLeft', 'TireRearRight'];
+    // Disclosure (like rare loot): 'spotted' = model only, 'looked' = tyres and glass,
+    // 'entered' = everything. Older backends send no disc and full data.
+    const vehKnown = v => !v.disc || v.disc === 'entered';
+    const VEH_DISC_LABEL = { spotted: 'Spotted: walk up for a closer look', looked: 'Looked over: get in to check engine and fuel' };
     function vehCondition(v) {
+      if (!vehKnown(v)) return null;
       const vals = VEH_KEY_PARTS.map(k => v.parts?.[k] ?? 0);
       return vals.reduce((s, x) => s + x, 0) / vals.length;
     }
     function vehDrivable(v) {
-      return !isVehicleDestroyed(v) && VEH_KEY_PARTS.every(k => (v.parts?.[k] ?? 0) > 0);
+      return vehKnown(v) && !isVehicleDestroyed(v) && VEH_KEY_PARTS.every(k => (v.parts?.[k] ?? 0) > 0);
     }
     function vehSeenAgo(ts) {
       if (!ts) return '';
@@ -1123,9 +1127,9 @@
       if (town) vehicles = vehicles.filter(v => v.town === town);
       if (q) vehicles = vehicles.filter(v => `${v.type} ${vehName(v.type)} ${v.driver || ''}`.toLowerCase().includes(q));
       const cmp = {
-        cond: (a, b) => vehCondition(b) - vehCondition(a),
+        cond: (a, b) => (vehCondition(b) ?? -1) - (vehCondition(a) ?? -1),
         fuel: (a, b) => (b.fuel ?? -1) - (a.fuel ?? -1),
-        town: (a, b) => (a.town || '').localeCompare(b.town || '') || vehCondition(b) - vehCondition(a),
+        town: (a, b) => (a.town || '').localeCompare(b.town || '') || (vehCondition(b) ?? -1) - (vehCondition(a) ?? -1),
         type: (a, b) => vehName(a.type).localeCompare(vehName(b.type)),
       }[sort];
       vehicles = [...vehicles].sort(cmp);
@@ -1141,20 +1145,23 @@
         </div>`;
 
       let critical = 0;
-      for (const v of allVehicles) if (!isVehicleDestroyed(v) && Object.values(v.parts || {}).some(x => x < 0.3)) critical++;
+      for (const v of allVehicles) if (vehKnown(v) && !isVehicleDestroyed(v) && Object.values(v.parts || {}).some(x => x < 0.3)) critical++;
       const cards = vehicles.map(v => {
         const parts = Object.entries(PART_LABELS).filter(([k]) => v.parts?.[k] != null).map(([k, l]) => bar(l, v.parts[k])).join('');
-        const cond = Math.round(vehCondition(v) * 100);
+        const c = vehCondition(v);
+        const cond = c == null ? null : Math.round(c * 100);
         const drivable = vehDrivable(v);
+        const destroyed = isVehicleDestroyed(v);
         return `<div class="vehicle-card">
           <div class="vehicle-type">${escHtml(vehName(v.type))} <span style="font-size:11px;color:var(--muted);">#${v.id}</span>
             ${drivable ? '<span class="tag trait-pos" style="margin-left:6px;">drivable</span>' : ''}
             ${v.driver ? `<span class="online-badge" style="margin-left:6px;">🚗 ${escHtml(v.driver)}</span>` : ''}</div>
           <div style="font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;">
             <span>📍 ${escHtml(v.town || '?')} <a href="#" onclick="event.preventDefault();jumpToSpot(${Number(v.x)},${Number(v.y)})" style="color:var(--accent);">map</a></span>
-            <span style="color:${partColor(cond / 100)}">⚙ ${cond}%</span>
+            ${destroyed ? '<span>💥 wrecked</span>' : cond != null ? `<span style="color:${partColor(cond / 100)}">⚙ ${cond}%</span>` : ''}
             ${v.seen ? `<span>👁 ${vehSeenAgo(v.seen)}</span>` : ''}
           </div>
+          ${!vehKnown(v) && !destroyed ? `<div style="font-size:11px;color:var(--muted);font-style:italic;">${VEH_DISC_LABEL[v.disc] || ''}</div>` : ''}
           ${v.fuel != null ? bar('⛽ Fuel', v.fuel) : ''}
           <div class="parts-grid">${parts}</div>
         </div>`;
@@ -1564,7 +1571,7 @@
     function _vehicleMarkerKey(v) {
       const destroyed = isVehicleDestroyed(v);
       const engine = v.parts?.Engine ?? 0;
-      return `${destroyed ? 1 : 0}:${Math.round(engine * 10)}:${Math.round((v.fuel ?? -0.1) * 10)}:${v.x.toFixed(1)}:${v.y.toFixed(1)}`;
+      return `${v.disc || ''}:${destroyed ? 1 : 0}:${Math.round(engine * 10)}:${Math.round((v.fuel ?? -0.1) * 10)}:${v.x.toFixed(1)}:${v.y.toFixed(1)}`;
     }
 
     function redrawVehicles() {
@@ -1601,7 +1608,7 @@
         if (existing) { existing.marker.remove(); vehicleMarkerMap.delete(id); }
 
         const engine = v.parts?.Engine ?? 0;
-        const color = destroyed ? '#4b5563' : engine > 0.6 ? '#22c55e' : engine > 0.3 ? '#f59e0b' : '#ef4444';
+        const color = destroyed ? '#4b5563' : !vehKnown(v) ? '#94a3b8' : engine > 0.6 ? '#22c55e' : engine > 0.3 ? '#f59e0b' : '#ef4444';
         const marker = L.marker(pzToLatLng(v.x, v.y), {
           icon: L.divIcon({
             className: '',
@@ -1610,7 +1617,7 @@
           }),
           zIndexOffset: -100,
         }).addTo(leafletMap);
-        marker.bindTooltip(escHtml(`${vehName(v.type)} (${destroyed ? 'destroyed' : Math.round(vehCondition(v) * 100) + '% cond' + (v.fuel != null ? ', ' + Math.round(v.fuel * 100) + '% fuel' : '') + (vehDrivable(v) ? ', drivable' : '')})`), { direction: 'top', offset: [0, -4], className: 'player-label' });
+        marker.bindTooltip(escHtml(`${vehName(v.type)} (${destroyed ? 'destroyed' : !vehKnown(v) ? (v.disc === 'looked' ? 'looked over' : 'spotted') : Math.round(vehCondition(v) * 100) + '% cond' + (v.fuel != null ? ', ' + Math.round(v.fuel * 100) + '% fuel' : '') + (vehDrivable(v) ? ', drivable' : '')})`), { direction: 'top', offset: [0, -4], className: 'player-label' });
         vehicleMarkerMap.set(id, { marker, key });
       });
 
@@ -2353,8 +2360,8 @@
           if (destroyed && !chk('map-show-destroyed')) return;
           if (!destroyed && !chk('map-show-vehicles')) return;
           const engine = v.parts?.Engine ?? 0;
-          const color  = destroyed ? '#6b7280' : engine > 0.6 ? '#60a5fa' : engine > 0.3 ? '#f59e0b' : '#ef4444';
-          const lbl = `${vehName(v.type)}\n${destroyed ? 'Destroyed' : Math.round(engine * 100) + '% engine'}`;
+          const color  = destroyed ? '#6b7280' : !vehKnown(v) ? '#94a3b8' : engine > 0.6 ? '#60a5fa' : engine > 0.3 ? '#f59e0b' : '#ef4444';
+          const lbl = `${vehName(v.type)}\n${destroyed ? 'Destroyed' : !vehKnown(v) ? (v.disc === 'looked' ? 'Looked over' : 'Spotted') : Math.round(engine * 100) + '% engine'}`;
           drawDot(v.x, v.y, color, 5, destroyed ? 0.5 : 0.85, lbl);
           if (!destroyed) drawLabel(v.x, v.y, 0, vehName(v.type), '#93c5fd');
         });
@@ -2743,7 +2750,7 @@
 
       fetch(`${API_BASE}/api/pz/lives`)
         .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d && !d.error) { pzData.lives = d; renderLives(); renderPlayers(); if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers(); } })
+        .then(d => { if (d && !d.error) { pzData.lives = d; renderLives(); renderPlayers(); renderStats(); if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers(); } })
         .catch(() => {});
 
       fetch(`${API_BASE}/api/pz/stats`)
@@ -2929,7 +2936,7 @@
         try { addFeedEvents([JSON.parse(e.data)]); } catch {}
       });
       sseSource.addEventListener('lives', e => {
-        try { pzData.lives = JSON.parse(e.data); renderLives(); renderPlayers(); if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers(); } catch {}
+        try { pzData.lives = JSON.parse(e.data); renderLives(); renderPlayers(); renderStats(); if (_mapMode === 'iso') isoRedrawMarkers(); else redrawModLayers(); } catch {}
       });
       sseSource.addEventListener('profiles', e => {
         try {
